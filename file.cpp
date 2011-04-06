@@ -85,9 +85,46 @@ int File::find(const char* name, char* path) {
 #endif
 
 
-Directory::Directory(const char* path) : m_directory(path), m_scanned(0) {
+Directory::Directory() : m_directory(0), m_scanned(0) {
+}
+Directory::Directory(const char* path) : m_scanned(0) {
+	//Try cleaning a path
+	char clean[512];
+	cleanPath(path, clean);
+	m_directory = strdup(clean);
+}
+
+Directory::Directory(const Directory& d) {
+	m_directory = strdup(d.m_directory);
+	m_scanned = d.m_scanned;
+	m_files = d.m_files;
 }
 Directory::~Directory() {
+	if(m_directory) delete [] m_directory;
+}
+Directory& Directory::operator=(const Directory& d) {
+	m_directory = strdup(d.m_directory);
+	m_scanned = d.m_scanned;
+	m_files = d.m_files;
+	return *this;
+}
+
+void Directory::cleanPath(const char* in, char* out) {
+	int k=0;
+	for(const char* c=in; *c; c++) {
+		if(strncmp(c, "//", 2)==0) continue ; // repeated slashes
+		else if((c==in||*(c-1)=='/') && strncmp(c, "./", 2)==0) c++; // no change
+		else if(strncmp(c, "/.", 3)==0) c++; // ending in /.
+		else if(strncmp(c, "/../", 4)==0 || strncmp(c, "/..", 4)==0) { //up
+			if((k==3 && strncmp(out, "../", 3)) || (k>3 && strncmp(&out[k-4], "/../", 4))) {
+				//remove segment
+				while(k>1 && out[k-1]!='/') k--;
+				c+=2;
+			}
+		} else out[k++] = *c;
+	}
+	out[k]=0;
+
 }
 int Directory::search() {
 	//List all files in the directory
@@ -114,6 +151,7 @@ int Directory::search() {
 				f.flags |= 0x10;
 			}
 			//extract extension
+			f.ext=0;
 			for(const char* c = f.name; *c; c++) if(*c=='.') f.ext=c+1;
 		}
 	}

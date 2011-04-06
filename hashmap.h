@@ -44,6 +44,7 @@ namespace base {
 		friend class iterator;
 		iterator begin() { return ++iterator(this, ~0u); }
 		iterator end()  { return iterator(this, m_capacity); }
+		iterator find(const char* key) { unsigned int i=index(key, m_capacity); return iterator(this, i<m_capacity?i:m_capacity); }
 		
 		private:
 		unsigned int index(const char* c, unsigned int n) const;

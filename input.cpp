@@ -23,6 +23,7 @@ void Input::update() {
 	//clear frame data
 	memset(m_pressed, 0, 128);
 	m_mouseClick = 0;
+	m_mouseWheel = 0;
 	m_lastKey = 0;
 	m_lastChar = 0;
 	//Cache mouse position

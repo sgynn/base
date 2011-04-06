@@ -44,11 +44,15 @@ class File {
 /** Use this to list files in a directory. Extend directory for pak files etc. */
 class Directory {
 	public:
+	Directory();
 	Directory(const char* path);
+	Directory(const Directory&);
 	~Directory();
+	Directory& operator=(const Directory&);
 	int search(); // scan directory
 	int find(File& file);
 	int find(const char* name, char* path);
+	const char* path() const { return m_directory; }
 	bool contains(const char* file);
 	File open(const char* file, File::Mode mode);
 
@@ -59,6 +63,7 @@ class Directory {
 	iterator end() const { return m_files.end(); }
 
 	protected:
+	void cleanPath(const char* in, char* out);
 	const char* m_directory;
 	bool m_scanned;
 	std::list<DFile> m_files;
