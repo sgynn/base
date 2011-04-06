@@ -116,11 +116,11 @@ void Directory::cleanPath(const char* in, char* out) {
 		else if((c==in||*(c-1)=='/') && strncmp(c, "./", 2)==0) c++; // no change
 		else if(strncmp(c, "/.", 3)==0) c++; // ending in /.
 		else if(strncmp(c, "/../", 4)==0 || strncmp(c, "/..", 4)==0) { //up
-			if((k==3 && strncmp(out, "../", 3)) || (k>3 && strncmp(&out[k-4], "/../", 4))) {
+			if((k==2 && strncmp(out, "..", 2)) || (k>2 && strncmp(&out[k-3], "/..", 3))) {
 				//remove segment
 				while(k>1 && out[k-1]!='/') k--;
 				c+=2;
-			}
+			} else out[k++] = *c;
 		} else out[k++] = *c;
 	}
 	out[k]=0;
