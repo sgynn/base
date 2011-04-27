@@ -57,35 +57,37 @@ int initialiseExtensions() { return 1; }
 
 using namespace base;
 
-FrameBuffer FrameBuffer::Screen(0,0,0);
+FrameBuffer FrameBuffer::Screen;
 
+FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0), m_depth(0) {}
 FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0), m_depth(0) {
 	if(w==0 || h==0 || f==0) return;
 
-	m_texture = Texture::createTexture(w, h, GL_RGBA);
+	// Colour buffer
+	if(f&COLOUR) m_texture = Texture::createTexture(w, h, GL_RGBA);
 	uint texture = m_texture.getGLTexture();
 
 	// Depth buffer
-	if(f & DEPTH) {
+	if(f&DEPTH) {
 		glGenRenderbuffers(1, &m_depth);
 		glBindRenderbuffer(GL_RENDERBUFFER, m_depth);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
 	}
 
-	// FBO
+	// Frame buffer
 	glGenFramebuffers(1, &m_buffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 	if(texture) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 	if(m_depth) glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depth);
 
-	if(glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE) {
+	if(!m_buffer || glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE) {
 		printf("Error creating frame buffer\n");
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 FrameBuffer::~FrameBuffer() {
-	if(m_buffer) glDeleteFramebuffers(1, &m_buffer);
-	if(m_depth) glDeleteRenderbuffers(1, &m_depth);
+	//if(m_buffer) glDeleteFramebuffers(1, &m_buffer);
+	//if(m_depth) glDeleteRenderbuffers(1, &m_depth);
 }
 
 void FrameBuffer::bind() {
@@ -93,11 +95,5 @@ void FrameBuffer::bind() {
 	if(m_buffer) glViewport(0,0,m_width, m_height);
 	else glViewport(0, 0, Game::getSize().x, Game::getSize().y);
 }
-
-
-
-
-
-
 
 

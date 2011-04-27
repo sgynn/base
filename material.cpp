@@ -42,6 +42,23 @@ const Texture& Texture::getTexture(const char* name) {
 	return iter->second;
 }
 
+const Texture Texture::createTexture(int width, int height, uint format) {
+	//Generate an empty texture
+	uint texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, 0); 
+	//Done
+	Texture t;
+	t.m_good = texture>0;
+	t.m_texture = texture;
+	return t;
+}
+
 int Texture::bind() const {
 	if(m_good) glBindTexture(GL_TEXTURE_2D, m_texture);
 	return m_good? 1:0;

@@ -8,11 +8,12 @@ class FrameBuffer {
 	public:
 	enum Flags { DEPTH=0x1000, COLOUR=0x2000 };
 
+	FrameBuffer();
 	FrameBuffer(int width, int height, int flags=COLOUR);
 	~FrameBuffer();
 
 	/** Get the framebuffer as a texture */
-	const Texture& texture() const;
+	const Texture& texture() const { return m_texture; }
 	operator const Texture&() const { return texture(); }
 
 	/** Bind the framebuffer as the current a render target */

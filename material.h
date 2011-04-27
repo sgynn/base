@@ -13,7 +13,7 @@ class Texture {
 	friend class Material;
 	public:
 	static const Texture& getTexture(const char* name);
-	static const Texture& createTexture(int width, int height, uint format);
+	static const Texture createTexture(int width, int height, uint format);
 	static void reload();
 	void clamp(bool edge=true);
 	int bind() const;

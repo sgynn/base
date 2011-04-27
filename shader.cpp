@@ -395,7 +395,7 @@ void Shader::DisableAttributeArray(const char* name) {
 }
 void Shader::AttributePointer(const char *name, int size, int type, bool normalised, size_t stride, const void *pointer) {
 	int loc = variable(name, ATTRIBUTE);
-	if(loc) glVertexAttribPointer(loc, size, type, normalised, stride, pointer);	
+	if(loc>=0) glVertexAttribPointer(loc, size, type, normalised, stride, pointer);	
 }
 
 void Shader::bind() {
