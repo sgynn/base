@@ -13,6 +13,7 @@ class XML {
 		public:
 		TAGTYPE type() const { return m_type; }
 		const char* name() const { return m_name; }
+		const char* text() const { return m_text; }
 		const char* operator[](const char* value) const;
 		const char* attribute(const char* name, const char* defaultValue="") const;
 		float attribute(const char* name, float defaultValue) const;
@@ -27,6 +28,7 @@ class XML {
 		Element();
 		TAGTYPE m_type;
 		const char* m_name;
+		const char* m_text;
 		std::list<Element> m_children;
 		std::list<const char*> m_attributes;
 	};

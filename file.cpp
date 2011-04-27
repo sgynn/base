@@ -108,7 +108,6 @@ Directory& Directory::operator=(const Directory& d) {
 	m_files = d.m_files;
 	return *this;
 }
-
 void Directory::cleanPath(const char* in, char* out) {
 	int k=0;
 	for(const char* c=in; *c; c++) {
@@ -125,6 +124,9 @@ void Directory::cleanPath(const char* in, char* out) {
 	}
 	out[k]=0;
 
+}
+bool sortByName(const Directory::DFile& a, const Directory::DFile& b) {
+	return strcmp(a.name, b.name)<0;
 }
 int Directory::search() {
 	//List all files in the directory
@@ -155,8 +157,9 @@ int Directory::search() {
 			for(const char* c = f.name; *c; c++) if(*c=='.') f.ext=c+1;
 		}
 	}
-			
 	#endif
+	//Sort TODO - sorting functions
+	m_files.sort(sortByName);
 	return 0;
 }
 bool Directory::contains( const char* file ) {

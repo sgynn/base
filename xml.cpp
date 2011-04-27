@@ -23,7 +23,7 @@ int parseInt(const char* c) {
 }
 
 
-XML::Element::Element(): m_type(TAG), m_name(0) {}
+XML::Element::Element(): m_type(TAG), m_name(0), m_text(0) {}
 
 const char* XML::Element::operator[](const char* value) const {
 	for(std::list<const char*>::const_iterator i=m_attributes.begin(); i!=m_attributes.end(); i++) {
@@ -106,16 +106,21 @@ int XML::parse() {
 				while(strncmp(c, "-->",3)) inc(c);
 				*c = 0; c+=3; //terminate the string
 				if(!stack.empty()) stack.back()->m_children.push_back(t);
+				if(!stack.empty()) stack.back()->m_text=0;
 			} else return false;
 		} else if(*c=='/') {	//Closing tag
 			char *tmp = ++c;
-		       	while(*c!='>') inc(c); //Skip for now
+		       	while(*c!='>') inc(c); //get end of tag name
 			*c=0;
 			if(strcmp(stack.back()->name(), tmp)==0) {
+				//Terminate text
+				if(stack.back()->m_text) {
+					for(char* lc=tmp-3; lc>=stack.back()->m_text && (*lc==' ' || *lc=='\t' || *lc==10 || *lc==13); lc--) *lc=0;
+				}
 				stack.pop_back();
 				if(stack.empty()) return 0;
 			} else {
-				return (int)(c-m_data);;
+				return (int)(c-m_data); //Error: Invalid file
 			}
 			c++;
 		} else { //tag
@@ -149,6 +154,7 @@ int XML::parse() {
 			if(*(c-1)!='/' && flag!='/') {
 				if(stack.empty()) stack.push_back(&m_root);
 				else stack.push_back(&stack.back()->m_children.back());
+				stack.back()->m_text = c; //Internal text?
 			}
 			c++;
 		}

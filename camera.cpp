@@ -309,16 +309,17 @@ vec3 Camera::unproject(const vec3& screen) const {
 	return out;
 }
 
-void Camera::updateCameraFPS(float time, float speed, float turn, const vec3* up, float limit) {
+const vec3 Camera::defaultUp(0,1,0);
+void Camera::updateCameraFPS(float speed, float turn, const vec3* up, float limit) {
 	Input* in = Game::input();
 
 	//get movement vector
 	#define Key(k) in->key(k)
 	vec3 move;
-	if(Key(KEY_UP)    || Key(KEY_W)) move.z = -speed * time;
-	if(Key(KEY_DOWN)  || Key(KEY_S)) move.z =  speed * time;
-	if(Key(KEY_LEFT)  || Key(KEY_A)) move.x = -speed * time;
-	if(Key(KEY_RIGHT) || Key(KEY_D)) move.x =  speed * time;
+	if(Key(KEY_UP)    || Key(KEY_W)) move.z = -speed;
+	if(Key(KEY_DOWN)  || Key(KEY_S)) move.z =  speed;
+	if(Key(KEY_LEFT)  || Key(KEY_A)) move.x = -speed;
+	if(Key(KEY_RIGHT) || Key(KEY_D)) move.x =  speed;
 
 	//Move camera
 	Matrix mat = getRotation();
@@ -331,33 +332,42 @@ void Camera::updateCameraFPS(float time, float speed, float turn, const vec3* up
 	int mx, my, mb;
 	mb = in->mouse(mx, my);
 	static int lx=0, ly=0;
-	if(mb&4) {
+	if(turn!=0) {
 		//rotate rotation matrix.
 		if(mx!=lx) rotateLocal(AXIS_Y, (lx-mx)*turn);
 		if(my!=ly) rotateLocal(AXIS_X, (ly-my)*turn);
-		
 		//Reset up vector?
-		if(up) {
-			lookat(position, position - getDirection(), *up);
-		}
-
+		if(up) lookat(position, position - getDirection(), *up);
 		if(lx!=mx || ly!=my) in->warpMouse(lx, ly);
 	} else { lx=mx; ly=my; }
-
-	//adjust speed
-	//int mw = Game::MouseWheel();
-	//while(mw<0) { speed*=0.8f; mw++; }
-	//while(mw>0) { speed*=1.2f; mw--; }
-
-	//fov zoom in
-	float fov = getFov();
-	if(mb&2) {
-		if(fov>20) fov-=time*40;
-		if(fov<20) fov = 20;
-	} else {
-		if(fov<90) fov+=time*40;
-		if(fov>90) fov=90;
-	}
-	setFov(fov);
 }
 
+void Camera::updateCameraOrbit(const vec3& target, float turn, const vec3* up, float limit) {
+	Input* in = Game::input();
+
+	//Rotate camera
+	int mx, my;
+	in->mouse(mx, my);
+	int mw = in->mouseWheel();
+	static int lx=0, ly=0;
+	float dp=0, dy=0;
+	if(turn!=0) {
+		if(mx!=lx) dy = (mx-lx)*turn;
+		if(my!=ly) dp = (ly-my)*turn;
+		if(dp!=0 || dy!=0) in->warpMouse(lx, ly);
+	} else { lx=mx; ly=my; }
+
+	//Update camera position
+	if(dp!=0 || dy!=0 || mw!=0) {
+		//Update camera distance
+		float distance = m_position.distance(target);
+		while(mw<0) { distance *= 1.2f; mw++; }
+		while(mw>0) { distance *= 0.8f; mw--; }
+		//Adjust camera
+		if(dp!=0) rotateLocal(AXIS_Y, dy);
+		if(dy!=0) rotateLocal(AXIS_X, dp);
+		setPosition(target + getDirection()*distance);
+		//Up vectors dont work very well with rotateLocal. May need a seperate case.
+		//if(up) lookat(getPosition(), target, getUp().y<0? *up*-1: *up);
+	}
+}

@@ -72,7 +72,8 @@ class Camera {
 
 	
 	/** FPS Camera All-In-One Update Function */
-	void updateCameraFPS(float time, float speed, float turn=0.004, const vec3* up=0, float limit=1.5);
+	void updateCameraFPS(float speed, float turn=0.004, const vec3* up=&defaultUp, float limit=1.5);
+	void updateCameraOrbit(const vec3& target=vec3(), float turn=0.004, const vec3* up=&defaultUp, float limit=1.5);
 
 	protected:
 	int m_mode;	//0=screen, 1=perspective, 2=frustum
@@ -81,6 +82,7 @@ class Camera {
 	float m_bottom, m_top;
 	float m_near, m_far;
 
+	static const vec3 defaultUp; //default up vector for update functions
 	vec3 m_position;	//camera position
 	Matrix m_rotation;	//camera rotation
 
