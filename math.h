@@ -25,6 +25,9 @@ class Vec2 {
 	Vec2 operator+ (const Vec2& b) const { return Vec2(x+b.x,y+b.y); }
 	Vec2 operator- (const Vec2& b) const { return Vec2(x-b.x,y-b.y); }
 	Vec2 operator* (const float s) const { return Vec2(x*s,y*s); }
+
+	bool operator==(const Vec2& v) const { return v.x==x && v.y==y; }
+	bool operator!=(const Vec2& v) const { return v.x!=x || v.y!=y; }
 	
 	float distanceSq(const Vec2& v) const { return (x-v.x)*(x-v.x) + (y-v.y)*(y-v.y); }
 	float distance(const Vec2& v) const { return sqrt((x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) ); }
@@ -58,6 +61,9 @@ class Vec3 {
 		Vec3 operator- (const Vec3& b) const { return Vec3(x-b.x,y-b.y,z-b.z); }
 		Vec3 operator* (const float s) const { return Vec3(x*s,y*s,z*s); }
 		Vec3 operator/ (const float s) const { return Vec3(x/s,y/s,z/s); }
+
+		bool operator==(const Vec3& v)  const { return v.x==x && v.y==y && v.z==z; }
+		bool operator!=(const Vec3& v)  const { return v.x!=x || v.y!=y || v.z!=z; }
 		
 		float distanceSq(const Vec3& v) const { return (x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) + (z-v.z)*(z-v.z); }
 		float distance(const Vec3& v) const { return sqrt((x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) + (z-v.z)*(z-v.z)); }
@@ -106,7 +112,7 @@ class Matrix {
 		for(uint i=0; i<16; i++) m[i]=a.m[i];
 		return *this;
 	}
-	Matrix operator*(const Matrix& mat) {
+	Matrix operator*(const Matrix& mat) const {
 		Matrix result;
 		result.m[0] = m[0]*mat.m[0] + m[4]*mat.m[1] + m[8]*mat.m[2] + m[12]*mat.m[3];
 		result.m[1] = m[1]*mat.m[0] + m[5]*mat.m[1] + m[9]*mat.m[2] + m[13]*mat.m[3];
@@ -130,7 +136,7 @@ class Matrix {
 		return result;
 		
 	}
-	vec3 operator*(const vec3& v) {
+	vec3 operator*(const vec3& v) const {
 		vec3 result;
 		result.x = m[0]*v.x + m[4]*v.y + m[8]*v.z + m[12];
 		result.y = m[1]*v.x + m[5]*v.y + m[9]*v.z + m[13];
@@ -177,6 +183,8 @@ class aabb {
 	aabb& operator-=(const vec3& v) { min-=v, max-=v; return *this;  }
 
 	vec3 size() const { return vec3(max-min); }
+
+	vec3 centre() const { return (min+max)*0.5f; }
 	
 	void addPoint(const vec3& p) {
 		if(p.x<min.x) min.x=p.x;
@@ -246,6 +254,11 @@ struct Point3 {
 	Point3(int x, int y, int z) : x(x), y(y), z(z) {};
 	bool operator<(const Point3& p) const { return x<p.x || (x==p.x && y<p.y) || (x==p.x && y==p.y && z<p.z); }
 };
+
+#ifndef PI
+#define PI 3.14159265359
+#define TWOPI 6.283185307
+#endif
 
 #endif
 

@@ -45,7 +45,7 @@ void Input::setButton(int code, bool down) {
 	else m_mouseButton &= ~mask;
 	//Click
 	if(down) {
-		m_mouseClick = m_mouseButton; 
+		m_mouseClick = mask; 
 		m_mouseClickPoint = queryMouse();
 	}
 }

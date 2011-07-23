@@ -71,7 +71,7 @@ class Camera {
 	vec3 unproject(const vec3& screen) const;
 
 	
-	/** FPS Camera All-In-One Update Function */
+	/** FPS Camera All-In-One Update Function. Set turn=0 to unlock the mouse */
 	void updateCameraFPS(float speed, float turn=0.004, const vec3* up=&defaultUp, float limit=1.5);
 	void updateCameraOrbit(const vec3& target=vec3(), float turn=0.004, const vec3* up=&defaultUp, float limit=1.5);
 
