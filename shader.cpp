@@ -341,7 +341,7 @@ void Shader::Uniform4i(const char* name, int v1, int v2, int v3, int v4) {
 	int loc=variable(name, UNIFORM);
 	if(loc>=0) glUniform4i(loc, v1, v2, v3, v4);
 }
-void Shader::Uniformiv(const char* name, int size, int *v) {
+void Shader::Uniformiv(const char* name, int size, const int *v) {
 	int loc=variable(name, UNIFORM);
 	if(loc>=0) glUniform1iv(loc, size, v); //glUniform2iv etc exist but i think they are not really needed.
 }
@@ -362,7 +362,7 @@ void Shader::Uniform4f(const char* name, float v1, float v2, float v3, float v4)
 	int loc=variable(name, UNIFORM);
 	if(loc>=0) glUniform4f(loc, v1, v2, v3, v4);
 }
-void Shader::Uniformfv(const char* name, int size, float *v) {
+void Shader::Uniformfv(const char* name, int size, const float *v) {
 	int loc=variable(name, UNIFORM);
 	if(loc>=0) glUniform1fv(loc, size, v);
 }
