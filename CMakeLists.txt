@@ -7,6 +7,7 @@ set(src
 	font.cpp
 	framebuffer.cpp
 	game.cpp
+	gui.cpp
 	inifile.cpp
 	input.cpp
 	keytest.cpp
@@ -61,6 +62,7 @@ set(headers
 	font.h
 	framebuffer.h
 	game.h
+	gui.cpp
 	hashmap.h
 	inifile.h
 	input.h
@@ -80,3 +82,4 @@ set(headers
 
 install(TARGETS base DESTINATION lib)
 install(FILES ${headers} DESTINATION include/base)
+

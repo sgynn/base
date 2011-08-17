@@ -246,6 +246,8 @@ struct Point {
 	Point() : x(0), y(0) {};
 	Point(int x, int y) : x(x), y(y) {};
 	bool operator<(const Point& p) const { return x<p.x || (x==p.x && y<p.y);  }
+	Point operator+ (const Point& b) const { return Point(x+b.x,y+b.y); }
+	Point operator- (const Point& b) const { return Point(x-b.x,y-b.y); }
 };
 
 struct Point3 {
