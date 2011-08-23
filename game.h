@@ -13,6 +13,10 @@ class StateManager;
 /** Game main functions */
 class Game {
 	public:
+	/** Create the game instance. Can only have one */
+	static Game* create(int width=800, int height=600, int bpp=32, bool fullscreen=false, int fps=60, uint antialiasing=0);
+
+	/** Depricated - should be private */
 	Game(int width=800, int height=600, int bpp=32, bool fullscreen=false, uint antialiasing=0);
 	~Game();
 	
@@ -22,10 +26,12 @@ class Game {
 	/** Set the initial game state */
 	void setInitialState(GameState* state);
 
+
 	/** Run the app */
 	void run();
+
 	/** terminate the app */
-	void exit();
+	static void exit();
 
 	/** Resize the window - Nore: may need to reload glContext (textures, shaders, buffers)*/
 	void resize(int width, int height);
@@ -37,6 +43,13 @@ class Game {
 	//Time 
 	static uint64 getTicks();
 	static uint64 getTickFrequency();
+
+	/** Time since the game started (seconds) */
+	static float gameTime() { return s_inst->m_totalTime; }
+	/** Time since tha last frame - use for frametare independance */
+	static float frameTime() { return s_inst->m_frameTime; }
+	/** Get detailed timings */
+	static void debugTime(uint& game, uint& system, uint& update, uint& render);
 
 	//Input stuff (depricated)
 	static bool Key(int k);				// Get the state of a key
@@ -67,6 +80,16 @@ class Game {
 	//only allow one instance
 	static Game* s_inst;
 	static void cleanup();
+
+	//Timing data
+	uint m_targetFPS;	// Target framerate when fixed
+	uint m_gameTime;	// Time taken for a complete game loop (in system ticks)
+	uint m_systemTime;	// Time taken between game loops (~0 for variable rate)
+	uint m_renderTime;	// Time to send render commands *NOT ACTUAL REMDER TIME*
+	uint m_elapsedTime;	// Time since last frame
+	uint m_updateTime;	// Time spent in update loop
+	float m_totalTime;	// Total time since game started (seconds)
+	float m_frameTime;	// Time since last frame (seconds);
 };
 };
 

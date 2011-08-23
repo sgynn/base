@@ -22,7 +22,7 @@ Control* GUI::focus = 0;
 Style GUI::defaultStyle;
 
 /** default style */
-Style::Style() : font(0), stime(0) {
+Style::Style() : font(0), align(0), stime(0) {
 	setColour(BACK, transparent); //set all back colours to transparent
 	//everything else white
 }
@@ -33,7 +33,6 @@ void Style::setColour(int code, const Colour& colour) {
 	if(code&12) {
 		int ix = (code&3) + 3*(((code-4)>>2)&3);
 		m_colours[ix] = colour;
-		printf("Colour %d [%d] : %#x\n", code, ix, (uint)colour);
 	} else {
 		setColour(code | BASE, colour);
 		setColour(code | FOCUS, colour);
@@ -58,9 +57,11 @@ Frame::Frame(int w, int h, const char* c, bool move, Style* s) : Container(0,0,w
 }
 Frame::Frame(int x, int y, int w, int h, const char* c, bool move, Style* s) : Container(x,y,w,h,true,s),  m_caption(c), m_moveable(move) {
 }
-Label::Label(const char* c, Style* s) : Control(s, 0), m_caption(c) {
-	if(c && m_style->font) m_size.y = m_style->font->textHeight(c);
-	m_size.x = 0;
+Label::Label(const char* c, Style* s) : Control(s, 0), m_caption(c), m_offset(0) {
+	if(c && m_style->font) {
+		m_size.y = m_style->font->textHeight(c);
+		m_size.x = m_style->font->textWidth(c);
+	}
 }
 Button::Button(const char* c, Style* s, uint cmd) : Control(s, cmd), m_caption(c), m_state(0) {
 	if(m_style->font && c) {
@@ -70,6 +71,7 @@ Button::Button(const char* c, Style* s, uint cmd) : Control(s, cmd), m_caption(c
 }
 Button::Button(int w, int h, const char* c, Style* s, uint cmd) : Control(s, cmd), m_caption(c), m_state(0) {
 	m_size = Point(w, h);
+	m_textPos = textPosition(c); //Get text offset position
 }
 Checkbox::Checkbox(const char* c, bool v, Style* s, uint cmd) : Button(c,s,cmd), m_value(v) {
 	m_size.x += m_size.y;
@@ -106,7 +108,10 @@ Control* Container::add( Control* c, int x, int y ) {
 	return c;
 }
 Control* Container::add( const char* caption, Control* c, int x, int y, int cw) {
-	if(caption) add( new Label(caption, c->m_style), x, y);
+	if(caption && caption[0]) {
+		Label* label = new Label(caption, c->m_style);
+		add(label, x, y);
+	}
 	return add(c, x+cw, y);
 }
 Control* Container::remove( Control* c ) {
@@ -208,8 +213,9 @@ void GUI::Input::setText(const char* c) {
 }
 
 //// //// Utility Functions //// ////
-float Control::updateState(float time, bool on, float state) const {
+float Control::updateState(bool on, float state) const {
 	if(m_style->stime>0) {
+		float time = Game::frameTime();
 		if(on) { if(state<1) state+=time/m_style->stime; else state=1; }
 		else if(state>0) state-=time/m_style->stime; else state=0;
 	} else state = on? 1:0;
@@ -225,8 +231,26 @@ uint Control::setEvent(Event* e, uint value, const char* txt) {
 	return m_command;
 }
 
+Point Control::textPosition(const char* c, int oa, int ob) {
+	Point p;
+	if(!m_style->font || !c || !c[0]) return p; //No text
+	switch(m_style->align) {
+	case Style::LEFT:
+		p.x = oa;
+		break;
+	case Style::CENTRE:
+		p.x = (m_size.x-oa-ob)/2 - m_style->font->textWidth(c)/2 + oa;
+		p.y = m_size.y/2 - m_style->font->textHeight(c)/2;
+		break;
+	case Style::RIGHT:
+		p.x = m_size.x - m_style->font->textWidth(c) - ob;
+		break;
+	}
+	return p;
+}
+
 //// //// Update Functions //// ////
-uint Control::update(float time, Event* e) {
+uint Control::update(Event* e) {
 	if(!m_container && (Game::MouseClick()&1)) {
 		Point p; Game::Mouse(p.x, p.y);
 		if(isOver(p.x, p.y)) return click(e, p);
@@ -234,18 +258,18 @@ uint Control::update(float time, Event* e) {
 	}
 	return 0;
 }
-uint Container::update(float time, Event* e) {
-	int r = Control::update(time, e);
+uint Container::update(Event* e) {
+	int r = Control::update(e);
 	for(std::list<Control*>::reverse_iterator i=m_contents.rbegin(); i!=m_contents.rend(); i++) {
 		if((*i)->m_visible) {
-			int c = (*i)->update(time, r? 0: e);
+			int c = (*i)->update(r? 0: e);
 			if(c) r = c;
 		}
 	}
 	return e&&r?e->command:r;
 }
-uint Frame::update(float time, Event* e) {
-	int r = Container::update(time, e);
+uint Frame::update(Event* e) {
+	int r = Container::update(e);
 	//Drag frame
 	if(m_moveable && r==0) {
 		int mx, my, mb;
@@ -263,20 +287,20 @@ uint Frame::update(float time, Event* e) {
 	}
 	return r;
 }
-uint Button::update(float time, Event* e) {
+uint Button::update(Event* e) {
 	int mx, my;
 	Game::Mouse(mx, my);
 	bool over = isOver(mx, my);
-	m_state = updateState(time, over||focus==this, m_state);
+	m_state = updateState(over||focus==this, m_state);
 	if(focus==this && Game::Pressed(KEY_ENTER)) return setEvent(e);
-	return Control::update(time, e);
+	return Control::update(e);
 }
-uint Checkbox::update(float time, Event* e) {
-	uint r = Button::update(time, e);
+uint Checkbox::update(Event* e) {
+	uint r = Button::update(e);
 	if(e && e->control == this) e->value = m_value = !m_value;
 	return r;
 }
-uint Scrollbar::update(float time, Event* event) {
+uint Scrollbar::update(Event* event) {
 	int mx, my;
 	int lv = m_value;
 	if(!Game::Mouse(mx,my)) m_held = -1;
@@ -295,16 +319,16 @@ uint Scrollbar::update(float time, Event* event) {
 	} else if(Game::MouseWheel() && isOver(mx, my)) {
 		setValue( m_value - Game::MouseWheel() );
 	} else if(m_held==-2) {
-		m_repeat -= time;
+		m_repeat -= Game::frameTime();
 		if(m_repeat<0) { setValue(m_value+1); m_repeat = 0.05; }
 	} else if(m_held==-3) {
-		m_repeat-=time;
+		m_repeat-=Game::frameTime();
 		if(m_repeat<0) { setValue(m_value-1); m_repeat = 0.05; }
 	}
 	if(m_value != lv) return setEvent(event, m_value);
-	return 0;
+	return Control::update(event);
 }
-uint Listbox::update(float time, Event* e) {
+uint Listbox::update(Event* e) {
 	int mx, my;
 	Game::Mouse(mx, my);
 	bool over = isOver(mx, my);
@@ -319,34 +343,34 @@ uint Listbox::update(float time, Event* e) {
 		m_scroll.setValue( m_scroll.getValue() - Game::MouseWheel() * (int)m_itemHeight*0.5 );
 	}
 	// Scrollbar
-	if(m_scroll.visible()) m_scroll.update(time, 0);
+	if(m_scroll.visible()) m_scroll.update(0);
 	// Update mouseover stuff
 	for(uint i=0; i<m_items.size(); i++) {
-		m_items[i].state = updateState(time, i==m_hover||i==m_item, m_items[i].state);
+		m_items[i].state = updateState(i==m_hover||i==m_item, m_items[i].state);
 	}
 	//Return event
 	if(lItem!=m_item) {
 		if(m_item<m_items.size()) return setEvent(e, m_item, m_items[m_item].name);
-		else return 0; //setEvent(e, 0xffffff);
+		//else return setEvent(e, 0xffffff); //Deselect event?
 	}
-	return 0;
+	return Control::update(e);
 }
-uint DropList::update(float time, Event* e) {
+uint DropList::update(Event* e) {
 	int mx, my;
 	Game::Mouse(mx, my);
 	bool over = isOver(mx, my);
 	uint lItem = m_item;
 	if(m_open) {
-		Listbox::update(time, e);
+		Listbox::update(e);
 		if(Game::Pressed(KEY_ENTER) && !Game::Mouse()) closeList();
 	} else {
 		if(focus==this && (Game::Pressed(KEY_UP) || Game::Pressed(KEY_DOWN))) {
 			openList();
-			Listbox::update(time, e);
+			Listbox::update(e);
 		}
 	}
 	//Over state
-	m_state = updateState(time, over||focus==this, m_state);
+	m_state = updateState(over||focus==this, m_state);
 	//if(focus!=this) closeList();
 	return lItem==m_item? 0 :m_command;
 }
@@ -363,10 +387,10 @@ void DropList::closeList() {
 	setSize(m_size.x, m_itemHeight);
 }
 
-uint GUI::Input::update(float time, Event* e) {
+uint GUI::Input::update(Event* e) {
 	int mx, my; Game::Mouse(mx, my);
 	bool over = isOver(mx, my);
-	m_state = updateState(time, over||focus==this, m_state);
+	m_state = updateState(over||focus==this, m_state);
 	
 	if(focus == this) {
 		//Read character input
@@ -397,7 +421,7 @@ uint GUI::Input::update(float time, Event* e) {
 		       	return setEvent(e, 0, m_text);
 		}
 	}
-	return 0;
+	return Control::update(e);
 }
 
 //// //// Click Functions //// ////

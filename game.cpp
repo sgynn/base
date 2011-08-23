@@ -20,6 +20,13 @@ Input* Game::s_input;
 Game* Game::s_inst=0;
 int Game::s_clearBits=0;
 
+Game* Game::create(int width, int height, int bpp, bool fullscreen, int fps, uint antialiasing) {
+	if(s_inst!=0) printf("Warning: A game instance already exists.\n");
+	else s_inst = new Game(width, height, bpp, fullscreen, antialiasing);
+	s_inst->m_targetFPS = fps;
+	return s_inst;
+}
+
 Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_state(0) {
 	if(s_inst!=0) {
 	       printf("Warning: Cant have more than one Game instance\n"); 
@@ -36,6 +43,9 @@ Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_stat
 
 	//What to clear every frame
 	s_clearBits = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT; 
+
+	//Target fps
+	m_targetFPS = 0;
 
 	atexit(cleanup);
 }
@@ -68,7 +78,7 @@ void Game::setInitialState(GameState* state) {
 }
 
 void Game::exit() {
-	m_state->quit();
+	s_inst->m_state->quit();
 }
 
 uint64 Game::getTicks() { 
@@ -112,30 +122,109 @@ void Game::run() {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	
-	uint64 fix = 0; //getTickFrequency() / 60ull; //Framerate fix?
-	uint64 freq = getTickFrequency();
-	unsigned long now, then = getTicks();
-	while(m_state->running()) {
-		//Pump Events
-		s_input->update();
-		uint r = s_window->pumpEvents(s_input);
-		if(r==0x100) m_state->quit();
-		
-		//Clear scene (make this optional)
-		glClear( s_clearBits );
-		
-		//update frame time
-		now = getTicks();
-		if(fix) while((now=getTicks()) < then+fix) Sleep(1);
-		float time = (float)(now - then) / freq;
-		then = now;
-		
-		//do game stuff
-		m_state->update(time);
-		m_state->draw();
-		
-		s_window->swapBuffers();		
+	if(m_targetFPS==0) {
+	
+		uint64 frequency = getTickFrequency();
+		uint64 time, delta, last;
+		uint64 systemTime, updateTime, renderTime;
+		last = systemTime = getTicks();
+		m_totalTime = 0;
+		while(m_state->running()) {
+			time = getTicks();
+			delta = m_elapsedTime = time - last;
+			last = time;
+
+			//Pump Events
+			s_input->update();
+			uint r = s_window->pumpEvents(s_input);
+			if(r==0x100) m_state->quit();
+			time = getTicks();
+			m_systemTime = time - systemTime;
+			
+			//calculate frame time
+			m_frameTime = (float)delta / frequency;
+			m_totalTime += m_frameTime;
+			m_gameTime = delta;
+			
+			//Update
+			updateTime = time;
+			m_state->update();
+			time = getTicks();
+			m_updateTime = time - updateTime;
+
+			//Render
+			renderTime = time;
+			glClear( s_clearBits );
+			m_state->draw();
+			s_window->swapBuffers();		
+			time = getTicks();
+			m_renderTime = time - renderTime;
+			systemTime = time;
+		}
+	} else {
+
+		// Fixed framerate version (hardcode 60fps)
+		uint maxFrameSkip = 5;
+		uint64 frequency = getTickFrequency();
+		uint64 rate = frequency / 60ull;
+		uint64 skip = rate * (maxFrameSkip+1);
+		uint64 time, last, prev, delta=0;
+		uint64 gameTime, systemTime, updateTime, renderTime;
+		last = systemTime = getTicks();
+		m_totalTime = 0;
+		while(m_state->running()) {
+			time = getTicks();
+			delta += time - last;
+			last = time;
+
+			// If a frame has passed
+			if(delta >= rate) {
+				//Update timer
+				gameTime = time;
+				m_systemTime = time - systemTime;
+
+				//update loop
+				if(delta > skip) delta = skip;
+				while(delta >= rate) {
+					//update timer
+					m_elapsedTime = rate; //This is the update time value
+					m_frameTime = (float)rate / frequency;
+					m_totalTime += m_frameTime;
+					updateTime = time;
+					delta -= rate;
+					prev = time;
+
+					//update
+					s_input->update();
+					uint r = s_window->pumpEvents(s_input);
+					if(r==0x100) m_state->quit(); //Close button, catch SIGTERM?
+					m_state->update();
+
+					time = getTicks();
+					m_updateTime = time - updateTime;
+				}
+				//Render
+				renderTime = time;
+				glClear( s_clearBits );
+				m_state->draw();
+				s_window->swapBuffers();		
+
+				time = systemTime = getTicks();
+				m_renderTime = time - renderTime;
+				m_gameTime = time - gameTime;
+			} else {
+				Sleep(1);
+			}
+
+		}
 	}
+}
+
+void Game::debugTime(uint& game, uint& system, uint& update, uint& render) {
+	game 	= s_inst->m_gameTime;
+	system	= s_inst->m_systemTime;
+	update	= s_inst->m_updateTime;
+	render	= s_inst->m_renderTime;
 }
 
 //Input functions *depricated* (These were links to SDL)

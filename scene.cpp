@@ -24,10 +24,11 @@ SceneState::~SceneState() {
 	delete m_camera;
 }
 
-void SceneState::update(float time) {
+void SceneState::update() {
 	if(Game::input()->key(KEY_ESC)) changeState(0);
 
 	//calculate fps
+	float time = Game::frameTime();
 	if(time>0) m_fps = m_fps*(1-time) + (1/time)*time;
 }
 

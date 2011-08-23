@@ -18,7 +18,7 @@ class GameState {
 		GameState(float tIn=0, float tOut=0, StateFlags flags=NONE);
 		virtual ~GameState();
 		
-		virtual void update(float time) = 0;
+		virtual void update() = 0;
 		virtual void draw() = 0;
 		
 	protected:
@@ -35,7 +35,7 @@ class GameState {
 		TransitionState m_state;
 		float m_transition;
 		StateManager* m_stateManager;
-		int updateState(float time);
+		int updateState();
 		float m_in, m_out;
 		StateFlags m_flags;
 };
@@ -46,7 +46,7 @@ class StateManager {
 		StateManager();
 		~StateManager();
 		
-		void update(float time);
+		void update();
 		void draw();
 		
 		/** Change the game state */

@@ -2,11 +2,14 @@
 
 #include "state.h"
 
+#include "game.h"
+#define time Game::frameTime()
+
 using namespace base;
 
 GameState::GameState(float in, float out, StateFlags flags) : m_state(T_IN), m_transition(0), m_stateManager(0), m_in(in), m_out(out), m_flags(flags) {}
 GameState::~GameState() {}
-int GameState::updateState(float time) {
+int GameState::updateState() {
 	//update transition
 	if(m_state==T_IN) {
 		if(m_in==0) m_transition = 1;
@@ -22,7 +25,7 @@ int GameState::updateState(float time) {
 	}
 	
 	//call virtual update function
-	update(time);
+	update();
 	
 	return 1;
 }
@@ -33,11 +36,11 @@ void GameState::changeState(GameState* state) {
 StateManager::StateManager() : currentState(0), nextState(0), m_running(true) {}
 StateManager::~StateManager() {}
 
-void StateManager::update(float time) {
+void StateManager::update() {
 	if(!currentState) m_running = false;
 	else {
-		if(nextState && (nextState->m_flags&OVERLAP)) nextState->updateState(time); //update the other state if set to overlap
-		if(currentState->updateState(time)==0) {
+		if(nextState && (nextState->m_flags&OVERLAP)) nextState->updateState(); //update the other state if set to overlap
+		if(currentState->updateState()==0) {
 			if(~currentState->m_flags&PERSISTANT) delete currentState;
 			currentState = nextState;
 			nextState = 0;

@@ -124,6 +124,10 @@ namespace model {
 		VertexFormat getFormat() const { return m_format; }
 		/** Change the format of the mesh? */
 		void changeFormat(VertexFormat format);
+		/** Change the drawing mode */
+		void setMode(unsigned int mode) { m_drawMode = mode; }
+		/** Get the OpenGL Drawing mode. Default GL_TRIANGLES */
+		unsigned int getMode() const { return m_drawMode; }
 		
 		/**Functions for rendering and data access */
 		Material& getMaterial() { return m_material; }
@@ -140,7 +144,7 @@ namespace model {
 		Buffer<const unsigned short>* getIndexBuffer() { return m_indexBuffer; }
 		
 		/** Get the position of a vertex */
-		const float* getPosition(int index) const { return m_vertexBuffer->data + m_formatSize*index; }
+		const float* getVertex(int index) const { return m_vertexBuffer->data + m_formatSize*index; }
 		
 		/** The weights used for skinning */
 		struct Skin { int joint; const char* jointName; int size; unsigned short* indices; float* weights; float offset[16]; };
@@ -159,14 +163,22 @@ namespace model {
 		/** Data Processing */
 		int calculateTangents();
 		int normaliseWeights();
+
+		/** Bounding box */
+		void updateBox();
+		float* boxMin() const;
+		float* boxMax() const;
 		
 		protected:
 		VertexFormat m_format;
 		int m_formatSize;
+		unsigned int m_drawMode;
 		
 		Buffer<float>* m_vertexBuffer;
 		Buffer<const unsigned short>* m_indexBuffer;
 		Buffer<Skin*>* m_skinBuffer;
+
+		float m_box[6]; //Bounding box;
 
 		/** Calculate tangent for a polygon. Assumes vertex has at least {position,normal,texcoord} */
 		int tangent(const float* a, const float* b, const float* c, float* t);

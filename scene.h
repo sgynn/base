@@ -14,7 +14,7 @@ class SceneState : public GameState {
 	SceneState(float in, float out, StateFlags flags=NONE);
 	virtual ~SceneState();
 
-	virtual void update(float time);
+	virtual void update();
 	virtual void draw();
 
 	/** Skybox transformation */

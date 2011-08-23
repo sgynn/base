@@ -1,14 +1,15 @@
 #ifndef NO_MODEL_DRAW
-#ifdef WIN32
-#include <windows.h>
-#endif
-#include <GL/gl.h>
+# ifdef WIN32
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+# endif
+# include <GL/gl.h>
+# include "shader.h"
 #endif
 
 #include "model.h"
-#include "string.h"
+#include <cstring>
 
-#include "shader.h"
 
 using namespace base;
 using namespace model;
@@ -45,8 +46,8 @@ using namespace model;
 						out[2]=a[2]*w1+b[2]*w2; \
 						out[3]=a[3]*w1+b[3]*w2; }
 
-Mesh::Mesh() : m_format(VERTEX_DEFAULT), m_formatSize(8), m_vertexBuffer(0), m_indexBuffer(0), m_skinBuffer(0), m_referenceCount(0) {}
-Mesh::Mesh(const Mesh& m, bool copy, bool skin) : m_format(m.m_format), m_formatSize(m.m_formatSize), m_referenceCount(0) {
+Mesh::Mesh() : m_format(VERTEX_DEFAULT), m_formatSize(8), m_drawMode(GL_TRIANGLES), m_vertexBuffer(0), m_indexBuffer(0), m_skinBuffer(0), m_referenceCount(0) {}
+Mesh::Mesh(const Mesh& m, bool copy, bool skin) : m_format(m.m_format), m_formatSize(m.m_formatSize), m_drawMode(GL_TRIANGLES), m_referenceCount(0) {
 	//vertex format data
 	m_format = m.m_format;
 	m_formatSize = m.m_formatSize;
@@ -79,6 +80,7 @@ Mesh::Mesh(const Mesh& m, bool copy, bool skin) : m_format(m.m_format), m_format
 	
 	//copy material
 	m_material = m.m_material;
+	memcpy(m_box, m.m_box, 6*sizeof(float)); //Bounding box
 }
 Mesh::~Mesh() {
 	//delete buffers of not referenced elsewhere
@@ -150,12 +152,14 @@ void Mesh::setVertices(int count, float* data, VertexFormat format) {
 	m_vertexBuffer->size = count;
 	m_vertexBuffer->stride = m_formatSize*sizeof(float);
 	m_vertexBuffer->referenceCount = 1;
+	updateBox();
 }
 void Mesh::setVertices(Buffer<float>* buffer, VertexFormat format) {
 	m_format = format;
 	m_formatSize = format==VERTEX_DEFAULT? 8: format==VERTEX_SIMPLE? 3: 11;
 	m_vertexBuffer = buffer;
 	buffer->referenceCount++;
+	updateBox();
 }
 void Mesh::setIndices(int count, const unsigned short* data) {
 	m_indexBuffer = new Buffer<const unsigned short>();
@@ -243,6 +247,22 @@ int Mesh::tangent(const float* a, const float* b, const float* c, float* t) {
 		t[0]/=l; t[1]/=l; t[2]/=l;
 		return 1;
 	} else return 0;
+}
+
+void Mesh::updateBox() {
+	const float* v = getVertex(0);
+	m_box[0] = m_box[3] = v[0];
+	m_box[1] = m_box[4] = v[1];
+	m_box[2] = m_box[5] = v[2];
+	for(int i=1; i<getVertexCount(); i++) {
+		v = getVertex(i);
+		if(v[0] < m_box[0])	 m_box[0]=v[0];
+		else if(v[0] > m_box[3]) m_box[3]=v[0];
+		if(v[1] < m_box[1])	 m_box[1]=v[1];
+		else if(v[1] > m_box[4]) m_box[4]=v[1];
+		if(v[2] < m_box[2])	 m_box[2]=v[2];
+		else if(v[2] > m_box[5]) m_box[5]=v[2];
+	}
 }
 
 /** *************************** *************************** ************************ ********************* ************************** ********* **/
@@ -690,7 +710,7 @@ Mesh* Model::skinMesh(Mesh* out, const Mesh* source, const Skeleton* skeleton) {
 		//transform vertices
 		for(int j=0; j<skin->size; j++) {
 			//get offset, depends on VertexFormat
-			size_t offset = source->getPosition( skin->indices[j] ) - source->getVertexPointer();
+			size_t offset = source->getVertex( skin->indices[j] ) - source->getVertexPointer();
 			
 			src = (sVertex + offset);
 			temp[0] = mat[0]*src[0] + mat[4]*src[1] + mat[ 8]*src[2] + mat[12];
@@ -898,7 +918,7 @@ void Model::drawMesh(const Mesh* mesh, int& glFlags) {
 	}
 
 	//draw it!
-	glDrawElements(GL_TRIANGLES, mesh->getPolygonCount()*3, GL_UNSIGNED_SHORT, mesh->getIndexPointer() );
+	glDrawElements(mesh->getMode(), mesh->getPolygonCount()*3, GL_UNSIGNED_SHORT, mesh->getIndexPointer() );
 	#endif
 }
 

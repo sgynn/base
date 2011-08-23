@@ -60,7 +60,11 @@ namespace GUI {
 		public:
 		Style();
 		Style(const Style* s);
+
+		enum TextAlign { LEFT, CENTRE, RIGHT };
 		Font* font;
+		int align;
+
 		float stime;
 
 		//Colours
@@ -91,7 +95,7 @@ namespace GUI {
 		public:
 		Control(Style* style=0, uint cmd=0);
 		virtual ~Control();
-		virtual uint update(float time=0, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw() = 0;
 		virtual void setPosition(int x, int y) { m_position.x=x; m_position.y=y; }
 		virtual void setSize(int width, int height) { m_size.x=width, m_size.y=height; }
@@ -110,13 +114,14 @@ namespace GUI {
 		Container* m_container;
 
 		//Utilities
-		float updateState(float time, bool on, float state) const;
+		float updateState(bool on, float state) const;
 		inline bool isOver(int x, int y) const { return isOver(Point(x,y), m_position, m_size); }
-		inline bool isOver(const Point& pt, const Point& p, const Point& s) const {
+		inline virtual bool isOver(const Point& pt, const Point& p, const Point& s) const {
 			return pt.x>p.x && pt.x<p.x+s.x && pt.y>p.y && pt.y<p.y+s.y;
 		}
 		uint setEvent(Event* e, uint value=0, const char* txt=0);
 		virtual uint click(Event* e, const Point& p) { return 0; }
+		Point textPosition(const char* c, int oa=0, int ob=0); //Get relative text position
 		//Drawing
 		void drawFrame(const Point& p, const Point& s, const char* title=0, Style* style=0) const;
 		void drawArrow(const Point& p, int direction, int size=8) const;
@@ -130,7 +135,7 @@ namespace GUI {
 		Container();
 		Container(int x, int y, int w, int h, bool clip=false, Style* style=0);
 		virtual ~Container() { clear(); }
-		virtual uint update(float time=0, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw();
 		Control* add( Control* c, int x, int y );
 		Control* add( const char* caption, Control* c, int x, int y, int cw=120);
@@ -153,7 +158,7 @@ namespace GUI {
 		public:
 		Frame(int x, int y, int width, int height, const char* caption=0, bool moveable=0, Style* style=0);
 		Frame(int width, int height, const char* caption=0, bool moveable=0, Style* style=0);
-		virtual uint update(float time=0, Event* event=0);
+		virtual uint update(Event* event=0);
 		void draw();
 		protected:
 		virtual uint click(Event* e, const Point& p);
@@ -170,7 +175,9 @@ namespace GUI {
 		void setCaption(const char* caption);
 		const char* getCaption() const { return m_caption; }
 		protected:
+		inline virtual bool isOver(const Point& pt, const Point& p, const Point& s) const { return false; }
 		const char* m_caption;
+		int m_offset; //offset for alignment
 	};
 
 
@@ -179,7 +186,7 @@ namespace GUI {
 		public:
 		Button(const char* caption, Style* style=0, uint command=0);
 		Button(int width, int height, const char* caption=0, Style* style=0, uint command=0);
-		virtual uint update(float time, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw();
 		protected:
 		virtual uint click(Event* e, const Point& p);
@@ -193,7 +200,7 @@ namespace GUI {
 		Checkbox(const char* caption, bool value=false, Style* style=0, uint command=0);
 		bool getValue() const { return m_value; }
 		void setValue(bool value) { m_value = value; }
-		virtual uint update(float time, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw();
 		protected:
 		virtual uint click(Event* e, const Point& p);
@@ -205,7 +212,7 @@ namespace GUI {
 		friend class Listbox;
 		public:
 		Scrollbar(int orientation=0, int width=16, int height=120, int min=0, int max=100, Style* style=0, uint command=0); // 0:vertical, 1:horizontal 
-		virtual uint update(float time, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw();
 		void setValue(int value) { m_value=value<m_min?m_min: value>m_max? m_max: value; }
 		int getValue() const { return m_value; }
@@ -226,7 +233,7 @@ namespace GUI {
 	class Listbox : public Control {
 		public:
 		Listbox(int width, int height, Style* style=0, uint command=0);
-		virtual uint update(float time, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw();
 		virtual void setPosition(int x, int y); // move internal scrollbar
 		virtual void setSize(int width, int height); // resize scrollbar
@@ -252,7 +259,7 @@ namespace GUI {
 	class DropList: public Listbox {
 		public:
 		DropList(int width, int height, int maxSize=0, Style* style=0, uint command=0);
-		virtual uint update(float time, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw();
 		protected:
 		virtual uint click(Event* e, const Point& p);
@@ -267,7 +274,7 @@ namespace GUI {
 	class Input: public Control {
 		public:
 		Input(int length, const char* text=0, Style* style=0, uint command=0);
-		virtual uint update(float time, Event* event=0);
+		virtual uint update(Event* event=0);
 		virtual void draw();
 		void setMask(char mask='*') { m_mask=mask; }
 		void setText(const char* text);

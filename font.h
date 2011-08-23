@@ -8,9 +8,11 @@ class Font {
 	Font(const char* filename);
 	~Font();
 	/** Render a string to the screen (using whatever the current projection is, to whatever render target...) */
-	int print(int x, int y, const char* text) const;
+	int print(int x, int y, const char* text) const { return print(x,y,1,text); }
+	int print(int x, int y, float scale, const char* text) const;
 	/** Render a formatted string to the screen */
 	int printf(int x, int y, const char* format, ... ) const;
+	int printf(int x, int y, float scale, const char* format, ... ) const;
 	/** Get the width in texels of a string */
 	int textWidth(const char* text) const;
 	/** Get the height in texels of a string. */

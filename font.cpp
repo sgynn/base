@@ -126,13 +126,19 @@ int Font::printf(int x, int y, const char* format, ... ) const {
 	va_end (args);
 	return print(x,y, buffer);
 }
+int Font::printf(int x, int y, float scale, const char* format, ... ) const {
+	char buffer[256];
+	va_list args;
+	va_start(args, format);
+	vsprintf(buffer,format, args);
+	va_end (args);
+	return print(x,y,scale, buffer);
+}
 
 //Then we have to draw it....
-int Font::print(int x, int y, const char* text) const {
+int Font::print(int x, int y, float scale, const char* text) const {
 	if(!text || !text[0]) return 0;
 	int l = strlen(text);
-	
-	float scale = 1.0f;
 	
 	//draw it!
 	glBindTexture(GL_TEXTURE_2D, m_tex);
