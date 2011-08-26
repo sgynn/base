@@ -3,8 +3,6 @@
 
 #include <string.h>
 
-#include <iostream>
-
 #define THRESHOLD 1.5f
 
 namespace base {
@@ -23,6 +21,7 @@ namespace base {
 		T& operator[](const char* key);
 		const T& operator[](const char* key) const;
 		T& insert(const char* key, const T& value);
+		void erase(const char* key);
 		void clear();
 		/** iterator class. Works the same as stl iterators */
 		class iterator {
@@ -44,7 +43,10 @@ namespace base {
 		friend class iterator;
 		iterator begin() { return ++iterator(this, ~0u); }
 		iterator end()  { return iterator(this, m_capacity); }
-		iterator find(const char* key) { unsigned int i=index(key, m_capacity); return iterator(this, i<m_capacity?i:m_capacity); }
+		iterator find(const char* key) { 
+			unsigned int i=index(key, m_capacity);
+			return i<m_capacity && m_data[i].key? iterator(this, i): end();
+		}
 		
 		private:
 		unsigned int index(const char* c, unsigned int n) const;
@@ -56,7 +58,7 @@ namespace base {
 	};
 };
 
-template<typename T> base::HashMap<T>::HashMap(int cap) : m_capacity(6), m_size(0) {
+template<typename T> base::HashMap<T>::HashMap(int cap) : m_capacity(cap), m_size(0) {
 	m_data = new Pair[cap];
 	memset(m_data, 0, cap*sizeof(Pair));
 }
@@ -89,7 +91,7 @@ template<typename T> T& base::HashMap<T>::operator[](const char* key) {
 	if(m_data[i].key==0) {
 		m_data[i].key = strdup(key);
 		m_size++;
-		//std::cout << "Insert : " << key << "(" << i << ")" << std::endl;
+		//printf("Insert: %s [%d]\n", key, i);
 		return m_data[i].value;
 	} else {
 		return m_data[i].value;
@@ -99,6 +101,14 @@ template<typename T> const T& base::HashMap<T>::operator[](const char* key) cons
 	unsigned int i = index(key, m_capacity);
 	if(i<m_capacity) return m_data[i].value;
 	else return m_data[0].value; //undefined behaviour if element does not exist
+}
+
+template<typename T> void base::HashMap<T>::erase(const char* key) {
+	unsigned int i = index(key, m_capacity);
+	if(i<m_capacity && m_data[i].key) {
+		delete m_data[i].key;
+		m_data[i].key = 0;
+	}
 }
 template<typename T> void base::HashMap<T>::clear() {
 	for(unsigned int i=0; i<m_capacity; i++) if(m_data[i].key) delete [] m_data[i].key;
@@ -124,7 +134,7 @@ template<typename T> unsigned int base::HashMap<T>::index(const char* c, unsigne
 	return ~0u;
 }
 template<typename T> void base::HashMap<T>::resize(unsigned int newSize) {
-	//std::cout << "Resize " << m_capacity << " -> " << newSize << std::endl;
+	//printf("Resize %u -> %u\n", m_capacity, newSize);
 	Pair* tmp = m_data;
 	m_data = new Pair[newSize];
 	memset(m_data, 0, newSize*sizeof(Pair));

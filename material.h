@@ -15,8 +15,9 @@ class Texture {
 	static const Texture& getTexture(const char* name);
 	static const Texture createTexture(int width, int height, uint format);
 	static void reload();
-	void clamp(bool edge=true);
+	void clamp(bool edge=true) const;
 	int bind() const;
+	int ready() const { return m_texture>0; }
 	uint getGLTexture() const { return m_texture; }
 	const char* name() const { return m_name; }
 	const Texture& operator=(const Texture& t) { m_texture=t.m_texture; m_good=t.m_good; m_name=t.m_name; return *this; }
@@ -45,7 +46,7 @@ class Material {
 	//Shader?
 	
 	Material();
-	int bind();
+	int bind() const;
 	
 	private:
 	static uint s_flags;

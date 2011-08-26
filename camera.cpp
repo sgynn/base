@@ -53,30 +53,26 @@ void Camera::setRotation(float pitch, float yaw, float roll) {
 /** Rotate a matrix about a local axis. Must be a rotation matrix */
 void Camera::rotateLocal(M_AXIS axis, float radians) {
 	Matrix& mat = m_rotation;
-
-	//target vector
-	float s = sin(radians);
-	float c = cos(radians);
-	
-	vec3& ax = *reinterpret_cast<vec3*>( &mat[0] );
-	vec3& ay = *reinterpret_cast<vec3*>( &mat[4] );
-	vec3& az = *reinterpret_cast<vec3*>( &mat[8] );
-	mat[12] = mat[13] = mat[14] = 0; //make sure translation is null
-
+	//New axis vector
+	vec3 v;
 	switch(axis) {
-		case AXIS_X: //pitch
-			az = (mat * vec3(0, s, c)).normalise();
-			ay = az.cross(ax);
-			break;
-		case AXIS_Y: //yaw
-			az = (mat * vec3(s, 0, c)).normalise();
-			ax = ay.cross(az);
-			break;
-		case AXIS_Z: //roll
-			ax = (mat * vec3(c, s, 0)).normalise();
-			ay = az.cross(ax);
-			break;
+	case AXIS_X: v = vec3(0,cos(radians),-sin(radians)); break; //X axis
+	case AXIS_Y: v = vec3(sin(radians),0,cos(radians)); break; //Y axis
+	case AXIS_Z: v = vec3(cos(radians),sin(radians),0); break; //Z axis
+	default: return;
 	}
+	//Rotate axis vector
+	vec3 a, b, c( &mat[axis*4] );
+	a.x = mat[0]*v.x + mat[4]*v.y + mat[8]*v.z;
+	a.y = mat[1]*v.x + mat[5]*v.y + mat[9]*v.z;
+	a.z = mat[2]*v.x + mat[6]*v.y + mat[10]*v.z;
+	//Rebuild matrix
+	b = c.cross(a.normalise());
+	int ia = ((axis+1) % 3) * 4;
+	int ib = ((axis+2) % 3) * 4;
+	//Copy back
+	mat[ia]=a.x; mat[ia+1]=a.y; mat[ia+2]=a.z;
+	mat[ib]=b.x; mat[ib+1]=b.y; mat[ib+2]=b.z;
 }
 
 /// Frustun Stuff ///
@@ -216,7 +212,7 @@ void Camera::applyRotation() {
 	float mat[16] = { m_rotation[0], m_rotation[4], m_rotation[8], 0,
 			  m_rotation[1], m_rotation[5], m_rotation[9], 0,
 			  m_rotation[2], m_rotation[6], m_rotation[10], 0, 0, 0, 0, 1 };
-	glLoadMatrixf(mat);
+	glMultMatrixf(mat);
 }
 void Camera::applyTranslation() {
 	glTranslatef(-m_position.x, -m_position.y, -m_position.z);

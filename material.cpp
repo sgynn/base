@@ -8,6 +8,11 @@
 
 #include "png.h"
 
+//stupid windows
+#ifndef GL_CLAMP_TO_EDGE
+# define GL_CLAMP_TO_EDGE 0x812f
+#endif
+
 #ifdef WIN32
 PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
 int initialiseTextureExtensions() {
@@ -65,11 +70,6 @@ int Texture::bind() const {
 }
 
 int Texture::load(const char* filename) {
-	//stupid windows
-	#ifndef GL_CLAMP_TO_EDGE
-	#define GL_CLAMP_TO_EDGE 0x812f
-	#endif
-	
 	PNG image;
 	image.load(filename);
 	if(!image.data) return 0;
@@ -102,7 +102,7 @@ int Texture::load(const char* filename) {
 	return 1;
 }
 
-void Texture::clamp(bool c) { 
+void Texture::clamp(bool c) const { 
 	if(m_good) {
 		glBindTexture(GL_TEXTURE_2D, m_texture);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, c?GL_CLAMP_TO_EDGE:0);
@@ -116,7 +116,7 @@ uint Material::s_flags = 0;
 
 Material::Material() : ambient(0x101010), shininess(50), lighting(1), depthTest(1), depthMask(1) {
 }
-int Material::bind() {
+int Material::bind() const {
 	int max=0;
 	for(uint i=0; i<MAX_TEXTURE_UNITS; i++) {
 		if(texture[i].m_good) {

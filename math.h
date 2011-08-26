@@ -39,6 +39,11 @@ class Vec2 {
 		y /= l;
 		return *this;
 	}
+	Vec2 normalised() const {
+		if(x==0 && y==0) return *this;
+		float l=length();
+		return *this * (1/l);
+	}
 	float dot(const Vec2& v) const {return (x*v.x) + (y*v.y); }
 }; 
 
@@ -76,6 +81,12 @@ class Vec3 {
 			z /= l;
 			return *this;
 		}
+		Vec3 normalised() const {
+			if(x==0 && y==0 && z==0) return *this;
+			float l=length();
+			return *this / l;
+		}
+
 		float dot(const Vec3& v) const {return (x*v.x) + (y*v.y) + (z*v.z); }
 		Vec3 cross(const Vec3& v) const { return Vec3(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x); }
 }; 

@@ -3,13 +3,14 @@
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
 # endif
+# define GL_GLEXT_PROTOTYPES
 # include <GL/gl.h>
+# include <GL/glext.h>
 # include "shader.h"
 #endif
 
 #include "model.h"
 #include <cstring>
-
 
 using namespace base;
 using namespace model;
@@ -45,6 +46,14 @@ using namespace model;
 						out[1]=a[1]*w1+b[1]*w2; \
 						out[2]=a[2]*w1+b[2]*w2; \
 						out[3]=a[3]*w1+b[3]*w2; }
+
+//Mesh format offsets : { Normal, Texture, Tangent, Size } tupes
+size_t Mesh::s_offset[4][4] = {
+	{0,0,0, 3}, // VERTEX_SIMPLE
+	{0,3,0, 5}, // VETREX_TEXTURE
+	{3,6,0, 8}, // VERTEX_DEFAULT
+	{3,6,8, 11},// VERTEX_TANGENT
+};
 
 Mesh::Mesh() : m_format(VERTEX_DEFAULT), m_formatSize(8), m_drawMode(GL_TRIANGLES), m_vertexBuffer(0), m_indexBuffer(0), m_skinBuffer(0), m_referenceCount(0) {}
 Mesh::Mesh(const Mesh& m, bool copy, bool skin) : m_format(m.m_format), m_formatSize(m.m_formatSize), m_drawMode(GL_TRIANGLES), m_referenceCount(0) {
@@ -89,6 +98,7 @@ Mesh::~Mesh() {
 		if(--m_vertexBuffer->referenceCount<=0) {
 			delete [] m_vertexBuffer->data;
 			delete m_vertexBuffer;
+			deleteBufferObject();
 		}
 	}
 	
@@ -119,44 +129,79 @@ int Mesh::drop() {
 	return r;
 }
 
+bool Mesh::createBufferObject() {
+	#ifndef NO_MODEL_DRAW
+	if(m_vertexBuffer) glGenBuffers(1, &m_vertexBuffer->bufferObject);
+	if(m_indexBuffer) glGenBuffers(1, &m_indexBuffer->bufferObject);
+	updateBufferObject();
+	return m_vertexBuffer->bufferObject;
+	#endif
+}
 void Mesh::useBufferObject(bool use) {}
-void Mesh::updateBufferObject() {}
-int Mesh::bindBuffer() const { return 0; }
+void Mesh::updateBufferObject() {
+	#ifndef NO_MODEL_DRAW
+	bindBuffer();
+	if(m_vertexBuffer && m_vertexBuffer->bufferObject) glBufferData(GL_ARRAY_BUFFER, m_vertexBuffer->size * m_vertexBuffer->stride, m_vertexBuffer->data, GL_STATIC_DRAW);
+	if(m_indexBuffer && m_indexBuffer->bufferObject)  glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer->size * m_indexBuffer->stride, m_indexBuffer->data, GL_STATIC_DRAW);
+	#endif
+}
+int Mesh::bindBuffer() const { 
+	#ifndef NO_MODEL_DRAW
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer? m_vertexBuffer->bufferObject: 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer? m_indexBuffer->bufferObject: 0);
+	return 0;
+	#endif
+}
+void Mesh::deleteBufferObject() {
+	#ifndef NO_MODEL_DRAW
+	if(m_vertexBuffer && m_vertexBuffer->bufferObject) glDeleteBuffers(1, &m_vertexBuffer->bufferObject);
+	if(m_indexBuffer && m_indexBuffer->bufferObject)  glDeleteBuffers(1, &m_indexBuffer->bufferObject);
+	#endif
+}
 
 void Mesh::changeFormat(VertexFormat format) {
 	if(format==m_format) return;
 	//resize vertex array, copy data
-	int newFormatSize = format==VERTEX_DEFAULT? 8: format==VERTEX_SIMPLE? 3: 11;
+	int newFormatSize = s_offset[format][3];
 	float* tmp = m_vertexBuffer->data;
-	
+
 	m_vertexBuffer->data = new float[m_vertexBuffer->size * newFormatSize];
 	if(newFormatSize>m_formatSize) memset(m_vertexBuffer->data, 0, m_vertexBuffer->size*newFormatSize*sizeof(float));
-	int copySize = (newFormatSize<m_formatSize? newFormatSize: m_formatSize) * sizeof(float);
+	//int copySize = (newFormatSize<m_formatSize? newFormatSize: m_formatSize) * sizeof(float);
+	size_t* sf = s_offset[m_format];
+	size_t* df = s_offset[format];
 	for(unsigned int i=0; i<m_vertexBuffer->size; i++) {
-		memcpy(&m_vertexBuffer->data[i*newFormatSize], &tmp[i*m_formatSize],  copySize);
+		float* src = tmp + i*m_formatSize;
+		float* dst = m_vertexBuffer->data + i*newFormatSize;
+		//Have to do this per section
+		memcpy(dst, src, 3*sizeof(float)); //Position
+		if(sf[0]&&df[0]) memcpy(dst+df[0], src+sf[0], 3*sizeof(float)); //Normal
+		if(sf[1]&&df[1]) memcpy(dst+df[1], src+sf[1], 2*sizeof(float)); //Texture
+		if(sf[2]&&df[2]) memcpy(dst+df[2], src+sf[2], 3*sizeof(float)); //Tangent
 	}
 	
 	m_formatSize = newFormatSize;
 	m_vertexBuffer->stride = m_formatSize * sizeof(float);
 	m_format = format;
 	delete [] tmp;
-	//TODO: Update VBO if it exists
+	//Update VBO if it exists
+	if(m_vertexBuffer->bufferObject) updateBufferObject();
 }
 
 /** Data Set Functions */
 void Mesh::setVertices(int count, float* data, VertexFormat format) {
 	m_format = format;
-	m_formatSize = format==VERTEX_DEFAULT? 8: format==VERTEX_SIMPLE? 3: 11;
+	m_formatSize = s_offset[format][3];
 	m_vertexBuffer = new Buffer<float>();
 	m_vertexBuffer->data = data;
-	m_vertexBuffer->size = count;
+	m_vertexBuffer->size = count*m_formatSize;
 	m_vertexBuffer->stride = m_formatSize*sizeof(float);
 	m_vertexBuffer->referenceCount = 1;
 	updateBox();
 }
 void Mesh::setVertices(Buffer<float>* buffer, VertexFormat format) {
 	m_format = format;
-	m_formatSize = format==VERTEX_DEFAULT? 8: format==VERTEX_SIMPLE? 3: 11;
+	m_formatSize = s_offset[format][3];
 	m_vertexBuffer = buffer;
 	buffer->referenceCount++;
 	updateBox();
@@ -190,25 +235,28 @@ void Mesh::addSkin(Skin* skin) {
 int Mesh::calculateTangents() {
 	changeFormat( VERTEX_TANGENT );
 	size_t s = m_formatSize;
+	size_t offset = s_offset[m_format][2]; //should be 8
 	if(m_indexBuffer) {
 		for(uint i=0; i<m_indexBuffer->size; i+=3) {
 			float* a = m_vertexBuffer->data + m_indexBuffer->data[i]*s;
 			float* b = m_vertexBuffer->data + m_indexBuffer->data[i+1]*s;
 			float* c = m_vertexBuffer->data + m_indexBuffer->data[i+2]*s;
-			
-			tangent(a,b,c, a+8);
-			memcpy(b+8, a+8, 3*sizeof(float));
-			memcpy(c+8, a+8, 3*sizeof(float));
+			float* t = a + offset;
+
+			tangent(a,b,c, t);
+			memcpy(b+offset, t, 3*sizeof(float));
+			memcpy(c+offset, t, 3*sizeof(float));
 		}
 	} else if(m_vertexBuffer) {
 		for(uint i=0; i<m_vertexBuffer->size; i+=3) {
 			float* a = m_vertexBuffer->data + i*s;
 			float* b = m_vertexBuffer->data + (i+1)*s;
 			float* c = m_vertexBuffer->data + (i+2)*s;
+			float* t = a + offset;
 
-			tangent(a,b,c, a+8);
-			memcpy(b+8, a+8, 3*sizeof(float));
-			memcpy(c+8, a+8, 3*sizeof(float));
+			tangent(a,b,c, t);
+			memcpy(b+offset, t, 3*sizeof(float));
+			memcpy(c+offset, t, 3*sizeof(float));
 		}
 	} else return 0;
 	return 1;
@@ -254,7 +302,7 @@ void Mesh::updateBox() {
 	m_box[0] = m_box[3] = v[0];
 	m_box[1] = m_box[4] = v[1];
 	m_box[2] = m_box[5] = v[2];
-	for(int i=1; i<getVertexCount(); i++) {
+	for(uint i=1; i<getVertexCount(); i++) {
 		v = getVertex(i);
 		if(v[0] < m_box[0])	 m_box[0]=v[0];
 		else if(v[0] > m_box[3]) m_box[3]=v[0];
@@ -685,7 +733,7 @@ Mesh* Model::skinMesh(Mesh* out, const Mesh* source, const Skeleton* skeleton) {
 	if(!skeleton) return dest;
 	
 	//Now the fun part.
-	for(int i=0; i<dest->getVertexCount(); i++) {
+	for(uint i=0; i<dest->getVertexCount(); i++) {
 		if(dest->getVertexPointer()) memset((char*)dest->getVertexPointer() + i*dest->getStride(), 0, 3*sizeof(float)); //clear vertices
 		if(dest->getNormalPointer()) memset((char*)dest->getNormalPointer() + i*dest->getStride(), 0, 3*sizeof(float)); //clear normals
 	}
@@ -918,7 +966,8 @@ void Model::drawMesh(const Mesh* mesh, int& glFlags) {
 	}
 
 	//draw it!
-	glDrawElements(mesh->getMode(), mesh->getPolygonCount()*3, GL_UNSIGNED_SHORT, mesh->getIndexPointer() );
+	if(mesh->hasIndices()) glDrawElements(mesh->getMode(), mesh->getSize(), GL_UNSIGNED_SHORT, mesh->getIndexPointer() );
+	else glDrawArrays(mesh->getMode(), 0, mesh->getSize());
 	#endif
 }
 

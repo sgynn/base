@@ -3,6 +3,8 @@
 #include <cstdio>
 #include "file.h"
 
+#include <iostream>
+
 using namespace base;
 using namespace model;
 
@@ -648,7 +650,7 @@ int XLoader::readInt(int& i) {
 }
 int XLoader::readFloat(float& f) {
 	const char* tr = m_read;
-	char temp[16];
+	char temp[16] = "";
 	int i = 0;
 	if(*tr == '-' || (*tr>=0x30 && *tr<=0x39)) {
 		temp[i++] = *(tr++);

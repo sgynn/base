@@ -1,4 +1,5 @@
 #include "file.h"
+#include <cstdlib>
 #include <cstring>
 
 using namespace base;
@@ -100,7 +101,7 @@ Directory::Directory(const Directory& d) {
 	m_files = d.m_files;
 }
 Directory::~Directory() {
-	if(m_directory) delete [] m_directory;
+	if(m_directory) free((char*)m_directory);
 }
 Directory& Directory::operator=(const Directory& d) {
 	m_directory = strdup(d.m_directory);

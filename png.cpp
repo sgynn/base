@@ -178,7 +178,7 @@ void PNG::flip() {
 }
 
 void PNG::clear() {
-	if(data) delete [] data;
+	if(data) free(data);
 	data = 0;
 	width=height=0;
 }

@@ -33,6 +33,7 @@ class XML {
 		std::list<const char*> m_attributes;
 	};
 	typedef std::list<Element>::const_iterator Iterator;
+	typedef std::list<Element>::const_iterator iterator;
 
 	XML();
 	~XML();

@@ -81,6 +81,7 @@ namespace model {
 	/** Mesh vertex formats */
 	enum VertexFormat {
 		VERTEX_SIMPLE,	///< format: position:3
+		VERTEX_TEXTURE, ///< format: position:3, texture:2
 		VERTEX_DEFAULT,	///< format: position:3, normal:3, texture:2
 		VERTEX_TANGENT,	///< format: position:3, normal:3, texture:2, tangent:3
 	};
@@ -111,15 +112,19 @@ namespace model {
 		int grab();
 		int drop();
 		
+		/** Create the vertex buffer object */
+		bool createBufferObject();
 		/** Set this mesh to use vertex buffer objects */
 		void useBufferObject(bool use=true);
 		/** copy mesh data to the vertex buffer object */
 		void updateBufferObject();
+		/** Delete the buffer object */
+		void deleteBufferObject();
 		
 		/** get the number of vertices in the mesh */
-		int getVertexCount() const { return m_vertexBuffer->size; }
-		/** get the number of polygons in the mesh */
-		int getPolygonCount() const { return m_indexBuffer? m_indexBuffer->size/3: m_vertexBuffer->size/m_formatSize; }
+		unsigned int getVertexCount() const { return m_vertexBuffer->size/m_formatSize; }
+		/** get the size of the mesh. If index buffer is used, this may be > vertexCount */
+		unsigned int getSize() const { return m_indexBuffer? m_indexBuffer->size: m_vertexBuffer->size/m_formatSize; }
 		/** get the mesh format */
 		VertexFormat getFormat() const { return m_format; }
 		/** Change the format of the mesh? */
@@ -128,16 +133,18 @@ namespace model {
 		void setMode(unsigned int mode) { m_drawMode = mode; }
 		/** Get the OpenGL Drawing mode. Default GL_TRIANGLES */
 		unsigned int getMode() const { return m_drawMode; }
+		/** Does this mesh use an index array? */
+		bool hasIndices() const { return m_indexBuffer!=0; }
 		
 		/**Functions for rendering and data access */
 		Material& getMaterial() { return m_material; }
 		int bindBuffer() const;
 		int getStride() const		{ return m_formatSize * sizeof(float); }
-		const float* getVertexPointer() const 	{ return m_vertexBuffer->data; }
-		const float* getNormalPointer() const 	{ return m_format==VERTEX_SIMPLE? 0: m_vertexBuffer->data+3;  }
-		const float* getTexCoordPointer() const	{ return m_format==VERTEX_SIMPLE? 0: m_vertexBuffer->data+6;  }
-		const float* getTangentPointer() const 	{ return m_format==VERTEX_TANGENT?   m_vertexBuffer->data+8: 0; }
-		const unsigned short* getIndexPointer() const { return m_indexBuffer->data; }
+		const float* getVertexPointer() const 	{ return m_vertexBuffer->bufferObject? 0: m_vertexBuffer->data; }
+		const float* getNormalPointer() const 	{ return s_offset[m_format][0] + (s_offset[m_format][0] && !m_vertexBuffer->bufferObject? m_vertexBuffer->data: 0); }
+		const float* getTexCoordPointer() const	{ return s_offset[m_format][1] + (s_offset[m_format][1] && !m_vertexBuffer->bufferObject? m_vertexBuffer->data: 0); }
+		const float* getTangentPointer() const 	{ return s_offset[m_format][2] + (s_offset[m_format][2] && !m_vertexBuffer->bufferObject? m_vertexBuffer->data: 0); }
+		const unsigned short* getIndexPointer() const { return m_indexBuffer->bufferObject? 0: m_indexBuffer->data; }
 		
 		/** get data buffers */
 		Buffer<float>* getVertexBuffer() { return m_vertexBuffer; }
@@ -170,6 +177,7 @@ namespace model {
 		float* boxMax() const;
 		
 		protected:
+		static size_t s_offset[4][4]; //Normal, Texture, Tagnent index offsets for each vertex type
 		VertexFormat m_format;
 		int m_formatSize;
 		unsigned int m_drawMode;
@@ -182,7 +190,7 @@ namespace model {
 
 		/** Calculate tangent for a polygon. Assumes vertex has at least {position,normal,texcoord} */
 		int tangent(const float* a, const float* b, const float* c, float* t);
-		
+
 		Material m_material;
 		
 		/** Reference counting for models */
