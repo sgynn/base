@@ -97,15 +97,18 @@ namespace GUI {
 		virtual ~Control();
 		virtual uint update(Event* event=0);
 		virtual void draw() = 0;
-		virtual void setPosition(int x, int y) { m_position.x=x; m_position.y=y; }
-		virtual void setSize(int width, int height) { m_size.x=width, m_size.y=height; }
-		inline const Point getPosition() const;// { if(m_container) return m_position-m_container->getPosition(); else return m_position; }
+		virtual void setPosition(const Point& p);
+		virtual void setPosition(int x, int y) { setPosition( Point(x,y) ); }
+		virtual void setSize(int width, int height) { m_position.y+=m_size.y-height; m_size.x=width, m_size.y=height; }
+		const Point getPosition() const;// { if(m_container) return m_position-m_container->getPosition(); else return m_position; }
+		const Point& getAbsolutePosition() const { return m_position; }
 		const Point& getSize() const { return m_size; }
 		void show() { m_visible=true; }
 		void hide() { m_visible=false; }
 		void raise();	//Bring control to the front of the list (draws on top)
 		bool visible() const { return m_visible; }
 		virtual bool isContainer() const { return false; }
+		Container* getParent() const { return m_container; }
 		protected:
 		Point m_position, m_size;
 		Style* m_style;
@@ -147,11 +150,11 @@ namespace GUI {
 		void setPosition(int x, int y); // move all contained controls
 		virtual bool isContainer() const { return true; }
 		protected:
+		void moveContents(int dx, int dy);
 		virtual uint click(Event* e, const Point& p);
 		std::list<Control*> m_contents;
 		bool m_clip;
 	};
-	inline const Point Control::getPosition() const { return m_container? m_position-m_container->getPosition(): m_position; }
 
 	/** Frame, A basic container with a border that can be dragged around */
 	class Frame : public Container {
@@ -186,6 +189,7 @@ namespace GUI {
 		public:
 		Button(const char* caption, Style* style=0, uint command=0);
 		Button(int width, int height, const char* caption=0, Style* style=0, uint command=0);
+		const char* getCaption() const { return m_caption; }
 		virtual uint update(Event* event=0);
 		virtual void draw();
 		protected:
@@ -237,6 +241,7 @@ namespace GUI {
 		virtual void draw();
 		virtual void setPosition(int x, int y); // move internal scrollbar
 		virtual void setSize(int width, int height); // resize scrollbar
+		virtual void drawItem(uint index, const char* item, int x, int y, int width, int height, float state);
 		uint addItem(const char* item, bool selected=false);
 		uint removeItem(uint index);
 		uint count() const { return m_items.size(); }

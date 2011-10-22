@@ -3,6 +3,7 @@ project(basecode)
 
 set(src
 	camera.cpp
+	collision.cpp
 	file.cpp
 	font.cpp
 	framebuffer.cpp
@@ -57,6 +58,7 @@ add_library(base ${src} ${png} ${zlib} )
 
 set(headers
 	camera.h
+	collision.h
 	draw.h
 	file.h
 	font.h

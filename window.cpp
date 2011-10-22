@@ -208,8 +208,12 @@ bool base::Window::create() {
 	if(m_fullScreen) {
 		XWarpPointer(m_display, None, m_window, 0, 0, 0, 0, 0, 0);
 		XGrabKeyboard(m_display, m_window, true, GrabModeAsync, GrabModeAsync, CurrentTime);
-        XGrabPointer(m_display, m_window, true, ButtonPressMask, GrabModeAsync, GrabModeAsync, m_window, None, CurrentTime);
+        	XGrabPointer(m_display, m_window, true, ButtonPressMask, GrabModeAsync, GrabModeAsync, m_window, None, CurrentTime);
 	}
+
+	//Map close button event
+	Atom wmDelete = XInternAtom(m_display, "WM_DELETE_WINDOW", true);
+	XSetWMProtocols(m_display, m_window, &wmDelete, 1);
 	
 	#endif
 
@@ -419,13 +423,20 @@ uint base::Window::pumpEvents(Input* input) {
 	XKeyEvent *keyevent;
 	XButtonEvent *buttonevent;
 	bool down;
+	char* atom;
 	while(XPending(getXDisplay())) {
 		XNextEvent(getXDisplay(), &event);
 		switch (event.type) {
 			case ClientMessage:
-				if (*XGetAtomName(getXDisplay(), event.xclient.message_type) == *"WM_PROTOCOLS") {
-					printf("Closed Window\n");
-					return 0x100;
+				atom = XGetAtomName(getXDisplay(), event.xclient.message_type);
+				//printf("Close Window\n");
+				if(*atom==*"WM_PROTOCOLS") return 0x100;
+				break;
+			case ConfigureNotify:
+				if(event.xconfigure.width!=m_width || event.xconfigure.height!=m_height) {
+					m_width = event.xconfigure.width;
+					m_height = event.xconfigure.height;
+					//printf("Resize Window (%d, %d)\n", m_width, m_height);
 				}
 				break;
 			
@@ -462,6 +473,9 @@ uint base::Window::pumpEvents(Input* input) {
 		switch (msg.message) {
 		case WM_QUIT:
 			return 0x100; //Exit signal
+		case WM_SIZE: //Window resized
+			m_width = msg.lparam & 0xffff;
+			m_height = msg.lparam >> 16;
 			break;
 		
 		//Keyboard

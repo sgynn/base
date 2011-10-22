@@ -25,7 +25,7 @@ SceneState::~SceneState() {
 }
 
 void SceneState::update() {
-	if(Game::input()->key(KEY_ESC)) changeState(0);
+	if(Game::input()->pressed(KEY_ESC)) changeState(0);
 
 	//calculate fps
 	float time = Game::frameTime();

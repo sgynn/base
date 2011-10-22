@@ -4,6 +4,7 @@
 #include "game.h"
 
 #include <cstdio>
+#include <cstring>
 
 //Extensions
 #ifndef GL_VERSION_2_0
@@ -57,43 +58,103 @@ int initialiseExtensions() { return 1; }
 
 using namespace base;
 
-FrameBuffer FrameBuffer::Screen;
+const FrameBuffer FrameBuffer::Screen;
+const FrameBuffer* FrameBuffer::s_bound = &FrameBuffer::Screen;
 
-FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0), m_depth(0) {}
-FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0), m_depth(0) {
-	if(w==0 || h==0 || f==0) return;
+FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0) {
+	memset(m_colour, 0, 5*sizeof(Storage));
+}
+FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0) {
+	memset(m_colour, 0, 5*sizeof(Storage));
+	if(w==0 || h==0) return; //Invalid size
 
-	// Colour buffer
-	if(f&COLOUR) m_texture = Texture::createTexture(w, h, GL_RGBA);
-	uint texture = m_texture.getGLTexture();
-
-	// Depth buffer
-	if(f&DEPTH) {
-		glGenRenderbuffers(1, &m_depth);
-		glBindRenderbuffer(GL_RENDERBUFFER, m_depth);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
-	}
-
-	// Frame buffer
+	// Create the frame buffer
 	glGenFramebuffers(1, &m_buffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
-	if(texture) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-	if(m_depth) glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depth);
+	const FrameBuffer* last = s_bound; //Avoid rebinding
+	s_bound = this;
+
+	//Attach stuff
+	if(f&COLOUR) attachColour(TEXTURE, GL_RGBA);
+	else attachColour(TEXTURE, GL_RGB); //Must have a colour buffer
+	if(f&DEPTH)  attachDepth(TEXTURE, 24);
+
 
 	if(!m_buffer || glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE) {
 		printf("Error creating frame buffer\n");
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	s_bound = last;
 }
 FrameBuffer::~FrameBuffer() {
 	//if(m_buffer) glDeleteFramebuffers(1, &m_buffer);
 	//if(m_depth) glDeleteRenderbuffers(1, &m_depth);
 }
 
-void FrameBuffer::bind() {
+uint FrameBuffer::attachColour(uint type, uint format) {
+	int index;
+	for(index=0; index<4&&m_colour[index].type; index++);
+	if(!format) format = GL_RGBA;
+	if(type==TEXTURE) {
+		m_colour[index].type = 1;
+		m_colour[index].texture = Texture::createTexture(m_width, m_height, format);
+		m_colour[index].data = m_colour[index].texture.getGLTexture();
+		//Attach to buffer
+		if(m_colour[index].texture.ready()) {
+			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+index, GL_TEXTURE_2D, m_colour[index].data, 0);
+			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
+			return m_colour[index].data;
+		}
+	} else if(type==BUFFER) {
+		printf("Colour renderbuffers not yet implemented\n");
+	}
+	printf("Error attaching colour %s %d\n", type==TEXTURE? "texture": "renderbuffer", index);
+	return 0;
+}
+uint FrameBuffer::attachDepth(uint type, uint depth) {
+	uint format;
+	switch(depth) {
+	case 16: format = GL_DEPTH_COMPONENT16; break;
+	case 24: format = GL_DEPTH_COMPONENT24; break;
+	case 32: format = GL_DEPTH_COMPONENT32; break;
+	default: return 0;
+	}
+	if(type==TEXTURE) {
+		format = GL_DEPTH_COMPONENT;
+		m_depth.type = 1;
+		m_depth.texture = Texture::createTexture(m_width, m_height, format);
+		//m_depth.texture.filter(GL_NEAREST, GL_NEAREST);
+		m_depth.texture.clamp(true);
+		m_depth.data = m_depth.texture.getGLTexture();
+		//Attach to buffer
+		if(m_depth.texture.ready()) {
+			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depth.data, 0);
+			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
+			return m_depth.data;
+		}
+	} else if(type==BUFFER) {
+		m_depth.type = 2;
+		glGenRenderbuffers(1, &m_depth.data);
+		glBindRenderbuffer(GL_RENDERBUFFER, m_depth.data);
+		glRenderbufferStorage(GL_RENDERBUFFER, format, m_width, m_height);
+		if(m_depth.data) {
+			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depth.data);
+			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
+			return m_depth.data;
+		}
+	}
+	printf("Error attaching depth %s (%dbit)\n", type==TEXTURE? "texture": "renderbuffer", depth);
+	return 0; //Fail
+}
+
+void FrameBuffer::bind() const {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 	if(m_buffer) glViewport(0,0,m_width, m_height);
 	else glViewport(0, 0, Game::getSize().x, Game::getSize().y);
+	s_bound = this;
 }
 
 

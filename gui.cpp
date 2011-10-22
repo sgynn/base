@@ -51,7 +51,7 @@ Container::Container(): Control(0, 0), m_clip(0) {
 }
 Container::Container(int x, int y, int w, int h, bool clip, Style* s): Control(s, 0), m_clip(clip) {
 	m_size = Point(w, h);
-	m_position = Point(x, FixY(y));
+	m_position = Point(x, y);
 }
 Frame::Frame(int w, int h, const char* c, bool move, Style* s) : Container(0,0,w,h,true,s),  m_caption(c), m_moveable(move) {
 }
@@ -97,14 +97,26 @@ GUI::Input::Input(int l, const char* t, Style* s, uint cmd) : Control(s,cmd), m_
 	m_size.y = m_style->font? m_style->font->textHeight("X"): 20;
 }
 
+//// //// Relative position //// ////
+const Point Control::getPosition() const { 
+	if(!m_container) return m_position;
+	else {
+		return Point( m_container->m_position.x-m_position.x,  m_container->m_position.y+m_container->m_size.y-m_position.y-m_size.y);
+	}
+}
+void Control::setPosition(const Point& p) {
+	if(!m_container) m_position = p;
+	else {
+		m_position.x = m_container->m_position.x + p.x;
+		m_position.y = m_container->m_position.y+m_container->m_size.y - p.y - m_size.y;
+	}
+}
 //// //// Container functions //// ////
 Control* Container::add( Control* c, int x, int y ) {
 	if(c->m_container) printf("Warning: Control already in a container\n");
-	int px = m_position.x + x;
-	int py = m_position.y + m_size.y - y - c->m_size.y; // From the top
-	c->setPosition(px, py);
 	m_contents.push_back( c );
 	c->m_container = this;
+	c->setPosition(x, y);
 	return c;
 }
 Control* Container::add( const char* caption, Control* c, int x, int y, int cw) {
@@ -144,13 +156,17 @@ Control* Container::getControl(const Point& p) {
 	return isOver(p.x, p.y)? this: 0;
 }
 void Container::setPosition(int x, int y) {
-	int dx = x - m_position.x;
-	int dy = y - m_position.y;
+	Point lp = m_position;
+	Control::setPosition(x, y);
+	moveContents(m_position.x-lp.x, m_position.y-lp.y);
+}
+void Container::moveContents(int dx, int dy) {
 	for(std::list<Control*>::iterator i=m_contents.begin(); i!=m_contents.end(); i++) {
 		const Point& p = (*i)->m_position;
-		(*i)->setPosition(p.x+dx, p.y+dy);
+		(*i)->m_position.x = p.x + dx;
+		(*i)->m_position.y = p.y + dy;
+		if((*i)->isContainer()) static_cast<Container*>(*i)->moveContents(dx, dy);
 	}
-	m_position = Point(x, y);
 }
 void Control::raise() {
 	if(m_container) {
@@ -282,7 +298,9 @@ uint Frame::update(Event* e) {
 		} else if((mb & 1) && focus==this) {
 			int nx = mx - m_held.x;
 			int ny = my - m_held.y;
-			setPosition(nx, ny);
+			moveContents(nx-m_position.x, ny-m_position.y);
+			m_position.x = nx;
+			m_position.y = ny;
 		}
 	}
 	return r;
@@ -378,13 +396,13 @@ void DropList::openList() {
 	m_open = true;
 	int sy = m_itemHeight * m_items.size();
 	if(sy > m_max && m_max>0) sy = m_max;
-	setSize(m_size.x, sy);
-	setPosition(m_position.x, m_position.y - m_size.y + m_itemHeight);
+	m_position.y -= sy - m_itemHeight;
+	m_size.y = sy;
 }
 void DropList::closeList() {
 	m_open = false;
-	setPosition(m_position.x, m_position.y + m_size.y - m_itemHeight);
-	setSize(m_size.x, m_itemHeight);
+	m_position.y += m_size.y - m_itemHeight;
+	m_size.y = m_itemHeight;
 }
 
 uint GUI::Input::update(Event* e) {
@@ -673,15 +691,19 @@ void Listbox::draw() {
 	uint ni = ceil(m_size.y / m_itemHeight) + 1;
 	uint ix = floor(m_scroll.getValue() / m_itemHeight);
 	int py = m_position.y + m_size.y - (ix+1) * m_itemHeight + m_scroll.getValue();
+	int cellWidth = m_scroll.visible()? m_size.x-m_scroll.getSize().x: m_size.x;
 	for(uint i=0; i<ni && ix+i<m_items.size(); i++) {
-		int s = ix+i==m_item?Style::FOCUS: (ix+i==m_hover?Style::OVER:0);
-		glColor4fv( blendColour(Style::TEXT, s, m_items[ix+i].state));
-		m_style->font->print(m_position.x, py-i*m_itemHeight, m_items[ix+i].name);
+		drawItem(ix+i, m_items[ix+i].name, m_position.x, py-i*m_itemHeight, cellWidth, m_itemHeight, m_items[ix+i].state);
 	}
 
 	//Scrollbar
 	if(m_scroll.visible()) m_scroll.draw();
 	scissorPop();
+}
+void Listbox::drawItem(uint index, const char* item, int x, int y, int width, int height, float state) {
+	int s = index==m_item? Style::FOCUS: index==m_hover? Style::OVER: 0;
+	glColor4fv( blendColour(Style::TEXT, s, state));
+	m_style->font->print(x, y, item);
 }
 
 void DropList::draw() {

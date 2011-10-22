@@ -6,31 +6,49 @@
 namespace base {
 class FrameBuffer {
 	public:
-	enum Flags { DEPTH=0x1000, COLOUR=0x2000 };
+	enum Flags { DEPTH=0x1000, COLOUR=0x2000, BUFFER=0x4000, TEXTURE=0x8000 };
 
 	FrameBuffer();
 	FrameBuffer(int width, int height, int flags=COLOUR);
 	~FrameBuffer();
 
+	int width() const { return m_width; }
+	int height() const { return m_height; }
+
 	/** Get the framebuffer as a texture */
-	const Texture& texture() const { return m_texture; }
+	const Texture& texture(int index=0) const { return m_colour[index].texture; }
+	const Texture& depthTexture() const { return m_depth.texture; }
 	operator const Texture&() const { return texture(); }
 
+	/** Attach various render targets */
+	uint attachColour(uint type, uint format=0);
+	uint attachDepth(uint type, uint depth=32);
+	uint attachStencil(uint type);
+
 	/** Bind the framebuffer as the current a render target */
-	void bind();
+	void bind() const;
 
 	/** Null framebuffer - used for unbinding */
-	static FrameBuffer Screen;
+	static const FrameBuffer Screen;
 
 	private:
 	int m_width, m_height;
 	int m_flags;
-
-	Texture m_texture;
-
 	uint m_buffer; //Frame Buffer Object
-	uint m_depth;  //Depth Buffer
-	
+
+	//Storage objects
+	struct Storage {
+		uint type;
+		uint data;
+		Texture texture;
+	};
+
+	Storage m_colour[4];
+	Storage m_depth;
+
+	//What is bound?
+	static const  FrameBuffer* s_bound;
+
 };
 };
 

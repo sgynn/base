@@ -25,6 +25,7 @@ class Vec2 {
 	Vec2 operator+ (const Vec2& b) const { return Vec2(x+b.x,y+b.y); }
 	Vec2 operator- (const Vec2& b) const { return Vec2(x-b.x,y-b.y); }
 	Vec2 operator* (const float s) const { return Vec2(x*s,y*s); }
+	Vec2 operator/ (const float s) const { return Vec2(x/s,y/s); }
 
 	bool operator==(const Vec2& v) const { return v.x==x && v.y==y; }
 	bool operator!=(const Vec2& v) const { return v.x!=x || v.y!=y; }
@@ -224,6 +225,7 @@ struct Range {
 	Range(float min, float max) : min(min), max(max) {}
 	void addPoint(float v) { if(v<min) min=v; if(v>max) max=v; }
 	bool contains(float p) const { return p>=min && p<=max; }
+	float range() const { return max - min; }
 };
 
 struct Colour {

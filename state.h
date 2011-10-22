@@ -18,6 +18,9 @@ class GameState {
 		GameState(float tIn=0, float tOut=0, StateFlags flags=NONE);
 		virtual ~GameState();
 		
+		virtual void begin() {}
+		virtual void end() {}
+
 		virtual void update() = 0;
 		virtual void draw() = 0;
 		
@@ -28,6 +31,8 @@ class GameState {
 		
 		/** Set the next state to change to and start transitions */
 		void changeState(GameState* state);
+		/** Get the previous state */
+		GameState* lastState() const;
 		
 		float tIn() const { return m_in; }
 		float tOut() const { return m_out; }
@@ -42,6 +47,7 @@ class GameState {
 
 /** Game State manager - Handles transitions and control */
 class StateManager {
+	friend class GameState;
 	public:
 		StateManager();
 		~StateManager();
@@ -60,6 +66,7 @@ class StateManager {
 	private:
 		GameState* currentState;
 		GameState* nextState;
+		GameState* prevState;
 		bool m_running;
 };
 };

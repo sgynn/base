@@ -26,6 +26,8 @@ class Game {
 	/** Set the initial game state */
 	void setInitialState(GameState* state);
 
+	/** Set static framerate. 0 = variable */
+	void setTargetFPS(uint fps=60);
 
 	/** Run the app */
 	void run();
@@ -39,6 +41,8 @@ class Game {
 	void resize(int width, int height, bool fullscreen);
 
 	static Point getSize();
+	static int width();
+	static int height();
 
 	//Time 
 	static uint64 getTicks();
@@ -46,7 +50,7 @@ class Game {
 
 	/** Time since the game started (seconds) */
 	static float gameTime() { return s_inst->m_totalTime; }
-	/** Time since tha last frame - use for frametare independance */
+	/** Time since tha last frame - use for framerate independance */
 	static float frameTime() { return s_inst->m_frameTime; }
 	/** Get detailed timings */
 	static void debugTime(uint& game, uint& system, uint& update, uint& render);

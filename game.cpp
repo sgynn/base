@@ -72,9 +72,15 @@ void Game::resize(int width, int height, bool fullscreen) {
 }
 
 Point Game::getSize() { return s_window->size(); } 
+int Game::width() { return s_window->size().x; }
+int Game::height() { return s_window->size().y; }
 
 void Game::setInitialState(GameState* state) {
 	m_state->change(state);
+}
+
+void Game::setTargetFPS(uint fps) {
+	m_targetFPS = fps;
 }
 
 void Game::exit() {

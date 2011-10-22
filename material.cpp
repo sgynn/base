@@ -47,7 +47,7 @@ const Texture& Texture::getTexture(const char* name) {
 	return iter->second;
 }
 
-const Texture Texture::createTexture(int width, int height, uint format) {
+const Texture Texture::createTexture(int width, int height, uint format, const void* data) {
 	//Generate an empty texture
 	uint texture;
 	glGenTextures(1, &texture);
@@ -56,12 +56,24 @@ const Texture Texture::createTexture(int width, int height, uint format) {
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, 0); 
+	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data); 
 	//Done
 	Texture t;
 	t.m_good = texture>0;
 	t.m_texture = texture;
+	t.m_width = width;
+	t.m_height = height;
+	t.m_bpp = format==GL_RGBA?32: format==GL_RGB?24: 8;
 	return t;
+}
+
+const Texture& Texture::operator=(const Texture& t) {
+	m_texture = t.m_texture;
+	m_good = t.m_good;
+	m_name = t.m_name;
+	m_width = t.m_width;
+	m_height = t.m_height;
+	return *this;
 }
 
 int Texture::bind() const {
@@ -83,6 +95,7 @@ int Texture::load(const char* filename) {
 		format = GL_RGBA;
 		format2 = GL_RGBA;//GL_BGRA_EXT;
 	}
+	m_bpp = image.bpp;
 	
 	//create opengl texture
 	uint texture;
@@ -99,6 +112,8 @@ int Texture::load(const char* filename) {
 	//Done
 	m_good = true;
 	m_texture = texture;
+	m_width = width;
+	m_height = height;
 	return 1;
 }
 
@@ -109,7 +124,13 @@ void Texture::clamp(bool c) const {
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, c?GL_CLAMP_TO_EDGE:0);
 	}
 }
-
+void Texture::filter(uint min, uint mag) const { 
+	if(m_good) {
+		glBindTexture(GL_TEXTURE_2D, m_texture);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag);
+	}
+}
 ////////////////////////////////////////////////////////////////
 
 uint Material::s_flags = 0;

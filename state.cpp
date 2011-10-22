@@ -32,8 +32,11 @@ int GameState::updateState() {
 void GameState::changeState(GameState* state) {
 	m_stateManager->change(state);
 }
+GameState* GameState::lastState() const {
+	return m_stateManager->prevState;
+}
 
-StateManager::StateManager() : currentState(0), nextState(0), m_running(true) {}
+StateManager::StateManager() : currentState(0), nextState(0), prevState(0), m_running(true) {}
 StateManager::~StateManager() {}
 
 void StateManager::update() {
@@ -41,9 +44,16 @@ void StateManager::update() {
 	else {
 		if(nextState && (nextState->m_flags&OVERLAP)) nextState->updateState(); //update the other state if set to overlap
 		if(currentState->updateState()==0) {
+			currentState->end();
+			prevState = 0;
 			if(~currentState->m_flags&PERSISTANT) delete currentState;
+			else prevState = currentState;
 			currentState = nextState;
 			nextState = 0;
+			if(currentState) {
+				currentState->m_state = T_IN;
+				currentState->begin();
+			}
 		}
 	}
 }
@@ -56,8 +66,10 @@ void StateManager::draw() {
 /** Change the game state */
 bool StateManager::change(GameState* next) {
 	if(next) next->m_stateManager = this;
-	if(currentState==0) currentState=next;
-	else {
+	if(currentState==0) {
+		currentState = next;
+		if(currentState) currentState->begin();
+	} else {
 		currentState->m_state = T_OUT; //signal current state to end
 		nextState = next;
 	}
