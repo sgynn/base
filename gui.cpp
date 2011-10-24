@@ -146,13 +146,13 @@ Control* Container::getControl(uint index) {
 	}
 	return 0;
 }
-Control* Container::getControl(const Point& p) {
-	Control* c = 0;
+Control* Container::getControl(const Point& p, bool recursive) {
 	for(std::list<Control*>::reverse_iterator i=m_contents.rbegin(); i!=m_contents.rend(); i++) {
 		if((*i)->visible() && ((*i)->isOver(p.x, p.y) || ((*i)->isContainer() && !static_cast<Container*>(*i)->m_clip))) {
-			if((*i)->isContainer()) c = static_cast<Container*>(*i)->getControl(p);
-			if(c) return c;
-			else return *i;
+			if(recursive && (*i)->isContainer()) {
+				Control* c = static_cast<Container*>(*i)->getControl(p);
+				if(c) return c;
+			} else return *i;
 		}
 	}
 	return isOver(p.x, p.y)? this: 0;
@@ -450,10 +450,10 @@ uint GUI::Input::update(Event* e) {
 //// //// Click Functions //// ////
 uint Container::click(Event* e, const Point& p) {
 	//call click for the control under the mouse
-	Control* c = getControl(p);
+	Control* c = getControl(p, false);
 	if(c) {
 		focus = c;
-		if(!c->isContainer()) return c->click(e, p);
+		if(c!=this) return c->click(e,p);
 	}
 	return 0;
 }
@@ -605,13 +605,13 @@ Colour Control::blendColour(int type, int state, float value) const {
 //// //// Control Draw Functions //// ////
 struct Scissor { int x, y, w, h; };
 std::vector<Scissor> scissorStack;
-void scissorPushNew(int x, int y, int w, int h) {
+void Control::scissorPushNew(int x, int y, int w, int h) const {
 	if(scissorStack.empty()) glEnable(GL_SCISSOR_TEST);
 	Scissor s; s.x=x; s.y=y; s.w=w; s.h=h;
 	glScissor(x, y, w, h);
 	scissorStack.push_back(s);
 }
-void scissorPush(int x, int y, int w, int h) {
+void Control::scissorPush(int x, int y, int w, int h) const {
 	if(scissorStack.empty()) scissorPushNew(x,y,w,h);
 	else {
 		Scissor& s = scissorStack.back();
@@ -622,7 +622,7 @@ void scissorPush(int x, int y, int w, int h) {
 		scissorPushNew(x, y, x2-x, y2-y);
 	}
 }
-void scissorPop() {
+void Control::scissorPop() const {
 	scissorStack.pop_back();
 	if(scissorStack.empty()) glDisable(GL_SCISSOR_TEST);
 	else glScissor(scissorStack.back().x, scissorStack.back().y, scissorStack.back().w, scissorStack.back().h);

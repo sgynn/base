@@ -131,6 +131,9 @@ namespace GUI {
 		void drawArrow(const Point& p, int direction, int size=8) const;
 		void drawRect(int x, int y, int w, int h, const Colour& c = white) const;
 		Colour blendColour(int type, int state, float value=1) const;
+		void scissorPushNew(int x, int y, int w, int h) const;
+		void scissorPush(int x, int y, int w, int h) const;
+		void scissorPop() const;
 	};
 
 	/** Container class. Contains other controls */
@@ -148,7 +151,7 @@ namespace GUI {
 		void clear();
 		uint count() const { return m_contents.size(); }
 		Control* getControl(uint index);
-		Control* getControl(const Point&);
+		Control* getControl(const Point&, bool recursive=true);
 		virtual bool isContainer() const { return true; }
 		protected:
 		void setAbsolutePosition(int x, int y); // move all contained controls
