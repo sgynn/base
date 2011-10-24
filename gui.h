@@ -97,14 +97,15 @@ namespace GUI {
 		virtual ~Control();
 		virtual uint update(Event* event=0);
 		virtual void draw() = 0;
-		virtual void setPosition(const Point& p);
-		virtual void setPosition(int x, int y) { setPosition( Point(x,y) ); }
+		void setPosition(int x, int y);	 //Relative positions
+		const Point getPosition() const;
+		virtual void setAbsolutePosition(int x, int y) { m_position.x=x; m_position.y=y; } //internal position
+		virtual const Point& getAbsolutePosition() const { return m_position; }
 		virtual void setSize(int width, int height) { m_position.y+=m_size.y-height; m_size.x=width, m_size.y=height; }
-		const Point getPosition() const;// { if(m_container) return m_position-m_container->getPosition(); else return m_position; }
-		const Point& getAbsolutePosition() const { return m_position; }
 		const Point& getSize() const { return m_size; }
 		void show() { m_visible=true; }
 		void hide() { m_visible=false; }
+		void setVisible(bool vis=true) { m_visible=vis; }
 		void raise();	//Bring control to the front of the list (draws on top)
 		bool visible() const { return m_visible; }
 		virtual bool isContainer() const { return false; }
@@ -147,9 +148,9 @@ namespace GUI {
 		uint count() const { return m_contents.size(); }
 		Control* getControl(uint index);
 		Control* getControl(const Point&);
-		void setPosition(int x, int y); // move all contained controls
 		virtual bool isContainer() const { return true; }
 		protected:
+		void setAbsolutePosition(int x, int y); // move all contained controls
 		void moveContents(int dx, int dy);
 		virtual uint click(Event* e, const Point& p);
 		std::list<Control*> m_contents;
@@ -239,9 +240,9 @@ namespace GUI {
 		Listbox(int width, int height, Style* style=0, uint command=0);
 		virtual uint update(Event* event=0);
 		virtual void draw();
-		virtual void setPosition(int x, int y); // move internal scrollbar
 		virtual void setSize(int width, int height); // resize scrollbar
 		virtual void drawItem(uint index, const char* item, int x, int y, int width, int height, float state);
+		virtual bool clickItem(uint index, const char* item, int x, int y) { return index!=m_item; }
 		uint addItem(const char* item, bool selected=false);
 		uint removeItem(uint index);
 		uint count() const { return m_items.size(); }
@@ -251,6 +252,7 @@ namespace GUI {
 		void scrollTo(uint index);
 		void selectItem(uint index);
 		protected:
+		virtual void setAbsolutePosition(int x, int y); // move internal scrollbar
 		virtual uint click(Event* e, const Point& p);
 		struct ListItem { const char* name; float state; };
 		std::vector<ListItem> m_items;

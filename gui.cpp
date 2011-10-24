@@ -104,11 +104,13 @@ const Point Control::getPosition() const {
 		return Point( m_container->m_position.x-m_position.x,  m_container->m_position.y+m_container->m_size.y-m_position.y-m_size.y);
 	}
 }
-void Control::setPosition(const Point& p) {
-	if(!m_container) m_position = p;
+void Control::setPosition(int x, int y) {
+	if(!m_container) setAbsolutePosition(x, y);
 	else {
-		m_position.x = m_container->m_position.x + p.x;
-		m_position.y = m_container->m_position.y+m_container->m_size.y - p.y - m_size.y;
+		setAbsolutePosition(
+			m_container->m_position.x + x,
+			m_container->m_position.y+m_container->m_size.y - y - m_size.y
+		);
 	}
 }
 //// //// Container functions //// ////
@@ -155,17 +157,15 @@ Control* Container::getControl(const Point& p) {
 	}
 	return isOver(p.x, p.y)? this: 0;
 }
-void Container::setPosition(int x, int y) {
-	Point lp = m_position;
-	Control::setPosition(x, y);
-	moveContents(m_position.x-lp.x, m_position.y-lp.y);
+void Container::setAbsolutePosition(int x, int y) {
+	moveContents(x-m_position.x, y-m_position.y);
+	m_position.x = x;
+	m_position.y = y;
 }
 void Container::moveContents(int dx, int dy) {
 	for(std::list<Control*>::iterator i=m_contents.begin(); i!=m_contents.end(); i++) {
 		const Point& p = (*i)->m_position;
-		(*i)->m_position.x = p.x + dx;
-		(*i)->m_position.y = p.y + dy;
-		if((*i)->isContainer()) static_cast<Container*>(*i)->moveContents(dx, dy);
+		(*i)->setAbsolutePosition( p.x+dx, p.y+dy );
 	}
 }
 void Control::raise() {
@@ -203,13 +203,14 @@ void Listbox::scrollTo(uint index) {
 	if(m_scroll.getValue()>(int)(index*m_itemHeight)) m_scroll.setValue(index*m_itemHeight);
 	else if(m_scroll.getValue() < (int)((index+1)*m_itemHeight)-m_size.y) m_scroll.setValue((index+1)*m_itemHeight-m_size.y);
 }
-void Listbox::setPosition(int x, int y) {
-	Control::setPosition(x,y);
-	m_scroll.setPosition(x+m_size.x-m_scroll.getSize().x, y);
+void Listbox::setAbsolutePosition(int x, int y) {
+	Control::setAbsolutePosition(x, y);
+	m_scroll.setAbsolutePosition(x + m_size.x - m_scroll.getSize().x, y);
 }
 void Listbox::setSize(int w, int h) {
 	Control::setSize(w,h);
-	m_scroll.setPosition(m_position.x+m_size.x-m_scroll.getSize().x, m_position.y);
+	//m_scroll.setPosition(m_position.x+m_size.x-m_scroll.getSize().x, m_position.y);
+	m_scroll.setAbsolutePosition(m_position.x + m_size.x - m_scroll.getSize().x, m_position.y);
 	m_scroll.setSize(m_scroll.getSize().x, h);
 	int scrollMax = m_items.size()*m_itemHeight - m_size.y;
 	if(scrollMax>0) m_scroll.setRange(0, scrollMax);
@@ -396,8 +397,8 @@ void DropList::openList() {
 	m_open = true;
 	int sy = m_itemHeight * m_items.size();
 	if(sy > m_max && m_max>0) sy = m_max;
-	m_position.y -= sy - m_itemHeight;
-	m_size.y = sy;
+	//m_position.y -= sy - m_itemHeight;
+	setSize(m_size.x, sy);
 }
 void DropList::closeList() {
 	m_open = false;
@@ -503,11 +504,15 @@ uint Scrollbar::click(Event* e, const Point& p) {
 uint Listbox::click(Event* e, const Point& p) {
 	//scrollbar
 	if(m_scroll.visible() && m_scroll.click(0, p)) return 0;
-	if(p.x > m_scroll.getPosition().x) return 0;
-	if(m_item==m_hover) return 0;
-	m_item = m_hover;
-	if(m_item<m_items.size()) return setEvent(e, m_item, m_items[m_item].name);
-	else return 0;
+	if(p.x > m_scroll.getAbsolutePosition().x) return 0;
+	//Item position
+	int itmX = m_position.x;
+	int itmY = m_position.y + m_size.y - m_hover*m_itemHeight + m_scroll.getValue();
+	//Handle click
+	if(m_hover<count() && clickItem(m_hover, m_items[m_hover].name, p.x-itmX, itmY-p.y)) {
+		m_item = m_hover;
+		return setEvent(e, m_item, m_items[m_item].name);
+	} else return 0;
 }
 uint DropList::click(Event* e, const Point& p) {
 	if(!m_open) {
