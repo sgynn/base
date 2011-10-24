@@ -129,6 +129,7 @@ namespace GUI {
 		//Drawing
 		void drawFrame(const Point& p, const Point& s, const char* title=0, Style* style=0) const;
 		void drawArrow(const Point& p, int direction, int size=8) const;
+		void drawRect(int x, int y, int w, int h, const Colour& c = white) const;
 		Colour blendColour(int type, int state, float value=1) const;
 	};
 

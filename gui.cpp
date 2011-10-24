@@ -158,9 +158,11 @@ Control* Container::getControl(const Point& p) {
 	return isOver(p.x, p.y)? this: 0;
 }
 void Container::setAbsolutePosition(int x, int y) {
-	moveContents(x-m_position.x, y-m_position.y);
+	int dx = x-m_position.x;
+	int dy = y-m_position.y;
 	m_position.x = x;
 	m_position.y = y;
+	moveContents(dx, dy);
 }
 void Container::moveContents(int dx, int dy) {
 	for(std::list<Control*>::iterator i=m_contents.begin(); i!=m_contents.end(); i++) {
@@ -376,10 +378,12 @@ uint Listbox::update(Event* e) {
 }
 uint DropList::update(Event* e) {
 	int mx, my;
-	Game::Mouse(mx, my);
+	int mb = Game::Mouse(mx, my);
 	bool over = isOver(mx, my);
 	uint lItem = m_item;
 	if(m_open) {
+		//Fix click when outside parent
+		if(m_container && over && (mb&1) && !isOver(Point(mx,my), m_container->getAbsolutePosition(), m_container->getSize())) click(e, Point(mx,my));
 		Listbox::update(e);
 		if(Game::Pressed(KEY_ENTER) && !Game::Mouse()) closeList();
 	} else {
@@ -578,6 +582,17 @@ void Control::drawArrow(const Point& p, int direction, int size) const {
 	glEnd();
 	glEnable(GL_TEXTURE_2D);
 }
+void Control::drawRect(int x, int y, int w, int h, const Colour& c) const {
+	if(c.a>0) {
+		glColor4fv(c);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0,1); glVertex2f(x,y);
+		glTexCoord2f(1,1); glVertex2f(x+w,y);
+		glTexCoord2f(1,0); glVertex2f(x+w,y+h);
+		glTexCoord2f(0,0); glVertex2f(x,y+h);
+		glEnd();
+	}
+}
 Colour Control::blendColour(int type, int state, float value) const {
 	const Colour& base = m_style->getColour(type);
 	if((state>>2)<=1  || value == 0) {
@@ -707,6 +722,13 @@ void Listbox::draw() {
 }
 void Listbox::drawItem(uint index, const char* item, int x, int y, int width, int height, float state) {
 	int s = index==m_item? Style::FOCUS: index==m_hover? Style::OVER: 0;
+	//Background
+	if(s) {
+		glDisable(GL_TEXTURE_2D);
+		drawRect(x,y,width,height, blendColour(Style::BACK, s, state) );
+		glEnable(GL_TEXTURE_2D);
+	}
+	//Text
 	glColor4fv( blendColour(Style::TEXT, s, state));
 	m_style->font->print(x, y, item);
 }

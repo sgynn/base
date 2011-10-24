@@ -360,8 +360,8 @@ void Camera::updateCameraOrbit(const vec3& target, float turn, const vec3* up, f
 		while(mw<0) { distance *= 1.2f; mw++; }
 		while(mw>0) { distance *= 0.8f; mw--; }
 		//Adjust camera
-		if(dp!=0) rotateLocal(AXIS_Y, dy);
-		if(dy!=0) rotateLocal(AXIS_X, dp);
+		if(dy!=0) rotateLocal(AXIS_Y, dy);
+		if(dp!=0) rotateLocal(AXIS_X, dp);
 		setPosition(target + getDirection()*distance);
 		//Up vectors dont work very well with rotateLocal. May need a seperate case.
 		//if(up) lookat(getPosition(), target, getUp().y<0? *up*-1: *up);

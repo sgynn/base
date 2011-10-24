@@ -26,6 +26,8 @@ class Camera {
 	void rotateLocal(M_AXIS axis, float radians);
 	/** Update field of view - only works for perspective cameras */
 	void setFov(float fov) { m_fov=fov; }
+	/** Update the aspect ratio - only for perspective cameras */
+	void setAspect(float aspect) { m_aspect = aspect; }
 	/** Adjust near and far cliping planes */
 	void adjustDepth(float near, float far) { m_near=near; m_far=far; }
 	

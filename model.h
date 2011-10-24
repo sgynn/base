@@ -173,8 +173,8 @@ namespace model {
 
 		/** Bounding box */
 		void updateBox();
-		float* boxMin() const;
-		float* boxMax() const;
+		const float* boxMin() const { return m_box; }
+		const float* boxMax() const { return m_box+3; }
 		
 		protected:
 		static size_t s_offset[4][4]; //Normal, Texture, Tagnent index offsets for each vertex type
