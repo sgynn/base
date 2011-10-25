@@ -103,9 +103,9 @@ namespace GUI {
 		virtual const Point& getAbsolutePosition() const { return m_position; }
 		virtual void setSize(int width, int height) { m_position.y+=m_size.y-height; m_size.x=width, m_size.y=height; }
 		const Point& getSize() const { return m_size; }
-		void show() { m_visible=true; }
-		void hide() { m_visible=false; }
-		void setVisible(bool vis=true) { m_visible=vis; }
+		virtual void show() { m_visible=true; }
+		virtual void hide() { m_visible=false; }
+		inline void setVisible(bool vis=true) { vis?show():hide(); }
 		void raise();	//Bring control to the front of the list (draws on top)
 		bool visible() const { return m_visible; }
 		virtual bool isContainer() const { return false; }
