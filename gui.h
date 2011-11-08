@@ -14,16 +14,16 @@ namespace GUI {
 	class Control;
 	class Container;
 
-	/** Perhaps use this as a style
+	/** GUI Style - it would be great if styles could stack
 	 *	font
 	 *	background { colour, focus, over }
-	 *	foreground { colour, focus, over }
-	 *	fadeTime - time to fade between colour and over
-	 *	border   - border size. Line if no sprite, else sprite border
-	 *	sprite   - sprites can have multiple frames
-	 *	frame	 - sprite frame
-	 *	overFrame
-	 *	focusFrame
+	 *	border { colour, focus, over }
+	 *	text { colour, focus, over }
+	 *	fadeTime	- time to fade between colour and over
+	 *	borderSize	- border size. Line if no sprite, else sprite border
+	 *	sprite		- sprites can have multiple frames
+	 *	frames[]	- sprite frame [ back,focus,over,glyphs... ]
+	 *
 	 * Use a GUI::Sprite class for the sprite
 	 * 	width, height, texture, rows, columns
 	 *
@@ -32,12 +32,23 @@ namespace GUI {
 	 * 	Frame		- A container graphics which can be dragged
 	 * 	Label		- Some text (no interaction)
 	 * 	Button		- Changes on over/focus, has click event
+	 * 	Checkbox	- Checked toggles on click
 	 * 	Listbox		- List of text items. Scrollable
 	 * 	DropList	- Dropdown list (uses listbox)
 	 * 	Input		- Text Input Field
-	 *
-	 * 	Checkbox	- Can be a full button, or a label with box. Can be radio button
-	 **/
+	 * 	
+	 * Input - would like to remove the distributed dependance on base
+	 *     - mousePosition	- Cursor location in screen space
+	 *     - mouseButton	- bitset of button states
+	 *     - mouseClick	- bitset of changed button states
+	 *     - key		- key state
+	 *     - keyPressed	- key was pressed since last frame
+	 *     - lastKey	- the last key to be pressed
+	 *     - lastChar	- last inputted character? maybe use keyString liks flashpunk?
+	 *     - window width	
+	 *     - window height
+	 *     - frameTime	- time in seconds since the last update call
+	 */
 
 	/** GUI Sprites */
 	class Sprite {
@@ -129,7 +140,7 @@ namespace GUI {
 		//Drawing
 		void drawFrame(const Point& p, const Point& s, const char* title=0, Style* style=0) const;
 		void drawArrow(const Point& p, int direction, int size=8) const;
-		void drawRect(int x, int y, int w, int h, const Colour& c = white) const;
+		void drawRect(int x, int y, int w, int h, const Colour& c = white, bool fill=true) const;
 		Colour blendColour(int type, int state, float value=1) const;
 		void scissorPushNew(int x, int y, int w, int h) const;
 		void scissorPush(int x, int y, int w, int h) const;
@@ -247,8 +258,9 @@ namespace GUI {
 		virtual void setSize(int width, int height); // resize scrollbar
 		virtual void drawItem(uint index, const char* item, int x, int y, int width, int height, float state);
 		virtual bool clickItem(uint index, const char* item, int x, int y) { return index!=m_item; }
+		virtual uint removeItem(uint index);
+		uint addItem(const char* item, uint index, bool selected=false);
 		uint addItem(const char* item, bool selected=false);
-		uint removeItem(uint index);
 		uint count() const { return m_items.size(); }
 		const char* getItem(uint index) const { return index<count()? m_items[index].name: 0; }
 		const char* selectedItem() const { return getItem(m_item); }
@@ -258,6 +270,7 @@ namespace GUI {
 		protected:
 		virtual void setAbsolutePosition(int x, int y); // move internal scrollbar
 		virtual uint click(Event* e, const Point& p);
+		void updateBounds();
 		struct ListItem { const char* name; float state; };
 		std::vector<ListItem> m_items;
 		uint m_itemHeight;	// Height of each item

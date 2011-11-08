@@ -28,6 +28,9 @@ class FrameBuffer {
 	/** Bind the framebuffer as the current a render target */
 	void bind() const;
 
+	/** is this framebuffer bound? */
+	bool isBound() const { return s_bound==this; }
+
 	/** Null framebuffer - used for unbinding */
 	static const FrameBuffer Screen;
 

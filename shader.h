@@ -52,6 +52,8 @@ class Shader {
 	Shader();
 	
 	void bind();
+
+	bool ready() const { return m_program; }
 	
 	/** Get the linker log for this shader */
 	char* log(char* buffer, int size) const;

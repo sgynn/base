@@ -11,10 +11,6 @@
 
 #include <assert.h>
 
-
-// Use coordinates from top left rather than bottom left
-#define FixY(py)	(Game::getSize().y-py-m_size.y)
-
 using namespace base;
 using namespace GUI;
 
@@ -115,7 +111,10 @@ void Control::setPosition(int x, int y) {
 }
 //// //// Container functions //// ////
 Control* Container::add( Control* c, int x, int y ) {
-	if(c->m_container) printf("Warning: Control already in a container\n");
+	if(c->m_container) {
+		printf("Warning: Control already in a container\n"); 
+		c->m_container->remove(this);
+	}
 	m_contents.push_back( c );
 	c->m_container = this;
 	c->setPosition(x, y);
@@ -165,6 +164,7 @@ void Container::setAbsolutePosition(int x, int y) {
 	moveContents(dx, dy);
 }
 void Container::moveContents(int dx, int dy) {
+	if(dx==0 && dy==0) return;
 	for(std::list<Control*>::iterator i=m_contents.begin(); i!=m_contents.end(); i++) {
 		const Point& p = (*i)->m_position;
 		(*i)->setAbsolutePosition( p.x+dx, p.y+dy );
@@ -178,27 +178,41 @@ void Control::raise() {
 }
 
 //// //// List Functions //// ////
+uint Listbox::addItem( const char* itemText, uint ix, bool s) {
+	ListItem item; item.name = itemText; item.state=0;
+	if(ix>=count()) m_items.push_back(item);
+	else {
+		m_items.push_back( m_items.back() );
+		for(uint i=count()-1; i>ix; i--) m_items[i] = m_items[i-1];
+		m_items[ix] = item;
+	}
+	updateBounds();
+	if(s) m_item = ix<count()? ix: count()-1;
+	return m_items.size();
+}
 uint Listbox::addItem( const char* itemText, bool s) {
 	ListItem item; item.name = itemText; item.state=0;
 	m_items.push_back(item);
 	if(s) m_item = m_items.size()-1;
-	int scrollMax = m_items.size()*m_itemHeight - m_size.y;
-	if(scrollMax>0) m_scroll.setRange(0, scrollMax);
-	if(scrollMax>0) m_scroll.show();
+	updateBounds();
 	return m_items.size();
 }
 uint Listbox::removeItem(uint index) {
 	for(uint i=index; i<m_items.size()-1; i++) m_items[i] = m_items[i+1];
 	m_items.pop_back();
-	int scrollMax = m_items.size()*m_itemHeight - m_size.y;
-	if(scrollMax>0) m_scroll.setRange(0, scrollMax);
-	if(!scrollMax>0) m_scroll.hide();
+	updateBounds();
 	return m_items.size();
 }
 void Listbox::clearItems() {
+	while(count()) removeItem(count()-1);
 	m_items.clear();
 	m_item = m_hover = 0;
 	m_scroll.hide();
+}
+void Listbox::updateBounds() {
+	int scrollMax = m_items.size()*m_itemHeight - m_size.y;
+	if(scrollMax>0) m_scroll.setRange(0, scrollMax);
+	m_scroll.setValue(scrollMax>0);
 }
 void Listbox::scrollTo(uint index) {
 	//Scroll until index is on screen
@@ -270,7 +284,7 @@ Point Control::textPosition(const char* c, int oa, int ob) {
 
 //// //// Update Functions //// ////
 uint Control::update(Event* e) {
-	if(!m_container && (Game::MouseClick()&1)) {
+	if(!m_container && (Game::MouseClick())) {
 		Point p; Game::Mouse(p.x, p.y);
 		if(isOver(p.x, p.y)) return click(e, p);
 		else if(focus==this) focus = 0;
@@ -582,10 +596,10 @@ void Control::drawArrow(const Point& p, int direction, int size) const {
 	glEnd();
 	glEnable(GL_TEXTURE_2D);
 }
-void Control::drawRect(int x, int y, int w, int h, const Colour& c) const {
+void Control::drawRect(int x, int y, int w, int h, const Colour& c, bool fill) const {
 	if(c.a>0) {
 		glColor4fv(c);
-		glBegin(GL_QUADS);
+		glBegin(fill?GL_QUADS:GL_LINE_LOOP);
 		glTexCoord2f(0,1); glVertex2f(x,y);
 		glTexCoord2f(1,1); glVertex2f(x+w,y);
 		glTexCoord2f(1,0); glVertex2f(x+w,y+h);
