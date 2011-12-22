@@ -40,6 +40,8 @@ class Shader {
 	friend class GeometryShader;
 	public:
 	
+	static const VertexShader& createVertexShader(const char* name, const char** code, int c=1);
+	static const FragmentShader& createFragmentShader(const char* name, const char** code, int c=1);
 	static const VertexShader& getVertexShader(const char* name);
 	static const FragmentShader& getFragmentShader(const char* name);
 	static Shader& getShader(const char* name);
@@ -89,7 +91,7 @@ class Shader {
 	private:
 	
 	static const char* load(const char* filename);
-	static unsigned int compile(const char* shader, int type);
+	static unsigned int compile(int type, const char** code, int c);
 	static int queryShader(unsigned int shader, int param);
 	static int queryProgram(unsigned int shader, int param);
 	

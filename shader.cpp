@@ -163,7 +163,7 @@ const VertexShader& Shader::getVertexShader(const char* name) {
 			return s;
 		}
 		//Compile shader
-		s.m_shader = compile(code, GL_VERTEX_SHADER);
+		s.m_shader = compile(GL_VERTEX_SHADER, &code, 1);
 		delete [] code;
 		if( queryShader(s.m_shader, GL_COMPILE_STATUS) == 0 ) {
 			std::cout << "Failed to compile " << name << std::endl;
@@ -189,7 +189,7 @@ const FragmentShader& Shader::getFragmentShader(const char* name) {
 			return s;
 		}
 		//Compile shader
-		s.m_shader = compile(code, GL_FRAGMENT_SHADER);
+		s.m_shader = compile(GL_FRAGMENT_SHADER, &code, 1);
 		delete [] code;
 		if( queryShader(s.m_shader, GL_COMPILE_STATUS) == 0 ) {
 			std::cout << "Failed to compile " << name << std::endl;
@@ -202,6 +202,49 @@ const FragmentShader& Shader::getFragmentShader(const char* name) {
 		
 	} else return s_fragmentShaders[name];
 }
+const VertexShader& Shader::createVertexShader(const char* name, const char** code, int c) {
+	if(s_vertexShaders.find(name)!=s_vertexShaders.end()) {
+		printf("Warning: Vertex shader '%s' already exists\n", name);
+		return s_vertexShaders[name];
+	} else {
+		initialiseShaderExtensions();
+		s_vertexShaders[name] = VertexShader();
+		VertexShader& s = s_vertexShaders[name];
+		//Compile shader
+		s.m_shader = compile(GL_VERTEX_SHADER, code, c);
+		delete [] code;
+		if( queryShader(s.m_shader, GL_COMPILE_STATUS) == 0 ) {
+			std::cout << "Failed to compile " << name << std::endl;
+			char buf[1000]; std::cout << s.log(buf,1000) << std::endl;
+			return s;
+		}
+		//Done
+		s.m_compiled = true;
+		return s;
+	}
+}
+const FragmentShader& Shader::createFragmentShader(const char* name, const char** code, int c) {
+	if(s_fragmentShaders.find(name)!=s_fragmentShaders.end()) {
+		printf("Warning: Fragment shader '%s' already exists\n", name);
+		return s_fragmentShaders[name];
+	} else {
+		initialiseShaderExtensions();
+		s_fragmentShaders[name] = FragmentShader();
+		FragmentShader& s = s_fragmentShaders[name];
+		//Compile shader
+		s.m_shader = compile(GL_FRAGMENT_SHADER, code, c);
+		delete [] code;
+		if( queryShader(s.m_shader, GL_COMPILE_STATUS) == 0 ) {
+			std::cout << "Failed to compile " << name << std::endl;
+			char buf[1000]; std::cout << s.log(buf,1000) << std::endl;
+			return s;
+		}
+		//Done
+		s.m_compiled = true;
+		return s;
+	}
+}
+
 Shader& Shader::getShader(const char* name) {
 	for(unsigned int i=0; i<s_shaders.size(); i++) {
 		if(s_shaders[i].m_name && strcmp(s_shaders[i].m_name, name)==0) return s_shaders[i];
@@ -293,14 +336,15 @@ const char* Shader::load(const char* filename) {
 	}
 }
 
-unsigned int Shader::compile(const char* code, int type) {
+unsigned int Shader::compile(int type, const char** code, int c) {
 	if(!supported()) return 0;
-	const char* lines[2];
+	char const ** lines = new char const*[c+1];
 	lines[0] = type==GL_VERTEX_SHADER? "#define VERTEX_SHADER\n": "#define FRAGMENT_SHADER\n";
-	lines[1] = code;
+	for(int i=0; i<c; i++) lines[i+1] = code[i];
 	unsigned int shader = glCreateShader(type);
-	glShaderSource(shader,  2, lines, NULL);
+	glShaderSource(shader,  c+1, lines, NULL);
 	glCompileShader(shader);
+	delete [] lines;
 	return shader;
 }
 
