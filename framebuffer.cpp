@@ -70,13 +70,15 @@ FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffe
 
 	// Create the frame buffer
 	glGenFramebuffers(1, &m_buffer);
+	if(f==0) return; //Framebuffer has no attachments
+
 	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 	const FrameBuffer* last = s_bound; //Avoid rebinding
 	s_bound = this;
 
 	//Attach stuff
 	if(f&COLOUR) attachColour(TEXTURE, GL_RGBA);
-	else attachColour(TEXTURE, GL_RGB); //Must have a colour buffer
+	else if(f&DEPTH) attachColour(TEXTURE, GL_RGB); //Must have a colour buffer
 	if(f&DEPTH)  attachDepth(TEXTURE, 24);
 
 
@@ -88,16 +90,17 @@ FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffe
 }
 FrameBuffer::~FrameBuffer() {
 	//if(m_buffer) glDeleteFramebuffers(1, &m_buffer);
-	//if(m_depth) glDeleteRenderbuffers(1, &m_depth);
+	//if(m_depth.type) glDeleteRenderbuffers(1, &m_depth.data);
 }
 
-uint FrameBuffer::attachColour(uint type, uint format) {
+uint FrameBuffer::attachColour(uint type, uint format, bool isFloat) {
 	int index;
 	for(index=0; index<4&&m_colour[index].type; index++);
 	if(!format) format = GL_RGBA;
 	if(type==TEXTURE) {
 		m_colour[index].type = 1;
-		m_colour[index].texture = Texture::createTexture(m_width, m_height, format);
+		if(isFloat) m_colour[index].texture = Texture::createTexture(m_width, m_height, format,  GL_RGB,GL_FLOAT,0);
+		else m_colour[index].texture = Texture::createTexture(m_width, m_height, format);
 		m_colour[index].data = m_colour[index].texture.getGLTexture();
 		//Attach to buffer
 		if(m_colour[index].texture.ready()) {

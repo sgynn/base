@@ -48,22 +48,24 @@ const Texture& Texture::getTexture(const char* name) {
 }
 
 const Texture Texture::createTexture(int width, int height, uint format, const void* data) {
+	return createTexture(width,height,format,format, GL_UNSIGNED_BYTE, data);
+}
+const Texture Texture::createTexture(int width, int height, uint format, uint sourceFormat, uint type, const void* data) {
 	//Generate an empty texture
 	uint texture;
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data); 
+	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, sourceFormat, type, data); 
+	GL_DEBUG_ERROR;
 	//Done
 	Texture t;
 	t.m_good = texture>0;
 	t.m_texture = texture;
 	t.m_width = width;
 	t.m_height = height;
-	t.m_bpp = format==GL_RGBA?32: format==GL_RGB?24: 8;
+	t.m_bpp = format==GL_RGBA?32: format==GL_RGB?24: 8; //Need full enum for this
 	return t;
 }
 
@@ -103,8 +105,6 @@ int Texture::load(const char* filename) {
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	
 	//copy texture data
 	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, format2, GL_UNSIGNED_BYTE, image.data ); 

@@ -10,5 +10,8 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+
+#define GL_DEBUG_ERROR  { int e=glGetError(); if(e) printf("OpenGL Error %d: %s:%d\n", e, __FILE__, __LINE__); }
+
 #endif
 

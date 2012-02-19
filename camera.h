@@ -37,7 +37,10 @@ class Camera {
 	const vec3& getLeft() const { return *reinterpret_cast<const vec3*>(&m_rotation[0]); }
 	const vec3& getUp() const { return *reinterpret_cast<const vec3*>(&m_rotation[4]); }
 	/** Get vertical field of view. Only works for perspective cameras */
-	float getFov() const { return m_fov; }
+	float getFov()  const { return m_fov;  }
+	float getNear() const { return m_near; }
+	float getFar()  const { return m_far;  }
+	float getAspect() const { return m_aspect; }
 	const Matrix& getRotation() const { return m_rotation; }
 	const Matrix& getProjection() const { return m_projection; }
 	Matrix getModelview() const;

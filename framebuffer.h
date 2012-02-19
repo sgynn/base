@@ -21,7 +21,7 @@ class FrameBuffer {
 	operator const Texture&() const { return texture(); }
 
 	/** Attach various render targets */
-	uint attachColour(uint type, uint format=0);
+	uint attachColour(uint type, uint format=0, bool isFloat=false);
 	uint attachDepth(uint type, uint depth=32);
 	uint attachStencil(uint type);
 

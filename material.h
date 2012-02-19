@@ -14,6 +14,7 @@ class Texture {
 	public:
 	static const Texture& getTexture(const char* name);
 	static const Texture createTexture(int width, int height, uint format, const void* data=0);
+	static const Texture createTexture(int width, int height, uint format, uint sourceFormat, uint type, const void* data=0);
 	static void reload();
 	void clamp(bool edge=true) const;
 	void filter(uint min, uint mag) const;
