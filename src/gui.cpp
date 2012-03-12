@@ -1,10 +1,10 @@
-#include "gui.h"
+#include "base/gui.h"
 
-#include "opengl.h"
-#include "input.h"
-#include "game.h"
-#include "font.h"
-#include "material.h"
+#include "base/opengl.h"
+#include "base/input.h"
+#include "base/game.h"
+#include "base/font.h"
+#include "base/material.h"
 
 #include <cstring>
 #include <cstdio>

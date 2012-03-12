@@ -1,5 +1,6 @@
 //Code for gluProject and gluUnproject copied from opengl.org
 
+#include <cmath>
 	
 void MultiplyMatrices4by4OpenGL_FLOAT(float *result, const float *matrix1, const float *matrix2)
 {

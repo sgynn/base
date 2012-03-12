@@ -1,10 +1,10 @@
 #include <iostream>
-#include "scene.h"
-#include "game.h"
-#include "camera.h"
-#include "draw.h"
-#include "material.h"
-#include "input.h"
+#include "base/scene.h"
+#include "base/game.h"
+#include "base/camera.h"
+#include "base/draw.h"
+#include "base/material.h"
+#include "base/input.h"
 
 using namespace base;
 

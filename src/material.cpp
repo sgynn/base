@@ -1,12 +1,12 @@
-#include "material.h"
+#include "base/material.h"
 
-#include "opengl.h"
+#include "base/opengl.h"
 
 #include <cstdio>
 #include <cstring>
-#include "file.h"
+#include "base/file.h"
 
-#include "png.h"
+#include "base/png.h"
 
 //stupid windows
 #ifndef GL_CLAMP_TO_EDGE

@@ -1,7 +1,7 @@
 #define GL_GLEXT_PROTOTYPES
-#include "opengl.h"
-#include "framebuffer.h"
-#include "game.h"
+#include "base/opengl.h"
+#include "base/framebuffer.h"
+#include "base/game.h"
 
 #include <cstdio>
 #include <cstring>

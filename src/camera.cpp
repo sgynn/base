@@ -1,8 +1,8 @@
-#include "opengl.h"
+#include "base/opengl.h"
 
-#include "camera.h"
-#include "game.h"
-#include "input.h"
+#include "base/camera.h"
+#include "base/game.h"
+#include "base/input.h"
 
 #include <cstdio>
 
@@ -273,8 +273,11 @@ Matrix Camera::frustum(float left, float right, float bottom, float top, float n
 	return m;
 }
 
-#include "game.h"
-#include "glhprojection.c"
+#include "base/game.h"
+//#include "base/glhprojection.c"
+extern int glhProjectf(float,float,float, const float*, const float*, const int*, float*);
+extern int glhUnProjectf(float,float,float, const float*, const float*, const int*, float*);
+
 vec3 Camera::project(const vec3& world) const {
 	vec3 out;
 	int viewport[4] = { 0, 0, Game::getSize().x, Game::getSize().y };

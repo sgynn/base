@@ -6,10 +6,10 @@
 # define GL_GLEXT_PROTOTYPES
 # include <GL/gl.h>
 # include <GL/glext.h>
-# include "shader.h"
+# include "base/shader.h"
 #endif
 
-#include "model.h"
+#include "base/model.h"
 #include <cstring>
 
 using namespace base;

@@ -1,10 +1,10 @@
-#include "font.h"
-#include "file.h"
-#include "opengl.h"
+#include "base/font.h"
+#include "base/file.h"
+#include "base/opengl.h"
 #include <cstdio>
 #include <cstring>
 
-#include "png.h"
+#include "base/png.h"
 
 using namespace base;
 

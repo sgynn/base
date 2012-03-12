@@ -1,8 +1,8 @@
-#include "input.h"
+#include "base/input.h"
 #include <cstring> 
 
-#include "game.h" //Game included to get window position for mouse data
-#include "window.h"
+#include "base/game.h" //Game included to get window position for mouse data
+#include "base/window.h"
 
 #include <cstdio>
 

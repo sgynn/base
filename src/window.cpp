@@ -1,4 +1,4 @@
-#include "window.h"
+#include "base/window.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
 
@@ -32,7 +32,7 @@ HINSTANCE s_hInst;
 
 #include <cstdio>
 #include <cstdlib>
-#include "input.h"
+#include "base/input.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4996)
@@ -93,6 +93,7 @@ base::Window::Window(int width, int height, int bpp, int depth, bool fullscreen,
 	
 	//signal the windowhandler to create the window
 	create();
+
 	//set this window as the current context
 	makeCurrent();
 	

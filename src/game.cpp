@@ -1,9 +1,9 @@
-#include "opengl.h"
-#include "window.h"
-#include "input.h"
+#include "base/opengl.h"
+#include "base/window.h"
+#include "base/input.h"
 
-#include "game.h"
-#include "state.h"
+#include "base/game.h"
+#include "base/state.h"
 #include <sys/time.h>
 #include <cstdio>
 #include <cstdlib>

@@ -1,4 +1,4 @@
-#include "collision.h"
+#include "base/collision.h"
 
 using namespace base;
 
@@ -82,9 +82,6 @@ int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, f
 /** Triangle intersection with line */
 int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, vec3& out) {
 	vec3 pq = q - p;
-	//vec3 pa = a - p;
-	//vec3 pb = b - p;
-	//vec3 pc = c - p;
 	
 	float u,v,w;
 	vec3 m = pq.cross(p);

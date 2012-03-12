@@ -1,11 +1,10 @@
 #define GL_GLEXT_PROTOTYPES
-#include "opengl.h"
-#include "GL/glext.h"
+#include "base/opengl.h"
 
-#include "shader.h"
+#include "base/shader.h"
 #include <iostream>
 #include <string.h>
-#include "file.h"
+#include "base/file.h"
 
 //Extensions
 #ifndef GL_VERSION_2_0

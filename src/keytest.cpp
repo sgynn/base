@@ -1,7 +1,7 @@
 //This is a test thingy for outputting the keymap
 #include <cstdio>
 #include <string.h>
-#include "input.h"
+#include "base/input.h"
 
 using namespace base;
 
