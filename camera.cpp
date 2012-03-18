@@ -318,15 +318,15 @@ void Camera::updateCameraFPS(float speed, float turn, const vec3* up, float limi
 	if(Key(KEY_RIGHT) || Key(KEY_D)) move.x =  speed;
 
 	//Move camera
-	Matrix mat = getRotation();
+	//Matrix mat = getRotation();
 	vec3 position = getPosition();
 	position += getDirection() * move.z;
 	position += getLeft() * move.x;
 	setPosition(position);
 	
 	//Rotate Camera
-	int mx, my, mb;
-	mb = in->mouse(mx, my);
+	int mx, my;
+	in->mouse(mx, my);
 	static int lx=0, ly=0;
 	if(turn!=0) {
 		//rotate rotation matrix.

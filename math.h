@@ -92,7 +92,6 @@ class Vec3 {
 		Vec3 cross(const Vec3& v) const { return Vec3(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x); }
 }; 
 
-
 typedef Vec2 vec2;
 typedef Vec3 vec3;
 
@@ -187,12 +186,26 @@ class aabb {
 	aabb() {};
 	aabb(const vec3& p) : min(p), max(p) {};
 	aabb(const vec3& min, const vec3& max) : min(min), max(max) {};
+	aabb(float ax, float ay, float az, float bx, float by, float bz) : min(ax,ay,az), max(bx,by,bz) {};
 	
 	aabb& operator=(const aabb& b) { min=b.min; max=b.max; return *this; }
 	aabb operator+(const vec3& v) const { return aabb(min+v, max+v); }
 	aabb operator-(const vec3& v) const { return aabb(min-v, max-v); }
 	aabb& operator+=(const vec3& v) { min+=v, max+=v; return *this;  }
 	aabb& operator-=(const vec3& v) { min-=v, max-=v; return *this;  }
+	
+	aabb operator|(const aabb& b) const { aabb a(*this); a.addBox(b); return a; };
+	aabb& operator|=(const aabb& b) { addBox(b); return *this; }
+	aabb operator&(const aabb& b) const { aabb a(*this); a&=b; return a; };
+	aabb& operator&=(const aabb& b) { 
+		if(b.min.x>min.x) min.x=b.min.x;
+		if(b.min.y>min.y) min.y=b.min.y;
+		if(b.min.z>min.z) min.z=b.min.z;
+		if(b.max.x<max.x) max.x=b.max.x;
+		if(b.max.y<max.y) max.y=b.max.y;
+		if(b.max.z<max.z) max.z=b.max.z;
+		return *this;
+	}
 
 	vec3 size() const { return vec3(max-min); }
 

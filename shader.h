@@ -6,55 +6,81 @@
 #include <string>
 namespace base {
 
-class VertexShader {
+class ShaderBase {
+	protected:
 	friend class Shader;
 	unsigned int m_shader;
 	bool m_compiled;
+	int m_type;
+	ShaderBase(int type): m_shader(0), m_compiled(0), m_type(type) {}
 	public:
-	VertexShader() : m_shader(0), m_compiled(0) {};
 	char* log(char* buffer, int size) const;
 };
 
-class FragmentShader {
-	friend class Shader;
-	unsigned int m_shader;
-	bool m_compiled;
+class VertexShader : public ShaderBase {
 	public:
-	FragmentShader() : m_shader(0), m_compiled(0) {};
-	char* log(char* buffer, int size) const;
+	VertexShader() : ShaderBase(1) {};
 };
 
-class GeometryShader {
-	friend class Shader;
-	unsigned int m_shader;
-	bool m_compiled;
+class FragmentShader : public ShaderBase {
 	public:
-	GeometryShader() : m_shader(0), m_compiled(0) {};
-	char* log(char* buffer, int size) const;
+	FragmentShader() : ShaderBase(2) {};
+};
+
+class GeometryShader : public ShaderBase {
+	public:
+	GeometryShader() : ShaderBase(3) {};
 };
 
 /** Simple GLSL Shader class */
 class Shader {
-	friend class VertexShader;
-	friend class FragmentShader;
-	friend class GeometryShader;
+	friend class ShaderBase;
 	public:
 	
-	static const VertexShader& createVertexShader(const char* name, const char** code, int c=1);
-	static const FragmentShader& createFragmentShader(const char* name, const char** code, int c=1);
-	static const VertexShader& getVertexShader(const char* name);
-	static const FragmentShader& getFragmentShader(const char* name);
-	static Shader& getShader(const char* name);
-	static Shader& link( const char* name, const VertexShader& vertex, const FragmentShader& fragment );
-	static Shader& link( const VertexShader& vertex, const FragmentShader& fragment );
-	static int supported();
-	static Shader& current() { return s_currentShader; }
-	static Shader Null;
+	/** Load and compile a GLSL shader from file. Must include both vertex and fragment programs */
+	static Shader load(const char* filename);
+	/** Load and compile a GLSL shader from seperate files for each part */
+	static Shader load(const char* vertFile, const char* fragFile);
+	/** Load and compile a GLSL shader from seperate files for each part */
+	static Shader load(const char* vertFile, const char* geomFile, const char* fragFile);
 	
+	/** Link a shader containing specified pre-made parts */
+	static Shader link(const VertexShader&, const FragmentShader&); 
+	/** Link a shader containing specified pre-made parts */
+	static Shader link(const VertexShader&, const GeometryShader&, const FragmentShader&);
+
+	/** Load a vertex shader from file */
+	static VertexShader   loadVertex(const char* filename);
+	/** Load a fragment shader from file */
+	static FragmentShader loadFragment(const char* filename);
+	/** Load a geometry shader from file */
+	static GeometryShader loadGeometry(const char* filename);
+
+	/** Create a vertex shader from a string array */
+	static VertexShader   createVertex(const char** code, int c=1);
+	/** Create a fragment shader from a string array */
+	static FragmentShader createFragment(const char** code, int c=1);
+	/** Create a geometry shader from a string array */
+	static GeometryShader createGeometry(const char** code, int c=1);
+
+	// Backwards compatibiliy
+	static Shader getShader(const char* f) { return load(f); }
+
+
+	/** Does this computer support shaders? */
+	static int supported();
+	/** Get the currently bound shader. */
+	static Shader& current() { return s_currentShader; }
+	/** A null shader constant */
+	static const Shader Null;
+	
+	/** Default constructor - creates null shader */
 	Shader();
 	
-	void bind();
+	/** Bind the shader program. Bind null shader to unbind */
+	void bind() const;
 
+	/** Is the shader ready to be bound? */
 	bool ready() const { return m_program; }
 	
 	/** Get the linker log for this shader */
@@ -85,33 +111,31 @@ class Shader {
 	void DisableAttributeArray(const char* name);
 	void AttributePointer(const char *name, int size, int type, bool normalised, size_t stride, const void *pointer);
 	
+	private:
 	enum VType { UNIFORM, ATTRIBUTE };
 	int variable(const char* name, VType type);
 	
-	private:
-	
-	static const char* load(const char* filename);
-	static unsigned int compile(int type, const char** code, int c);
+	static const char* loadFile(const char* filename);
+	static bool compile(ShaderBase& shader, const char** code, int l);
 	static int queryShader(unsigned int shader, int param);
 	static int queryProgram(unsigned int shader, int param);
 	
 	//store variable pointers
 	std::map<std::string, int> m_vars;
 	int m_linked;
-	const char* m_name;
-	const FragmentShader* m_fragment;
-	const VertexShader*   m_vertex;
+	FragmentShader m_fragment;
+	GeometryShader m_geometry;
+	VertexShader   m_vertex;
 	unsigned int m_program;
 	
 	//need to store uniform variable values so they can be edited when the shader is not bound ?
+	//that is a job for a material class though
 	
 	static int s_supported;
-	static std::map<std::string, VertexShader> s_vertexShaders;
-	static std::map<std::string, FragmentShader> s_fragmentShaders;
-	static std::vector<Shader> s_shaders; //the linked shader programs
 	static Shader s_currentShader;
 	static unsigned int s_bound; //currently bound shader
 };
 };
 
 #endif
+

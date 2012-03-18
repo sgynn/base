@@ -4,6 +4,9 @@
 #include <list>
 #include <cstdio>
 
+// Macro to convert filename into a found file based on path lookup
+#define FindFile(filename) char path_##filename[128]; if(base::File::find(filename, path_##filename)) filename = path_##filename;
+
 /** File loader class. This can be extended to use pak files etc */
 namespace base {
 class Directory;
