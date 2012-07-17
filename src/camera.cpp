@@ -1,22 +1,18 @@
 #include "base/opengl.h"
-
 #include "base/camera.h"
-#include "base/game.h"
-#include "base/input.h"
 
 #include <cstdio>
 
 using namespace base;
 
-Camera::Camera() : m_mode(0), m_near(-1), m_far(1) {
-	Point screen = Game::getSize();
-	m_left=m_bottom=0;
-	m_right = screen.x;
-	m_top = screen.y;
+Camera::Camera(int width, int height) : m_mode(0), m_near(-1), m_far(1) {
+	m_left = m_bottom = 0;
+	m_right = width;
+	m_top = height;
 }
 
-Camera::Camera(float fov, float aspect, float near, float far) : m_mode(1), m_fov(fov), m_aspect(aspect), m_near(near), m_far(far) {
-
+Camera::Camera(float fov, float aspect, float near, float far)
+	: m_mode(1), m_fov(fov), m_aspect(aspect), m_near(near), m_far(far) {
 }
 
 
@@ -273,14 +269,12 @@ Matrix Camera::frustum(float left, float right, float bottom, float top, float n
 	return m;
 }
 
-#include "base/game.h"
-//#include "base/glhprojection.c"
 extern int glhProjectf(float,float,float, const float*, const float*, const int*, float*);
 extern int glhUnProjectf(float,float,float, const float*, const float*, const int*, float*);
 
-vec3 Camera::project(const vec3& world) const {
+vec3 Camera::project(const vec3& world, const Point& size) const {
 	vec3 out;
-	int viewport[4] = { 0, 0, Game::getSize().x, Game::getSize().y };
+	int viewport[4] = { 0, 0, size.x, size.y };
 	//calculate modelview matrix
 	Matrix modelview = m_rotation.transpose();
 	//translation
@@ -293,9 +287,9 @@ vec3 Camera::project(const vec3& world) const {
 	return out;
 }
 
-vec3 Camera::unproject(const vec3& screen) const {
+vec3 Camera::unproject(const vec3& screen, const Point& size) const {
 	vec3 out;
-	int viewport[4] = { 0, 0, Game::getSize().x, Game::getSize().y };
+	int viewport[4] = { 0, 0, size.x, size.y };
 	//calculate modelview matrix
 	Matrix modelview = m_rotation.transpose();
 	//translation
@@ -308,65 +302,3 @@ vec3 Camera::unproject(const vec3& screen) const {
 	return out;
 }
 
-const vec3 Camera::defaultUp(0,1,0);
-void Camera::updateCameraFPS(float speed, float turn, const vec3* up, float limit) {
-	Input* in = Game::input();
-
-	//get movement vector
-	#define Key(k) in->key(k)
-	vec3 move;
-	if(Key(KEY_UP)    || Key(KEY_W)) move.z = -speed;
-	if(Key(KEY_DOWN)  || Key(KEY_S)) move.z =  speed;
-	if(Key(KEY_LEFT)  || Key(KEY_A)) move.x = -speed;
-	if(Key(KEY_RIGHT) || Key(KEY_D)) move.x =  speed;
-
-	//Move camera
-	//Matrix mat = getRotation();
-	vec3 position = getPosition();
-	position += getDirection() * move.z;
-	position += getLeft() * move.x;
-	setPosition(position);
-	
-	//Rotate Camera
-	int mx, my;
-	in->mouse(mx, my);
-	static int lx=0, ly=0;
-	if(turn!=0) {
-		//rotate rotation matrix.
-		if(mx!=lx) rotateLocal(AXIS_Y, (lx-mx)*turn);
-		if(my!=ly) rotateLocal(AXIS_X, (ly-my)*turn);
-		//Reset up vector?
-		if(up) lookat(position, position - getDirection(), *up);
-		if(lx!=mx || ly!=my) in->warpMouse(lx, ly);
-	} else { lx=mx; ly=my; }
-}
-
-void Camera::updateCameraOrbit(const vec3& target, float turn, const vec3* up, float limit) {
-	Input* in = Game::input();
-
-	//Rotate camera
-	int mx, my;
-	in->mouse(mx, my);
-	int mw = in->mouseWheel();
-	static int lx=0, ly=0;
-	float dp=0, dy=0;
-	if(turn!=0) {
-		if(mx!=lx) dy = (mx-lx)*turn;
-		if(my!=ly) dp = (ly-my)*turn;
-		if(dp!=0 || dy!=0) in->warpMouse(lx, ly);
-	} else { lx=mx; ly=my; }
-
-	//Update camera position
-	if(dp!=0 || dy!=0 || mw!=0) {
-		//Update camera distance
-		float distance = m_position.distance(target);
-		while(mw<0) { distance *= 1.2f; mw++; }
-		while(mw>0) { distance *= 0.8f; mw--; }
-		//Adjust camera
-		if(dy!=0) rotateLocal(AXIS_Y, dy);
-		if(dp!=0) rotateLocal(AXIS_X, dp);
-		setPosition(target + getDirection()*distance);
-		//Up vectors dont work very well with rotateLocal. May need a seperate case.
-		//if(up) lookat(getPosition(), target, getUp().y<0? *up*-1: *up);
-	}
-}

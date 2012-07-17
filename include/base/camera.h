@@ -9,12 +9,13 @@
 namespace base {
 class Camera {
 	public:
-	/** Default constructor - screen space orthographic camera */
-	Camera();
+	/** Orthographic camera */
+	Camera(int width, int height);
 	/** Perspective camera constructor */
 	Camera(float fov, float aspect, float near, float far);
 	/** Generic frustum */
 	Camera(float left, float right, float bottom, float top, float near, float far);
+
 
 	/** Just set camera position */
 	void setPosition(const vec3& position) { m_position = position; }
@@ -69,16 +70,13 @@ class Camera {
 	const float* getFrustumPlane(int id) const;
 	
 
-
 	/** Project a point in world coordinated to screen coordinates */
-	vec3 project(const vec3& world) const;
+	vec3 project(const vec3& world, const Point& size) const;
 	/** Unproject a point on the screen to world coordinates */
-	vec3 unproject(const vec3& screen) const;
+	vec3 unproject(const vec3& screen, const Point& size) const;
 
-	
-	/** FPS Camera All-In-One Update Function. Set turn=0 to unlock the mouse */
-	void updateCameraFPS(float speed, float turn=0.004, const vec3* up=&defaultUp, float limit=1.5);
-	void updateCameraOrbit(const vec3& target=vec3(), float turn=0.004, const vec3* up=&defaultUp, float limit=1.5);
+	/** Virtual update function for overriding */
+	virtual void update() {}
 
 	protected:
 	int m_mode;	//0=screen, 1=perspective, 2=frustum
@@ -87,7 +85,6 @@ class Camera {
 	float m_bottom, m_top;
 	float m_near, m_far;
 
-	static const vec3 defaultUp; //default up vector for update functions
 	vec3 m_position;	//camera position
 	Matrix m_rotation;	//camera rotation
 
