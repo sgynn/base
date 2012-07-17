@@ -239,6 +239,7 @@ struct Range {
 	void addPoint(float v) { if(v<min) min=v; if(v>max) max=v; }
 	bool contains(float p) const { return p>=min && p<=max; }
 	float range() const { return max - min; }
+	float clamp(float v) const { return v<min? min: v>max?max: v; }
 };
 
 struct Colour {

@@ -3,6 +3,7 @@ project(basecode)
 
 set(src
 	src/camera.cpp
+	src/cameras.cpp
 	src/collision.cpp
 	src/file.cpp
 	src/font.cpp
@@ -12,7 +13,6 @@ set(src
 	src/gui.cpp
 	src/inifile.cpp
 	src/input.cpp
-	src/keytest.cpp
 	src/material.cpp
 	src/model.cpp
 	src/modelloaderx.cpp
@@ -55,6 +55,7 @@ set( zlib
 
 set(headers
 	include/base/camera.h
+	include/base/cameras.h
 	include/base/collision.h
 	include/base/draw.h
 	include/base/file.h

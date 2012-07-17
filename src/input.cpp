@@ -57,7 +57,6 @@ void Input::setKey(int code, bool down) {
 		m_pressed[s_map[code]] = down;
 		m_lastKey = s_map[code]; 
 		m_lastChar = s_ascii[ key(KEY_LSHIFT) || key(KEY_RSHIFT)? 1:0 ][ m_lastKey ];
-		//setTestKey(code);
 	}
 }
 

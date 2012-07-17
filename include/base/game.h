@@ -43,6 +43,7 @@ class Game {
 	static Point getSize();
 	static int width();
 	static int height();
+	static float aspect() { return (float)width()/height(); }
 
 	//Time 
 	static uint64 getTicks();

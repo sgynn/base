@@ -174,7 +174,7 @@ void Game::run() {
 		uint64 frequency = getTickFrequency();
 		uint64 rate = frequency / 60ull;
 		uint64 skip = rate * (maxFrameSkip+1);
-		uint64 time, last, prev, delta=0;
+		uint64 time, last, delta=0;
 		uint64 gameTime, systemTime, updateTime, renderTime;
 		last = systemTime = getTicks();
 		m_totalTime = 0;
@@ -198,7 +198,6 @@ void Game::run() {
 					m_totalTime += m_frameTime;
 					updateTime = time;
 					delta -= rate;
-					prev = time;
 
 					//update
 					s_input->update();
