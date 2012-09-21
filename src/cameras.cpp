@@ -67,7 +67,8 @@ void FPSCamera::update() {
 		if(m_useUpVector) {
 			vec3 face = getLeft().cross(m_upVector);
 			vec3 direction = getDirection();
-			float angle = acos( face.dot(direction) );
+			float dot = face.dot(direction);
+			float angle = dot>1? 0: dot<-1? PI: acos(dot);
 			if(!m_constraint.contains(angle)) {
 				angle = m_constraint.clamp(angle);
 				direction = m_rotation * vec3(0, sin(angle), cos(angle));
@@ -129,7 +130,8 @@ void OrbitCamera::update() {
 		if(m_useUpVector) {
 			vec3 face = getLeft().cross(m_upVector);
 			vec3 direction = getDirection();
-			float angle = acos( face.dot(direction) );
+			float dot = face.dot(direction);
+			float angle = dot>1? 0: dot<-1? PI: acos(dot);
 			if(!m_constraint.contains(angle)) {
 				angle = m_constraint.clamp(angle);
 				direction = m_rotation * vec3(0, sin(angle), cos(angle));
