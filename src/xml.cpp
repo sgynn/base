@@ -89,6 +89,7 @@ int XML::parse() {
 	while(*c) {
 		while(*c!='<' && *c!=0) inc(c); //get start of tag
 		if(*c==0) break; //EOF
+		*c = 0; // Terminate any internal text
 		c++;
 		//Terermine tag type
 		if(*c=='?') {
@@ -154,7 +155,9 @@ int XML::parse() {
 			if(*(c-1)!='/' && flag!='/') {
 				if(stack.empty()) stack.push_back(&m_root);
 				else stack.push_back(&stack.back()->m_children.back());
-				stack.back()->m_text = c; //Internal text?
+				// Internal text - Note: This will be truncated by child nodes
+				while(flag!='>' && *(c-1)!='>' && *c!=0) ++c;
+				stack.back()->m_text = c;
 			}
 			c++;
 		}

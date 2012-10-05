@@ -53,7 +53,7 @@ class Vec3 {
 		float x,y,z;
 		Vec3() : x(0),y(0),z(0){}
 		Vec3(float x,float y,float z) : x(x), y(y), z(z) {}
-		Vec3(const Vec2& v) : x(v.x), y(v.y), z(0) {}
+		Vec3(const Vec2& v, float z=0) : x(v.x), y(v.y), z(z) {}
 		Vec3(const float* v) : x(v[0]), y(v[1]), z(v[2]) {}
 
 		operator const float*() const { return &x; }
