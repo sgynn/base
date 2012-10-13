@@ -20,7 +20,6 @@
 #include <iostream>
 
 namespace base {
-	template <typename T>
 	class Thread {
 		public:
 		Thread() : m_running(false), m_priority(0), m_thread(0) {};
@@ -34,14 +33,15 @@ namespace base {
 		 * @param func Function for the thread to run
 		 * @param arg Argument to pass to the thread
 		 */
+		template <typename T>
 		bool begin(void(func)(T), T arg) {
 			if(m_running) return false;
-			ThreadArg *a = new ThreadArg;
+			ThreadArg<T> *a = new ThreadArg<T>;
 			a->thread = this;
 			a->arg = arg;
 			a->func = func;
 			#ifdef WIN32
-			m_thread = (HANDLE)_beginthreadex(0, 0, threadFunc, a, 0, &m_threadID);
+			m_thread = (HANDLE)_beginthreadex(0, 0, threadFunc<T>, a, 0, &m_threadID);
 			if(m_priority) SetThreadPriority(m_thread, m_priority); //set thread priority
 			#endif
 			#ifdef LINUX
@@ -49,7 +49,7 @@ namespace base {
 			pthread_attr_setscope(&pattr, PTHREAD_SCOPE_SYSTEM);
 			pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
 			//usleep(1000);
-			pthread_create(&m_thread, &pattr, threadFunc, a);
+			pthread_create(&m_thread, &pattr, threadFunc<T>, a);
 			#endif
 			
 			//thread creation failed
@@ -86,6 +86,7 @@ namespace base {
 		#endif
 		
 		//the arguments to sent to the thread
+		template<typename T>
 		struct ThreadArg {
 			T arg;
 			Thread* thread;
@@ -93,12 +94,13 @@ namespace base {
 		};
 		
 		// Thread function wrapper to make it look nicer with all the templatey stuff
+		template<typename T>
 		#ifdef WIN32
 		static unsigned int __stdcall threadFunc(void* arg) {
 		#else
 		static void* threadFunc(void* arg) {
 		#endif
-			ThreadArg *a = (ThreadArg*)arg;
+			ThreadArg<T> *a = (ThreadArg<T>*)arg;
 			a->thread->m_running = true;
 			a->func(a->arg);
 			a->thread->m_running = false;
