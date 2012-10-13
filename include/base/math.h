@@ -282,6 +282,8 @@ struct Point3 {
 	Point3() : x(0), y(0), z(0) {};
 	Point3(int x, int y, int z) : x(x), y(y), z(z) {};
 	bool operator<(const Point3& p) const { return x<p.x || (x==p.x && y<p.y) || (x==p.x && y==p.y && z<p.z); }
+	Point3 operator+ (const Point3& b) const { return Point3(x+b.x,y+b.y,z+b.z); }
+	Point3 operator- (const Point3& b) const { return Point3(x-b.x,y-b.y,z-b.z); }
 };
 
 #ifndef PI
