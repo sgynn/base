@@ -118,6 +118,7 @@ bool PNG::load(const char* filename) {
 	
 	case PNG_COLOR_TYPE_GRAY_ALPHA:
 	iFormat = 2;
+	mcdepth = 16;
 	break;
 	
 	case PNG_COLOR_TYPE_RGB:
