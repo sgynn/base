@@ -1,5 +1,5 @@
-#ifndef _SHADER_
-#define _SHADER_
+#ifndef _BASE_SHADER_
+#define _BASE_SHADER_
 
 #include <map>
 #include <vector>

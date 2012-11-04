@@ -1,5 +1,5 @@
-#ifndef _FONT_
-#define _FONT_
+#ifndef _BASE_FONT_
+#define _BASE_FONT_
 
 //A class to add text in SDL appslications. Uses sprite fonts.
 namespace base {

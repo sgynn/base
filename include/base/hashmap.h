@@ -1,5 +1,5 @@
-#ifndef _MODEL_HASHMAP_
-#define _MODEL_HASHMAP_
+#ifndef _BASE_HASHMAP_
+#define _BASE_HASHMAP_
 
 #include <string.h>
 

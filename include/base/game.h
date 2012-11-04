@@ -1,5 +1,5 @@
-#ifndef _GAME_APP_
-#define _GAME_APP_
+#ifndef _BASE_GAME_
+#define _BASE_GAME_
 
 #include "math.h"
 

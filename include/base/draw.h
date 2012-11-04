@@ -1,5 +1,5 @@
-#ifndef _DRAW_
-#define _DRAW_
+#ifndef _BASE_DRAW_
+#define _BASE_DRAW_
 
 #include "math.h"
 #include "opengl.h"

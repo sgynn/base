@@ -1,8 +1,5 @@
-//multithreading support
-//WARNING: seperate threads CANNOT use doste get and set calls!
-
-#ifndef _WGD_THREAD_
-#define _WGD_THREAD_
+#ifndef _BASE_THREAD_
+#define _BASE_THREAD_
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN

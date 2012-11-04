@@ -55,8 +55,8 @@
  *	Perhaps tackle this problem elsewhere: by writing my own DirectX Exporter for Lightwave.
  */
 
-#ifndef _MODELS_
-#define _MODELS_
+#ifndef _BASE_MODELS_
+#define _BASE_MODELS_
 
 //need some material class.
 #include "material.h"

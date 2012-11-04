@@ -1,5 +1,5 @@
-#ifndef _GUI_
-#define _GUI_
+#ifndef _BASE_GUI_
+#define _BASE_GUI_
 
 #include "math.h"
 #include <list>

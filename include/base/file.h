@@ -1,5 +1,5 @@
-#ifndef _FILE_
-#define _FILE_
+#ifndef _BASE_FILE_
+#define _BASE_FILE_
 
 #include <list>
 #include <cstdio>

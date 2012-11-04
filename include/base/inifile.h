@@ -1,5 +1,5 @@
-#ifndef _INIFILE_
-#define _INIFILE_
+#ifndef _BASE_INIFILE_
+#define _BASE_INIFILE_
 
 #include "hashmap.h"
 

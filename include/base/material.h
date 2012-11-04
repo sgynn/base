@@ -1,5 +1,5 @@
-#ifndef _MATERIAL_
-#define _MATERIAL_
+#ifndef _BASE_MATERIAL_
+#define _BASE_MATERIAL_
 
 #include <map>
 #include <string>

@@ -1,5 +1,5 @@
-#ifndef _INPUT_
-#define _INPUT_
+#ifndef _BASE_INPUT_
+#define _BASE_INPUT_
 
 #include "math.h"
 

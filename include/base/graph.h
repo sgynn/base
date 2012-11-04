@@ -1,5 +1,5 @@
-#ifndef _GRAPH_
-#define _GRAPH
+#ifndef _BASE_GRAPH_
+#define _BASE_GRAPH_
 
 #define MAX_GRAPH_LINES 12
 

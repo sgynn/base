@@ -1,5 +1,5 @@
-#ifndef _CAMERAS_
-#define _CAMERAS_
+#ifndef _BASE_CAMERAS_
+#define _BASE_CAMERAS_
 
 #include "base/camera.h"
 

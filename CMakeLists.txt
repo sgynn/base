@@ -14,7 +14,7 @@ set(src
 	src/inifile.cpp
 	src/input.cpp
 	src/material.cpp
-	src/model.cpp
+#	src/model.cpp
 	src/modelloaderx.cpp
 	src/png.cpp
 	src/scene.cpp
@@ -22,6 +22,12 @@ set(src
 	src/state.cpp
 	src/window.cpp
 	src/xml.cpp
+
+	src/model/model.cpp
+	src/model/mesh.cpp
+	src/model/skeleton.cpp
+	src/model/animation.cpp
+	src/model/drawmodel.cpp
 )
 
 set( png

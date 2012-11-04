@@ -11,8 +11,8 @@
   //   -RigidMultiFractal   //
   ////////////////////////////
 
-#ifndef _FRACTAL_
-#define _FRACTAL_
+#ifndef _BASE_FRACTAL_
+#define _BASE_FRACTAL_
 
 #include <cstdlib>
 #include <cmath>

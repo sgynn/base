@@ -1,5 +1,5 @@
-#ifndef _WINDOW_
-#define _WINDOW_
+#ifndef _BASE_WINDOW_
+#define _BASE_WINDOW_
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN

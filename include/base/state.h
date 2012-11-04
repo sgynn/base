@@ -1,6 +1,6 @@
 // State Manager v1.2
-#ifndef _GAMESTATE_
-#define _GAMESTATE_
+#ifndef _BASE_GAMESTATE_
+#define _BASE_GAMESTATE_
 
 namespace base {
 

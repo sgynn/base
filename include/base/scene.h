@@ -1,5 +1,5 @@
-#ifndef _SCENESTATE_
-#define _SCENESTATE_
+#ifndef _BASE_SCENESTATE_
+#define _BASE_SCENESTATE_
 
 #include "math.h"
 #include "state.h"

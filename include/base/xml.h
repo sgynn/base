@@ -1,5 +1,5 @@
-#ifndef _XML_READER_
-#define _XML_READER_
+#ifndef _BASE_XML_
+#define _BASE_XML_
 
 #include <list>
 

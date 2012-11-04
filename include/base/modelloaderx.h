@@ -1,5 +1,5 @@
-#ifndef _MODEL_LOADER_X_
-#define _MODEL_LOADER_X_
+#ifndef _BASE_MODEL_LOADER_X_
+#define _BASE_MODEL_LOADER_X_
 
 #include <stdlib.h>
 #include "model.h"

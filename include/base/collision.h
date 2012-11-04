@@ -1,5 +1,5 @@
-#ifndef _COLLISION_
-#define _COLLISIOM_
+#ifndef _BASE_COLLISION_
+#define _BASE_COLLISIOM_
 
 #include "math.h"
 
