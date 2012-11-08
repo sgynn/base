@@ -81,6 +81,7 @@ namespace GUI {
 		//Colours
 		enum ColourCode { BACK=0, BORDER=1, TEXT=2,  BASE=4, FOCUS=8, OVER=12 };
 		void setColour(int code, const Colour& colour);
+		void setColour(int code, const Colour& colour, float alpha);
 		inline const Colour& getColour(int code) const { return m_colours[(code&3) + (code&12? 3*((code>>2)-1): 0) ]; }
 
 		protected:

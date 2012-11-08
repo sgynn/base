@@ -25,6 +25,10 @@ Style::Style() : font(0), align(0), stime(0) {
 Style::Style(const Style* s) {
 	memcpy(this, s, sizeof(Style));
 }
+void Style::setColour(int code, const Colour& colour, float alpha) {
+	Colour c(colour); c.a = alpha;
+	setColour(code, c);
+}
 void Style::setColour(int code, const Colour& colour) {
 	if(code&12) {
 		int ix = (code&3) + 3*(((code-4)>>2)&3);
