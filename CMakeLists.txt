@@ -11,6 +11,7 @@ set(src
 	src/game.cpp
 	src/glhprojection.cpp
 	src/gui.cpp
+	src/guifile.cpp
 	src/inifile.cpp
 	src/input.cpp
 	src/material.cpp

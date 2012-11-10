@@ -8,6 +8,19 @@
 
 using namespace base;
 
+PNG::PNG(const PNG& p) : width(p.width), height(p.height), bpp(p.bpp) {
+	size_t size = sizeof(unsigned char) * width * height * bpp/8;
+	data = (char*)malloc( size );
+	memcpy(data, p.data, size);
+}
+const PNG& PNG::operator=(const PNG& p) {
+	width=p.width; height=p.height; bpp=p.bpp;
+	size_t size = sizeof(unsigned char) * width * height * bpp/8;
+	data = (char*)malloc( size );
+	memcpy(data, p.data, size);
+	return *this;
+}
+
 //Custom read handler for PNG library so that it uses our File object.
 void PNGAPI png_read_data(png_structp png_ptr, png_bytep data, png_size_t length) {
 	png_size_t check;
@@ -17,7 +30,7 @@ void PNGAPI png_read_data(png_structp png_ptr, png_bytep data, png_size_t length
 	if(check != length) png_error(png_ptr, "Read Error");
 }
 
-bool PNG::load(const char* filename) {
+PNG PNG::load(const char* filename) {
 	png_byte magic[8];
 	png_structp png_ptr;
 	png_infop info_ptr;
@@ -31,7 +44,7 @@ bool PNG::load(const char* filename) {
 	int mcdepth;
 	
 	FILE* fp = fopen(filename, "rb");
-	if(!fp) return false;
+	if(!fp) return PNG();
 	
 	/* read magic number */
 	fread (magic, 1, sizeof(magic), fp);
@@ -40,7 +53,7 @@ bool PNG::load(const char* filename) {
 	if (!png_check_sig (magic, sizeof (magic))) {
 		printf("Invalid PNG image\n"); 
 		fclose(fp);
-		return false;
+		return PNG();
 	}
 	
 	/* create a png read struct */
@@ -48,7 +61,7 @@ bool PNG::load(const char* filename) {
 	(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!png_ptr) {
 		fclose(fp);
-		return false;
+		return PNG();
 	}
 	
 	/* create a png info struct */
@@ -56,7 +69,7 @@ bool PNG::load(const char* filename) {
 	if (!info_ptr) {
 		png_destroy_read_struct (&png_ptr, NULL, NULL);
 		fclose(fp);
-		return false;
+		return PNG();
 	}
 	
 	/* create our OpenGL texture object */
@@ -68,7 +81,7 @@ bool PNG::load(const char* filename) {
 		png_destroy_read_struct (&png_ptr, &info_ptr, NULL);
 		if (row_pointers) free (row_pointers);
 		fclose(fp);
-		return false;
+		return PNG();
 	}
 	
 	/* setup libpng for using standard C fread() function with our FILE pointer */
@@ -108,7 +121,7 @@ bool PNG::load(const char* filename) {
 		NULL, NULL, NULL);
 	
 	/* get image format and components per pixel */
-	iFormat=0;
+	int iFormat=0;
 	switch (color_type)
 	{
 	case PNG_COLOR_TYPE_GRAY:
@@ -133,6 +146,7 @@ bool PNG::load(const char* filename) {
 	
 	default:
 	/* Badness */
+	return PNG();
 	break;
 	}
 	
@@ -158,17 +172,19 @@ bool PNG::load(const char* filename) {
 	
 	fclose(fp);
 
-	data = mdata;
-	width = mwidth;
-	height = mheight;
-	bpp = mcdepth;
+	PNG png;
+	png.data = mdata;
+	png.width = mwidth;
+	png.height = mheight;
+	png.bpp = mcdepth;
 
-	flip(); //Flip pixels in Y axis
+	png.flip(); //Flip pixels in Y axis
 
-	return true;
+	return png;
 }
 
 void PNG::flip() {
+	int iFormat = bpp/8;
 	char* mdata = data;
 	data = (char*)malloc (sizeof(unsigned char) * width * height * iFormat);
 	for(int i=0; i<height; i++) {
@@ -181,6 +197,6 @@ void PNG::flip() {
 void PNG::clear() {
 	if(data) free(data);
 	data = 0;
-	width=height=0;
+	width=height=bpp=0;
 }
 

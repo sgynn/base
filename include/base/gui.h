@@ -1,32 +1,22 @@
 #ifndef _BASE_GUI_
 #define _BASE_GUI_
 
-#include "math.h"
+#include <base/math.h>
+#include <base/hashmap.h>
 #include <list>
 #include <vector>
 
 namespace base {
 	class Texture;
 	class Font;
+	class XMLElement;
 
-namespace GUI {	
+namespace gui {	
 
 	class Control;
 	class Container;
 
-	/** GUI Style - it would be great if styles could stack
-	 *	font
-	 *	background { colour, focus, over }
-	 *	border { colour, focus, over }
-	 *	text { colour, focus, over }
-	 *	fadeTime	- time to fade between colour and over
-	 *	borderSize	- border size. Line if no sprite, else sprite border
-	 *	sprite		- sprites can have multiple frames
-	 *	frames[]	- sprite frame [ back,focus,over,glyphs... ]
-	 *
-	 * Use a GUI::Sprite class for the sprite
-	 * 	width, height, texture, rows, columns
-	 *
+	/**
 	 * Controls:
 	 * 	Container	- contains child controls.
 	 * 	Frame		- A container graphics which can be dragged
@@ -44,7 +34,7 @@ namespace GUI {
 	 *     - key		- key state
 	 *     - keyPressed	- key was pressed since last frame
 	 *     - lastKey	- the last key to be pressed
-	 *     - lastChar	- last inputted character? maybe use keyString liks flashpunk?
+	 *     - lastChar	- last inputted character? maybe use keyString like flashpunk?
 	 *     - window width	
 	 *     - window height
 	 *     - frameTime	- time in seconds since the last update call
@@ -53,17 +43,22 @@ namespace GUI {
 	/** GUI Sprites */
 	class Sprite {
 		public:
-		Sprite(Texture* tex, int rows=1, int cols=1);
+		Sprite(): m_texture(0), m_rows(0), m_cols(0) { setBorder(0); }
+		Sprite(const Texture& tex, int rows=1, int cols=1);
 		void drawGlyph(int frame, int cx, int cy) const;
-		void draw(int frame, int x, int y, int w, int h) const;
-		void draw(int frame, int x, int y, int w, int h, int border) const;
-		void draw(int frame, int x, int y, int w, int h, int t, int l, int r, int b) const;
-		int width() const;
-		int height() const;
+		void draw(int frame, int x, int y, int w, int h, bool border=true) const;
+		void setBorder(int size);
+		void setBorder(int top, int left, int right, int bottom);
+		int width() const { return m_width; }
+		int height() const { return m_height; }
 		int frames() const { return m_rows * m_cols; }
 		protected:
-		Texture* m_texture;
+		uint m_texture;
+		int m_width, m_height;
 		int m_rows, m_cols;
+		vec2 m_one;
+		bool m_hasBorder;
+		struct { int top, left, right, bottom; } m_border;
 	};
 
 	/** Gui style  */
@@ -73,24 +68,39 @@ namespace GUI {
 		Style(const Style* s);
 
 		enum TextAlign { LEFT, CENTRE, RIGHT };
-		Font* font;
-		int align;
+		enum ColourType { BACK=0, BORDER=1, TEXT=2 };
+		enum ColourState { BASE=1, OVER=2, FOCUS=4, DISABLED=8 };
 
-		float stime;
+		/** Set the font */
+		void setFont(Font* f, int align=LEFT)	{ m_font=f; m_align=align; }
+		void setAlign(int align)				{ m_align=align; }
+		void setFade(float time)				{ m_fadeTime=time; }
+		void setSprite(const Sprite& sprite)	{ m_sprite = sprite; }
 
-		//Colours
-		enum ColourCode { BACK=0, BORDER=1, TEXT=2,  BASE=4, FOCUS=8, OVER=12 };
-		void setColour(int code, const Colour& colour);
-		void setColour(int code, const Colour& colour, float alpha);
-		inline const Colour& getColour(int code) const { return m_colours[(code&3) + (code&12? 3*((code>>2)-1): 0) ]; }
+		/** Set colour */
+		void setColour(int type, const Colour& colour)				{ setColour(type,0xf,colour); }
+		void setColour(int type, const Colour& colour, float alpha) { setColour(type,0xf,colour,alpha); }
+		void setColour(int type, int state, const Colour& colour);
+		void setColour(int type, int state, const Colour& colour, float alpha);
+
+		/** Set sprite frames */
+		void setFrame(int state, int frame);
+
+		inline const Colour& getColour(int type, int state=BASE) const { return m_colours[type + 3*code(state) ]; }
+		inline int  getFrame(int state=BASE) const { return m_frames[ code(state) ]; }
 
 		protected:
-		Colour m_colours[9];
-	};
+		friend class Control;
+		inline static int code(int s) { return s<8? s>>1: 3+(s>>4); }; // Assume s is valid
+		Colour m_colours[12];
+		int m_frames[4];
+		Font* m_font;
+		int m_align;
+		float m_fadeTime;
+		Sprite m_sprite;
 
-	/** The control with focus */
-	extern Control* focus;
-	extern Style defaultStyle;
+
+	};
 
 	/** Event data */
 	struct Event {
@@ -101,16 +111,69 @@ namespace GUI {
 		Event() : command(0), value(0), text(0), control(0) {}
 	};
 
+
+	/** GUI manager. All elements contain a link to this. 
+	 * can me implicit, not directly created. The root control will create it.
+	 */
+	class Root {
+		public:
+		Root();
+		~Root();
+		int update();
+		int update(Event& e);
+		void draw();
+		Control* getControl(const char* name);
+		private:
+		friend class Control;
+		void drop();			// Drop reference
+		int m_ref;				// Reference counter
+		Control* m_control;		// Root control
+		Control* m_lastFocus;	// Control focused in last update
+		Control* m_focus;		// Focused control
+		Control* m_over;		// Control under cursor
+		Point m_lastMouse;		// Last mouse point for mouseMove
+	};
+
+	/** GUI Loader - used to load fromm XML */
+	class Loader {
+		public:
+		/** Register a widget construction function with the loader */
+		static void addType(const char* name, Control*(*c)(const Loader&));
+		static Container* parse(const char* file);
+		static Container* load(const char* file);
+		
+		// These functions are called from construction functions //
+		Style* style() const;
+		const char* attribute(const char* name, const char* d) const;
+		float attribute(const char* name, float d) const;
+		int attribute(const char* name, int d) const;
+		// If the element has custom children, need to access XML element directly
+		const XMLElement* operator->() const;
+		// Additional functions that may be useful
+		static uint parseHex(const char*);
+		private:
+		Loader();
+		Style* readStyle(const XMLElement&) const;
+		Colour readColour(const XMLElement&) const;
+		int addControls(const XMLElement&, Container*);
+		const XMLElement* m_item;
+		HashMap<Style*> m_styles;
+		static HashMap<Control*(*)(const Loader&)> s_types;
+	};
+
+
 	/** Base class for all GUI Elements */
 	class Control {
 		friend class Container;
+		friend class Root;
 		public:
-		Control(Style* style=0, uint cmd=0);
-		virtual ~Control();
-		virtual uint update(Event* event=0);
-		virtual void draw() = 0;
-		void setPosition(int x, int y);	 //Relative positions
-		const Point getPosition() const;
+		Control(Style* style=0, uint cmd=0);	// Constructor
+		virtual ~Control();						// Destructor
+		virtual void draw() = 0;				// Draw control (and children)
+		uint update();							// Calls Root::update()
+		uint update(Event& event);				// Calls Root::update()
+		void setPosition(int x, int y);	 		// Set relative positions
+		const Point getPosition() const;		// Get relative position
 		virtual void setAbsolutePosition(int x, int y) { m_position.x=x; m_position.y=y; } //internal position
 		virtual const Point& getAbsolutePosition() const { return m_position; }
 		virtual void setSize(int width, int height) { m_position.y+=m_size.y-height; m_size.x=width, m_size.y=height; }
@@ -118,34 +181,51 @@ namespace GUI {
 		virtual void show() { m_visible=true; }
 		virtual void hide() { m_visible=false; }
 		inline void setVisible(bool vis=true) { vis?show():hide(); }
-		void raise();	//Bring control to the front of the list (draws on top)
+		inline void setEnabled(bool e=true) { m_enabled=e; }
+		void raise();			// Bring control to the front of the list (draws on top)
+		void setFocus();		// Set the focus to this
+		bool hasFocus() const;	// Is the focus here?
 		bool visible() const { return m_visible; }
+		bool enabled() const { return m_enabled && m_visible; }
 		virtual bool isContainer() const { return false; }
-		Container* getParent() const { return m_container; }
+		Container* getParent() const { return m_parent; }
 		protected:
-		Point m_position, m_size;
-		Style* m_style;
-		uint m_command;
-		bool m_visible;
-		Container* m_container;
+		int getState() const;		// Get control state (uses Root focus and over)
+		Point m_position, m_size;	// Control dimensions
+		Style* m_style;				// Style object
+		uint m_command;				// Event code
+		bool m_visible;				// Control is drawn
+		bool m_enabled;				// Control in enabled state
+		Container* m_parent;		// Parent control
+		Root* m_root;				// Root object
+
+		// Internal update events -  use these instead of click() and update();
+		virtual uint mouseEvent( Event&, const Point&, int)               { return 0; }
+		virtual uint mouseMove(  Event&, const Point&, const Point&, int) { return 0; }
+		virtual uint mouseWheel( Event&, const Point&, int)               { return 0; }
+		virtual uint mouseEnter( Event&)                                  { return 0; }
+		virtual uint mouseExit(  Event&)                                  { return 0; }
+		virtual uint keyEvent(   Event&, uint, uint16)                    { return 0; }
+		virtual uint gainFocus(  Event&)                                  { return 0; }
+		virtual uint loseFocus(  Event&)                                  { return 0; }
 
 		//Utilities
-		float updateState(bool on, float state) const;
-		inline bool isOver(int x, int y) const { return isOver(Point(x,y), m_position, m_size); }
-		inline virtual bool isOver(const Point& pt, const Point& p, const Point& s) const {
-			return pt.x>p.x && pt.x<p.x+s.x && pt.y>p.y && pt.y<p.y+s.y;
-		}
-		uint setEvent(Event* e, uint value=0, const char* txt=0);
-		virtual uint click(Event* e, const Point& p) { return 0; }
-		Point textPosition(const char* c, int oa=0, int ob=0); //Get relative text position
+		virtual bool isOver(int x, int y) const { return x>=m_position.x && y>=m_position.y && x<=m_position.x+m_size.x && y<=m_position.y+m_size.y; }
+		uint setEvent(Event& e, uint value=0, const char* txt=0); // Set the event
+		Point textPosition(const char* c) const;	// Get relative aligned text position
+		Point textSize(const char* text) const;		// Get the size of a text string
+		float fadeValue(float v, int dir) const;	// Fade a value using style::m_fadeTime;
+		void setRoot(Root*);						// Add reference to root (recursive)
+		void dropRoot();							// Drop reference to root (recursive)
 		//Drawing
-		void drawFrame(const Point& p, const Point& s, const char* title=0, Style* style=0) const;
-		void drawArrow(const Point& p, int direction, int size=8) const;
-		void drawRect(int x, int y, int w, int h, const Colour& c = white, bool fill=true) const;
-		Colour blendColour(int type, int state, float value=1) const;
-		void scissorPushNew(int x, int y, int w, int h) const;
-		void scissorPush(int x, int y, int w, int h) const;
-		void scissorPop() const;
+		void drawFrame(const Point& p, const Point& s, const char* title=0, int state=Style::BASE) const;
+		void drawArrow(const Point& p, int direction, int size=8, int state=0) const;
+		void drawText(int x, int y, const char* text, int state=0) const;
+		void drawText(const Point&, const char* text, int state=0) const;
+		static void drawRect(int x, int y, int w, int h, const Colour& c = white, bool fill=true);
+		static void scissorPushNew(int x, int y, int w, int h);
+		static void scissorPush(int x, int y, int w, int h);
+		static void scissorPop();
 	};
 
 	/** Container class. Contains other controls */
@@ -155,7 +235,6 @@ namespace GUI {
 		Container();
 		Container(int x, int y, int w, int h, bool clip=false, Style* style=0);
 		virtual ~Container() { clear(); }
-		virtual uint update(Event* event=0);
 		virtual void draw();
 		Control* add( Control* c, int x, int y );
 		Control* add( const char* caption, Control* c, int x, int y, int cw=120);
@@ -168,7 +247,6 @@ namespace GUI {
 		protected:
 		void setAbsolutePosition(int x, int y); // move all contained controls
 		void moveContents(int dx, int dy);
-		virtual uint click(Event* e, const Point& p);
 		std::list<Control*> m_contents;
 		bool m_clip;
 	};
@@ -178,13 +256,18 @@ namespace GUI {
 		public:
 		Frame(int x, int y, int width, int height, const char* caption=0, bool moveable=0, Style* style=0);
 		Frame(int width, int height, const char* caption=0, bool moveable=0, Style* style=0);
-		virtual uint update(Event* event=0);
+		virtual ~Frame() { setCaption(0); }
+		const char* getCaption() const { return m_caption; }
+		void setCaption(const char* c);
 		void draw();
 		protected:
-		virtual uint click(Event* e, const Point& p);
-		const char* m_caption;	// Frame Caption
+		// Events
+		virtual uint mouseEvent(Event&, const Point&, int);
+		virtual uint mouseMove(Event&, const Point&, const Point&, int);
+
+		char* m_caption;	// Frame Caption
 		bool m_moveable;	// Can you drag the frame around
-		Point m_held;		// Coordinates the frame is held at
+		bool m_held;		// Is the frame held
 	};
 
 	/** Your basic label */
@@ -195,9 +278,8 @@ namespace GUI {
 		void setCaption(const char* caption);
 		const char* getCaption() const { return m_caption; }
 		protected:
-		inline virtual bool isOver(const Point& pt, const Point& p, const Point& s) const { return false; }
-		const char* m_caption;
-		int m_offset; //offset for alignment
+		inline virtual bool isOver(int x, int y) const { return false; }
+		char m_caption[128];
 	};
 
 
@@ -206,34 +288,33 @@ namespace GUI {
 		public:
 		Button(const char* caption, Style* style=0, uint command=0);
 		Button(int width, int height, const char* caption=0, Style* style=0, uint command=0);
+		void setCaption(const char* c);
 		const char* getCaption() const { return m_caption; }
-		virtual uint update(Event* event=0);
 		virtual void draw();
 		protected:
-		virtual uint click(Event* e, const Point& p);
-		const char* m_caption;
-		float m_state;
+		virtual uint mouseEvent(Event&, const Point&, int);
+		char m_caption[64];
 		Point m_textPos;
 	};
 
 	class Checkbox : public Button {
 		public:
-		Checkbox(const char* caption, bool value=false, Style* style=0, uint command=0);
+		Checkbox(int size, const char* caption, bool value=false, Style* style=0, uint command=0);
 		bool getValue() const { return m_value; }
 		void setValue(bool value) { m_value = value; }
-		virtual uint update(Event* event=0);
 		virtual void draw();
 		protected:
-		virtual uint click(Event* e, const Point& p);
+		virtual uint mouseEvent(Event&, const Point&, int);
+		int m_boxSize;
 		bool m_value;
 	};
 
 	/** Scrollar */
 	class Scrollbar : public Control {
-		friend class Listbox;
+		friend class ListBase;
 		public:
-		Scrollbar(int orientation=0, int width=16, int height=120, int min=0, int max=100, Style* style=0, uint command=0); // 0:vertical, 1:horizontal 
-		virtual uint update(Event* event=0);
+		enum Orientation { VERTICAL, HORIZONTAL };
+		Scrollbar(int orientation=VERTICAL, int width=16, int height=120, int min=0, int max=100, Style* style=0, uint command=0);
 		virtual void draw();
 		void setValue(int value) { m_value=value<m_min?m_min: value>m_max? m_max: value; }
 		int getValue() const { return m_value; }
@@ -241,53 +322,66 @@ namespace GUI {
 		int getMax() const { return m_max; }
 		void setRange(int min=0,int max=100) { m_min=min, m_max=max; setValue(m_value); }
 		protected:
-		virtual uint click(Event* e, const Point& p);
-		int m_min, m_max;
-		int m_value;
-		int m_orientation;
-		int m_held;
-		int m_blockSize;
-		float m_repeat;
-	};
-	
-	/** A scrollable listbox */
-	class Listbox : public Control {
-		public:
-		Listbox(int width, int height, Style* style=0, uint command=0);
-		virtual uint update(Event* event=0);
-		virtual void draw();
-		virtual void setSize(int width, int height); // resize scrollbar
-		virtual void drawItem(uint index, const char* item, int x, int y, int width, int height, float state);
-		virtual bool clickItem(uint index, const char* item, int x, int y) { return index!=m_item; }
-		virtual uint removeItem(uint index);
-		uint addItem(const char* item, uint index, bool selected=false);
-		uint addItem(const char* item, bool selected=false);
-		uint count() const { return m_items.size(); }
-		const char* getItem(uint index) const { return index<count()? m_items[index].name: 0; }
-		const char* selectedItem() const { return getItem(m_item); }
-		void clearItems();
-		void scrollTo(uint index);
-		void selectItem(uint index);
-		protected:
-		virtual void setAbsolutePosition(int x, int y); // move internal scrollbar
-		virtual uint click(Event* e, const Point& p);
-		void updateBounds();
-		struct ListItem { const char* name; float state; };
-		std::vector<ListItem> m_items;
-		uint m_itemHeight;	// Height of each item
-		uint m_item;		// Selected Item
-		uint m_hover;		// Hovered item
-		Scrollbar m_scroll;	// Scrollbar
+		virtual uint mouseEvent(Event&, const Point&, int);
+		virtual uint mouseMove(Event&, const Point&, const Point&, int);
+		int m_min, m_max;	// Value limits
+		int m_value;		// Current value
+		int m_step;			// Value step for buttons or mousewheel
+		int m_orientation;	// Horizontal or Vertical
+		int m_held;			// Is the block held
+		int m_blockSize;	// Size of block
 	};
 
+	/** Base class for generic listbox with vertical scrollbar */
+	class ListBase: public Control {
+		public:
+		ListBase(int width, int height, Style* style, uint command);
+		virtual void setAbsolutePosition(int x, int y);
+		virtual void setSize(int width, int height);
+		virtual void draw();
+		virtual uint size() const = 0;
+		void scrollTo(uint index);
+		void selectItem(uint index) { m_selected=index; }
+		uint selected() const       { return m_selected; }
+		protected:
+		virtual void drawItem(uint index, int x, int y, int width, int height) = 0;
+		virtual bool mouseEvent(Event& e, uint index, const Point&, int b);
+		// Events: needs all of them
+		virtual uint mouseEvent( Event&, const Point&, int);
+		virtual uint mouseMove(  Event&, const Point&, const Point&, int);
+		virtual uint mouseWheel( Event&, const Point&, int);
+		void updateBounds(); // Call this when list changes
+		uint m_itemHeight;
+		uint m_selected;
+		uint m_hover;
+		Scrollbar m_scroll;
+	};
+
+	/** Basic text listbox */
+	class Listbox : public ListBase {
+		public:
+		Listbox(int width, int height, Style* style, uint command);
+		void addItem(const char* item, bool sel=false);
+		void addItem(const char* item, uint index, bool sel=false);
+		void removeItem(uint index);
+		void clearItems();
+		const char* getItem(uint index) const;
+		const char* selectedItem() const { return getItem(m_selected); }
+		uint size() const { return m_items.size(); }
+		protected:
+		virtual void drawItem(uint index, int x, int y, int width, int height);
+		struct Item { char* text; };
+		std::vector<Item> m_items;
+	};
+	
 	/** A Dropdown List */
 	class DropList: public Listbox {
 		public:
 		DropList(int width, int height, int maxSize=0, Style* style=0, uint command=0);
-		virtual uint update(Event* event=0);
 		virtual void draw();
 		protected:
-		virtual uint click(Event* e, const Point& p);
+		virtual uint loseFocus(  Event&) { closeList(); return 0; }
+		virtual uint mouseEvent( Event&, const Point&, int);
 		void openList();
 		void closeList();
 		int m_max;	//Maximum height of popup list
@@ -298,14 +392,14 @@ namespace GUI {
 	/** A control for text input */
 	class Input: public Control {
 		public:
-		Input(int length, const char* text=0, Style* style=0, uint command=0);
-		virtual uint update(Event* event=0);
+		Input(int width, int height, const char* text=0, Style* style=0, uint command=0);
 		virtual void draw();
 		void setMask(char mask='*') { m_mask=mask; }
 		void setText(const char* text);
 		const char* getText() const { return m_text; }
 		protected:
-		virtual uint click(Event* e, const Point& p);
+		virtual uint mouseEvent( Event&, const Point&, int);
+		virtual uint keyEvent(   Event&, uint, uint16);
 		char m_mask;
 		char m_text[128];
 		int m_loc, m_len;

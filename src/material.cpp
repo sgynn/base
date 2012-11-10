@@ -84,8 +84,7 @@ int Texture::bind() const {
 }
 
 int Texture::load(const char* filename) {
-	PNG image;
-	image.load(filename);
+	PNG image = PNG::load(filename);
 	if(!image.data) return 0;
 	
 	int width = image.width;

@@ -23,8 +23,7 @@ Font::~Font() {
 #define GL_CLAMP_TO_EDGE 0x812f
 #endif
 unsigned int Font::loadTexture(const char* filename) {
-	PNG image;
-	image.load(filename);
+	PNG image = PNG::load(filename);
 	if(!image.data) {
 		::printf("Failed\n");
 		return 0;

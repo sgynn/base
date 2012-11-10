@@ -4,11 +4,13 @@
 namespace base {
 	class PNG {
 		public:
-		PNG() : data(0), width(0), height(0) {}
+		PNG() : data(0), width(0), height(0), bpp(0) {}
+		PNG(const PNG&);
 		~PNG() { clear(); }
+		const PNG& operator=(const PNG&);
 		
 		/** Load the bitmap image - returns image object or NULL */
-		bool load(const char* filename);
+		static PNG load(const char* filename);
 		void clear();
 		void flip();
 		
@@ -16,8 +18,6 @@ namespace base {
 		char* data;
 		int width, height;
 		int bpp;
-		private:
-		int iFormat;
 	};
 };
 
