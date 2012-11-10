@@ -2,6 +2,7 @@
 #define _BASE_HASHMAP_
 
 #include <cstring>
+#include <cstdlib>
 
 #define THRESHOLD 1.5f
 
@@ -119,12 +120,12 @@ template<typename T> const T& base::HashMap<T>::operator[](const char* key) cons
 template<typename T> void base::HashMap<T>::erase(const char* key) {
 	unsigned int i = index(key, m_capacity);
 	if(i<m_capacity && m_data[i].key) {
-		delete m_data[i].key;
+		free((void*)m_data[i].key);
 		m_data[i].key = 0;
 	}
 }
 template<typename T> void base::HashMap<T>::clear() {
-	for(unsigned int i=0; i<m_capacity; i++) if(m_data[i].key) delete [] m_data[i].key;
+	for(unsigned int i=0; i<m_capacity; i++) if(m_data[i].key) free((void*)m_data[i].key);
 	delete [] m_data;
 	m_size = 0;
 }
