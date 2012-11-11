@@ -19,7 +19,7 @@ class Font {
 	int textHeight(const char* text) const;
 	private:
 	unsigned int loadTexture(const char* file);
-	unsigned int getGlyphs(const void* data, int w, int h, int bpp=32);
+	unsigned int getGlyphs(char* data, int w, int h, int bpp=32, const char* chars=0);
 	unsigned int m_tex;
 	unsigned int m_w, m_h;
 	struct Glyph { int x, y, w, h; };

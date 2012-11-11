@@ -56,46 +56,58 @@ unsigned int Font::loadTexture(const char* filename) {
 	return texture;
 }
 
-unsigned int Font::getGlyphs(const void* data, int w, int h, int bpp) {
+unsigned int Font::getGlyphs(char* data, int w, int h, int bpp, const char* chars) {
 	memset(m_glyph, 0, 128*sizeof(Glyph));
-	m_w = w; m_h=h;
-	
-	size_t stride = bpp/8;
-	//get guide colours
-	int a, b, clear;
-	memcpy((char*)&a, data, stride); 				//Start: px(0,0)
-	memcpy((char*)&b, (char*)data+stride, stride);			//End:   px(1,0)
-	memcpy((char*)&clear, (char*)data+stride+w*stride, stride);	//Clear: px(0,1)
+	m_w = w; m_h = h;		// Set size
+	size_t stride = bpp/8;	// Pixel stride
+	unsigned guide, clear=0;	// Colours
+	memcpy(&guide, data, stride); // First pixel is the guide colour
 
-	::printf("Guide: %#x %#x ", a, b);
-	
-	//No guides specified : Fail
-	if(a==b || a==clear || b==clear) return 0;
-	
-	//erase points
-	memcpy((char*)data+stride, (char*)&clear, stride);
-	
-	int px, ix1=32, ix2=32, count=0; //starts at 'space'
-	for(int y=0; y<h; y++) for(int x=0; x<w; x++) {
-		size_t offset = x*stride + y*w*stride;
-		memcpy((char*)&px, (const char*)data+offset, stride);
-		if(px==a) { //Top Left Corner
-			memcpy((char*)data+offset, (char*)&clear, stride);
-			m_glyph[ix1].x = x;
-			m_glyph[ix1].y = y;
-			++ix1;
-		} else if(px==b) { //Bottom Right Corner
-			memcpy((char*)data+offset, (char*)&clear, stride);
-			if(ix2<ix1) {
-				m_glyph[ix2].w = x - m_glyph[ix2].x;
-				m_glyph[ix2].h = y - m_glyph[ix2].y;
-				if(m_glyph[ix2].w>0 && m_glyph[ix2].h>0) ++count;
-				++ix2;
-			} else {
-				::printf("Error extracting character '%c' at (%d, %d)\n", ix2, x, y);
-				return count;
+	// Loop through image
+	int count=0; // Number of glyphs read
+	int index=0; // index of character being read
+	int open=0;  // index of last open glyph
+	int pixel=0, last=0;
+	Glyph* lastGlyph = 0; // Last glyph started
+	size_t row = w*stride;
+	for(int y=0; y<h; ++y) {
+		last = 0;
+		for(int x=0; x<w; ++x, last=pixel) {
+			size_t k = x*stride + y*w*stride;
+			pixel = memcmp(&guide, data+k, stride); // Is this pixel a guide
+			if(pixel && !last) { // Start of glyph X
+				if(y==0 || memcmp(&guide, data+k-row, stride)==0) {
+					if(count==0) memcpy(&clear, data+k, stride); // Get clear colour
+					// Which glyph is this
+					if(chars && chars[index]) lastGlyph = &m_glyph[ (int)chars[index] ];
+					else if(!chars) lastGlyph = &m_glyph[index+32];
+					else lastGlyph = 0;
+					// Initialise glyph
+					if(lastGlyph) {
+						lastGlyph->x = x;
+						lastGlyph->y = y;
+						++index;
+					}
+				}
+			} else if((!pixel && last) || (pixel && x==w-1) ) { // End of glyph X
+				if(lastGlyph && y==lastGlyph->y) lastGlyph->w = x - lastGlyph->x; // Set width
+				if(y==h-1 || memcmp(&guide, data+k+row-stride, stride)==0) {
+					// Which glyph did we close?
+					for(int i=open; i<128; ++i) {
+						if(x==m_glyph[i].x+m_glyph[i].w && !m_glyph[i].h) {
+							if(i==open) ++open;
+							m_glyph[i].h = y-m_glyph[i].y;
+							++count;
+							break;
+						}
+					}
+				}
 			}
 		}
+	}
+	// Remove all guides
+	for(unsigned i=0; i<w*h*stride; i+=stride) {
+		if(memcmp(&guide, data+i, stride)==0) memcpy(data+i, &guide, stride);
 	}
 	return count;
 }
