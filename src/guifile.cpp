@@ -152,7 +152,8 @@ uint Loader::parseHex(const char* s) {
 
 /** Loader constructor */
 Loader::Loader() {
-	if(s_types.empty()) {	
+	static bool initialised = false;
+	if(!initialised) {	
 		// Register construct functions
 		addType("container", base::gui::createContainer);
 		addType("frame",     base::gui::createFrame);
@@ -164,6 +165,7 @@ Loader::Loader() {
 		addType("listbox",   base::gui::createListbox);
 		addType("droplist",  base::gui::createDropList);
 		addType("input",     base::gui::createInput);
+		initialised = true;
 	}
 }
 
@@ -277,6 +279,7 @@ int Loader::addControls(const base::XML::Element& e, base::gui::Container* paren
 			}
 		} else if(s_types.contains(i->name())) {
 			m_item = &(*i);
+			m_parent = parent;
 			Control* c = s_types[i->name()](*this);
 			// Set general values
 			if(!attribute("visible", 1)) c->hide();
@@ -286,7 +289,7 @@ int Loader::addControls(const base::XML::Element& e, base::gui::Container* paren
 			parent->add( c, x, y);
 			++count;
 			// Add to map
-			//if(i->hasAttribute("name")) m_controls[i->attribute("name")] = c;
+			if(i->hasAttribute("name")) parent->m_root->m_names[i->attribute("name")] = c;
 			// Recurse to children
 			if(c->isContainer()) {
 				count += addControls(*i, static_cast<Container*>(c));
@@ -303,6 +306,7 @@ Container* Loader::load(const char* file) {
 	Loader loader;
 	base::XML xml = base::XML::load(file);
 	Container* base = new Container();
+	base->setRoot( new Root(base) );
 	int c = loader.addControls(xml.getRoot(), base);
 	if(c) return base;
 	else {
@@ -314,6 +318,7 @@ Container* Loader::parse(const char* string) {
 	Loader loader;
 	base::XML xml = base::XML::parse(string);
 	Container* base = new Container();
+	base->setRoot( new Root(base) );
 	int c = loader.addControls(xml.getRoot(), base);
 	if(c) return base;
 	else {

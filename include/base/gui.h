@@ -68,8 +68,8 @@ namespace gui {
 		Style(const Style* s);
 
 		enum TextAlign { LEFT, CENTRE, RIGHT };
-		enum ColourType { BACK=0, BORDER=1, TEXT=2 };
-		enum ColourState { BASE=1, OVER=2, FOCUS=4, DISABLED=8 };
+		enum Type { BACK=0, BORDER=1, TEXT=2 };
+		enum State { BASE=1, OVER=2, FOCUS=4, DISABLED=8 };
 
 		/** Set the font */
 		void setFont(Font* f, int align=LEFT)	{ m_font=f; m_align=align; }
@@ -77,14 +77,17 @@ namespace gui {
 		void setFade(float time)				{ m_fadeTime=time; }
 		void setSprite(const Sprite& sprite)	{ m_sprite = sprite; }
 
-		/** Set colour */
-		void setColour(int type, const Colour& colour)				{ setColour(type,0xf,colour); }
-		void setColour(int type, const Colour& colour, float alpha) { setColour(type,0xf,colour,alpha); }
+		/** Set colour (loads to avoid ambiguity) */
+		void setColour(int type, uint colour, float alpha=1)            { setColour(type, 0xf, Colour(colour), alpha); }
+		void setColour(int type, int state, uint colour, float alpha=1) { setColour(type, state, Colour(colour), alpha); }
+		void setColour(int type, const Colour& colour)                  { setColour(type,0xf,colour); }
+		void setColour(int type, const Colour& colour, float alpha)     { setColour(type,0xf,colour,alpha); }
 		void setColour(int type, int state, const Colour& colour);
 		void setColour(int type, int state, const Colour& colour, float alpha);
 
 		/** Set sprite frames */
 		void setFrame(int state, int frame);
+		void setFrame(int frame) { setFrame(0xf,frame); }
 
 		inline const Colour& getColour(int type, int state=BASE) const { return m_colours[type + 3*code(state) ]; }
 		inline int  getFrame(int state=BASE) const { return m_frames[ code(state) ]; }
@@ -92,23 +95,23 @@ namespace gui {
 		protected:
 		friend class Control;
 		inline static int code(int s) { return s<8? s>>1: 3+(s>>4); }; // Assume s is valid
-		Colour m_colours[12];
-		int m_frames[4];
-		Font* m_font;
-		int m_align;
-		float m_fadeTime;
-		Sprite m_sprite;
-
-
+		void drop();			// Drop reference
+		int m_ref;				// Reference count
+		Colour m_colours[12];	// Colours for types,states
+		int m_frames[4];		// Frames for states
+		Font* m_font;			// Font
+		int m_align;			// Text alignment
+		float m_fadeTime;		// Fade time (unused)
+		Sprite m_sprite;		// Image
 	};
 
 	/** Event data */
 	struct Event {
-		uint command;
+		uint id;
 		uint value;
 		const char* text;
 		Control* control;
-		Event() : command(0), value(0), text(0), control(0) {}
+		Event() : id(0), value(0), text(0), control(0) {}
 	};
 
 
@@ -117,14 +120,15 @@ namespace gui {
 	 */
 	class Root {
 		public:
-		Root();
 		~Root();
-		int update();
-		int update(Event& e);
-		void draw();
-		Control* getControl(const char* name);
+		int update(Event& e);     // Update gui events
+		void draw();              // Draw gui
+		void merge(Root* r); // Copy named controls from r
+		Control* getControl(const char* name) const;
 		private:
 		friend class Control;
+		friend class Loader;
+		Root(Control*);			// Only Control and Loader can create instances
 		void drop();			// Drop reference
 		int m_ref;				// Reference counter
 		Control* m_control;		// Root control
@@ -132,6 +136,7 @@ namespace gui {
 		Control* m_focus;		// Focused control
 		Control* m_over;		// Control under cursor
 		Point m_lastMouse;		// Last mouse point for mouseMove
+		HashMap<Control*> m_names; // Map of named elements
 	};
 
 	/** GUI Loader - used to load fromm XML */
@@ -147,6 +152,8 @@ namespace gui {
 		const char* attribute(const char* name, const char* d) const;
 		float attribute(const char* name, float d) const;
 		int attribute(const char* name, int d) const;
+		// Reference to the parent control
+		const Control* parent() const { return m_parent; }
 		// If the element has custom children, need to access XML element directly
 		const XMLElement* operator->() const;
 		// Additional functions that may be useful
@@ -156,6 +163,7 @@ namespace gui {
 		Style* readStyle(const XMLElement&) const;
 		Colour readColour(const XMLElement&) const;
 		int addControls(const XMLElement&, Container*);
+		const Control* m_parent;
 		const XMLElement* m_item;
 		HashMap<Style*> m_styles;
 		static HashMap<Control*(*)(const Loader&)> s_types;
@@ -166,6 +174,7 @@ namespace gui {
 	class Control {
 		friend class Container;
 		friend class Root;
+		friend class Loader;
 		public:
 		Control(Style* style=0, uint cmd=0);	// Constructor
 		virtual ~Control();						// Destructor
@@ -185,10 +194,11 @@ namespace gui {
 		void raise();			// Bring control to the front of the list (draws on top)
 		void setFocus();		// Set the focus to this
 		bool hasFocus() const;	// Is the focus here?
-		bool visible() const { return m_visible; }
-		bool enabled() const { return m_enabled && m_visible; }
-		virtual bool isContainer() const { return false; }
-		Container* getParent() const { return m_parent; }
+		bool visible() const { return m_visible; }				// Is this control drawn
+		bool enabled() const { return m_enabled && m_visible; }	// Do events affect this
+		virtual bool isContainer() const { return false; }		// Does this class inherit Container
+		Container* getParent() const { return m_parent; }		// Get parent control
+		Control* getControl(const char* name) const;			// Get named control in this heirachy (Root)
 		protected:
 		int getState() const;		// Get control state (uses Root focus and over)
 		Point m_position, m_size;	// Control dimensions

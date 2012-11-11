@@ -20,14 +20,18 @@ using namespace gui;
 static Style gui_defaultStyle;
 
 /**  Default style: Back:transparent, Front:white */
-Style::Style() : m_font(0), m_align(0), m_fadeTime(0) {
+Style::Style() : m_ref(0), m_font(0), m_align(0), m_fadeTime(0) {
 	setColour(BACK, transparent);
 	memset(m_frames, 0, sizeof(m_frames)); // Set all frames to 0
 }
 /** Copy contsuctor from pointer */
-Style::Style(const Style* s) {
+Style::Style(const Style* s): m_ref(0) {
 	if(!s) s = &gui_defaultStyle;
 	memcpy(this, s, sizeof(Style));
+}
+/** Drop reference */
+void Style::drop() {
+	if(--m_ref<=0 && this!=&gui_defaultStyle) delete this;
 }
 /** Set colour with alpha */
 void Style::setColour(int type, int state, const Colour& colour, float alpha) {
@@ -36,6 +40,7 @@ void Style::setColour(int type, int state, const Colour& colour, float alpha) {
 }
 /** Set colour - can set multiple states at once */
 void Style::setColour(int code, int state, const Colour& colour) {
+	if(code>2) return; // check limits
 	if(state==0) state=0xf;
 	if(state & BASE)	 m_colours[ code ] = colour;
 	if(state & OVER)	 m_colours[ code + 3 ] = colour;
@@ -52,12 +57,18 @@ void Style::setFrame(int state, int frame) {
 }
 
 //// //// //// //// //// //// //// ////  GUI Root Class  //// //// //// //// //// //// //// ////
-Root::Root() : m_ref(1), m_control(0), m_lastFocus(0), m_focus(0), m_over(0) {};
+Root::Root(Control* c) : m_ref(0), m_control(c), m_lastFocus(0), m_focus(0), m_over(0) {};
 Root::~Root() { }
 void Root::drop() {
 	if(--m_ref<=0) delete this;
 }
-int Root::update() { Event e; return update(e); }
+Control* Root::getControl(const char* name) const {
+	if(m_names.empty() || !m_names.contains(name)) return 0;
+	else return m_names[name];
+}
+void Root::merge(Root* r) {
+	for(HashMap<Control*>::iterator it=r->m_names.begin(); it!=r->m_names.end(); ++it) m_names[it.key()] = *it;
+}
 int Root::update(Event& e) {
 	if(!m_control) return 0;
 	// Extract events
@@ -92,17 +103,26 @@ int Root::update(Event& e) {
 	if(m_focus && m_focus->enabled() && Game::LastKey()) m_focus->keyEvent(e, Game::LastKey(), Game::LastChar());
 
 	m_lastMouse = mouse;
-	return e.command;
+	return e.id;
 }
 void Root::draw() { 
 	if(m_control) m_control->draw();
 }
 
+Control* Control::getControl(const char* name) const {
+	return m_root? m_root->getControl(name): 0;
+}
+
 
 
 //// //// //// //// //// //// //// ////  Constructors  //// //// //// //// //// //// //// ////
-Control::Control(Style* s, uint cmd) : m_style(s?s:&gui_defaultStyle), m_command(cmd), m_visible(1), m_enabled(1), m_parent(0), m_root(0) { }
-Control::~Control() { if(m_parent) m_parent->remove(this); }
+Control::Control(Style* s, uint cmd) : m_style(s?s:&gui_defaultStyle), m_command(cmd), m_visible(1), m_enabled(1), m_parent(0), m_root(0) {
+	++m_style->m_ref;
+}
+Control::~Control() {
+	if(m_parent) m_parent->remove(this);
+	m_style->drop();
+}
 // Container //
 Container::Container(): Control(0, 0), m_clip(0) {
 	m_size = Game::getSize();
@@ -162,15 +182,14 @@ gui::Input::Input(int w, int h, const char* t, Style* s, uint cmd) : Control(s,c
 }
 
 //// //// Update Function //// ////
+uint Control::update() { Event e; return update(e); }
 uint Control::update(Event& e) {
 	if(m_parent) printf("Warning: Calling update on non-root gui element\n");
 	// Add root if it doesnt exist
 	if(!m_root) {
 		Control* c = this;
 		while(c->m_parent) c=c->m_parent;
-		c->setRoot( new Root );
-		m_root->m_control = c;
-		--m_root->m_ref;
+		c->setRoot( new Root(c) );
 	}
 	// Call Root::update();
 	return m_root->update(e);
@@ -223,6 +242,7 @@ Control* Container::add( Control* c, int x, int y ) {
 	c->m_parent = this;
 	c->setPosition(x, y);
 	// Merge m_root
+	if(m_root && c->m_root) m_root->merge(c->m_root);
 	c->setRoot( m_root );
 	return c;
 }
@@ -303,7 +323,7 @@ void gui::Input::setText(const char* c) {
 
 //// //// //// //// Utility Functions //// //// //// ////
 uint Control::setEvent(Event& e, uint value, const char* txt) {
-	e.command = m_command;
+	e.id = m_command;
 	e.value = value;
 	e.text = txt;
 	e.control = this;
@@ -492,7 +512,7 @@ uint ListBase::mouseEvent(Event& e, const Point& p, int b) {
 	// Click
 	if(b==1 && m_hover<size() && mouseEvent(e, m_hover, p-itm, b)) {
 		m_selected = m_hover;
-		return e.command;
+		return e.id;
 	} else return 0;
 }
 bool ListBase::mouseEvent(Event& e, uint index, const Point&, int b) {
