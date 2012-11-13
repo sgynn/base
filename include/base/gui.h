@@ -233,6 +233,7 @@ namespace gui {
 		void drawText(int x, int y, const char* text, int state=0) const;
 		void drawText(const Point&, const char* text, int state=0) const;
 		static void drawRect(int x, int y, int w, int h, const Colour& c = white, bool fill=true);
+		static void drawCircle(int x, int y, float r, const Colour& col=white, bool fill=true, int s=16);
 		static void scissorPushNew(int x, int y, int w, int h);
 		static void scissorPush(int x, int y, int w, int h);
 		static void scissorPop();
@@ -317,6 +318,27 @@ namespace gui {
 		virtual uint mouseEvent(Event&, const Point&, int);
 		int m_boxSize;
 		bool m_value;
+	};
+
+	/** Slider */
+	class Slider : public Control {
+		public:
+		enum Orientation { VERTICAL, HORIZONTAL };
+		Slider(int orientation=VERTICAL, int width=16, int height=120, Style* style=0, uint command=0);
+		virtual void draw();
+		void setValue(float value);
+		float getValue() const { return m_value; }
+		float getMin() const { return m_min; }
+		float getMax() const { return m_max; }
+		void setRange(float min=0, float max=1, float step=0) { m_min=min, m_max=max; m_step=step; setValue(m_value); }
+		protected:
+		virtual uint mouseEvent(Event&, const Point&, int);
+		virtual uint mouseMove(Event&, const Point&, const Point&, int);
+		float m_min, m_max;	// Value limits
+		float m_value;		// Current value
+		float m_step;		// Rounding
+		int m_orientation;	// Horizontal or Vertical
+		int m_held;			// Is the block held
 	};
 
 	/** Scrollar */

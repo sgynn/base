@@ -54,15 +54,35 @@ namespace base {
 			Checkbox* c = new Checkbox(size, caption, value, style, event);
 			return c;
 		}
+		Control* createSlider(const Loader& e, int o) {
+			float min = e.attribute("min", 0.0f);
+			float max = e.attribute("max", 1.0f);
+			float step = e.attribute("step", .0f);
+			float value = e.attribute("value", min);
+			int width = e.attribute("width", 0);
+			int height= e.attribute("height", 0);
+			int event = e.attribute("event", 0);
+			if(width==0 && o==Slider::VERTICAL) width=18;
+			else if(height==0 && o==Slider::HORIZONTAL) height=18;
+			Slider* c = new Slider(o, width, height, e.style(), event);
+			c->setRange(min, max, step);
+			c->setValue(value);
+			return c;
+		}
+		Control* createSliderV(const Loader& e) { return createSlider(e,Slider::VERTICAL); }
+		Control* createSliderH(const Loader& e) { return createSlider(e,Slider::HORIZONTAL); }
+
 		Control* createScrollbar(const Loader& e, int o) {
 			int min = e.attribute("min", 0);
-			int max = e.attribute("max", 0);
+			int max = e.attribute("max", 10);
+			int value = e.attribute("value", min);
 			int width = e.attribute("width", 0);
 			int height= e.attribute("height", 0);
 			int event = e.attribute("event", 0);
 			if(width==0 && o==Scrollbar::VERTICAL) width=16;
 			else if(height==0 && o==Scrollbar::HORIZONTAL) height=16;
 			Scrollbar* c = new Scrollbar(o, width, height, min, max, e.style(), event);
+			c->setValue(value);
 			return c;
 		}
 		Control* createScrollbarV(const Loader& e) { return createScrollbar(e,Scrollbar::VERTICAL); }
@@ -160,6 +180,9 @@ Loader::Loader() {
 		addType("label",     base::gui::createLabel);
 		addType("button",    base::gui::createButton);
 		addType("checkbox",  base::gui::createCheckbox);
+		addType("slider",    base::gui::createSliderH);
+		addType("hslider",   base::gui::createSliderH);
+		addType("vslider",   base::gui::createSliderV);
 		addType("hscroll",   base::gui::createScrollbarH);
 		addType("vscroll",   base::gui::createScrollbarV);
 		addType("listbox",   base::gui::createListbox);

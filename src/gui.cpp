@@ -156,6 +156,10 @@ Checkbox::Checkbox(int size, const char* c, bool v, Style* s, uint cmd) : Button
 	m_size.x += size;
 	if(m_size.y<size) m_size.y = size;
 }
+// Slider //
+Slider::Slider(int o, int w, int h, Style* s, uint cmd) : Control(s,cmd), m_min(0), m_max(1), m_value(0), m_step(0), m_orientation(o), m_held(-1) {
+	m_size = Point(w, h);
+}
 // Scrollbar //
 Scrollbar::Scrollbar(int o, int w, int h, int min, int max, Style* s, uint cmd) : Control(s,cmd), m_min(min), m_max(max), m_value(min), m_orientation(o), m_held(-1), m_blockSize(16) {
 	m_size = Point(w, h);
@@ -316,6 +320,10 @@ void Button::setCaption(const char* caption) {
 	strcpy(m_caption, caption);
 	m_textPos = textPosition(caption);
 }
+void gui::Slider::setValue(float v) {
+	if(m_step>0) v = round((v-m_min)/m_step)*m_step + m_min;
+	m_value = v<m_min? m_min: v>m_max? m_max: v;
+}
 void gui::Input::setText(const char* c) {
 	strcpy(m_text, c);
 	m_len = m_loc = strlen(c);
@@ -454,6 +462,41 @@ uint Checkbox::mouseEvent(Event& e, const Point& p, int b) {
 	} else return 0;
 }
 
+// Slider //
+uint Slider::mouseEvent(Event& e, const Point& p, int b) {
+	if(b!=1) return 0;
+	float vn = (float)(m_value-m_min) / (m_max-m_min); // Normalised value
+	if(m_orientation==HORIZONTAL) {
+		int bs = m_size.y;
+		int block = m_position.x + vn * (m_size.x - bs);
+		if(p.x>block && p.x<block+bs) m_held = p.x-block;
+	} else {
+		int bs = m_size.x;
+		int block = m_position.y + (1-vn) * (m_size.y - bs);
+		if(p.y>block && p.y<block+bs) m_held = p.y-block;
+	}
+	setFocus();
+	return 0;
+}
+uint Slider::mouseMove(Event& e, const Point& pos, const Point& last, int b) {
+	if(b!=1) m_held=0;
+	if(m_held>0) {
+		float s;
+		if(m_orientation==HORIZONTAL) {
+			int bs = m_size.y;
+			s = (float)(pos.x - m_position.x - m_held) / (m_size.x - bs);
+			printf("%f\n", s);
+		} else {
+			int bs = m_size.x;
+			s = 1.0 - (float)(pos.y - m_position.y - m_held) / (m_size.y - bs);
+		}
+		int last = m_value;
+		setValue(m_min + s*(m_max-m_min));
+		if(m_value==last) return 0;
+		else return setEvent(e, m_value);
+	} else return 0;
+}
+
 // Scrollbar //
 uint Scrollbar::mouseEvent(Event& e, const Point& p, int b) {
 	if(b!=1) return 0;
@@ -516,7 +559,7 @@ uint ListBase::mouseEvent(Event& e, const Point& p, int b) {
 	} else return 0;
 }
 bool ListBase::mouseEvent(Event& e, uint index, const Point&, int b) {
-	if(index!=m_selected) return setEvent(e, index);
+	if(index!=m_selected) return m_command? setEvent(e, index): true;
 	else return false;
 }
 uint ListBase::mouseMove(Event& e, const Point& pos, const Point& last, int b) {
@@ -722,11 +765,34 @@ void Control::drawArrow(const Point& p, int direction, int size, int state) cons
 }
 void Control::drawRect(int x, int y, int w, int h, const Colour& c, bool fill) {
 	if(c.a>0) {
-		int o = fill? 0: 1;
+		int o = fill? 0: 1; //offset to fix lines
 		float f[8] = { x+o,y+o, x+w,y+o, x+w,y+h, x+o,y+h };
 		glDisable(GL_TEXTURE_2D);
 		glColor4fv(c);
 		guiDrawArray(fill?GL_QUADS:GL_LINE_LOOP, 4, f);
+		glEnable(GL_TEXTURE_2D);
+	}
+}
+void Control::drawCircle(int x, int y, float r, const Colour& col, bool fill, int s) {
+	static float* f=0;
+	static int ls=0;
+	if(col.a>0) {
+		// Cache vertices
+		if(ls!=s) {
+			ls=s;
+			if(f) delete [] f;
+			f = new float[s*2];
+			float a = TWOPI / s;
+			for(int i=0; i<s; ++i) { f[i*2]=sin(i*a); f[i*2+1]=-cos(i*a); }
+		}
+		// Draw circle
+		glColor4fv(col);
+		glDisable(GL_TEXTURE_2D);
+		glPushMatrix();
+		glTranslatef(x, y, 0);
+		glScalef(r,r,1);
+		guiDrawArray(fill?GL_POLYGON:GL_LINE_LOOP, s, f);
+		glPopMatrix();
 		glEnable(GL_TEXTURE_2D);
 	}
 }
@@ -800,6 +866,22 @@ void Checkbox::draw() {
 		float v[8] = { c.x, c.y-s,  c.x+s,c.y,  c.x,c.y+s,  c.x-s,c.y };
 		guiDrawArray(GL_QUADS, 4, v);
 		glEnable(GL_TEXTURE_2D);
+	}
+}
+void Slider::draw() {
+	float v = m_max==m_min? 0: (m_value-m_min) / (m_max-m_min); // Normalised value
+	if(m_orientation==HORIZONTAL) {
+		int h = m_size.y/2;
+		drawRect(m_position.x, m_position.y + h-2, m_size.x, 4, m_style->getColour(Style::BORDER), true);
+		int b = h + v * (m_size.x-m_size.y);
+		drawCircle(m_position.x+b, m_position.y+h, h, m_style->getColour(Style::BACK, getState()), true);
+		drawCircle(m_position.x+b, m_position.y+h, h, m_style->getColour(Style::BORDER, getState()), false);
+	} else {
+		int h = m_size.x/2;
+		drawRect(m_position.x+h-2, m_position.y, 4, m_size.y, m_style->getColour(Style::BORDER), true);
+		int b = h + (1-v) * (m_size.y-m_size.x);
+		drawCircle(m_position.x+h, m_position.y+b, h, m_style->getColour(Style::BACK, getState()), true);
+		drawCircle(m_position.x+h, m_position.y+b, h, m_style->getColour(Style::BORDER, getState()), false);
 	}
 }
 void Scrollbar::draw() { 
