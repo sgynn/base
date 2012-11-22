@@ -52,6 +52,7 @@ namespace gui {
 		int width() const { return m_width; }
 		int height() const { return m_height; }
 		int frames() const { return m_rows * m_cols; }
+		operator bool() const { return m_width && m_height; }
 		protected:
 		uint m_texture;
 		int m_width, m_height;
@@ -91,6 +92,7 @@ namespace gui {
 
 		inline const Colour& getColour(int type, int state=BASE) const { return m_colours[type + 3*code(state) ]; }
 		inline int  getFrame(int state=BASE) const { return m_frames[ code(state) ]; }
+		inline const Sprite& sprite() const { return m_sprite; }
 
 		protected:
 		friend class Control;
@@ -148,22 +150,26 @@ namespace gui {
 		static Container* load(const char* file);
 		
 		// These functions are called from construction functions //
-		Style* style() const;
-		const char* attribute(const char* name, const char* d) const;
-		float attribute(const char* name, float d) const;
-		int attribute(const char* name, int d) const;
-		// Reference to the parent control
-		const Control* parent() const { return m_parent; }
-		// If the element has custom children, need to access XML element directly
+		Style* style() const;											// Get style of this control
+		const char* attribute(const char* name, const char* d) const;	// Get control attribute
+		float attribute(const char* name, float d) const;				// Get control attribute
+		int attribute(const char* name, int d) const;					// Get control attribute
+		/** Get addional style by name */
+		Style* getStyle(const char* name) const;
+		/** Reference to the parent control */
+		Control* parent() const { return m_parent; }
+		/** Get a control by name from this file */
+		Control* getControl(const char* name) const;
+		/** If the element has custom children, need to access XML element directly */
 		const XMLElement* operator->() const;
-		// Additional functions that may be useful
+		/** Additional functions that may be useful */
 		static uint parseHex(const char*);
 		private:
 		Loader();
 		Style* readStyle(const XMLElement&) const;
 		Colour readColour(const XMLElement&) const;
 		int addControls(const XMLElement&, Container*);
-		const Control* m_parent;
+		Control* m_parent;
 		const XMLElement* m_item;
 		HashMap<Style*> m_styles;
 		static HashMap<Control*(*)(const Loader&)> s_types;
@@ -376,7 +382,7 @@ namespace gui {
 		void selectItem(uint index) { m_selected=index; }
 		uint selected() const       { return m_selected; }
 		protected:
-		virtual void drawItem(uint index, int x, int y, int width, int height) = 0;
+		virtual void drawItem(uint index, int x, int y, int width, int height) const = 0;
 		virtual bool mouseEvent(Event& e, uint index, const Point&, int b);
 		// Events: needs all of them
 		virtual uint mouseEvent( Event&, const Point&, int);
@@ -401,10 +407,11 @@ namespace gui {
 		const char* selectedItem() const { return getItem(m_selected); }
 		uint size() const { return m_items.size(); }
 		protected:
-		virtual void drawItem(uint index, int x, int y, int width, int height);
+		virtual void drawItem(uint index, int x, int y, int width, int height) const;
 		struct Item { char* text; };
 		std::vector<Item> m_items;
 	};
+
 	
 	/** A Dropdown List */
 	class DropList: public Listbox {

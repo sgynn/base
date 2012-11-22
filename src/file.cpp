@@ -30,14 +30,6 @@ int File::seek(int pos, int from) {
 	if(m_mode&3 && m_file) return fseek(m_file, pos, from); 
 	else return 1;
 }
-int File::find() {
-	if(!s_paths.empty()) {
-		for(std::list<Directory>::iterator i=s_paths.begin(); i!=s_paths.end(); i++) {
-			if(i->find(*this)) return 1;
-		}
-	}
-	return 0;
-}
 int File::open() {
 	//get full file name
 	char buffer[512];
@@ -61,152 +53,15 @@ int File::open() {
 	return 1;
 }
 
-std::list<Directory> File::s_paths;
-void File::addPath(const Directory& d) {
-	s_paths.push_back(d);
-}
-void File::clearPaths() {
-	s_paths.clear();
-}
-
+std::vector<const char*> File::s_paths;
+void File::addPath(const char* d) { s_paths.push_back(d); }
+void File::clearPaths() { s_paths.clear(); }
 int File::find(const char* name, char* path) {
-	if(!s_paths.empty()) {
-		for(std::list<Directory>::iterator i=s_paths.begin(); i!=s_paths.end(); i++) {
-			if(i->find(name, path)) return 1;
-		}
+	for(unsigned i=0; i<s_paths.size(); ++i) {
+		sprintf(path, "%s/%s", s_paths[i], name);
+		FILE* fp = fopen(path, "r");
+		if(fp) { fclose(fp); return 1; }
 	}
 	return 0;
 }
-//// //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
-#ifdef WIN32
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#endif
-
-
-Directory::Directory() : m_directory(0), m_scanned(0) {
-}
-Directory::Directory(const char* path) : m_scanned(0) {
-	//Try cleaning a path
-	char clean[512];
-	cleanPath(path, clean);
-	m_directory = strdup(clean);
-}
-
-Directory::Directory(const Directory& d) {
-	m_directory = strdup(d.m_directory);
-	m_scanned = d.m_scanned;
-	m_files = d.m_files;
-}
-Directory::~Directory() {
-	if(m_directory) free((char*)m_directory);
-}
-Directory& Directory::operator=(const Directory& d) {
-	m_directory = strdup(d.m_directory);
-	m_scanned = d.m_scanned;
-	m_files = d.m_files;
-	return *this;
-}
-void Directory::cleanPath(const char* in, char* out) {
-	int k=0;
-	for(const char* c=in; *c; c++) {
-		if(strncmp(c, "//", 2)==0) continue ; // repeated slashes
-		else if((c==in||*(c-1)=='/') && strncmp(c, "./", 2)==0) c++; // no change
-		else if(strncmp(c, "/.", 3)==0) c++; // ending in /.
-		else if(strncmp(c, "/../", 4)==0 || strncmp(c, "/..", 4)==0) { //up
-			if((k==2 && strncmp(out, "..", 2)) || (k>2 && strncmp(&out[k-3], "/..", 3))) {
-				//remove segment
-				while(k>1 && out[k-1]!='/') k--;
-				c+=2;
-			} else out[k++] = *c;
-		} else out[k++] = *c;
-	}
-	out[k]=0;
-
-}
-bool sortByName(const Directory::DFile& a, const Directory::DFile& b) {
-	return strcmp(a.name, b.name)<0;
-}
-int Directory::search() {
-	//List all files in the directory
-	#ifdef WIN32
-	//Do this later
-	//see ~/projects/doste/src/directory.cpp:59
-	#else
-	DIR* dp;
-	struct stat st;
-	struct dirent *dirp;
-	char buffer[512];
-	if((dp = opendir(m_directory))) {
-		while((dirp = readdir(dp))) {
-			m_files.push_back(DFile());
-			DFile& f = m_files.back();
-			strcpy(f.name, dirp->d_name);
-
-			//is it a file or directory
-			strcpy(buffer, m_directory);
-			strcat(buffer, "/");
-			strcat(buffer, dirp->d_name);
-			stat(buffer, &st);
-			if(S_ISDIR(st.st_mode)) {
-				f.flags |= 0x10;
-			}
-			//extract extension
-			f.ext=0;
-			for(const char* c = f.name; *c; c++) if(*c=='.') f.ext=c+1;
-		}
-	}
-	#endif
-	//Sort TODO - sorting functions
-	m_files.sort(sortByName);
-	return 0;
-}
-bool Directory::contains( const char* file ) {
-	if(m_scanned) {
-		//is it in the list?
-		for(iterator i=begin(); i!=end(); i++) {
-			if(strcmp(i->name, file)==0) return true;
-		}
-	} else {
-		//try to open it
-		char buf[128];
-		strcpy(buf, m_directory);
-		strcat(buf, "/"); //linux specific
-		strcat(buf, file);
-		FILE* fp = fopen(buf, "r");
-		if(fp) { fclose(fp); return true; }
-	}
-	return false;
-}
-
-int Directory::find(File& f) {
-	if(contains(f.m_name)) {
-		f.m_path = m_directory;
-		return 1;
-	}
-	return 0;
-}
-
-int Directory::find(const char* name, char* path) {
-	if(contains(name)) {
-		strcpy(path, m_directory);
-		strcat(path, "/");
-		strcat(path, name);
-		return 1;
-	}
-	return 0;
-}
-
-File Directory::open(const char* file, File::Mode mode) {
-	char buf[128];
-	strcpy(buf, m_directory);
-	strcat(buf, "/"); //linux specific
-	strcat(buf, file);
-	return File(buf, mode);
-
-}
-
-
 

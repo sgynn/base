@@ -194,23 +194,12 @@ class aabb {
 	aabb& operator+=(const vec3& v) { min+=v, max+=v; return *this;  }
 	aabb& operator-=(const vec3& v) { min-=v, max-=v; return *this;  }
 	
-	aabb operator|(const aabb& b) const { aabb a(*this); a.addBox(b); return a; };
-	aabb& operator|=(const aabb& b) { addBox(b); return *this; }
-	aabb operator&(const aabb& b) const { aabb a(*this); a&=b; return a; };
-	aabb& operator&=(const aabb& b) { 
-		if(b.min.x>min.x) min.x=b.min.x;
-		if(b.min.y>min.y) min.y=b.min.y;
-		if(b.min.z>min.z) min.z=b.min.z;
-		if(b.max.x<max.x) max.x=b.max.x;
-		if(b.max.y<max.y) max.y=b.max.y;
-		if(b.max.z<max.z) max.z=b.max.z;
-		return *this;
-	}
-
+	/** Get the size of the box */
 	vec3 size() const { return vec3(max-min); }
-
+	/** Get the box centre point */
 	vec3 centre() const { return (min+max)*0.5f; }
 	
+	/** Expand the bounding box to contain a point */
 	void addPoint(const vec3& p) {
 		if(p.x<min.x) min.x=p.x;
 		if(p.y<min.y) min.y=p.y;
@@ -219,28 +208,39 @@ class aabb {
 		if(p.y>max.y) max.y=p.y;
 		if(p.z>max.z) max.z=p.z;
 	}
+	/** Expand the bounding box to contain another bounding box */
 	void addBox(const aabb& box) {
 		addPoint(box.min);
 		addPoint(box.max);
 	}
-	
+	/** Is a point within the bounding box */
 	bool contains(const vec3& p) const {
 		return p.x>=min.x && p.x<=max.x && p.y>=min.y && p.y<=max.y && p.z>=min.z && p.z<=max.z;
 	}
+	/** Is a box entirely within this bounding box */
 	bool contains(const aabb& b) const {
+		return b.min.x>=min.x && b.min.y>=min.y && b.min.z>=min.z && b.max.x<=max.x && b.max.y<=max.y && b.max.z<=max.z;
+	}
+	/** Does a box intersect with this box */
+	bool intersects(const aabb& b) const {
 		return b.max.x>min.x && b.min.x<max.x && b.max.y>min.y && b.min.y<max.y && b.max.z>min.z && b.min.z<max.z;
 	}
 };
 
-struct Range {
-	float min, max;
-	Range(float r=0): min(r), max(r) {}
-	Range(float min, float max) : min(min), max(max) {}
-	void addPoint(float v) { if(v<min) min=v; if(v>max) max=v; }
-	bool contains(float p) const { return p>=min && p<=max; }
-	float range() const { return max - min; }
-	float clamp(float v) const { return v<min? min: v>max?max: v; }
+template<typename T>
+struct RangeT {
+	T min, max;
+	RangeT(T r=0): min(r), max(r) {}
+	RangeT(T min, T max) : min(min), max(max) {}
+	void addPoint(T v) { if(v<min) min=v; if(v>max) max=v; }
+	bool contains(T p) const { return p>=min && p<=max; }
+	T range() const { return max - min; }
+	T clamp(T v) const { return v<min? min: v>max?max: v; }
+	T wrap(T v) const { return v - floor((v+min)/range())*range(); }
 };
+typedef RangeT<float> Range;
+
+
 
 struct Colour {
 	float r,g,b,a;
@@ -273,6 +273,7 @@ struct Point {
 	Point() : x(0), y(0) {};
 	Point(int x, int y) : x(x), y(y) {};
 	bool operator<(const Point& p) const { return x<p.x || (x==p.x && y<p.y);  }
+	bool operator==(const Point& p) const { return x==p.x && y==p.y; }
 	Point operator+ (const Point& b) const { return Point(x+b.x,y+b.y); }
 	Point operator- (const Point& b) const { return Point(x-b.x,y-b.y); }
 };
@@ -282,8 +283,17 @@ struct Point3 {
 	Point3() : x(0), y(0), z(0) {};
 	Point3(int x, int y, int z) : x(x), y(y), z(z) {};
 	bool operator<(const Point3& p) const { return x<p.x || (x==p.x && y<p.y) || (x==p.x && y==p.y && z<p.z); }
+	bool operator==(const Point3& p) const { return x==p.x && y==p.y && z==p.z; }
 	Point3 operator+ (const Point3& b) const { return Point3(x+b.x,y+b.y,z+b.z); }
 	Point3 operator- (const Point3& b) const { return Point3(x-b.x,y-b.y,z-b.z); }
+};
+
+struct Rect {
+	int x, y, width, height;
+	Rect(int x, int y, int w, int h): x(x), y(y), width(w), height(h) {}
+	bool contains(int px, int py) const { return px>=x && px<=x+width && py>=y && py<=y+height; }
+	bool contains(const Point& p) const { return contains(p.x, p.y); }
+	bool intersects(const Rect& o) const { return x<o.x+o.width && x+width>o.x && y<o.y+o.height && y+height>o.y; }
 };
 
 #ifndef PI

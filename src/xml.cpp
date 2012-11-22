@@ -69,7 +69,7 @@ const XML& XML::operator=(const XML& x) {
 XML::~XML() {
 	if(m_ref) --*m_ref;
 	if(m_data && *m_ref==0) {
-		delete [] m_data;
+		free(m_data);
 		delete m_ref;
 	}
 }
@@ -81,7 +81,7 @@ XML XML::load(const char* file) {
 	fseek(fp, 0, SEEK_END);
 	xml.m_length = ftell(fp);
 	rewind(fp);
-	xml.m_data = new char[xml.m_length+1];
+	xml.m_data = (char*)malloc(xml.m_length+1);
 	xml.m_length = fread(xml.m_data, 1, xml.m_length, fp) + 1; 
 	xml.m_data[xml.m_length-1] = 0;
 	xml.m_ref = new int(1);

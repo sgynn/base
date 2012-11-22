@@ -1,0 +1,28 @@
+
+#ifndef _BASE_ORBIT_CAMERA_
+#define _BASE_ORBIT_CAMERA_
+
+#include "base/camera.h"
+namespace base {
+	/** Camera that orbits a point
+	 *	Uses Game::input to read state
+	 *	if enabled, the camera uses the mouse delta to rotate, and locks the mouse
+	 * */
+	class OrbitCamera : public CameraBase {
+		public:
+		OrbitCamera(float fov=90, float aspect=0, float near=1, float far=10000);
+		/** Move camera */
+		virtual void update();
+
+		/** set target point */
+		void setTarget(const vec3& t);
+		/** Set position as angles */
+		void setPosition(float yaw, float pitch, float distance);
+
+		private:
+		vec3 m_target;		// Target point
+	};
+};
+
+#endif
+

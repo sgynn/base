@@ -1,4 +1,5 @@
-#include "base/cameras.h"
+#include "base/fpscamera.h"
+#include "base/orbitcamera.h"
 #include "base/input.h"
 #include "base/game.h"
 #include <cstdio>
@@ -6,7 +7,7 @@
 using namespace base;
 
 CameraBase::CameraBase(float fov, float aspect, float near, float far) 
-	: Camera(fov,aspect,near,far), m_active(true), 
+	: Camera(fov,aspect,near,far), m_active(true), m_grabMouse(false),
 	m_moveSpeed(10), m_rotateSpeed(0.004), m_moveAcc(1), m_rotateAcc(1) {}
 
 void CameraBase::setSpeed(float m, float r) {
@@ -34,6 +35,7 @@ void CameraBase::setPitchLimits(float min, float max) {
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
 FPSCamera::FPSCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far) {
+	if(a==0) m_aspect = Game::aspect();
 	setUpVector( vec3(0,1,0) );
 }
 void FPSCamera::update() {
@@ -78,7 +80,7 @@ void FPSCamera::update() {
 		}
 
 		// Warp mouse
-		if(m_last.x!=m.x || m_last.y!=m.y) {
+		if(m_grabMouse && (m_last.x!=m.x || m_last.y!=m.y)) {
 			in->warpMouse(m_last.x, m_last.y);
 			in->queryMouse();
 			m = m_last;
@@ -91,6 +93,7 @@ void FPSCamera::update() {
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
 OrbitCamera::OrbitCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far) {
+	if(a==0) m_aspect = Game::aspect();
 	setUpVector( vec3(0,1,0) );
 }
 void OrbitCamera::setTarget(const vec3& t) {
@@ -144,7 +147,7 @@ void OrbitCamera::update() {
 		}
 
 		// Warp mouse
-		if(m_last.x!=m.x || m_last.y!=m.y) {
+		if(m_grabMouse && (m_last.x!=m.x || m_last.y!=m.y)) {
 			in->warpMouse(m_last.x, m_last.y);
 			in->queryMouse();
 			m = m_last;

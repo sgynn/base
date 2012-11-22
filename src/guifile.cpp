@@ -142,17 +142,21 @@ float       Loader::attribute(const char* name, float d) const       { return m_
 int         Loader::attribute(const char* name, int d) const         { return m_item->attribute(name, d); }
 const XML::Element* Loader::operator->() const                       { return m_item; }
 Style* Loader::style() const {
-	// check attribute
-	const char* name = attribute("style", (const char*)0);
-	if(name) {
-		if(m_styles.contains(name)) return m_styles[name];
-		else return 0;
-	}
 	// Find Style as a child object
 	for(XML::iterator i=m_item->begin(); i!=m_item->end(); ++i) {
-		if(strcmp("style", i->name())==0) return readStyle(*i);
+		if(i->name() && strcmp("style", i->name())==0) return readStyle(*i);
 	}
+	// Find style by 'style' attribute
+	const char* name = attribute("style", (const char*)0);
+	if(name) return getStyle(name);
 	return 0;
+}
+Style* Loader::getStyle(const char* name) const {
+	if(m_styles.contains(name)) return m_styles[name];
+	else return 0;
+}
+Control* Loader::getControl(const char* name) const {
+	return m_parent->getControl(name);
 }
 
 /** Parse a hex value from string */

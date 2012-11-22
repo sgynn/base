@@ -485,7 +485,6 @@ uint Slider::mouseMove(Event& e, const Point& pos, const Point& last, int b) {
 		if(m_orientation==HORIZONTAL) {
 			int bs = m_size.y;
 			s = (float)(pos.x - m_position.x - m_held) / (m_size.x - bs);
-			printf("%f\n", s);
 		} else {
 			int bs = m_size.x;
 			s = 1.0 - (float)(pos.y - m_position.y - m_held) / (m_size.y - bs);
@@ -553,7 +552,7 @@ uint ListBase::mouseEvent(Event& e, const Point& p, int b) {
 	Point itm = m_position;
 	itm.y += m_size.y - m_hover*m_itemHeight + m_scroll.getValue();
 	// Click
-	if(b==1 && m_hover<size() && mouseEvent(e, m_hover, p-itm, b)) {
+	if((b&5) && m_hover<size() && mouseEvent(e, m_hover, p-itm, b)) {
 		m_selected = m_hover;
 		return e.id;
 	} else return 0;
@@ -797,10 +796,12 @@ void Control::drawCircle(int x, int y, float r, const Colour& col, bool fill, in
 	}
 }
 void Control::drawText(int x, int y, const char* text, int state) const {
+	if(!m_style->m_font) return;
 	if(state) glColor4fv( m_style->getColour(Style::TEXT, state) );
 	m_style->m_font->print(x, y, text);
 }
 void Control::drawText(const Point& pos, const char* text, int state) const {
+	if(!m_style->m_font) return;
 	if(state) glColor4fv( m_style->getColour(Style::TEXT, state) );
 	m_style->m_font->print(pos.x, pos.y, text);
 }
@@ -935,14 +936,10 @@ void ListBase::draw() {
 	if(m_scroll.visible()) m_scroll.draw();
 	scissorPop();
 }
-void Listbox::drawItem(uint index, int x, int y, int width, int height) {
+void Listbox::drawItem(uint index, int x, int y, int width, int height) const {
 	int s = index==m_selected? Style::FOCUS: index==m_hover? Style::OVER: Style::BASE;
 	//Background
-	if(index==m_selected) {
-		glDisable(GL_TEXTURE_2D);
-		drawRect(x,y,width,height, Colour(1,1,1,0.1), true);
-		glEnable(GL_TEXTURE_2D);
-	}
+	if(index==m_selected) drawRect(x,y,width,height, Colour(1,1,1,0.1), true);
 	//Text
 	drawText(x+2, y, getItem(index), s);
 }

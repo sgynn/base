@@ -5,6 +5,7 @@ set(src
 	src/camera.cpp
 	src/cameras.cpp
 	src/collision.cpp
+	src/directory.cpp
 	src/file.cpp
 	src/font.cpp
 	src/framebuffer.cpp
@@ -62,9 +63,11 @@ set( zlib
 
 set(headers
 	include/base/camera.h
-	include/base/cameras.h
+	include/base/fpscamera.h
+	include/base/orbitcamera.h
 	include/base/collision.h
 	include/base/draw.h
+	include/base/directory.h
 	include/base/file.h
 	include/base/font.h
 	include/base/framebuffer.h
