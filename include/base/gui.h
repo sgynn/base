@@ -93,6 +93,7 @@ namespace gui {
 		inline const Colour& getColour(int type, int state=BASE) const { return m_colours[type + 3*code(state) ]; }
 		inline int  getFrame(int state=BASE) const { return m_frames[ code(state) ]; }
 		inline const Sprite& sprite() const { return m_sprite; }
+		inline const Font* font() const { return m_font; }
 
 		protected:
 		friend class Control;
@@ -235,11 +236,11 @@ namespace gui {
 		void dropRoot();							// Drop reference to root (recursive)
 		//Drawing
 		void drawFrame(const Point& p, const Point& s, const char* title=0, int state=Style::BASE) const;
-		void drawArrow(const Point& p, int direction, int size=8, int state=0) const;
 		void drawText(int x, int y, const char* text, int state=0) const;
-		void drawText(const Point&, const char* text, int state=0) const;
+		void drawText(const Point& p, const char* text, int state=0) const { drawText(p.x,p.y,text,state); }
 		static void drawRect(int x, int y, int w, int h, const Colour& c = white, bool fill=true);
 		static void drawCircle(int x, int y, float r, const Colour& col=white, bool fill=true, int s=16);
+		static void drawArrow(const Point& p, int direction, int size, const Colour&);
 		static void scissorPushNew(int x, int y, int w, int h);
 		static void scissorPush(int x, int y, int w, int h);
 		static void scissorPop();

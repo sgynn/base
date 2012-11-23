@@ -489,7 +489,7 @@ uint Slider::mouseMove(Event& e, const Point& pos, const Point& last, int b) {
 			int bs = m_size.x;
 			s = 1.0 - (float)(pos.y - m_position.y - m_held) / (m_size.y - bs);
 		}
-		int last = m_value;
+		float last = m_value;
 		setValue(m_min + s*(m_max-m_min));
 		if(m_value==last) return 0;
 		else return setEvent(e, m_value);
@@ -720,7 +720,7 @@ void Control::drawFrame(const Point& pt, const Point& sz, const char* title, int
 	// Background
 	const Colour& bg = m_style->getColour(Style::BACK, state);
 	if(bg.a>0) {
-		if(m_style->m_sprite.frames()) {
+		if(m_style->sprite() && m_style->getFrame(state)>=0) {
 			glColor4fv(bg);
 			int frame = m_style->getFrame(state);
 			m_style->m_sprite.draw(frame, pt.x, pt.y, sz.x, sz.y);
@@ -746,7 +746,7 @@ void Control::drawFrame(const Point& pt, const Point& sz, const char* title, int
 		} else drawRect(pt.x, pt.y, sz.x, sz.y, fg, false);
 	}
 }
-void Control::drawArrow(const Point& p, int direction, int size, int state) const {
+void Control::drawArrow(const Point& p, int direction, int size, const Colour& c) {
 	//Non-texture arrow glyphs
 	static float v[8] = { 0,1,  -1,0,  0,-1,  1,0 };
 	static float a[6];
@@ -756,8 +756,7 @@ void Control::drawArrow(const Point& p, int direction, int size, int state) cons
 		a[i*2+1] = p.y + v[k+1]*size;
 	}
 	// Draw it
-	if(state) glColor4fv( m_style->getColour(Style::TEXT, state) );
-	else glColor4fv(black);
+	glColor4fv(c);
 	glDisable(GL_TEXTURE_2D);
 	guiDrawArray(GL_TRIANGLES, 3, a);
 	glEnable(GL_TEXTURE_2D);
@@ -799,11 +798,6 @@ void Control::drawText(int x, int y, const char* text, int state) const {
 	if(!m_style->m_font) return;
 	if(state) glColor4fv( m_style->getColour(Style::TEXT, state) );
 	m_style->m_font->print(x, y, text);
-}
-void Control::drawText(const Point& pos, const char* text, int state) const {
-	if(!m_style->m_font) return;
-	if(state) glColor4fv( m_style->getColour(Style::TEXT, state) );
-	m_style->m_font->print(pos.x, pos.y, text);
 }
 
 
@@ -857,7 +851,7 @@ void Button::draw() {
 }
 void Checkbox::draw() {
 	Point bpos(0, (m_size.y - m_boxSize) / 2);
-	drawFrame(m_position+bpos, Point(m_size.y-6, m_size.y-6), 0, getState());
+	drawFrame(m_position+bpos, Point(m_boxSize, m_boxSize), 0, getState());
 	if(m_caption) drawText(m_position.x+m_boxSize, m_position.y, m_caption, getState());
 	// Draw tick
 	if(m_value) {
@@ -887,6 +881,7 @@ void Slider::draw() {
 }
 void Scrollbar::draw() { 
 	int state = getState();
+	const Colour& fg = m_style->getColour(Style::TEXT, getState());
 	//Draw track
 	drawRect(m_position.x, m_position.y, m_size.x, m_size.y, m_style->getColour(Style::BACK), true);
 	if(m_orientation==HORIZONTAL) {
@@ -895,9 +890,9 @@ void Scrollbar::draw() {
 		Point btnPos(m_position + m_size - btnSize);
 		//Buttons
 		drawFrame(m_position, btnSize, 0, state);
-		drawArrow(m_position + btnHalf, 3, btnHalf.y*0.6, state);
+		drawArrow(m_position + btnHalf, 3, btnHalf.y*0.6, fg);
 		drawFrame(btnPos, btnSize, 0, state);
-		drawArrow(m_position + m_size - btnHalf, 1, btnHalf.y*0.6, state);
+		drawArrow(m_position + m_size - btnHalf, 1, btnHalf.y*0.6, fg);
 		//Slider
 		int px = m_value * (m_size.x-2*m_size.y-m_blockSize) / (m_max-m_min);
 		int sp = m_position.x + m_size.y + px;
@@ -908,9 +903,9 @@ void Scrollbar::draw() {
 		Point btnPos(m_position + m_size - btnSize);
 		//Buttons
 		drawFrame(m_position, btnSize, 0, state);
-		drawArrow(m_position + btnHalf, 0, btnHalf.x*0.6, state);
+		drawArrow(m_position + btnHalf, 0, btnHalf.x*0.6, fg);
 		drawFrame(btnPos, btnSize, 0, state);
-		drawArrow(m_position + m_size - btnHalf, 2, btnHalf.x*0.6, state);
+		drawArrow(m_position + m_size - btnHalf, 2, btnHalf.x*0.6, fg);
 		//Slider
 		int sl = m_size.y - 2*m_size.x - m_blockSize;
 		int py = m_value * sl / (m_max-m_min);
@@ -950,17 +945,17 @@ void DropList::draw() {
 		Listbox::draw();
 		scissorPop();
 	} else {
-		int state = getState();
-		drawFrame(m_position, m_size, 0, state);
-		if(selectedItem()) drawText(m_position.x+3, m_position.y, selectedItem(), state);
-		drawArrow(m_position + Point(m_size.x-8, m_size.y/2+2), 0, 4, state);
+		const Colour& fg = m_style->getColour(Style::TEXT, getState());
+		drawFrame(m_position, m_size, 0, getState());
+		drawArrow(m_position + Point(m_size.x-8, m_size.y/2+2), 0, 4, fg);
+		if(selectedItem()) drawText(m_position.x+3, m_position.y, selectedItem());
 	}
 }
 
 void gui::Input::draw() {
-	//Box
 	int state = getState();
-	drawFrame(m_position, m_size, 0, state);
+	//Box
+	drawFrame(m_position, m_size, 0, getState());
 	if(m_len>0) {
 		//Masked
 		static char masked[128];
