@@ -165,7 +165,7 @@ Scrollbar::Scrollbar(int o, int w, int h, int min, int max, Style* s, uint cmd) 
 	m_size = Point(w, h);
 }
 // ListBase //
-ListBase::ListBase(int w, int h, Style* s, uint cmd) : Control(s, cmd), m_itemHeight(0), m_selected(0), m_hover(0), m_scroll(0,12,h,0,0,s,1) {
+ListBase::ListBase(int w, int h, Style* s, uint cmd) : Control(s, cmd), m_itemHeight(0), m_selected(0), m_hover(0), m_scroll(0,12,h,0,0,s,0) {
 	m_size = Point(w,h);
 	m_scroll.hide();
 }
@@ -916,6 +916,7 @@ void Scrollbar::draw() {
 void ListBase::draw() {
 	//Box
 	drawFrame(m_position, m_size, 0, getState());
+	if(m_itemHeight==0) return; // Avoid div0 errors
 	//Items (need to scissor this
 	scissorPush(m_position.x+1, m_position.y+1, m_size.x-2, m_size.y-2);
 	//Items

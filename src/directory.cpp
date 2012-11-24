@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
+#include <algorithm>
 
 
 #ifdef WIN32
@@ -11,6 +12,25 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #endif
+
+// FIle list sorting functor //
+namespace base { struct SortFiles {
+	bool operator()(const Directory::File& a, const Directory::File& b) const {
+		if(a.type!=b.type) return a.type>b.type; // List folders at the top?
+
+		// Case insensitive matching
+		register unsigned char* s0 = (unsigned char*) a.name;
+		register unsigned char* s1 = (unsigned char*) b.name;
+		unsigned char c0, c1;
+		const unsigned char u = 'a'-'A';
+		do {
+			c0 = (unsigned char) (*s0>='a' && *s0<='z'? *s0-u: *s0); ++s0;
+			c1 = (unsigned char) (*s1>='a' && *s1<='z'? *s1-u: *s1); ++s1;
+			if(c1==0) return c0<c1;
+		} while(c0 == c1);
+		return c0<c1;
+	}
+};};
 
 using namespace base;
 
@@ -95,7 +115,7 @@ int Directory::scan() {
 			strcpy(file.name, dirp->d_name);
 
 			//is it a file or directory
-			sprintf(buffer, "%s/%s\n", m_path, dirp->d_name);
+			sprintf(buffer, "%s/%s", m_path, dirp->d_name);
 			stat(buffer, &st);
 			if(S_ISDIR(st.st_mode)) file.type = DIRECTORY;
 			else file.type = Directory::FILE;
@@ -108,7 +128,7 @@ int Directory::scan() {
 		}
 	}
 	#endif
-	//m_files.sort(SortFiles);
+	std::sort(m_files.begin(), m_files.end(), SortFiles());
 	return 0;
 }
 
