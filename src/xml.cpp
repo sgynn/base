@@ -54,6 +54,9 @@ bool XMLElement::hasAttribute(const char* value) const {
 	return (*this)[value];
 }
 
+bool XMLElement::operator==(const char* s) const {
+	return m_name && strcmp(m_name, s)==0;
+}
 
 
 
@@ -182,7 +185,7 @@ int XML::parse() {
 			}
 			// Validate end
 			if(*c=='/' && c[1]!='>') fail("Expected >");
-			if(*c==0) fail("Extected '>'");
+			if(*c==0) fail("Expected '>'");
 
 			// Add tag to the tree
 			if(stack.empty()) m_root = t;

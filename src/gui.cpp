@@ -570,7 +570,10 @@ uint ListBase::mouseMove(Event& e, const Point& pos, const Point& last, int b) {
 	return 0;
 }
 uint ListBase::mouseWheel(Event& e, const Point& p, int w) {
-	if(m_scroll.visible()) m_scroll.setValue( m_scroll.getValue() - w * (m_itemHeight/3) );
+	if(m_scroll.visible()) {
+		m_scroll.setValue( m_scroll.getValue() - w * (m_itemHeight/3) );
+		mouseMove(e, p, p, 0); // update hover value
+	}
 	return 0;
 }
 

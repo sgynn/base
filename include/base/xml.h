@@ -33,6 +33,8 @@ class XMLElement {
 	std::list<XMLElement>::const_iterator end() const { return m_children.end(); }
 	/** Get The number of child elements */
 	unsigned int size() const { return m_children.size(); }
+	/** String comparitor */
+	bool operator==(const char* s) const;
 	private:
 	XMLElement();
 	int m_type; // XML::TagType

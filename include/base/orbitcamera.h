@@ -16,6 +16,8 @@ namespace base {
 
 		/** set target point */
 		void setTarget(const vec3& t);
+		/** get camera target */
+		const vec3& getTarget() const { return m_target; }
 		/** Set position as angles */
 		void setPosition(float yaw, float pitch, float distance);
 
