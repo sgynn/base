@@ -659,7 +659,7 @@ void guiDrawArrayTex(int mode, int size, const float* array, const ubyte* index=
 }
 
 Sprite::Sprite(const Texture& t, int rows, int cols) : m_rows(rows), m_cols(cols) {
-	m_texture = t.getGLTexture();
+	m_texture = t.unit();
 	m_width = t.width() / cols;
 	m_height = t.height() / rows;
 	m_one = vec2(1.0 / t.width(), 1.0/t.height());

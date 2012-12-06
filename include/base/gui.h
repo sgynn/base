@@ -167,12 +167,16 @@ namespace gui {
 		static uint parseHex(const char*);
 		private:
 		Loader();
-		Style* readStyle(const XMLElement&) const;
-		Colour readColour(const XMLElement&) const;
-		int addControls(const XMLElement&, Container*);
+		Style*   readStyle(const XMLElement&);
+		Colour   readColour(const XMLElement&) const;
+		int      addControls(const XMLElement&, Container*);
+		Texture* loadTexture(const char* file);
+		Font*    loadFont(const char* file);
 		Control* m_parent;
 		const XMLElement* m_item;
 		HashMap<Style*> m_styles;
+		HashMap<Font*> m_fonts;
+		HashMap<Texture*> m_textures;
 		static HashMap<Control*(*)(const Loader&)> s_types;
 	};
 

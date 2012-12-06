@@ -1,5 +1,6 @@
 #include <base/gui.h>
 #include <base/xml.h>
+#include <base/png.h>
 #include <base/font.h>
 #include <base/material.h>
 #include <base/hashmap.h>
@@ -144,7 +145,7 @@ const XML::Element* Loader::operator->() const                       { return m_
 Style* Loader::style() const {
 	// Find Style as a child object
 	for(XML::iterator i=m_item->begin(); i!=m_item->end(); ++i) {
-		if(i->name() && strcmp("style", i->name())==0) return readStyle(*i);
+		if(i->name() && strcmp("style", i->name())==0) return const_cast<Loader*>(this)->readStyle(*i);
 	}
 	// Find style by 'style' attribute
 	const char* name = attribute("style", (const char*)0);
@@ -227,7 +228,7 @@ Colour Loader::readColour(const XML::Element& e) const {
 }
 
 // Read style from xml //
-Style* Loader::readStyle(const XML::Element& e) const {
+Style* Loader::readStyle(const XML::Element& e) {
 	Style* style = 0;
 	// Get style base
 	const char* extend = e.attribute("extend");
@@ -248,11 +249,12 @@ Style* Loader::readStyle(const XML::Element& e) const {
 			case 0: // Sprite
 				s = i->attribute("file");
 				if(s) {
-					Texture t = Texture::getTexture(s); // FIXME Depricated method
+					Texture* t = loadTexture(s);
+					if(!t) break;
 					int rows = i->attribute("rows", 1);
 					int cols = i->attribute("cols", 1);
 					int border = i->attribute("border", 0);
-					Sprite sprite(t, rows, cols);
+					Sprite sprite(*t, rows, cols);
 					if(border>0) sprite.setBorder(border);
 					style->setSprite( sprite );
 				}
@@ -278,7 +280,7 @@ Style* Loader::readStyle(const XML::Element& e) const {
 			case 3: // Font
 				type = stringIndex(i->attribute("align", "left"), aligns, 3);
 				if(i->hasAttribute("file")) {
-					Font* font = new Font( i->attribute("file") );
+					Font* font = loadFont( i->attribute("file") );
 					style->setFont( font, type);
 				} else style->setAlign(type);
 				break;
@@ -291,6 +293,27 @@ Style* Loader::readStyle(const XML::Element& e) const {
 	return style;
 }
 
+// Load sprite texture from file //
+Texture* Loader::loadTexture(const char* file) {
+	static const int fmt[] = { 0, Texture::LUMINANCE, Texture::LUMINANCE_ALPHA, Texture::RGB, Texture::RGBA };
+	HashMap<Texture*>::iterator it = m_textures.find(file);
+	if(it==m_textures.end()) {
+		PNG png = PNG::load(file);
+		if(!png.data) return 0;
+		Texture* t = new Texture( Texture::create(png.width, png.height, fmt[png.bpp/8], png.data) );
+		m_textures[file] = t;
+		return t;
+	} else return *it;
+}
+// Load a font //
+Font* Loader::loadFont(const char* file) {
+	HashMap<Font*>::iterator it = m_fonts.find(file);
+	if(it==m_fonts.end()) {
+		Font* f = new Font(file);
+		m_fonts[file] = f;
+		return f;
+	} else return *it;
+}
 
 // Build controls //
 int Loader::addControls(const base::XML::Element& e, base::gui::Container* parent) {

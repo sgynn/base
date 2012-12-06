@@ -16,12 +16,12 @@ set(src
 	src/inifile.cpp
 	src/input.cpp
 	src/material.cpp
-#	src/model.cpp
 	src/modelloaderx.cpp
 	src/png.cpp
 	src/scene.cpp
 	src/shader.cpp
 	src/state.cpp
+	src/texture.cpp
 	src/window.cpp
 	src/xml.cpp
 
@@ -88,6 +88,7 @@ set(headers
 	include/base/scene.h
 	include/base/shader.h
 	include/base/state.h
+	include/base/texture.h
 	include/base/threads.h
 	include/base/window.h
 	include/base/xml.h

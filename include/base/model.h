@@ -58,10 +58,9 @@
 #ifndef _BASE_MODELS_
 #define _BASE_MODELS_
 
-//need some material class.
-#include "material.h"
-
+#include "texture.h"
 #include "hashmap.h"
+
 namespace base {
 namespace model {
 
@@ -137,7 +136,7 @@ namespace model {
 		bool hasIndices() const { return m_indexBuffer!=0; }
 		
 		/**Functions for rendering and data access */
-		Material& getMaterial() { return m_material; }
+		SMaterial& getMaterial() { return m_material; }
 		int bindBuffer() const;
 		int getStride() const		{ return m_formatSize * sizeof(float); }
 		const float* getVertexPointer() const 	{ return m_vertexBuffer->bufferObject? 0: m_vertexBuffer->data; }
@@ -165,7 +164,7 @@ namespace model {
 		void setIndices(int count, const unsigned short* data);
 		void setIndices(Buffer<const unsigned short>* buffer);
 		void addSkin(Skin* skin);
-		void setMaterial(const Material& material) { m_material=material; }
+		void setMaterial(const SMaterial& material) { m_material=material; }
 		
 		/** Data Processing */
 		int calculateTangents();
@@ -191,7 +190,7 @@ namespace model {
 		/** Calculate tangent for a polygon. Assumes vertex has at least {position,normal,texcoord} */
 		int tangent(const float* a, const float* b, const float* c, float* t);
 
-		Material m_material;
+		SMaterial m_material;
 		
 		/** Reference counting for models */
 		int m_referenceCount;

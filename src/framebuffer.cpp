@@ -99,11 +99,11 @@ uint FrameBuffer::attachColour(uint type, uint format, bool isFloat) {
 	if(!format) format = GL_RGBA;
 	if(type==TEXTURE) {
 		m_colour[index].type = 1;
-		if(isFloat) m_colour[index].texture = Texture::createTexture(m_width, m_height, format,  GL_RGB,GL_FLOAT,0);
-		else m_colour[index].texture = Texture::createTexture(m_width, m_height, format);
-		m_colour[index].data = m_colour[index].texture.getGLTexture();
+		if(isFloat) m_colour[index].texture = Texture::create(m_width, m_height, format,  GL_RGB,GL_FLOAT,0);
+		else m_colour[index].texture = Texture::create(m_width, m_height, format);
+		m_colour[index].data = m_colour[index].texture.unit();
 		//Attach to buffer
-		if(m_colour[index].texture.ready()) {
+		if(m_colour[index].texture.unit()) {
 			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+index, GL_TEXTURE_2D, m_colour[index].data, 0);
 			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
@@ -126,12 +126,12 @@ uint FrameBuffer::attachDepth(uint type, uint depth) {
 	if(type==TEXTURE) {
 		format = GL_DEPTH_COMPONENT;
 		m_depth.type = 1;
-		m_depth.texture = Texture::createTexture(m_width, m_height, format);
+		m_depth.texture = Texture::create(m_width, m_height, format);
 		//m_depth.texture.filter(GL_NEAREST, GL_NEAREST);
-		m_depth.texture.clamp(true);
-		m_depth.data = m_depth.texture.getGLTexture();
+		m_depth.texture.setWrap(Texture::CLAMP);
+		m_depth.data = m_depth.texture.unit();
 		//Attach to buffer
-		if(m_depth.texture.ready()) {
+		if(m_depth.texture.unit()) {
 			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depth.data, 0);
 			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);

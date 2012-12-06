@@ -1,7 +1,7 @@
 #ifndef _BASE_FRAMEBUFFER_
 #define _BASE_FRAMEBUFFER_
 
-#include "material.h"
+#include "texture.h"
 
 namespace base {
 class FrameBuffer {

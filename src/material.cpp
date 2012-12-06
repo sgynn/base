@@ -1,164 +1,187 @@
-#include "base/material.h"
-
-#include "base/opengl.h"
-
-#include <cstdio>
-#include <cstring>
-#include "base/file.h"
-
-#include "base/png.h"
-
-//stupid windows
-#ifndef GL_CLAMP_TO_EDGE
-# define GL_CLAMP_TO_EDGE 0x812f
-#endif
-
-#ifdef WIN32
-PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
-int initialiseTextureExtensions() {
-	if(glActiveTexture) return 1;
-	glActiveTexture = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
-	return glActiveTexture? 1: 0;
-}
-#else
-int initialiseTextureExtensions() { return 1; }
-#endif
+#include <base/material.h>
+#include <base/opengl.h>
 
 using namespace base;
 
-Texture::TextureMap Texture::s_textures;
+enum SHADER_VARIABLE_TYPES {
+	INTEGER = 0, // Integer (or texture)
+	FLOAT   = 1, // Single float
+	FLOAT2  = 2, // vec2
+	FLOAT3  = 3, // vec3
+	FLOAT4  = 4, // vec4 or colour
+	FLOATN  = 5  // Float array
+};
 
-const Texture& Texture::getTexture(const char* name) {
-	static int e = initialiseTextureExtensions(); e=e;
-	TextureMap::iterator iter = s_textures.find(name);
-	if(iter == s_textures.end()) {
-		printf("Loading %s\n", name);
-		s_textures[name] = Texture();
-		iter = s_textures.find(name);
-		iter->second.m_name = strdup(name);
-		//search directories
-		char path[128]="";
-		if(File::find(name, path)) {
-			if(!iter->second.load(path)) printf("Failed to load %s\n", path);
-		} else {
-			if(!iter->second.load(name)) printf("Failed to load image\n");
+
+Material::Material(): m_textureCount(0) {}
+Material::~Material() { }
+
+void Material::setFloat(const char* name, float f) {
+	SVar v; v.type=FLOAT; v.f = f;
+	m_variables[name] = v;
+}
+void Material::setFloatv(const char* name, int v, float* fp) {
+	HashMap<SVar>::iterator it = m_variables.find(name);
+	// Check if it exists to so we can use already allocated memory
+	if(it!=m_variables.end()) {
+		// Allocate new memory for array if size is different
+		if(it->type!=v+FLOAT) {
+			if(it->type>=FLOAT) delete [] it->p;
+			it->p = new float[v];
+		}
+		memcpy(it->p, fp, v*sizeof(float));
+	} else {
+		// Allocate new variable
+		SVar var; var.type = FLOAT+v;
+		var.p = new float[v];
+		memcpy(var.p, fp, v*sizeof(float));
+		m_variables.insert(name, var);
+	}
+}
+void Material::setInt(const char* name, int i) {
+	SVar v; v.type=INTEGER; v.i = i;
+	m_variables[name] = v;
+}
+
+float Material::getFloat(const char* name) {
+	base::HashMap<SVar>::iterator it = m_variables.find(name);
+	if(it!=m_variables.end() && it->type==INTEGER) return it->f;
+	else return 0;
+}
+int Material::getFloatv(const char* name, float* fp) {
+	base::HashMap<SVar>::iterator it = m_variables.find(name);
+	if(it!=m_variables.end() && it->type>=FLOAT) {
+		memcpy(fp, it->p, (it->type-FLOAT)*sizeof(float));
+		return it->type-FLOAT;
+	} else return 0;
+}
+int Material::getInt(const char* name) {
+	base::HashMap<SVar>::iterator it = m_variables.find(name);
+	if(it!=m_variables.end() && it->type==INTEGER) return it->i;
+	else return 0;
+}
+
+void Material::setTexture(const char* name, const Texture& tex) {
+	base::HashMap<SVar>::iterator it = m_variables.find(name);
+	if(it!=m_variables.end() && it->type==INTEGER) texture[ it->i ] = tex;
+	else {
+		// Add new texture
+		texture[ m_textureCount ] = tex;
+		setInt(name, m_textureCount);
+		++m_textureCount;
+	}
+}
+Texture Material::getTexture(const char* name) {
+	base::HashMap<SVar>::iterator it = m_variables.find(name);
+	if(it!=m_variables.end() && it->type==INTEGER) return texture[ it->i ];
+	else return Texture();
+}
+
+void Material::bind(int flags) {
+	// Set properties
+	glMaterialfv(GL_FRONT, GL_DIFFUSE,   diffuse);
+	glMaterialfv(GL_FRONT, GL_AMBIENT,   ambient);
+	glMaterialfv(GL_FRONT, GL_SPECULAR,  specular);
+	glMaterialf (GL_FRONT, GL_SHININESS, shininess);
+
+	// bind textures
+	for(uint i=0; i<m_textureCount; ++i) {
+		glActiveTexture(GL_TEXTURE0+i);
+		glBindTexture(GL_TEXTURE_2D, texture[i].unit());
+	}
+	if(m_textureCount>1) glActiveTexture(GL_TEXTURE0);
+
+	// Bind shader
+	m_shader.bind();
+
+	// Set variables
+	if(m_shader.ready()) {
+		for(base::HashMap<SVar>::iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
+			switch(it->type) {
+			case INTEGER:	m_shader.Uniform1i( it.key(), it->i ); break;
+			case FLOAT:	 	m_shader.Uniform1f( it.key(), it->f ); break;
+			case FLOAT2:    m_shader.Uniform2f( it.key(), it->p[0], it->p[1] ); break;
+			case FLOAT3:    m_shader.Uniform3f( it.key(), it->p[0], it->p[1], it->p[2] ); break;
+			case FLOAT4:    m_shader.Uniform4f( it.key(), it->p[0], it->p[1], it->p[2], it->p[4] ); break;
+			default: m_shader.Uniformfv( it.key(), it->type-FLOAT, it->p ); break;
+			}
 		}
 	}
-	return iter->second;
 }
 
-const Texture Texture::createTexture(int width, int height, uint format, const void* data) {
-	return createTexture(width,height,format,format, GL_UNSIGNED_BYTE, data);
-}
-const Texture Texture::createTexture(int width, int height, uint format, uint sourceFormat, uint type, const void* data) {
-	//Generate an empty texture
-	uint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, sourceFormat, type, data); 
-	GL_DEBUG_ERROR;
-	//Done
-	Texture t;
-	t.m_good = texture>0;
-	t.m_texture = texture;
-	t.m_width = width;
-	t.m_height = height;
-	t.m_bpp = format==GL_RGBA?32: format==GL_RGB?24: 8; //Need full enum for this
-	return t;
-}
 
-const Texture& Texture::operator=(const Texture& t) {
-	m_texture = t.m_texture;
-	m_good = t.m_good;
-	m_name = t.m_name;
-	m_width = t.m_width;
-	m_height = t.m_height;
-	return *this;
-}
 
-int Texture::bind() const {
-	if(m_good) glBindTexture(GL_TEXTURE_2D, m_texture);
-	return m_good? 1:0;
-}
+//// //// //// //// //// //// //// //// LOADING //// //// //// //// //// //// //// ////
+/*
 
-int Texture::load(const char* filename) {
-	PNG image = PNG::load(filename);
-	if(!image.data) return 0;
-	
-	int width = image.width;
-	int height = image.height;
-	
-	int format = GL_RGB;
-	int format2 = GL_RGB;//GL_BGR_EXT;
-	if(image.bpp == 32) {
-		format = GL_RGBA;
-		format2 = GL_RGBA;//GL_BGRA_EXT;
-	}
-	m_bpp = image.bpp;
-	
-	//create opengl texture
-	uint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-	//copy texture data
-	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, format2, GL_UNSIGNED_BYTE, image.data ); 
-	
-	//Done
-	m_good = true;
-	m_texture = texture;
-	m_width = width;
-	m_height = height;
-	return 1;
-}
+#include <base/material.h>
 
-void Texture::clamp(bool c) const { 
-	if(m_good) {
-		glBindTexture(GL_TEXTURE_2D, m_texture);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, c?GL_CLAMP_TO_EDGE:0);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, c?GL_CLAMP_TO_EDGE:0);
-	}
-}
-void Texture::filter(uint min, uint mag) const { 
-	if(m_good) {
-		glBindTexture(GL_TEXTURE_2D, m_texture);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag);
-	}
-}
-////////////////////////////////////////////////////////////////
+Material Material::loadXML(const char* string) {
+	Material mat;
+	base::XML xml;
+	xml.loadData(string);
+	if(strcmp(xml.getRoot().name(), "material")!=0) {
+		printf("Invalid material descriptor [%s]\n", xml.getRoot().name());
+	} else {
+		for(base::XML::iterator i = xml.getRoot().begin(); i!=xml.getRoot().end(); ++i) {
+			if(strcmp(i->name(), "texture")==0) {
+				// Load texture TODO resource manager to load texture
+				printf("Load texture %s [%s]\n", i->attribute("name"), i->attribute("file"));
+				base::Texture tex = base::Texture::getTexture( i->attribute("file") );
+				mat.setTexture(i->attribute("name"), tex.getGLTexture());
 
-uint Material::s_flags = 0;
+			} else if(strcmp(i->name(), "shader")==0) {
+				// load shader - TODO resource manager to load shader
+				printf("Load shader [%s]\n", i->attribute("file"));
+				mat.m_shader = base::Shader::getShader( i->attribute("file") );
 
-Material::Material() : ambient(0x101010), shininess(50), lighting(1), depthTest(1), depthMask(1) {
-}
-int Material::bind() const {
-	int max=0;
-	for(uint i=0; i<MAX_TEXTURE_UNITS; i++) {
-		if(texture[i].m_good) {
-			if(i>0) glActiveTexture(GL_TEXTURE0+i);
-			texture[i].bind();
-			max = i;
+			} else if(strcmp(i->name(), "variable")==0) {
+				// Switch type
+				const char* name = i->attribute("name");
+				const char* t = i->attribute("type");
+				if(strcmp(t, "int")==0) mat.setInt(name, i->attribute("value", 0));
+				else if(strcmp(t, "float")==0) mat.setFloat(name, i->attribute("value", 0.0f));
+				else if(strncmp(t, "vec", 3)==0 && t[4]==0) {
+					printf("Not readibg vectors yet\n");
+					// Could be {x,y,z,w,r,g,b,a,u,v, ...} or value string space separated
+				}
+
+			} else if(strcmp(i->name(), "shininess")==0) {
+				mat.setShininess( i->attribute("value", 128.0f) );
+
+			} else if(strcmp(i->name(), "diffuse")==0 ||  strcmp(i->name(), "specular")==0) {
+				// Read colour from hex code
+				Colour col;
+				const char* cs = i->attribute("colour", "");
+				if(!cs[0]) cs = i->attribute("color", "");
+				if(cs[0]) {
+					uint hex = 0;
+					for(const char* c=cs; *c; ++c) {
+						hex = hex<<4;
+						if(*c>='0' && *c<='9') hex += *c-'0';
+						else if(*c>='a' && *c<='f') hex += *c-'a'+10;
+						else if(*c>='A' && *c<='F') hex += *c-'A'+10;
+						else continue; // Error
+					}
+					col = Colour(hex);
+				} else {	// Colour as rgb
+					col.r = i->attribute("r", 1.0);
+					col.g = i->attribute("g", 1.0);
+					col.b = i->attribute("b", 1.0);
+				}
+				col.a = i->attribute("alpha", 1.0f);
+				if(i->name()[0]=='d') mat.setDiffuse(col);
+				else mat.setSpecular(col);
+			}
 		}
 	}
-	if(max) glActiveTexture(GL_TEXTURE0);
-	
-	//I think this only applies to fixed function
-	if(texture[0].m_good) glEnable(GL_TEXTURE_2D);
-	else glDisable(GL_TEXTURE_2D);
-	
-	//Colour
-	glColor4fv( diffuse );
-	
-	//need to use material stuff...
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-	
-	return 1;
+	return mat;
 }
+*/
+
+
+
+
+
+
+

@@ -10,30 +10,28 @@ namespace base {
 namespace model {
 	class XLoader {
 		public:
+		/** Load model */
 		static Model* load(const char* filename);
+
+		/** Set debug mode */
 		static void showDebug(bool on=true) { s_debug=on; }
+
+		/** Set material set function */
+		static void setMaterialFunction(void (*func)(SMaterial&, float*, float*, float*, float, const char*)) { s_matFunc=func; }
 		
 		private:
-		//internal material structure - nor really sure how to expose this
+		// internal material structure
 		struct XMaterial {
 			float colour[4];
 			float power;
 			float specular[3];
-			float emmision[3];
+			float emission[3];
 			char texture[32];
 		};
 		
-		/** This iss the only part that relies on something external, so i will code it here to make it wasier to find if it needs changing */
-		static void setMaterial(Mesh* mesh, const XMaterial& material) {
-			float* diffuse = reinterpret_cast<float*>(&mesh->getMaterial().diffuse);
-			float* ambient = reinterpret_cast<float*>(&mesh->getMaterial().ambient);
-			for(int i=0; i<4; i++) {
-				diffuse[i] = material.colour[i];
-				if(i<3) ambient[i] = material.colour[i]*0.1f;
-			}
-			mesh->getMaterial().shininess = material.power;
-			if(material.texture[0]) mesh->getMaterial().texture[0] = Texture::getTexture( material.texture );
-		}
+		/** Default set material function */
+		static void (*s_matFunc)(SMaterial&, float*, float*, float*, float, const char*);
+
 		
 		/** Loader functions */
 		XLoader(const char* data);
