@@ -11,8 +11,12 @@ namespace base {
 		
 		/** Load the bitmap image - returns image object or NULL */
 		static PNG load(const char* filename);
+		/** Create a blank image */
+		static PNG create(int width, int height, int depth, const char* data=0);
+		/** Save image to file*/
+		int save(const char* filename);
+		/** Clear png data */
 		void clear();
-		void flip();
 		
 		// Image data
 		char* data;

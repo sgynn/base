@@ -39,8 +39,18 @@ class Draw {
 		glVertex3fv(&point.x);
 		glEnd();
 	}
+	/** Draw a rectangle */
+	static void Rect(float x, float y, float width, float height, const Colour& col=white) {
+		glColor4fv(col);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0,0); glVertex2f(x,y);
+		glTexCoord2f(1,0); glVertex2f(x+width,y);
+		glTexCoord2f(1,1); glVertex2f(x+width,y+height);
+		glTexCoord2f(0,1); glVertex2f(x,y+height);
+		glEnd();
+	}
 	/** Draw a circle */
-	static void Circle(const vec3& point, float radius=1, int segments=32, const vec3& normal=vec3(0,1,0), const Colour& colour=white) {
+	static void Circle(const vec3& point, float radius=1, int segments=32, const vec3& normal=vec3(0,0,1), const Colour& colour=white) {
 		static vec3* cp = 0;
 		static int lseg = 0;
 		static const vec3 vx(1,0,0), vz(0,0,1); //vectors to calculate orthogonal vectors

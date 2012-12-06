@@ -21,6 +21,7 @@ const PNG& PNG::operator=(const PNG& p) {
 	return *this;
 }
 
+/*
 //Custom read handler for PNG library so that it uses our File object.
 void PNGAPI png_read_data(png_structp png_ptr, png_bytep data, png_size_t length) {
 	png_size_t check;
@@ -29,6 +30,7 @@ void PNGAPI png_read_data(png_structp png_ptr, png_bytep data, png_size_t length
 	check = (png_size_t) fread((char*)data, 1, length, fp); 
 	if(check != length) png_error(png_ptr, "Read Error");
 }
+*/
 
 PNG PNG::load(const char* filename) {
 	png_byte magic[8];
@@ -86,7 +88,7 @@ PNG PNG::load(const char* filename) {
 	
 	/* setup libpng for using standard C fread() function with our FILE pointer */
 	//THIS LINE IS BROKEN!!!!!!
-	png_set_read_fn(png_ptr, 0, png_read_data);
+	//png_set_read_fn(png_ptr, 0, png_read_data);
 	png_init_io (png_ptr, fp);
 	
 	/* tell libpng that we have already read the magic number */
@@ -105,7 +107,7 @@ PNG PNG::load(const char* filename) {
 	
 	/* convert 1-2-4 bits grayscale images to 8 bits grayscale. */
 	bit_depth = 32;
-	if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) png_set_gray_1_2_4_to_8 (png_ptr);
+	if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) png_set_expand_gray_1_2_4_to_8 (png_ptr);
 	if (png_get_valid (png_ptr, info_ptr, PNG_INFO_tRNS)) png_set_tRNS_to_alpha (png_ptr);
 	if (bit_depth == 16) png_set_strip_16 (png_ptr);
 	else if (bit_depth < 8) png_set_packing (png_ptr);
@@ -157,7 +159,8 @@ PNG PNG::load(const char* filename) {
 	row_pointers = (png_bytep *)malloc (sizeof (png_bytep) * mheight);
 	
 	for (i = 0; i < mheight; ++i) {
-		row_pointers[i] = (png_bytep)(mdata + ((mheight - (i + 1)) * mwidth * iFormat));
+		//row_pointers[i] = (png_bytep)(mdata + ((mheight - (i + 1)) * mwidth * iFormat));
+		row_pointers[i] = (png_bytep)(mdata + (i * mwidth * iFormat));
 	}
 	
 	/* read pixel data using row pointers */
@@ -178,25 +181,90 @@ PNG PNG::load(const char* filename) {
 	png.height = mheight;
 	png.bpp = mcdepth;
 
-	png.flip(); //Flip pixels in Y axis
-
 	return png;
 }
 
-void PNG::flip() {
-	int iFormat = bpp/8;
-	char* mdata = data;
-	data = (char*)malloc (sizeof(unsigned char) * width * height * iFormat);
-	for(int i=0; i<height; i++) {
-		int a = (height-i-1) * width * iFormat;
-		memcpy(data+(i*width*iFormat), mdata+a, width*iFormat);
+
+int PNG::save(const char* filename) {
+	if(!width || !height || !bpp || !data) return -2; // Invalid image data
+	FILE* fp = fopen(filename, "wb");
+	uint iFormat = bpp/8;
+	png_structp png_ptr;
+	png_infop info_ptr;
+	png_bytep *row_pointers = NULL;
+	if(!fp) return -1;
+
+	/** Initialise write struct */
+	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if(!png_ptr) {
+		fclose(fp);
+		return -1;
 	}
-	free(mdata);
+
+	/** Initialise info struct */
+	info_ptr = png_create_info_struct(png_ptr);
+	if(!info_ptr) {
+		png_destroy_write_struct(&png_ptr, NULL);
+		fclose(fp);
+		return -1;
+	}
+	
+	/** Set up error handling */
+	if(setjmp( png_jmpbuf(png_ptr) )) {
+		png_destroy_write_struct(&png_ptr, NULL);
+		fclose(fp);
+		return -1;
+	}
+
+	int format = 0;
+	switch(iFormat) {
+	case 1: format = PNG_COLOR_TYPE_GRAY; break;
+	case 2: format = PNG_COLOR_TYPE_GRAY_ALPHA; break;
+	case 3: format = PNG_COLOR_TYPE_RGB; break;
+	case 4: format = PNG_COLOR_TYPE_RGB_ALPHA; break;
+	default:
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		fclose(fp);
+		return -1;
+	}
+
+	/** Set image attributes */
+	png_set_IHDR( png_ptr, info_ptr, width, height, 8, format,
+	              PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	
+	/** Initialise rows */
+	row_pointers = (png_bytep*) malloc (sizeof (png_bytep) * height);
+	for(int i=0; i<height; ++i) {
+		row_pointers[i] = (png_bytep)(data + (i * width * iFormat));
+	}
+
+	/** Write image data */
+	png_init_io(png_ptr, fp);
+	png_set_rows(png_ptr, info_ptr, row_pointers);
+	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+	/** cleanup */
+	free(row_pointers);
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	fclose(fp);
+	return 0;
+}
+
+PNG PNG::create(int width, int height, int depth, const char* data) {
+	PNG png;
+	png.width = width;
+	png.height = height;
+	png.bpp = depth * 8;
+	size_t size = sizeof(char) * width * height * depth;
+	png.data = (char*) malloc( size );
+	if(data) memcpy(png.data, data, size);
+	else memset(png.data, 0xff, size);
+	return png;
 }
 
 void PNG::clear() {
 	if(data) free(data);
-	data = 0;
 	width=height=bpp=0;
+	data = 0;
 }
 

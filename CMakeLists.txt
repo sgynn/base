@@ -33,18 +33,20 @@ set(src
 )
 
 set( png
-	src/png/libpng.cpp
-	src/png/pngerror.cpp
-	src/png/pnggccrd.cpp
-	src/png/pngget.cpp
-	src/png/pngmem.cpp
-	src/png/pngpread.cpp
-	src/png/pngread.cpp
-	src/png/pngrio.cpp
-	src/png/pngrtran.cpp
-	src/png/pngrutil.cpp
-	src/png/pngset.cpp
-	src/png/pngtrans.cpp
+	src/png/png.c
+	src/png/pngerror.c
+	src/png/pngget.c
+	src/png/pngmem.c
+	src/png/pngread.c
+	src/png/pngrio.c
+	src/png/pngrtran.c
+	src/png/pngrutil.c
+	src/png/pngset.c
+	src/png/pngtrans.c
+	src/png/pngwio.c
+	src/png/pngwrite.c
+	src/png/pngwtran.c
+	src/png/pngwutil.c
 )
 
 set( zlib
