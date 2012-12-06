@@ -43,7 +43,7 @@ namespace gui {
 	/** GUI Sprites */
 	class Sprite {
 		public:
-		Sprite(): m_texture(0), m_rows(0), m_cols(0) { setBorder(0); }
+		Sprite(): m_texture(0), m_width(0), m_height(0), m_rows(0), m_cols(0) { setBorder(0); }
 		Sprite(const Texture& tex, int rows=1, int cols=1);
 		void drawGlyph(int frame, int cx, int cy) const;
 		void draw(int frame, int x, int y, int w, int h, bool border=true) const;
