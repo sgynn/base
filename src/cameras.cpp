@@ -126,8 +126,8 @@ void OrbitCamera::update() {
 		// Distance
 		float factor = 0.2f;
 		int wheel = in->mouseWheel();
-		while(wheel<0) { distance *= 1+factor; wheel--; }
-		while(wheel>0) { distance *= 1-factor; wheel++; }
+		while(wheel<0) { distance *= 1+factor; wheel++; }
+		while(wheel>0) { distance *= 1-factor; wheel--; }
 
 		// Limits
 		if(m_useUpVector) {
