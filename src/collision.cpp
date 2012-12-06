@@ -13,16 +13,22 @@ vec3 base::closestPointOnLine(const vec3& point, const vec3& a, const vec3& b) {
 
 /** Closest point between lines */
 float base::closestPointBetweenLines(const vec3& a1, const vec3& b1, const vec3& a2, const vec3& b2, vec3& p1, vec3& p2) {
+	float s, t;
+	float r = closestPointBetweenLines(a1,b1, a2,b2, s,t);
+	p1 = a1 + (b1-a1) * s;
+	p2 = a2 + (b2-a2) * t;
+	return r;
+}
+float base::closestPointBetweenLines(const vec3& a1, const vec3& b1, const vec3& a2, const vec3& b2, float& s, float& t) {
 	vec3 d1 = b1-a1; //Direction vectors
 	vec3 d2 = b2-a2;
 	vec3 r = a1-a2;
 	float l1 = d1.dot(d1); //Squared length of lines
 	float l2 = d2.dot(d2);
 	float f = d2.dot(r);
-	float s, t;
 	//Do either lines degenerate into a point?
 	if(l1<0.001 && l2<0.001) { //Two points
-		p1=a1; p2=a2;
+		s = t = 0;
 		return r.dot(r);
 	}
 	if(l1<0.001) {	//Line 1 degenerates
@@ -46,25 +52,31 @@ float base::closestPointBetweenLines(const vec3& a1, const vec3& b1, const vec3&
 			}
 		}
 	}
-	p1 = a1 + d1 * s;
-	p2 = a2 + d2 * t;
-	return p1.distanceSq(p2);
+	return (a1+(b1-a1)*s).distanceSq( a2+(b2-a2)*t );
 }
 
 /** Intersection of a ray with Plane (page 177) */
 int base::intersectRayPlane(const vec3& p, const vec3& d,  const vec3& normal, float offset, vec3& result) {
+	float t;
+	int r = intersectRayPlane(p,d, normal,offset, t);
+	result = p + d * t;
+	return r;
+}
+int base::intersectRayPlane(const vec3& p, const vec3& d,  const vec3& normal, float offset, float& t) {
 	float dn = normal.dot(d);
 	if(dn==0) return 0;
-	float t = (offset - normal.dot(p)) / dn;
-	if(t>0 && t<1) {
-		result = p + d * t;
-		return 1;
-	}
-	return 0;
+	t = (offset - normal.dot(p)) / dn;
+	return t>0 && t<1? 1: 0;
 }
 
 /** Intersection of a ray with Sphere (page 178) */
 int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, float radius, vec3& out) {
+	float t;
+	int r = intersectRaySphere(p,d, centre,radius, t);
+	out = p +d*t;
+	return r;
+}
+int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, float radius, float& t) {
 	vec3 m = p - centre;
 	float b = m.dot(d);
 	float c = m.dot(m) - radius*radius;
@@ -73,10 +85,9 @@ int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, f
 	float discriminant = b*b-c;
 	if(discriminant<0) return 0; //missed
 	//calculate smallest intersecion points
-	float t = -b - sqrt(discriminant);
+	t = -b - sqrt(discriminant);
 	//if t<0, we started inside sphere
 	if(t < 0) t=0;
-	out = p + d*t;
 	return 1;
 }
 /** Triangle intersection with line */
@@ -103,16 +114,20 @@ int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, con
 	return 1;
 }
 /** Intersection point between two 2D lines */
-int base::intersectLines(const vec2& as, const vec2& ad, const vec2& bs, const vec2& bd, vec2& out) {
+int base::intersectLines(const vec2& as, const vec2& ae, const vec2& bs, const vec2& be, vec2& out) {
+	float u, v;
+	int r = intersectLines(as,ae, bs,be, u,v);
+	out = as + (ae-as)*u;
+	return r;
+}
+int base::intersectLines(const vec2& as, const vec2& ae, const vec2& bs, const vec2& be, float& t1, float& t2) {
+	vec2 ad = ae-as;
+	vec2 bd = be-bs;
 	float d = ad.x*bd.y - ad.y*bd.x;
 	if(d==0) return 0;
-	float t1 = (bd.y*(as.x-bs.x) - bd.x*(as.y-bs.y)) /-d;
-	float t2 = (ad.y*(bs.x-as.x) - ad.x*(bs.y-as.y)) / d;
-	if(t1>=0 && t1<=1 && t2>=0 && t2<=1) {
-		out = as + ad*t1;
-		return 1;
-	}
-	return 0;
+	t1 = (bd.y*(as.x-bs.x) - bd.x*(as.y-bs.y)) /-d;
+	t2 = (ad.y*(bs.x-as.x) - ad.x*(bs.y-as.y)) / d;
+	return t1>=0 && t1<=1 && t2>=0 && t2<=1 ? 1: 0;
 }
 
 
