@@ -51,7 +51,7 @@ namespace base {
 		Texture texture[ MAX_TEXTURE_UNITS ];
 
 		/** Bind material */
-		void bind();
+		void bind() const;
 	};
 };
 

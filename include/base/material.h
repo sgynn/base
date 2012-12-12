@@ -39,7 +39,7 @@ namespace base {
 		void setSpecular(const Colour& c) 			{ specular = c; }
 		void setShininess(float s) 					{ shininess = s; }
 
-		void bind(int flags=0);
+		void bind(int flags=0) const;
 
 		protected:
 		struct SVar { ubyte type; union { float f; int i; float* p; }; }; // Variable data

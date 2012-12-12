@@ -112,7 +112,7 @@ Texture Texture::create(int width, int height, int format, int sFormat, int type
 }
 
 /** Material bind function */
-void SMaterial::bind() {
+void SMaterial::bind() const {
 	// Bind textures
 	int max = -1;
 	for(uint i=0; i<MAX_TEXTURE_UNITS; i++) {

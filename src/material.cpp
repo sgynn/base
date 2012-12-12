@@ -77,7 +77,7 @@ Texture Material::getTexture(const char* name) {
 	else return Texture();
 }
 
-void Material::bind(int flags) {
+void Material::bind(int flags) const {
 	// Set properties
 	glMaterialfv(GL_FRONT, GL_DIFFUSE,   diffuse);
 	glMaterialfv(GL_FRONT, GL_AMBIENT,   ambient);
@@ -96,14 +96,17 @@ void Material::bind(int flags) {
 
 	// Set variables
 	if(m_shader.ready()) {
-		for(base::HashMap<SVar>::iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
+		//FIXME const hack for now - until i rewrite shader
+		Shader* s = const_cast<Shader*>(&m_shader);
+
+		for(base::HashMap<SVar>::const_iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
 			switch(it->type) {
-			case INTEGER:	m_shader.Uniform1i( it.key(), it->i ); break;
-			case FLOAT:	 	m_shader.Uniform1f( it.key(), it->f ); break;
-			case FLOAT2:    m_shader.Uniform2f( it.key(), it->p[0], it->p[1] ); break;
-			case FLOAT3:    m_shader.Uniform3f( it.key(), it->p[0], it->p[1], it->p[2] ); break;
-			case FLOAT4:    m_shader.Uniform4f( it.key(), it->p[0], it->p[1], it->p[2], it->p[4] ); break;
-			default: m_shader.Uniformfv( it.key(), it->type-FLOAT, it->p ); break;
+			case INTEGER:	s->Uniform1i( it.key(), it->i ); break;
+			case FLOAT:	 	s->Uniform1f( it.key(), it->f ); break;
+			case FLOAT2:    s->Uniform2f( it.key(), it->p[0], it->p[1] ); break;
+			case FLOAT3:    s->Uniform3f( it.key(), it->p[0], it->p[1], it->p[2] ); break;
+			case FLOAT4:    s->Uniform4f( it.key(), it->p[0], it->p[1], it->p[2], it->p[4] ); break;
+			default: s->Uniformfv( it.key(), it->type-FLOAT, it->p ); break;
 			}
 		}
 	}

@@ -26,28 +26,42 @@ namespace base {
 		void erase(const char* key);
 		void clear();
 		/** iterator class. Works the same as stl iterators */
-		class iterator {
+		private:
+		template<class Map, class Item>
+		class t_iterator {
 			friend class HashMap;
 			public:
-			iterator() : m_index(0), m_map(0) {}
-			iterator operator++(int) { iterator tmp=*this; ++m_index; while(m_index<m_map->m_capacity && m_map->m_data[m_index].key==0) ++m_index; return tmp;}
-			iterator operator++() { ++m_index; while(m_index<m_map->m_capacity && !m_map->m_data[m_index].key) ++m_index; return *this; }
-			T& operator*() { return m_map->m_data[m_index].value; }
-			T* operator->() { return &m_map->m_data[m_index].value; }
+			t_iterator() : m_index(0), m_map(0) {}
+			t_iterator operator++(int) { t_iterator tmp=*this; ++m_index; while(m_index<m_map->m_capacity && m_map->m_data[m_index].key==0) ++m_index; return tmp;}
+			t_iterator operator++() { ++m_index; while(m_index<m_map->m_capacity && !m_map->m_data[m_index].key) ++m_index; return *this; }
+			Item& operator*() { return m_map->m_data[m_index].value; }
+			Item* operator->() { return &m_map->m_data[m_index].value; }
 			const char* key() const { return m_map->m_data[m_index].key; }
-			bool operator==(const iterator& o) const { return m_map==o.m_map && m_index==o.m_index; }
-			bool operator!=(const iterator& o)  const { return m_map!=o.m_map || m_index!=o.m_index; }
+			bool operator==(const t_iterator& o) const { return m_map==o.m_map && m_index==o.m_index; }
+			bool operator!=(const t_iterator& o) const { return m_map!=o.m_map || m_index!=o.m_index; }
 			private:
-			iterator( HashMap* map, int ix) : m_index(ix), m_map(map) {}
+			t_iterator( Map* map, int ix) : m_index(ix), m_map(map) {}
 			unsigned int m_index;
-			HashMap* m_map;
+			Map* m_map;
 		};
-		friend class iterator;
-		iterator begin() { return ++iterator(this, ~0u); }
-		iterator end()  { return iterator(this, m_capacity); }
-		iterator find(const char* key) { 
+		friend class t_iterator<HashMap, T>;
+		friend class t_iterator<const HashMap, const T>;
+		public:
+
+		typedef t_iterator<HashMap, T> iterator;
+		typedef t_iterator<const HashMap, const T> const_iterator;
+
+		iterator       begin()       { return ++iterator(this, ~0u); }
+		const_iterator begin() const { return ++const_iterator(this, ~0u); }
+		iterator       end()         { return iterator(this, m_capacity); }
+		const_iterator end() const   { return const_iterator(this, m_capacity); }
+		iterator find(const char* key) {
 			unsigned int i=index(key, m_capacity);
 			return i<m_capacity && m_data[i].key? iterator(this, i): end();
+		}
+		const iterator find(const char* key) const {
+			unsigned int i=index(key, m_capacity);
+			return i<m_capacity && m_data[i].key? const_iterator(this, i): end();
 		}
 		
 		private:
