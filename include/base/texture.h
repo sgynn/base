@@ -52,6 +52,7 @@ namespace base {
 
 		/** Bind material */
 		void bind() const;
+		SMaterial(): shininess(50) {}
 	};
 };
 
