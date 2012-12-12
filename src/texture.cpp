@@ -26,7 +26,7 @@ Texture::Texture(): m_unit(0), m_width(0), m_height(0), m_depth(0) {
 }
 
 /** Bind texture to active unit */
-void Texture::bind() {
+void Texture::bind() const {
 	glBindTexture(GL_TEXTURE_2D, m_unit);
 }
 

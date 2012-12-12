@@ -20,7 +20,7 @@ namespace base {
 		/** Destroy texture */
 		void destroy();
 		/** Bind texture */
-		void bind();
+		void bind() const;
 		/** Get size */
 		int width() const { return m_width; }
 		int height() const { return m_height; }

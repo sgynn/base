@@ -16,7 +16,6 @@ namespace base {
 	 * @return Closest point
 	 * */
 	BASEAPI vec3 closestPointOnLine(const vec3& point, const vec3& a, const vec3& b);
-	BASEAPI vec3 closestPointOnLine(const vec3& point, const vec3& a, float& t);
 
 	/** Get the point where a pait=r of 3D lines are closest
 	 * @param a0 Start of first line
