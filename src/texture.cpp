@@ -64,7 +64,7 @@ void Texture::destroy() {
 }
 
 /** Create basic texture */
-Texture Texture::create(int width, int height, int format, const char* data) {
+Texture Texture::create(int width, int height, int format, const void* data) {
 	// Create texture object
 	Texture t;
 	switch(format) {
@@ -72,7 +72,7 @@ Texture Texture::create(int width, int height, int format, const char* data) {
 	case LUMINANCE:	      t.m_depth = 1; format = GL_LUMINANCE; break;
 	case LUMINANCE_ALPHA: t.m_depth = 2; format = GL_LUMINANCE_ALPHA; break;
 	case RGB:             t.m_depth = 3; format = GL_RGB; break;
-	case RGBA:            t.m_depth = 4; format = GL_RGB; break;
+	case RGBA:            t.m_depth = 4; format = GL_RGBA; break;
 
 	case GL_ALPHA:
 	case GL_LUMINANCE:       t.m_depth = 1; break;

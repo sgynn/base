@@ -14,7 +14,7 @@ namespace model {
 		static Model* load(const char* filename);
 
 		/** Set debug mode */
-		static void showDebug(bool on=true) { s_debug=on; }
+		static void showDebug(int mode=1) { s_debug=mode; }
 
 		/** Set material set function */
 		static void setMaterialFunction(void (*func)(SMaterial&, float*, float*, float*, float, const char*)) { s_matFunc=func; }
@@ -67,7 +67,7 @@ namespace model {
 		
 		Model* m_model;	//model we are reading into
 		
-		static bool s_debug; //debug output?
+		static int  s_debug; //debug output?
 		static bool s_flipZ; //Flip the Z axis?
 	};
 };

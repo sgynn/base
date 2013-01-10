@@ -34,17 +34,19 @@ void XLoaderSetMaterial(SMaterial& m, float* col, float* spec, float* emit, floa
 	m.specular = Colour(spec[0], spec[1], spec[2]);
 	m.shininess = pow;
 	// Load texture
-	if(tex) {
+	if(tex && tex[0]) {
 		PNG png = PNG::load(tex);
-		static const int fmt[] = { 0, Texture::LUMINANCE, Texture::LUMINANCE_ALPHA, Texture::RGB, Texture::RGBA };
-		m.texture[0] = Texture::create(png.width, png.height, fmt[png.bpp/8], png.data);
+		if(png.data) {
+			static const int fmt[] = { 0, Texture::LUMINANCE, Texture::LUMINANCE_ALPHA, Texture::RGB, Texture::RGBA };
+			m.texture[0] = Texture::create(png.width, png.height, fmt[png.bpp/8], png.data);
+		} else printf("Texture file %s not found\n", tex);
 	}
 }
 void (*XLoader::s_matFunc)(SMaterial&, float*, float*, float*, float, const char*) = XLoaderSetMaterial;
 
 /** ***************************** Main functions ***************************************** **/
 
-bool XLoader::s_debug = 0;
+int  XLoader::s_debug = 0;
 bool XLoader::s_flipZ = 1;
 
 XLoader::XLoader( const char* data ) : m_data(data), m_read(data) {}
@@ -70,7 +72,7 @@ Model* XLoader::readModel() {
 		else if(keyword("AnimationSet") && !readAnimationSet()) break;
 		else if(*m_read == 0) return m_model;  //Complete!
 		else if(readName(temp)) {
-			if(s_debug) {
+			if(s_debug>1) {
 				//get line
 				const char* c=0;
 				int line=0; for(c=m_data; c<m_read; c++) if(*c == '\n') line++;
@@ -80,7 +82,7 @@ Model* XLoader::readModel() {
 		}
 	}
 	
-	if(s_debug) printf("XModel::Load Error\n");
+	if(s_debug>1) printf("XModel::Load Error\n");
 	
 	//Load error
 	delete m_model;
@@ -92,7 +94,7 @@ int XLoader::readTemplate() {
 	char name[32] = "";
 	readName(name);
 	whiteSpace();
-	if(s_debug) printf("XLoader::template '%s'\n", name);
+	if(s_debug>1) printf("XLoader::template '%s'\n", name);
 	if(!keyword("{", false)) return 0;
 	while(*m_read!=0 && *(m_read-1)!='}') m_read++;
 	return *m_read!=0;
@@ -113,7 +115,7 @@ int XLoader::readFrame(Skeleton* skeleton, int parent) {
 	
 	//Add joint - Note: This joint may already be referenced by a skin
 	int joint = skeleton->addJoint(parent, name);
-	if(s_debug) printf("XLoader::readFrame %s [%d]\n", name, joint);
+	if(s_debug>1) printf("XLoader::readFrame %s [%d]\n", name, joint);
 	
 	
 	//Frame loop
@@ -162,13 +164,13 @@ int XLoader::readMesh(int joint) {
 	if(!keyword("{", false)) return 0;
 	comment();
 	
-	if(s_debug) printf("XLoader::readMesh %s\n", name);
+	if(s_debug>1) printf("XLoader::readMesh %s\n", name);
 		
 	int vertexCount=0;
 	if(!readInt(vertexCount)) return 0;
 	keyword(";", false);
 	
-	if(s_debug) printf("%d vertices\n", vertexCount);
+	if(s_debug>1) printf("%d vertices\n", vertexCount);
 	
 	//read vertices
 	float* vertices = new float[ vertexCount*8 ];
@@ -187,7 +189,7 @@ int XLoader::readMesh(int joint) {
 	readInt(polyCount);
 	keyword(";", false);
 	
-	if(s_debug) printf("%d polygons\n", polyCount);
+	if(s_debug>1) printf("%d polygons\n", polyCount);
 	
 	struct Polygon { int size; int* indices; };
 	Polygon* polygons = new Polygon[ polyCount ];
@@ -307,11 +309,11 @@ int XLoader::readMesh(int joint) {
 								index++;
 							}
 						}
-						if(s_debug) printf("Add skin %s : %d weights\n", skin->jointName, skinSize);
+						if(s_debug>1) printf("Add skin %s : %d weights\n", skin->jointName, skinSize);
 						mesh->addSkin(skin);
 					}
 				}
-				if(s_debug) printf("Add Mesh : %d vertices, %d faces\n", vCount, pCount);
+				if(s_debug) printf("Add Mesh %s: %d vertices, %d faces\n", name, vCount, pCount);
 			}
 		}
 	}
@@ -328,7 +330,7 @@ int XLoader::readNormals(float* vertices, size_t stride) {
 	whiteSpace();
 	if(!keyword("{", false)) return 0;
 	comment();
-	if(s_debug) printf("XLoader::readMeshNormals\n");
+	if(s_debug>1) printf("XLoader::readMeshNormals\n");
 	
 	int vertexCount=0;
 	if(!readInt(vertexCount)) return 0;
@@ -351,7 +353,7 @@ int XLoader::readTextureCoords(float* vertices, size_t stride) {
 	whiteSpace();
 	if(!keyword("{", false)) return 0;
 	comment();
-	if(s_debug) printf("XLoader::readTextureCoords\n");
+	if(s_debug>1) printf("XLoader::readTextureCoords\n");
 	
 	int vertexCount=0;
 	if(!readInt(vertexCount)) return 0;
@@ -372,7 +374,7 @@ int XLoader::readMaterialList(int& count, unsigned char* mat, XMaterial* &materi
 	whiteSpace();
 	if(!keyword("{", false)) return 0;
 	comment();
-	if(s_debug) printf("XLoader::readMaterialList\n");
+	if(s_debug>1) printf("XLoader::readMaterialList\n");
 	
 	int polyCount=0;
 	if(!readInt(count)) return 0;
@@ -411,7 +413,7 @@ int XLoader::readMaterial(XMaterial& material) {
 	whiteSpace();
 	if(!keyword("{", false)) return 0;
 	comment();
-	if(s_debug) printf("XLoader::readMaterial %s\n", name);
+	if(s_debug>1) printf("XLoader::readMaterial %s\n", name);
 	
 	readFloat(material.colour[0]); keyword(";", false); whiteSpace();
 	readFloat(material.colour[1]); keyword(";", false); whiteSpace();
@@ -443,7 +445,7 @@ int XLoader::readTexture(char* name) {
 	comment();
 	readName(name);
 	keyword(";", false);
-	if(s_debug) printf("XLoader::readTexture %s\n", name);
+	if(s_debug>1) printf("XLoader::readTexture %s\n", name);
 	comment();
 	return keyword("}", false);
 }
@@ -454,7 +456,7 @@ int XLoader::readSkinHeader(int& skinCount) {
 	whiteSpace();
 	if(!keyword("{", false)) return 0;
 	comment();
-	if(s_debug) printf("XLoader::readSkinHeader\n");
+	if(s_debug>1) printf("XLoader::readSkinHeader\n");
 	int temp;
 	readInt(temp); keyword(";", false); comment(); //Maximum Weights Per Vertex
 	readInt(temp); keyword(";", false); comment(); //Maximum Weights Per Face
@@ -470,7 +472,7 @@ int XLoader::readSkin(Mesh::Skin& skin) {
 	//Joint reference
 	char name[32];
 	readName(name); keyword(";", false); comment();
-	if(s_debug) printf("XLoader::readSkin %s\n", name);
+	if(s_debug>1) printf("XLoader::readSkin %s\n", name);
 	readInt(skin.size); keyword(";", false);
 	
 	//validate
@@ -524,7 +526,7 @@ int XLoader::readAnimationSet() {
 	if(!keyword("{", false)) return 0;
 	comment();
 	
-	if(s_debug) printf("XLoader::readAnimationSet %s\n", name);
+	if(s_debug>1) printf("XLoader::readAnimationSet %s\n", name);
 	
 	Animation* animation = new Animation();
 	
@@ -563,7 +565,7 @@ int XLoader::readAnimation(Animation* animation) {
 	
 	//get Joint ID
 	int joint = m_model->getSkeleton()->getJoint(jointName)->getID();
-	if(s_debug) printf("XLoader::readAnimation %s [%d]\n", jointName, joint);
+	if(s_debug>1) printf("XLoader::readAnimation %s [%d]\n", jointName, joint);
 	if(joint<0) return 0;
 	
 	//Add joint animation
@@ -588,7 +590,7 @@ int XLoader::readAnimationKey(Animation::JointAnimation& anim) {
 	readInt(size); keyword(";", false); comment();
 	if(type>2) return 0; // Unsupported format
 	
-	if(s_debug) printf("XLoader::readAnimationKey %d : %d keyframes\n", type, size);
+	if(s_debug>1) printf("XLoader::readAnimationKey %d : %d keyframes\n", type, size);
 	
 	int values=0;
 	if(type==0) {

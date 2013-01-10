@@ -15,7 +15,7 @@ namespace base {
 		enum Wrapping { REPEAT, CLAMP };
 		Texture();
 		/** Texture creation */
-		static Texture create(int width, int height, int format, const char* data=0);
+		static Texture create(int width, int height, int format, const void* data=0);
 		static Texture create(int width, int height, int iFormat, int sFormat, int type, const void* data);
 		/** Destroy texture */
 		void destroy();
@@ -52,7 +52,7 @@ namespace base {
 
 		/** Bind material */
 		void bind() const;
-		SMaterial(): shininess(50) {}
+		SMaterial(): ambient(0x101010), shininess(50) {}
 	};
 };
 
