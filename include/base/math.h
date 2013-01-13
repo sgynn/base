@@ -102,7 +102,7 @@ class Matrix {
 	public:
 	float m[16];
 	Matrix() { identity(); }
-	Matrix(float* pointer) { for(int i=0; i<16; i++) m[i]=pointer[i]; }
+	Matrix(const float* pointer) { for(int i=0; i<16; i++) m[i]=pointer[i]; }
 	Matrix(const vec3& left, const vec3& up, const vec3& forward, const vec3& position=vec3()) {
 		for(int i=0; i<3; i++) {
 			m[i] = left[i];
@@ -246,7 +246,7 @@ struct Colour {
 	float r,g,b,a;
 	Colour() : r(1),g(1),b(1),a(1){}
 	Colour(float r,float g,float b,float a=1.0) : r(r),g(g),b(b),a(a){}
-	Colour(uint c) : r(((c&0xff0000)>>16)/255.0f), g(((c&0xff00)>>8)/255.0f), b((c&0xff)/255.0f), a(1) {}
+	Colour(uint c, float a=1.0) : r(((c&0xff0000)>>16)/255.0f), g(((c&0xff00)>>8)/255.0f), b((c&0xff)/255.0f), a(a) {}
 	operator const float*() const { return &r; }
 	operator uint() const { return ((uint)(r*255)<<16) + ((uint)(g*255)<<8) + ((uint)(b*255)); }
 	bool operator==(const Colour&c) const { return c.r==r&&c.g==g&&c.b==b&&c.a==a; }
