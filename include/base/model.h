@@ -155,7 +155,7 @@ namespace model {
 		/** The weights used for skinning */
 		struct Skin { int joint; const char* jointName; int size; unsigned short* indices; float* weights; float offset[16]; };
 		const Skin* getSkin(int index) const { return m_skinBuffer->data[index]; }
-		int getSkinCount() const { return m_skinBuffer->size; }
+		int getSkinCount() const { return m_skinBuffer? m_skinBuffer->size: 0; }
 		
 		
 		/** Data Set Functions */

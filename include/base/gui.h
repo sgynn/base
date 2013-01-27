@@ -79,8 +79,10 @@ namespace gui {
 		void setSprite(const Sprite& sprite)	{ m_sprite = sprite; }
 
 		/** Set colour (loads to avoid ambiguity) */
-		void setColour(int type, uint colour, float alpha=1)            { setColour(type, 0xf, Colour(colour), alpha); }
-		void setColour(int type, int state, uint colour, float alpha=1) { setColour(type, state, Colour(colour), alpha); }
+		void setColour(int type, int colour, double alpha=1)            { setColour(type, 0xf, Colour(colour), (float)alpha); }
+		void setColour(int type, int state, int colour, double alpha=1) { setColour(type, state, Colour(colour), (float)alpha); }
+		void setColour(int type, int colour, float alpha=1)             { setColour(type, 0xf, Colour(colour), alpha); }
+		void setColour(int type, int state, int colour, float alpha=1)  { setColour(type, state, Colour(colour), alpha); }
 		void setColour(int type, const Colour& colour)                  { setColour(type,0xf,colour); }
 		void setColour(int type, const Colour& colour, float alpha)     { setColour(type,0xf,colour,alpha); }
 		void setColour(int type, int state, const Colour& colour);
@@ -265,6 +267,7 @@ namespace gui {
 		uint count() const { return m_contents.size(); }
 		Control* getControl(uint index);
 		Control* getControl(const Point&, bool recursive=true);
+		Control* getControl(const char* name) const { return Control::getControl(name); }
 		virtual bool isContainer() const { return true; }
 		protected:
 		void setAbsolutePosition(int x, int y); // move all contained controls

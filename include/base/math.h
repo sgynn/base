@@ -291,6 +291,7 @@ struct Point3 {
 struct Rect {
 	int x, y, width, height;
 	Rect(int x, int y, int w, int h): x(x), y(y), width(w), height(h) {}
+	Rect(const Point& pos, const Point& size): x(pos.x), y(pos.y), width(size.x), height(size.y) {}
 	bool contains(int px, int py) const { return px>=x && px<=x+width && py>=y && py<=y+height; }
 	bool contains(const Point& p) const { return contains(p.x, p.y); }
 	bool intersects(const Rect& o) const { return x<o.x+o.width && x+width>o.x && y<o.y+o.height && y+height>o.y; }
