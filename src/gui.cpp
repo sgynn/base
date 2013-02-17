@@ -585,7 +585,7 @@ uint DropList::mouseEvent(Event& e, const Point& p, int b) {
 			Listbox::mouseEvent(e,p,b);
 			closeList();
 			return setEvent(e, m_selected, selectedItem());
-		} else if(!m_open) {
+		} else if(!m_open && size()) {
 			raise();
 			openList();
 		}

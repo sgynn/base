@@ -9,6 +9,7 @@
 using namespace base;
 
 Font::Font(const char* filename) {
+	memset(m_glyph, 0, 128*sizeof(Glyph));
 	char path[64]; if(File::find(filename, path)) filename = path;
 	::printf("Loading font %s...", filename);
 	m_tex = loadTexture(filename);

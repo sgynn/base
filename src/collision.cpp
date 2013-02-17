@@ -66,7 +66,7 @@ int base::intersectRayPlane(const vec3& p, const vec3& d,  const vec3& normal, f
 	float dn = normal.dot(d);
 	if(dn==0) return 0;
 	t = (offset - normal.dot(p)) / dn;
-	return t>0 && t<1? 1: 0;
+	return t>0? 1: 0;
 }
 
 /** Intersection of a ray with Sphere (page 178) */
