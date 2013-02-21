@@ -47,11 +47,11 @@ namespace model {
 		int readMaterial(XMaterial& mat);
 		int readTexture(char* filename);
 		int readSkinHeader(int& skinCount);
-		int readSkin(Mesh::Skin& skin);
+		int readSkin(Skin& skin);
 		
 		int readAnimationSet();
 		int readAnimation(Animation* animation);
-		int readAnimationKey(Animation::JointAnimation& anim);
+		int readAnimationKey(Animation*, int);
 		
 		/** Parser functions */
 		int comment();

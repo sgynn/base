@@ -59,7 +59,7 @@ namespace base {
 			unsigned int i=index(key, m_capacity);
 			return i<m_capacity && m_data[i].key? iterator(this, i): end();
 		}
-		const iterator find(const char* key) const {
+		const_iterator find(const char* key) const {
 			unsigned int i=index(key, m_capacity);
 			return i<m_capacity && m_data[i].key? const_iterator(this, i): end();
 		}

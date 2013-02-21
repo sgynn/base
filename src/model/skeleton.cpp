@@ -1,76 +1,207 @@
 #include "base/model.h"
-#include "modelmath.h"
 
 using namespace base;
 using namespace model;
 
 
-Joint::Joint() : m_id(-1), m_parent(0), m_mode(JOINT_DEFAULT), m_length(1) {
-	static const float IdentityMatrix[16] = { 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 };
-	memcpy(m_combined, IdentityMatrix, 16*sizeof(float));
-	memset(m_rotation, 0, 4*sizeof(float));
-	memset(m_position, 0, 3*sizeof(float));
-	m_scale[0]=1; m_scale[1]=1; m_scale[2]=1;
+Bone::Bone() : 
+	m_skeleton(0), m_index(0), m_parent(0),
+	m_name(""), m_length(1), m_mode(DEFAULT), m_state(0) {
 }
-void Joint::getTransformation(float* matrix) const {
-	memcpy(matrix, m_combined, 16*sizeof(float));
+
+void Bone::setPosition(const vec3& p) {
+	m_position = p;
+	m_state = 1;
 }
-void Joint::setPosition(const float* p) {
-	memcpy(m_position, p, 3*sizeof(float));
+void Bone::setScale(float s) {
+	m_scale.x = m_scale.y = m_scale.z = s;
+	m_state = 1;
 }
-void Joint::setRotation(const float* r) {
-	memcpy(m_rotation, r, 4*sizeof(float));
+void Bone::setScale(const vec3& s) {
+	m_scale = s;
+	m_state = 1;
 }
-void Joint::setScale(const float* s) {
-	memcpy(m_scale, s, 3*sizeof(float));
+void Bone::setEuler(const vec3& pyr) {
+	m_angle.fromEuler(pyr);
 }
+void Bone::setAngle(const Quaternion& q) {
+	m_angle = q;
+	m_state = 1;
+}
+
+void Bone::setTransformation(const Matrix& m) {
+	m_local = m;
+	m_state = 2;
+}
+void Bone::setAbsoluteTransformation(const Matrix& m) {
+	m_combined = m;
+	m_state = 4;
+}
+
+const vec3 Bone::getEuler() const {
+	return m_angle.getEuler();
+}
+
+void Bone::updateLocal() {
+	// Note: when absoluteMatrix is being set, local values mean nothing.
+	switch(m_state) {
+	case 1: // parts to matrix
+		m_angle.toMatrix(m_local);
+		memcpy(&m_local[12], m_position, sizeof(vec3));
+		m_local[0] *= m_scale.x;
+		m_local[5] *= m_scale.y;
+		m_local[10] *= m_scale.z;
+		m_state=3;
+		break;
+	case 2: // Matrix to parts
+		m_angle.fromMatrix(m_local);
+		memcpy(m_position, &m_local[12], sizeof(vec3));
+		m_scale.x = vec3(&m_local[0]).length();
+		m_scale.y = vec3(&m_local[4]).length();
+		m_scale.z = vec3(&m_local[8]).length();
+		m_state=3;
+		break;
+	}
+}
+
+
+
+
+
 
 
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
 
-Skeleton::Skeleton() : m_jointCount(0), m_lastAnimation(0) {}
-Skeleton::Skeleton(const Skeleton& s) : m_jointCount(s.m_jointCount), m_names(s.m_names), m_lastAnimation(s.m_lastAnimation) {
-	//copy joints
-	m_joints = new Joint[ m_jointCount ];
-	memcpy(m_joints, s.m_joints, m_jointCount*sizeof(Joint));
-	//copy matrices
-	m_matrices = new Matrix[m_jointCount];
-	memcpy(m_matrices, s.m_matrices, m_jointCount * sizeof(Matrix));
-	//copy animationHints
-	m_animationHints = new unsigned int[m_jointCount*3];
-	memcpy(m_animationHints, s.m_animationHints, m_jointCount*3*sizeof(unsigned int));
+Skeleton::Skeleton(): m_count(1), m_last(0) {
+	m_bones = new Bone[1];
+	m_hints = new uint16[1];
+	m_flags = new ubyte[1];
+	m_bones[0].m_skeleton = this;
+}
+Skeleton::Skeleton(const Skeleton& s) : m_count(s.m_count), m_last(0) {
+	m_bones = new Bone[ m_count ];
+	m_hints = new uint16[ 3 * m_count ];
+	m_flags = new ubyte[ m_count ];
+	memcpy(m_bones, s.m_bones, m_count*sizeof(Bone));
+	memset(m_hints, 0, 3 * m_count * sizeof(uint16));
+	for(int i=0; i<m_count; ++i) m_bones[i].m_skeleton = this;
 }
 Skeleton::~Skeleton() {
-	if(m_jointCount) {
-		delete [] m_joints;
-		delete [] m_matrices;
-		delete [] m_animationHints;
+	delete [] m_bones;
+	delete [] m_hints;
+	delete [] m_flags;
+}
+
+
+Bone* Skeleton::addBone(const Bone* p, const char* name, const float* local) {
+	// Check parent is valid
+	if(!p || p->m_skeleton!=this) {
+		p = &m_bones[0];
+	}
+	// Resize array
+	Bone* tmp = m_bones;
+	m_bones = new Bone[ m_count+1 ];
+	memcpy(m_bones, tmp, m_count*sizeof(Bone));
+	delete [] tmp;
+	// Resize hint arrays
+	delete [] m_hints;
+	delete [] m_flags;
+	m_flags = new ubyte[ m_count+1 ];
+	m_hints = new uint16[ (m_count+1) * 3 ];
+	memset(m_hints, 0, (m_count+1) * 3 * sizeof(uint16));
+	// Initialise bone data
+	Bone& bone = m_bones[m_count];
+	bone.m_skeleton = this;
+	bone.m_index = m_count;
+	bone.m_parent = p->getIndex();
+	if(name)  bone.m_name = name;
+	// Initial Transforms
+	if(local) memcpy(bone.m_local, local, sizeof(Matrix));
+	bone.m_combined = p->m_combined * bone.m_local;
+	++m_count;
+	return &bone;
+}
+
+Bone* Skeleton::getBone(const char* name) {
+	for(int i=0; i<m_count; ++i) {
+		if(strcmp(name, m_bones[i].m_name)==0) return &m_bones[i];
+	}
+	return 0;
+}
+
+void Skeleton::setMode(Bone::Mode m) {
+	for(int i=0; i<m_count; ++i) m_bones[i].setMode(m);
+}
+
+
+//// Animate functions ////
+
+void Skeleton::animate(const Animation* anim, float frame, const Bone* root, float weight) {
+	m_last = anim;
+	int start = root? root->getIndex(): 0;
+	memset(m_flags, 0, m_count);
+	// Loop through remaining bones
+	for(int i=start; i<m_count; ++i) {
+		// Determine what to do based on parent flag and bone mode
+		int pFlag = i==start? 1: m_flags[ m_bones[i].getParent()->getIndex() ];
+		m_flags[i] = pFlag;
+		bool set = false;
+		switch( m_bones[i].getMode() ) {
+		case Bone::DEFAULT:  set = pFlag==1; break;
+		case Bone::ANIMATED: set = pFlag>0;  break;
+		case Bone::TRUNCATE: m_flags[i]=2;   break;
+		case Bone::USER:     break;
+		case Bone::FIXED:    break;
+		}
+		// Set bone values from animation
+		if(set) animateBone(&m_bones[i], anim, frame, weight);
 	}
 }
-int Skeleton::addJoint(int parent, const char* name, const float* defaultMatrix) {
-	int newSize = m_jointCount+1;
-	ResizeArray( Joint, m_joints, m_jointCount, newSize);
-	ResizeArray( Matrix, m_matrices, m_jointCount, newSize);
-	ResizeArray( unsigned int, m_animationHints, m_jointCount*3, newSize*3);
-	m_jointCount = newSize;
-	//initialise new joint
-	int j = m_jointCount-1;
-	m_joints[j].m_id = m_jointCount-1;
-	m_joints[j].m_parent = parent;
-	if(defaultMatrix) setDefaultMatrix(j, defaultMatrix);
-	memset(&m_animationHints[(m_jointCount-1)*3], 0, 3*sizeof(int));
-	m_names[name] = j; //link jointID to Name
-	//return joint
-	return j;
+bool Skeleton::animateBone(Bone* b, const Animation* anim, float frame, float weight) {
+	static SlerpFunc slerp;
+	static LerpFunc lerp;
+	if(b->m_mode==Bone::DEFAULT || b->m_mode==Bone::ANIMATED) {
+		vec3 pos, scl;
+		Quaternion rot;
+		// Get values from animation
+		int index = b->getIndex();
+		anim->getRotation(index, frame, m_hints[index*3],   rot);
+		anim->getPosition(index, frame, m_hints[index*3+1], pos);
+		anim->getScale   (index, frame, m_hints[index*3+2], scl);
+		// Blended?
+		if(weight != 1) {
+			if(b->m_state==2) b->updateLocal();
+			slerp(rot, b->m_angle, rot, weight);
+			lerp(pos, b->m_position, pos, weight);
+			lerp(scl, b->m_scale, scl, weight);
+		}
+		memcpy(&b->m_angle,    &rot, sizeof(Quaternion));
+		memcpy(&b->m_position, &pos, sizeof(vec3));
+		memcpy(&b->m_scale,    &scl, sizeof(vec3));
+		b->m_state = 1;
+		return true;
+	} else return false;
 }
-void Skeleton::setDefaultMatrix(int joint, const float* matrix) {
-	memcpy(&m_matrices[joint], matrix, 16*sizeof(float) );
-	reset(joint);
+
+
+void Skeleton::update() {
+	// Build combined matrices - may be able to skip some
+	bool skip = true;
+	for(int i=0; i<m_count; ++i) {
+		Bone& bone = m_bones[i];
+		if(bone.getMode() != Bone::FIXED || (skip && bone.m_state==0)) {
+			Bone& parent = m_bones[ bone.m_parent ];
+			if(bone.m_state==1) bone.updateLocal(); // Update local matrix
+			// Combine ...
+			bone.m_combined = parent.m_combined * bone.m_local;
+			skip = false;
+		}
+	}
 }
-void Skeleton::reset() {
-	for(int i=0; i<m_jointCount; i++) reset(i);
-}
+
+/*
+
 void Skeleton::reset(int id) {
 	Joint* j=getJoint(id);		if(!j) return;
 	memcpy(j->m_local, &m_matrices[id], 16*sizeof(float));
@@ -113,35 +244,6 @@ void Skeleton::reset(int id) {
 			q[2] = 0.25f * s;
 		}
 	}
-}
-Joint* Skeleton::getJoint(int id) {
-	if(id>=0 && id<m_jointCount) return &m_joints[id];
-	else return 0;
-}
-const Joint* Skeleton::getJoint(int id) const {
-	if(id>=0 && id<m_jointCount) return &m_joints[id];
-	else return 0;
-}
-Joint* Skeleton::getJoint(const char* name) {
-	return getJoint( m_names[name] );
-}
-const Joint* Skeleton::getJoint(const char* name) const {
-	return getJoint( m_names[name] );
-}
-Joint* Skeleton::getParent(const Joint* j) {
-	if(j->m_parent<0 || m_joints[j->m_parent].m_id >= j->m_id) return 0;
-	else return &m_joints[j->m_parent];
-}
-int Skeleton::animateJoints(float frame, int joint, float weight) {
-	return animateJoints(m_lastAnimation, frame, joint, weight);
-}
-int Skeleton::animateJoints(const Animation* animation, float frame, int joint, float weight) {
-	m_lastAnimation = animation;
-	unsigned char* flags = new unsigned char[m_jointCount];
-	memset(flags, 0, m_jointCount);
-	flags[joint] = 1; //animate from this joint
-	for(int i=joint; i<m_jointCount; i++) animateJoint(i, frame, flags, weight);
-	return 0;
 }
 
 int Skeleton::animateJoint(int jointID, float frame, unsigned char* flags, float weight) {
@@ -202,4 +304,4 @@ int Skeleton::animateJoint(int jointID, float frame, unsigned char* flags, float
 	
 	return 1;
 }
-
+*/

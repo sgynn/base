@@ -27,6 +27,7 @@ set(src
 
 	src/model/model.cpp
 	src/model/mesh.cpp
+	src/model/morph.cpp
 	src/model/skeleton.cpp
 	src/model/animation.cpp
 	src/model/drawmodel.cpp
@@ -64,6 +65,7 @@ set( zlib
 )
 
 set(headers
+	include/base/animation.h
 	include/base/camera.h
 	include/base/fpscamera.h
 	include/base/orbitcamera.h
@@ -81,6 +83,8 @@ set(headers
 	include/base/input.h
 	include/base/material.h
 	include/base/math.h
+	include/base/mesh.h
+	include/base/morph.h
 	include/base/model.h
 	include/base/modelloaderx.h
 	include/base/opengl.h

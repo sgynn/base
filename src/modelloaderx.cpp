@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "base/png.h"
+#include "base/texture.h"
 
 using namespace base;
 using namespace model;
@@ -114,8 +115,8 @@ int XLoader::readFrame(Skeleton* skeleton, int parent) {
 	}
 	
 	//Add joint - Note: This joint may already be referenced by a skin
-	int joint = skeleton->addJoint(parent, name);
-	if(s_debug>1) printf("XLoader::readFrame %s [%d]\n", name, joint);
+	Bone* bone = skeleton->addBone( skeleton->getBone(parent), name);
+	if(s_debug>1) printf("XLoader::readFrame %s [%d]\n", name, bone->getIndex());
 	
 	
 	//Frame loop
@@ -127,10 +128,10 @@ int XLoader::readFrame(Skeleton* skeleton, int parent) {
 		if(keyword("FrameTransformMatrix")) {
 			float mat[16];
 			if(!readFrameTransformationMatrix(mat)) return 0;
-			skeleton->setDefaultMatrix(joint, mat);
+			bone->setTransformation( Matrix(mat) );
 		}
-		else if(keyword("Frame") && !readFrame(skeleton, joint)) return 0;
-		else if(keyword("Mesh") && !readMesh(joint)) return 0;
+		else if(keyword("Frame") && !readFrame(skeleton, bone->getIndex())) return 0;
+		else if(keyword("Mesh") && !readMesh(bone->getIndex())) return 0;
 		else if(keyword("}", false)) break;
 		else if(*m_read == 0) return 0;
 	}
@@ -214,7 +215,7 @@ int XLoader::readMesh(int joint) {
 	
 	//Skin stuff
 	int skinCount=0, cSkin=0;
-	Mesh::Skin* skins=0;
+	Skin* skins=0;
 	
 	//Mesh Loop
 	bool fail = true; //We need to do some cleanup if something fails
@@ -229,7 +230,7 @@ int XLoader::readMesh(int joint) {
 		if(keyword("MeshMaterialList")		&& !readMaterialList(materialCount, materialList, materials)) break;
 		
 		if(keyword("XSkinMeshHeader")) {
-			if(readSkinHeader(skinCount)) skins = new Mesh::Skin[ skinCount ];
+			if(readSkinHeader(skinCount)) skins = new Skin[ skinCount ];
 			else break;
 		}
 		if(keyword("SkinWeights")		&& !readSkin(skins[cSkin++])) break;
@@ -280,39 +281,43 @@ int XLoader::readMesh(int joint) {
 				}
 				//Add stuff to mesh
 				Mesh* mesh = new Mesh();
-				m_model->addMesh(mesh, strdup(name), joint); 
-				mesh->setVertices(vCount, mVertices);
+				mesh->setVertices(vCount, mVertices, VERTEX_DEFAULT);
 				mesh->setIndices(pCount*3, mIndices);
 
 				//Set material
 				if(materialCount>0 && s_matFunc) {
-					XMaterial& xm = materials[m];
-					s_matFunc(mesh->getMaterial(), xm.colour, xm.emission, xm.specular, xm.power, xm.texture);
+					//XMaterial& xm = materials[m];
+					//s_matFunc(mesh->getMaterial(), xm.colour, xm.emission, xm.specular, xm.power, xm.texture);
 				}
 				
 				//Set skins
 				for(int i=0; i<cSkin; i++) {
 					//get skin size
 					int skinSize=0;
-					for(int j=0; j<skins[i].size; j++) if(map[skins[i].indices[j]].used) skinSize++;
+					for(uint j=0; j<skins[i].size; j++) if(map[skins[i].indices[j]].used) skinSize++;
 					//copy skin
 					if(skinSize>0) {
-						Mesh::Skin* skin = new Mesh::Skin(skins[i]); //copy constructor should copy jointname and matrix.
+						Skin* skin = new Skin(skins[i]); //copy constructor should copy jointname and matrix.
 						skin->indices = new unsigned short[skinSize];
 						skin->weights = new float[skinSize];
 						skin->size = skinSize;
 						int index=0;
-						for(int j=0; j<skins[i].size; j++) {
+						for(uint j=0; j<skins[i].size; j++) {
 							if(map[skins[i].indices[j]].used) {
 								skin->indices[index] = map[ skins[i].indices[j] ].to;
 								skin->weights[index] = skins[i].weights[j];
 								index++;
 							}
 						}
-						if(s_debug>1) printf("Add skin %s : %d weights\n", skin->jointName, skinSize);
+						if(s_debug>1) printf("Add skin %s : %d weights\n", skin->name, skinSize);
 						mesh->addSkin(skin);
 					}
 				}
+				
+				// Add mesh to model
+				if(mesh->getSkinCount()) m_model->addSkin(mesh, name);
+				else m_model->addMesh(mesh, name);
+
 				if(s_debug) printf("Add Mesh %s: %d vertices, %d faces\n", name, vCount, pCount);
 			}
 		}
@@ -464,36 +469,38 @@ int XLoader::readSkinHeader(int& skinCount) {
 	comment();
 	return keyword("}", false);	
 }
-int XLoader::readSkin(Mesh::Skin& skin) {
+int XLoader::readSkin(Skin& skin) {
 	whiteSpace();
 	if(!keyword("{", false)) return 0;
 	comment();
 	
 	//Joint reference
 	char name[32];
+	int size;
 	readName(name); keyword(";", false); comment();
 	if(s_debug>1) printf("XLoader::readSkin %s\n", name);
-	readInt(skin.size); keyword(";", false);
+	readInt(size); keyword(";", false);
 	
 	//validate
-	if(skin.size==0) return 0;
-	skin.joint = -1;
-	skin.jointName = strdup(name);
+	if(size==0) return 0;
+	skin.bone = 0;
+	skin.name = strdup(name);
+	skin.size = size;
 	
 	//indices
 	int index=0;
-	skin.indices = new unsigned short[skin.size];
-	for(int i=0; i<skin.size; i++) {
+	skin.indices = new unsigned short[size];
+	for(int i=0; i<size; i++) {
 		comment();
 		readInt( index ); skin.indices[i]=index;
-		keyword(i<skin.size-1?",":";", false);
+		keyword(i<size-1?",":";", false);
 	}
 	//weights
 	skin.weights = new float[skin.size];
-	for(int i=0; i<skin.size; i++) {
+	for(int i=0; i<size; i++) {
 		comment();
 		readFloat( skin.weights[i] );
-		keyword(i<skin.size-1?",":";", false);
+		keyword(i<size-1?",":";", false);
 	}
 	//skinOffsetMatrix
 	for(int i=0; i<16; i++) {
@@ -506,8 +513,8 @@ int XLoader::readSkin(Mesh::Skin& skin) {
 	//end block
 	comment();
 	if(keyword("}", false)) {
-		skin.jointName = strdup(name);
-		skin.joint = -1;
+		skin.name = strdup(name);
+		skin.bone = 0;
 		return 1;
 	} else {
 		delete [] skin.indices;
@@ -529,6 +536,8 @@ int XLoader::readAnimationSet() {
 	if(s_debug>1) printf("XLoader::readAnimationSet %s\n", name);
 	
 	Animation* animation = new Animation();
+	animation->setName(name);
+	animation->setSpeed(15);
 	
 	//Animation loop
 	while(keyword("Animation")) {
@@ -539,7 +548,7 @@ int XLoader::readAnimationSet() {
 	
 	//end of block - add animation to model
 	if(keyword("}", false)) {
-		m_model->addAnimation(name, animation);
+		m_model->addAnimation(animation);
 		return 1;
 	} else {
 		delete animation;
@@ -564,24 +573,21 @@ int XLoader::readAnimation(Animation* animation) {
 	comment();
 	
 	//get Joint ID
-	int joint = m_model->getSkeleton()->getJoint(jointName)->getID();
+	int joint = m_model->getSkeleton()->getBone(jointName)->getIndex();
 	if(s_debug>1) printf("XLoader::readAnimation %s [%d]\n", jointName, joint);
 	if(joint<0) return 0;
-	
-	//Add joint animation
-	Animation::JointAnimation& anim = animation->getJointAnimation( joint );
 	
 	//contains a list of keys for this joint
 	const char* tr = 0;
 	while(tr!=m_read) {
 		tr = m_read;
-		if(keyword("AnimationKey") && !readAnimationKey(anim)) return 0;
+		if(keyword("AnimationKey") && !readAnimationKey(animation, joint)) return 0;
 		if(keyword("}", false)) return 1; //end of block
 		comment();
 	}
 	return 0;
 }
-int XLoader::readAnimationKey(Animation::JointAnimation& anim) {
+int XLoader::readAnimationKey(Animation* anim, int bone) {
 	whiteSpace();
 	if(!keyword("{", false)) return 0;
 	comment();
@@ -594,37 +600,34 @@ int XLoader::readAnimationKey(Animation::JointAnimation& anim) {
 	
 	int values=0;
 	if(type==0) {
-		Animation::KeyFrame4* data = new Animation::KeyFrame4[ size ];
+		int frame;
+		float data[4];
 		for(int i=0; i<size; i++) {
-			readInt(data[i].frame); keyword(";", false); whiteSpace();
+			readInt(frame); keyword(";", false); whiteSpace();
 			readInt(values); keyword(";", false); whiteSpace();
 			for(int j=0; j<values; j++) {
-				readFloat(data[i].data[(j+3)%4]); keyword(j<values-1?",":";", false); whiteSpace();
+				readFloat(data[(j+3)%4]);
+				keyword(j<values-1?",":";", false);
+				whiteSpace();
 			}
-			data[i].data[3] *= -1;
-			
+			data[3] *= -1;
+			anim->addRotationKey(bone, frame, data);
 			keyword(i<size-1?";,":";;", false);
 			comment();
 		}
-		anim.rotationKeys = data;
-		anim.rotationCount = size;
 	} else {
-		Animation::KeyFrame3* data = new Animation::KeyFrame3[ size ];
+		int frame;
+		float data[3];
 		for(int i=0; i<size; i++) {
-			readInt(data[i].frame); keyword(";", false); whiteSpace();
+			readInt(frame); keyword(";", false); whiteSpace();
 			readInt(values); keyword(";", false); whiteSpace();
 			for(int j=0; j<values; j++) {
-				readFloat(data[i].data[j]); keyword(j<values-1?",":";", false); whiteSpace();
+				readFloat(data[j]); keyword(j<values-1?",":";", false); whiteSpace();
 			}
+			if(type==1) anim->addScaleKey(bone, frame, data);
+			if(type==2) anim->addPositionKey(bone, frame, data);
 			keyword(i<size-1?";,":";;", false);
 			comment();
-		}
-		if(type==1) {
-			anim.scaleKeys = data;
-			anim.scaleCount = size;
-		} else {
-			anim.positionKeys = data;
-			anim.positionCount = size;
 		}
 	}
 	

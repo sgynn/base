@@ -17,6 +17,8 @@ class Vec2 {
 	
 	operator const float*() const { return &x; }
 	operator float*() { return &x; }
+	const float& operator[](int i) const { return *(&x+i); }
+	float& operator[](int i) { return *(&x+i); }
 
 	Vec2& operator= (const Vec2& v) { x=v.x; y=v.y; return *this; }
 	Vec2& operator+=(const Vec2& v) { x+=v.x; y+=v.y; return *this; }
@@ -58,6 +60,8 @@ class Vec3 {
 
 		operator const float*() const { return &x; }
 		operator float*() { return &x; }
+		const float& operator[](int i) const { return *(&x+i); }
+		float& operator[](int i) { return *(&x+i); }
 		
 		Vec3& operator= (const Vec3& v) { x=v.x; y=v.y; z=v.z; return *this; }
 		Vec3& operator+=(const Vec3& v) { x+=v.x; y+=v.y; z+=v.z; return *this; }
@@ -152,6 +156,13 @@ class Matrix {
 		result.x = m[0]*v.x + m[4]*v.y + m[8]*v.z + m[12];
 		result.y = m[1]*v.x + m[5]*v.y + m[9]*v.z + m[13];
 		result.z = m[2]*v.x + m[6]*v.y + m[10]*v.z + m[14];
+		return result;
+	}
+	vec3 rotate(const vec3& v) const {
+		vec3 result;
+		result.x = m[0]*v.x + m[4]*v.y + m[8]*v.z;
+		result.y = m[1]*v.x + m[5]*v.y + m[9]*v.z;
+		result.z = m[2]*v.x + m[6]*v.y + m[10]*v.z;
 		return result;
 	}
 	Matrix transpose() const {
