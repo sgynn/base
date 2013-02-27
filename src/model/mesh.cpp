@@ -175,8 +175,8 @@ void Mesh::setVertices(int count, VertexType* data, uint format) {
 	m_vertexBuffer->size = count * size;
 	m_vertexBuffer->bufferObject = 0;
 	m_vertexBuffer->ref = 1;
-	calculateBounds();
 	cachePointers();
+	calculateBounds();
 }
 
 void Mesh::setIndices(int count, IndexType* data) {
@@ -448,22 +448,13 @@ int Mesh::smoothNormals(float angle) {
 	return affected;
 }
 
-void Mesh::calculateBounds() {
-/*
-	const float* v = getVertex(0);
-	m_box[0] = m_box[3] = v[0];
-	m_box[1] = m_box[4] = v[1];
-	m_box[2] = m_box[5] = v[2];
-	for(uint i=1; i<getVertexCount(); i++) {
-		v = getVertex(i);
-		if(v[0] < m_box[0])	 m_box[0]=v[0];
-		else if(v[0] > m_box[3]) m_box[3]=v[0];
-		if(v[1] < m_box[1])	 m_box[1]=v[1];
-		else if(v[1] > m_box[4]) m_box[4]=v[1];
-		if(v[2] < m_box[2])	 m_box[2]=v[2];
-		else if(v[2] > m_box[5]) m_box[5]=v[2];
+const aabb& Mesh::calculateBounds() {
+	m_bounds.min = m_bounds.max = getVertex(0);
+	for(uint i=1; i<getVertexCount(); ++i) {
+		const vec3& v = getVertex(i);
+		m_bounds.addPoint(v);
 	}
-*/
+	return m_bounds;
 }
 
 

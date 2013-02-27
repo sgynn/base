@@ -109,8 +109,9 @@ namespace model {
 		int  calculateTangents();						/**< Calculate the vertex tangents */
 		int  normaliseWeights();						/**< Normalise the skin weights */
 		int  optimise();								/**< Optimise mesh by removing any duplicate vertices and using an index array */
-		void calculateBounds();							/**< Calculate axis aligned bounding box */
 
+		const aabb& getBounds() const;					/**< Get the last calculated axis aligned bounding box */
+		const aabb& calculateBounds();					/**< Calculate axis aligned bounding box */
 
 		protected:
 		mutable int m_ref;			// Reference counter
@@ -120,6 +121,7 @@ namespace model {
 		void*       m_pointers[8];	// Cached vertex pointers
 		int         m_formatSize;	// Number of floats in format;
 		SMaterial*  m_material;		// Material
+		aabb        m_bounds;		// Axis aligned bounding box
 
 		Buffer<VertexType>* m_vertexBuffer;	// Vertex buffer data
 		Buffer<IndexType>*  m_indexBuffer;	// Index bufer data
@@ -164,9 +166,11 @@ namespace model {
 	inline int         Mesh::getSkinCount() const                 { return m_skins? m_skins->size: 0; }
 	inline const Skin* Mesh::getSkin(int index) const             { return &m_skins->data[index]; }
 
-	inline void             Mesh::setMaterial(SMaterial* m)            { m_material = m; }
-	inline SMaterial*       Mesh::getMaterial()                        { return m_material; }
-	inline const SMaterial* Mesh::getMaterial() const                  { return m_material; }
+	inline void             Mesh::setMaterial(SMaterial* m)       { m_material = m; }
+	inline SMaterial*       Mesh::getMaterial()                   { return m_material; }
+	inline const SMaterial* Mesh::getMaterial() const             { return m_material; }
+
+	inline const aabb&     Mesh::getBounds() const                { return m_bounds; }
 
 
 	
