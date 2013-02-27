@@ -135,10 +135,9 @@ namespace model {
 	inline Mesh*      Model::getMesh(int index)     { return m_meshes[index].output; }
 	inline Mesh*      Model::getMesh(const char* n) { int i=mapValue(m_maps->meshes, n, -1); return i<0? 0: getMesh(i); }
 	inline int        Model::addMesh(Mesh* mesh, Bone* bone) { return addMesh(mesh, 0, bone); };
-	inline void       Model::setSkeleton(Skeleton* s) { m_skeleton = s; }
 	inline Skeleton*  Model::getSkeleton() const      { return m_skeleton; }
 
-	inline void       Model::addAnimation(Animation* a)                    { m_maps->animations[ a->getName() ] = a; }
+	inline void       Model::addAnimation(Animation* a)                    { m_maps->animations[ a->getName() ] = a; a->grab(); }
 	inline Animation* Model::getAnimation(const char* name) const          { return mapValue(m_maps->animations, name, (Animation*)0); }
 	inline void       Model::setAnimation(const char* n, const Bone* b)    { setAnimation(getAnimation(n), b); }
 	inline void       Model::setAnimationSpeed(float speed, const Bone* b) { AnimInfo* i = boneAnimation(b); if(i) i->speed = speed; }

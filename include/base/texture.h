@@ -17,6 +17,7 @@ namespace base {
 		/** Texture creation */
 		static Texture create(int width, int height, int format, const void* data=0);
 		static Texture create(int width, int height, int iFormat, int sFormat, int type, const void* data);
+		static int bppFormat(int bpp);
 		/** Destroy texture */
 		void destroy();
 		/** Bind texture */

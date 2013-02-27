@@ -61,7 +61,7 @@ namespace model {
 		KeyframeList& addList(int bone);	// Get keyframe list from a bone, add if not there.
 		template<int N> void addKey(    std::vector< Keyframe<N> >&, int frame, const float* value);
 		template<int N> bool removeKey( std::vector< Keyframe<N> >&, int frame);
-		template<int N, class P> int getValue( std::vector< Keyframe<N> >& keys, float frame, int hint, float* value, P interpolate) const;
+		template<int N, class P> int getValue( std::vector< Keyframe<N> >& keys, float frame, int hint, float* value, const float* def, P interpolate) const;
 	};
 
 	// Interpolation functors

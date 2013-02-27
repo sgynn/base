@@ -258,6 +258,7 @@ struct Colour {
 	Colour() : r(1),g(1),b(1),a(1){}
 	Colour(float r,float g,float b,float a=1.0) : r(r),g(g),b(b),a(a){}
 	Colour(uint c, float a=1.0) : r(((c&0xff0000)>>16)/255.0f), g(((c&0xff00)>>8)/255.0f), b((c&0xff)/255.0f), a(a) {}
+	operator float*() { return &r; }
 	operator const float*() const { return &r; }
 	operator uint() const { return ((uint)(r*255)<<16) + ((uint)(g*255)<<8) + ((uint)(b*255)); }
 	bool operator==(const Colour&c) const { return c.r==r&&c.g==g&&c.b==b&&c.a==a; }

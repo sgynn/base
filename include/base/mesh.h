@@ -11,6 +11,7 @@ namespace model {
 
 	typedef unsigned short IndexType;
 	typedef float VertexType;
+	class Skeleton;
 
 	/** Vertex or index buffer for meshes - can be used as buffer objects */
 	template<typename T>
@@ -56,6 +57,7 @@ namespace model {
 	 * A mesh has a single material.
 	 * */
 	class Mesh {
+		friend class Model;
 		public:
 		Mesh();										/**< Default constructor */
 		Mesh(const Mesh& mesh);					 	/**< Copy constructor. Can reference or copy vertex data */
@@ -100,7 +102,7 @@ namespace model {
 
 		void setVertices(int count, VertexType* data, uint format);			/**< Set the vertex data */
 		void setIndices(int count, IndexType* data);						/**< Set the index data */
-		void addSkin(Skin* skin);											/**< Add a shin */
+		void addSkin(const Skin& skin);											/**< Add a shin */
 
 		int  calculateNormals(float smooth=0);			/**< Calculate the vertex normals */
 		int  smoothNormals(float angle);				/**< Smooth normals within angle threshold */

@@ -16,7 +16,6 @@ set(src
 	src/inifile.cpp
 	src/input.cpp
 	src/material.cpp
-	src/modelloaderx.cpp
 	src/png.cpp
 	src/scene.cpp
 	src/shader.cpp
@@ -31,6 +30,7 @@ set(src
 	src/model/skeleton.cpp
 	src/model/animation.cpp
 	src/model/drawmodel.cpp
+	src/model/xmodel.cpp
 )
 
 set( png
@@ -86,7 +86,6 @@ set(headers
 	include/base/mesh.h
 	include/base/morph.h
 	include/base/model.h
-	include/base/modelloaderx.h
 	include/base/opengl.h
 	include/base/png.h
 	include/base/scene.h
@@ -96,6 +95,7 @@ set(headers
 	include/base/threads.h
 	include/base/window.h
 	include/base/xml.h
+	include/base/xmodel.h
 )
 
 

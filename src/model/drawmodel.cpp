@@ -89,7 +89,7 @@ int Model::drawMesh( const Mesh* m, int state) {
 
 void Model::drawSkeleton(const Skeleton* s) {
 	glEnableClientState(GL_VERTEX_ARRAY);
-	for(int i=1; i<s->getBoneCount(); ++i) {
+	for(int i=0; i<s->getBoneCount(); ++i) {
 		drawBone( s->getBone(i) );
 	}
 	glDisableClientState(GL_VERTEX_ARRAY);
@@ -102,6 +102,7 @@ void Model::drawBone(const Bone* b) {
 	static unsigned char ix[24] = { 0,1,2, 0,2,3, 0,3,4, 0,4,1,  1,5,2, 2,5,3, 3,5,4, 4,5,1 };
 	glPushMatrix();
 	glMultMatrixf(b->getAbsoluteTransformation());
+	glScalef(b->getLength(), b->getLength(), b->getLength());
 	glVertexPointer(3, GL_FLOAT, 0, vx);
 	glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_BYTE, ix);
 	glPopMatrix();

@@ -46,6 +46,7 @@ namespace model {
 		void setAngle(const Quaternion& q);		/**< Set the relative angle quaternion */
 		void setTransformation(const Matrix&);	/**< Set the local transformation */
 		void setAbsoluteTransformation(const Matrix&);	/**< Set the absolute transformation */
+		void updateLocal();						/**< Calculate outdated local variables */
 
 		private:
 		friend class Skeleton;
@@ -65,7 +66,6 @@ namespace model {
 		Quaternion  m_angle;
 
 		Bone();						/**< Private constructor - create from Skeleton */
-		void        updateLocal();  // Calculate outdated local variables
 	};
 
 	/** Skeleton class 
@@ -80,12 +80,12 @@ namespace model {
 
 		Bone*       addBone(const Bone* parent, const char* name=0, const float* local=0);	/**< Add a new bone to the skeleton */
 		Bone*       getBone(int index);				/**< Get bone by index */
-		const Bone* getBone(int index) const;	/**< Get bone by index */
+		const Bone* getBone(int index) const;		/**< Get bone by index */
 		Bone*       getBone(const char *name);		/**< Get bone by name */
-		int         getBoneCount() const;				/**< Get number of bones in skeleton */
+		int         getBoneCount() const;			/**< Get number of bones in skeleton */
 		void        setMode(Bone::Mode m);			/**< Set all bone update modes */
 
-		void update();							/**< Calculate bone matrices */
+		bool update();								/**< Calculate bone matrices. Returns true if changed */
 
 		void animate(const Animation* anim, float frame, const Bone* root=0, float weight=1);
 		void animate(float frame, const Bone* root=0, float weight=1);
@@ -93,7 +93,7 @@ namespace model {
 		bool animateBone(Bone* bone, float frame, float weight=1);
 
 		private:
-		Bone*            m_bones;	// Array of bones
+		Bone**           m_bones;	// Array of bones
 		int              m_count;	// Number of bones
 		const Animation* m_last;	// Last animation used
 		uint16*          m_hints;	// Animation hints
@@ -117,8 +117,8 @@ namespace model {
 	inline const Matrix&     Bone::getAbsoluteTransformation() const { return m_combined; }
 
 	// Skeleton Inlines
-	inline Bone*       Skeleton::getBone(int index)                        { return &m_bones[index]; }
-	inline const Bone* Skeleton::getBone(int index) const                  { return &m_bones[index]; }
+	inline Bone*       Skeleton::getBone(int index)                        { return m_bones[index]; }
+	inline const Bone* Skeleton::getBone(int index) const                  { return m_bones[index]; }
 	inline int         Skeleton::getBoneCount() const                      { return m_count; }
 	inline void        Skeleton::animate(float f, const Bone* r, float w)  { animate(m_last,f,r,w); }
 	inline bool        Skeleton::animateBone(Bone* b, float f, float w)    { return animateBone(b,m_last,f,w); }

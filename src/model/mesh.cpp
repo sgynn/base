@@ -1,4 +1,5 @@
 #include "base/mesh.h"
+#include "base/skeleton.h"
 #include <cstring>
 #include <cstdlib>
 
@@ -6,7 +7,6 @@
 #define GL_TRIANGLES 0x0004
 #endif
 
-// Macro for resizing a c array
 #define ResizeArray(type, array, oldSize, newSize)	{ type* tmp=array; array=new type[newSize]; if(oldSize) { memcpy(array, tmp, oldSize*sizeof(type)); delete [] tmp; } }
 
 using namespace base;
@@ -39,9 +39,11 @@ Mesh::Mesh(const Mesh& m): m_ref(0), m_mode(m.m_mode), m_format(m.m_format), m_s
 	if(m.m_vertexBuffer) {
 		m_vertexBuffer = new Buffer<VertexType>();
 		m_vertexBuffer->data = new VertexType[ m.m_vertexBuffer->size ];
-		memcpy(m_vertexBuffer->data, m.m_vertexBuffer->data, m.m_vertexBuffer->size);
+		memcpy(m_vertexBuffer->data, m.m_vertexBuffer->data, m.m_vertexBuffer->size*sizeof(VertexType));
 		m_vertexBuffer->size = m.m_vertexBuffer->size;
+		m_vertexBuffer->bufferObject = 0;
 		m_vertexBuffer->ref = 1;
+		cachePointers();
 	}
 }
 
@@ -106,9 +108,20 @@ void Mesh::deleteBufferObject() {
 */
 
 int Mesh::formatSize(uint format) {
-	int size;
+	int size = 0;
 	for(int i=0; i<8; ++i) size += (format>>(i*4)) & 0xf;
 	return size;
+}
+
+void Mesh::cachePointers() {
+	memset(m_pointers, 0, 8*sizeof(void*));
+	int size, offset=0;
+	VertexType* data = m_vertexBuffer->bufferObject? 0: m_vertexBuffer->data;
+	for(int i=0; i<8; ++i) {
+		size = (m_format>>(i*4))&0xf;
+		m_pointers[i] = size? data + offset: 0;
+		offset += size;
+	}
 }
 
 void Mesh::setFormat(uint format) {
@@ -146,6 +159,7 @@ void Mesh::setFormat(uint format) {
 	m_stride = stride;
 	m_format = format;
 	m_vertexBuffer->data = data;
+	cachePointers();
 	delete [] src;
 	// TODO: Update buffer object if it exists
 }
@@ -159,8 +173,10 @@ void Mesh::setVertices(int count, VertexType* data, uint format) {
 	m_vertexBuffer = new Buffer<VertexType>();
 	m_vertexBuffer->data = data;
 	m_vertexBuffer->size = count * size;
+	m_vertexBuffer->bufferObject = 0;
 	m_vertexBuffer->ref = 1;
 	calculateBounds();
+	cachePointers();
 }
 
 void Mesh::setIndices(int count, IndexType* data) {
@@ -170,14 +186,16 @@ void Mesh::setIndices(int count, IndexType* data) {
 	m_indexBuffer->ref = 1;
 }
 
-void Mesh::addSkin(Skin* skin) {
+void Mesh::addSkin(const Skin& skin) {
 	if(!m_skins) {
 		m_skins = new Buffer<Skin>();
 		m_skins->ref = 1; //grab pointer
+		m_skins->size = 0;
 	}
 	// Add skin
 	ResizeArray( Skin, m_skins->data, m_skins->size, m_skins->size+1 );
-	memcpy( &m_skins->data[ m_skins->size-1 ], skin, sizeof(Skin));
+	memcpy( &m_skins->data[ m_skins->size ], &skin, sizeof(Skin));
+	++m_skins->size;
 }
 
 /** Data Processing */
@@ -447,4 +465,5 @@ void Mesh::calculateBounds() {
 	}
 */
 }
+
 

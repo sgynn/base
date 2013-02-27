@@ -63,6 +63,12 @@ void Texture::destroy() {
 	glDeleteTextures(1, &m_unit);
 }
 
+/** Get texture format from image bits per pixel value */
+int Texture::bppFormat(int bpp) {
+	static int map[] = { 0, LUMINANCE, LUMINANCE_ALPHA, RGB, RGBA };
+	return map[bpp/8];
+}
+
 /** Create basic texture */
 Texture Texture::create(int width, int height, int format, const void* data) {
 	// Create texture object

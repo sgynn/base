@@ -88,13 +88,13 @@ bool Animation::removeScaleKey(int bone, int frame) {
 
 
 template<int N, class P>
-inline int Animation::getValue( std::vector< Keyframe<N> >& keys, float frame, int hint, float* value, P interpolate) const {
+inline int Animation::getValue( std::vector< Keyframe<N> >& keys, float frame, int hint, float* value, const float* def, P interpolate) const {
 	// Trivial cases
 	int count = keys.size();
 	if(count==0) {
-		memset(&value, 0, N*sizeof(float));
+		memcpy(value, def, N*sizeof(float));
 	} else if(count==1) {
-		memcpy(&value, keys[0].data, N*sizeof(float));
+		memcpy(value, keys[0].data, N*sizeof(float));
 	} else {
 		// Get nearest keyframes
 		if((hint<count && keys[hint].frame<frame) || (hint>0 && keys[hint-1].frame>frame)) {
@@ -102,7 +102,7 @@ inline int Animation::getValue( std::vector< Keyframe<N> >& keys, float frame, i
 			else for(int i=0; i<count; ++i) if(keys[i].frame>frame) { hint = i; break; }
 		}
 		// Interpolate
-		if(hint==0) memcpy(&value, keys[0].data, N*sizeof(float));
+		if(hint==0) memcpy(value, keys[0].data, N*sizeof(float));
 		else if(hint==count) memcpy(value, keys[count-1].data, N*sizeof(float));
 		else {
 			float v = (frame - keys[hint-1].frame) / (keys[hint].frame-keys[hint-1].frame);
@@ -116,15 +116,18 @@ inline int Animation::getValue( std::vector< Keyframe<N> >& keys, float frame, i
 
 int Animation::getRotation(int bone, float frame, int hint, Quaternion& q) const {
 	static SlerpFunc slerp;
-	return getValue(m_animations[bone].rotation, frame, hint, q, slerp);
+	static float def[4] = {0,0,0,1};
+	return getValue(m_animations[bone].rotation, frame, hint, q, def, slerp);
 }
-int Animation::getPosition(int bone, float frame, int hint, vec3& q) const {
+int Animation::getPosition(int bone, float frame, int hint, vec3& p) const {
 	static LerpFunc lerp;
-	return getValue(m_animations[bone].position, frame, hint, q, lerp);
+	static float def[3] = {0,0,0};
+	return getValue(m_animations[bone].position, frame, hint, p, def, lerp);
 }
-int Animation::getScale(int bone, float frame, int hint, vec3& q) const {
+int Animation::getScale(int bone, float frame, int hint, vec3& s) const {
 	static LerpFunc lerp;
-	return getValue(m_animations[bone].scale, frame, hint, q, lerp);
+	static float def[3] = {1,1,1};
+	return getValue(m_animations[bone].scale, frame, hint, s, def, lerp);
 }
 
 

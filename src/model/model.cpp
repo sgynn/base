@@ -4,7 +4,6 @@ using namespace base;
 using namespace model;
 
 
-
 Model::Model(): m_skeleton(0) {
 	m_maps = new Maps;
 	m_maps->ref = 1;
@@ -60,6 +59,22 @@ Model::~Model() {
 }
 
 
+void Model::setSkeleton(Skeleton* s) {
+	m_skeleton = s;
+	// Cache and skin bone indices
+	for(int i=0; i<getMeshCount(); ++i) {
+		Mesh* mesh = getMesh(i);
+		if(mesh->m_skins) {
+			for(uint j=0; j<mesh->m_skins->size; ++j) {
+				Skin& skin = mesh->m_skins->data[j];
+				if(skin.name && skin.name[0]) {
+					Bone* b = s->getBone(skin.name);
+					if(b) skin.bone = b->getIndex();
+				}
+			}
+		}
+	}
+}
 
 
 int Model::addMesh(Mesh* mesh, const char* name, Bone* bone) {
@@ -216,22 +231,25 @@ void Model::update(float time) {
 		}
 	}
 
+	// Update skeleton matrices
+	bool moved = m_skeleton && m_skeleton->update();
+
 	// Update any meshes - remorphing or skinning them
 	for(uint i=0; i<m_meshes.size(); ++i) {
-		bool changed = false;
+		bool morphed = false;
 		MeshInfo& mesh = m_meshes[i];
 		// Update morphs
 		if(mesh.morphChanged) {
 			mesh.morphChanged = false;
 			for(uint j=0; j<m_morphs.size(); ++j) {
 				if(m_morphs[j].mesh==i) {
-					morphMesh(mesh, m_morphs[j], changed);
-					changed = true;
+					morphMesh(mesh, m_morphs[j], morphed);
+					morphed = true;
 				}
 			}
 		}
 		// Reskin mesh
-		if(mesh.skinned) {
+		if(mesh.skinned && (moved || morphed)) {
 			skinMesh(mesh.skinned, mesh.morphed? mesh.morphed: mesh.source, m_skeleton);
 			mesh.output = mesh.skinned;;
 		}
@@ -258,13 +276,13 @@ void Model::skinMesh(Mesh* out, const Mesh* src, const Skeleton* skeleton) {
 	int  to = no + ((f>>4)&0xf) + ((f>>8)&0xf) + ((f>>12)&0xf) + ((f>>16)&0xf);
 
 	// Clear affected vertex data
-	for(int i=0; i<count; ++i)               memset(out->getData(),   0, no*sizeof(VertexType));
-	if(f&NORMAL)  for(int i=0; i<count; ++i) memset(out->getData()+no, 0, 3*sizeof(VertexType));
-	if(f&TANGENT) for(int i=0; i<count; ++i) memset(out->getData()+to, 0, 3*sizeof(VertexType));
+	VertexType* r = out->getData();
+	for(int i=0; i<count; ++i)               memset(r+i*size,   0, no*sizeof(VertexType));
+	if(f&NORMAL)  for(int i=0; i<count; ++i) memset(r+no+i*size, 0, 3*sizeof(VertexType));
+	if(f&TANGENT) for(int i=0; i<count; ++i) memset(r+to+i*size, 0, 3*sizeof(VertexType));
 
 	// Apply skins
 	const VertexType* in;
-	VertexType* r;
 	for(int i=0; i<src->getSkinCount(); ++i) {
 		const Skin* skin = src->getSkin(i);
 		const Bone* bone = skeleton->getBone( skin->bone );

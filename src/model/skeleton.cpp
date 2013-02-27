@@ -73,65 +73,67 @@ void Bone::updateLocal() {
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
 
-Skeleton::Skeleton(): m_count(1), m_last(0) {
-	m_bones = new Bone[1];
-	m_hints = new uint16[1];
-	m_flags = new ubyte[1];
-	m_bones[0].m_skeleton = this;
+Skeleton::Skeleton(): m_bones(0), m_count(0), m_last(0), m_hints(0), m_flags(0) {
 }
 Skeleton::Skeleton(const Skeleton& s) : m_count(s.m_count), m_last(0) {
-	m_bones = new Bone[ m_count ];
+	m_bones = new Bone*[ m_count ];
 	m_hints = new uint16[ 3 * m_count ];
 	m_flags = new ubyte[ m_count ];
-	memcpy(m_bones, s.m_bones, m_count*sizeof(Bone));
+	for(int i=0; i<m_count; ++i) {
+		m_bones[i] = new Bone(*s.m_bones[i]);
+		m_bones[i]->m_skeleton = this;
+	}
 	memset(m_hints, 0, 3 * m_count * sizeof(uint16));
-	for(int i=0; i<m_count; ++i) m_bones[i].m_skeleton = this;
 }
 Skeleton::~Skeleton() {
-	delete [] m_bones;
-	delete [] m_hints;
-	delete [] m_flags;
+	if(m_count) {
+		for(int i=0; i<m_count; ++i) delete m_bones[i];
+		delete [] m_bones;
+		delete [] m_hints;
+		delete [] m_flags;
+	}
 }
 
 
 Bone* Skeleton::addBone(const Bone* p, const char* name, const float* local) {
 	// Check parent is valid
-	if(!p || p->m_skeleton!=this) {
-		p = &m_bones[0];
-	}
+	if(p && p->m_skeleton!=this) p = 0;
 	// Resize array
-	Bone* tmp = m_bones;
-	m_bones = new Bone[ m_count+1 ];
-	memcpy(m_bones, tmp, m_count*sizeof(Bone));
-	delete [] tmp;
+	Bone** tmp = m_bones;
+	m_bones = new Bone*[ m_count+1 ];
+	// Delete old data
+	if(m_count) { 
+		memcpy(m_bones, tmp, m_count*sizeof(Bone*));
+		delete [] tmp;
+		delete [] m_hints;
+		delete [] m_flags;
+	}
 	// Resize hint arrays
-	delete [] m_hints;
-	delete [] m_flags;
 	m_flags = new ubyte[ m_count+1 ];
 	m_hints = new uint16[ (m_count+1) * 3 ];
 	memset(m_hints, 0, (m_count+1) * 3 * sizeof(uint16));
 	// Initialise bone data
-	Bone& bone = m_bones[m_count];
-	bone.m_skeleton = this;
-	bone.m_index = m_count;
-	bone.m_parent = p->getIndex();
-	if(name)  bone.m_name = name;
+	Bone* bone = m_bones[m_count] = new Bone();
+	bone->m_skeleton = this;
+	bone->m_index = m_count;
+	bone->m_parent = p? p->getIndex(): -1;
+	if(name)  bone->m_name = name;
 	// Initial Transforms
-	if(local) memcpy(bone.m_local, local, sizeof(Matrix));
-	bone.m_combined = p->m_combined * bone.m_local;
+	if(local) memcpy(bone->m_local, local, sizeof(Matrix));
+	bone->m_combined = p? p->m_combined * bone->m_local: bone->m_local;
 	++m_count;
-	return &bone;
+	return bone;
 }
 
 Bone* Skeleton::getBone(const char* name) {
 	for(int i=0; i<m_count; ++i) {
-		if(strcmp(name, m_bones[i].m_name)==0) return &m_bones[i];
+		if(strcmp(name, m_bones[i]->m_name)==0) return m_bones[i];
 	}
 	return 0;
 }
 
 void Skeleton::setMode(Bone::Mode m) {
-	for(int i=0; i<m_count; ++i) m_bones[i].setMode(m);
+	for(int i=0; i<m_count; ++i) m_bones[i]->setMode(m);
 }
 
 
@@ -140,14 +142,16 @@ void Skeleton::setMode(Bone::Mode m) {
 void Skeleton::animate(const Animation* anim, float frame, const Bone* root, float weight) {
 	m_last = anim;
 	int start = root? root->getIndex(): 0;
+	int pFlag;
 	memset(m_flags, 0, m_count);
 	// Loop through remaining bones
 	for(int i=start; i<m_count; ++i) {
 		// Determine what to do based on parent flag and bone mode
-		int pFlag = i==start? 1: m_flags[ m_bones[i].getParent()->getIndex() ];
+		if(i==start || (!root && !m_bones[i]->getParent())) pFlag = 1;
+		else pFlag = m_flags[ m_bones[i]->getParent()->getIndex()];
 		m_flags[i] = pFlag;
 		bool set = false;
-		switch( m_bones[i].getMode() ) {
+		switch( m_bones[i]->getMode() ) {
 		case Bone::DEFAULT:  set = pFlag==1; break;
 		case Bone::ANIMATED: set = pFlag>0;  break;
 		case Bone::TRUNCATE: m_flags[i]=2;   break;
@@ -155,7 +159,7 @@ void Skeleton::animate(const Animation* anim, float frame, const Bone* root, flo
 		case Bone::FIXED:    break;
 		}
 		// Set bone values from animation
-		if(set) animateBone(&m_bones[i], anim, frame, weight);
+		if(set) animateBone(m_bones[i], anim, frame, weight);
 	}
 }
 bool Skeleton::animateBone(Bone* b, const Animation* anim, float frame, float weight) {
@@ -185,19 +189,27 @@ bool Skeleton::animateBone(Bone* b, const Animation* anim, float frame, float we
 }
 
 
-void Skeleton::update() {
+bool Skeleton::update() {
 	// Build combined matrices - may be able to skip some
-	bool skip = true;
+	bool changed = false;
+	memset(m_flags, 0, m_count);
 	for(int i=0; i<m_count; ++i) {
-		Bone& bone = m_bones[i];
-		if(bone.getMode() != Bone::FIXED || (skip && bone.m_state==0)) {
-			Bone& parent = m_bones[ bone.m_parent ];
-			if(bone.m_state==1) bone.updateLocal(); // Update local matrix
-			// Combine ...
-			bone.m_combined = parent.m_combined * bone.m_local;
-			skip = false;
+		Bone* bone = m_bones[i];
+		if(bone->getMode() != Bone::FIXED) { // Use local transformation
+			if(bone->m_state || (bone->m_parent>=0 && m_flags[bone->m_parent])) {
+				m_flags[i] = 1;
+				if(bone->m_state==1) bone->updateLocal();
+				Bone* parent = bone->getParent();
+				bone->m_combined = parent? parent->m_combined * bone->m_local: bone->m_local;
+				changed = true;
+			}
+		} else if(bone->m_state==4) {	  // FIXED uses absolute transformation
+			changed = true;
+			m_flags[i] = 1;
 		}
+		bone->m_state = 0;
 	}
+	return changed;
 }
 
 /*
