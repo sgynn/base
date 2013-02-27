@@ -1,7 +1,7 @@
 #include <iostream>
 #include "base/scene.h"
 #include "base/game.h"
-#include "base/camera.h"
+#include "base/fpscamera.h"
 #include "base/draw.h"
 #include "base/material.h"
 #include "base/input.h"
@@ -11,13 +11,11 @@ using namespace base;
 Material nullMaterial;
 
 SceneState::SceneState() : m_fps(0), m_drawAxis(true) {
-	Point ws = Game::getSize();
-	m_camera = new Camera(90, (float)ws.x/ws.y, 1, 10000);
+	m_camera = new FPSCamera();
 	m_camera->lookat(vec3(0, 0, 10), vec3(0,0,0), vec3(0,1,0));
 }
 SceneState::SceneState(float in, float out, StateFlags f) : GameState(in,out,f), m_fps(0), m_drawAxis(true) {
-	Point ws = Game::getSize();
-	m_camera = new Camera(90, (float)ws.x/ws.y, 1, 10000);
+	m_camera = new FPSCamera();
 	m_camera->lookat(vec3(0, 0, 10), vec3(0,0,0), vec3(0,1,0));
 }
 SceneState::~SceneState() {

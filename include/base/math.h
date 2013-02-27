@@ -302,6 +302,7 @@ struct Point3 {
 
 struct Rect {
 	int x, y, width, height;
+	Rect(): x(0), y(0), width(0), height(0) {}
 	Rect(int x, int y, int w, int h): x(x), y(y), width(w), height(h) {}
 	Rect(const Point& pos, const Point& size): x(pos.x), y(pos.y), width(size.x), height(size.y) {}
 	bool contains(int px, int py) const { return px>=x && px<=x+width && py>=y && py<=y+height; }

@@ -6,7 +6,7 @@
 
 namespace base {
 
-class Camera;
+class CameraBase;
 
 class SceneState : public GameState {
 	public:
@@ -29,7 +29,7 @@ class SceneState : public GameState {
 
 	protected:
 	float m_fps;
-	Camera* m_camera;
+	CameraBase* m_camera;
 
 	bool m_drawAxis;
 	

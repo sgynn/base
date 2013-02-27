@@ -109,6 +109,16 @@ void OrbitCamera::setPosition(float yaw, float pitch, float distance) {
 void OrbitCamera::update() {
 	Input* in = Game::input();
 
+	// Zoom
+	const float factor = 0.2f;
+	int wheel = in->mouseWheel();
+	if(wheel) {
+		float distance = m_target.distance(m_position);
+		while(wheel<0) { distance *= 1+factor; wheel++; }
+		while(wheel>0) { distance *= 1-factor; wheel--; }
+		m_position = m_target + getDirection() * distance;
+	}
+
 	//Rotation
 	Point m = in->queryMouse();
 	if(m_active) {
@@ -122,12 +132,6 @@ void OrbitCamera::update() {
 
 		if(m_rotateAcc<1) m_rVelocity -= m_rVelocity * m_rotateAcc;
 		else m_rVelocity = vec2();
-
-		// Distance
-		float factor = 0.2f;
-		int wheel = in->mouseWheel();
-		while(wheel<0) { distance *= 1+factor; wheel++; }
-		while(wheel>0) { distance *= 1-factor; wheel--; }
 
 		// Limits
 		if(m_useUpVector) {
