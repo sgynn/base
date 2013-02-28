@@ -126,7 +126,7 @@ uint FrameBuffer::attachDepth(uint type, uint depth) {
 	if(type==TEXTURE) {
 		format = GL_DEPTH_COMPONENT;
 		m_depth.type = 1;
-		m_depth.texture = Texture::create(m_width, m_height, format);
+		m_depth.texture = Texture::create(m_width, m_height, format, format, GL_UNSIGNED_BYTE, 0);
 		//m_depth.texture.filter(GL_NEAREST, GL_NEAREST);
 		m_depth.texture.setWrap(Texture::CLAMP);
 		m_depth.data = m_depth.texture.unit();
