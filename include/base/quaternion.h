@@ -113,14 +113,33 @@ inline Quaternion& Quaternion::fromEuler(const vec3& e) {
 	float cp = cos(hp);
 	float sp = sin(hp);
 	float cr = cos(hr);
-	float sr = cos(hr);
-	return set(cr*sp*cy + sr*cp*sy,  cr*cp*sy - sr*sp*cy,  sr*cp*cy - cr*sp*sy,  cr*cp*cy + sr*sp*sy);
+	float sr = sin(hr);
+
+	x = cr*sp*cy + sr*cp*sy;  
+	y = cr*cp*sy - sr*sp*cy;  
+	z = sr*cp*cy - cr*sp*sy;
+	w = cr*cp*cy + sr*sp*sy;
+	return *this;
+
 }
 inline void Quaternion::toEuler(vec3& e) const {
-	float xx=x*x, yy=y*y, zz=z*z, ww=w*w;
-	e.x = atan2( 2 * (y*z + w*x), ww - xx - yy + zz);	// Pitch
-	e.y = asin (-2 * (x*z - w*y));						// Yaw
-	e.z = atan2( 2 * (x*y + w*z), ww + xx - yy - zz);	// Roll
+//	float xx=x*x, yy=y*y, zz=z*z, ww=w*w;
+//	e.x = atan2( 2 * (y*z + w*x), ww - xx - yy + zz);	// Pitch
+//	e.y = asin (-2 * (x*z - w*y));						// Yaw
+//	e.z = atan2( 2 * (x*y + w*z), ww + xx - yy - zz);	// Roll
+
+	// My version - use matrix forward for pitch,yaw
+	float fx = 2 * (x*z + w*y);
+	float fy = 2 * (y*z - w*x);
+	float fz = 1 - 2 * (x*x + y*y);
+	float up = 1 - 2 * (x*x + z*z);
+	float ly = 2 * (x*y + w*z);		// matrix left.y
+
+	e.y = atan2(fx, fz);
+	e.x = -atan2(fy, sqrt(fx*fx + fz*fz));
+	if(up<0) { e.y -= PI; e.x=-PI-e.x; } // Flip values if pointing down.
+	e.z = asin(ly / cos(e.x) );
+	// Other version: PI-pitch, yaw+PI, roll+PI
 }
 
 inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
@@ -130,12 +149,12 @@ inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
 		w = s * 0.5;
 		s = 0.5 / s;
 		x = (m[6] - m[9]) * s;
-		y = (m[8] - m[3]) * s;
+		y = (m[8] - m[2]) * s;
 		z = (m[1] - m[4]) * s;
 	} else {
 		int i = m[0]<m[5]?  (m[5]<m[10]? 2: 1): (m[0]<m[10]? 2: 0); // Biggest diagonal
 		int j = (i+1) % 3;
-		int k = (i+1) % 3;
+		int k = (i+2) % 3;
 
 		float* q = *this;
 		float s = sqrt(m[i*4+i] - m[j*4+j] - m[k*4+k] + 1.0f);

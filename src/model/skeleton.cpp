@@ -23,6 +23,7 @@ void Bone::setScale(const vec3& s) {
 }
 void Bone::setEuler(const vec3& pyr) {
 	m_angle.fromEuler(pyr);
+	m_state = 1;
 }
 void Bone::setAngle(const Quaternion& q) {
 	m_angle = q;
@@ -44,7 +45,7 @@ const vec3 Bone::getEuler() const {
 
 void Bone::updateLocal() {
 	// Note: when absoluteMatrix is being set, local values mean nothing.
-	switch(m_state) {
+	switch(m_state&7) {
 	case 1: // parts to matrix
 		m_angle.toMatrix(m_local);
 		memcpy(&m_local[12], m_position, sizeof(vec3));
@@ -196,7 +197,7 @@ bool Skeleton::update() {
 	for(int i=0; i<m_count; ++i) {
 		Bone* bone = m_bones[i];
 		if(bone->getMode() != Bone::FIXED) { // Use local transformation
-			if(bone->m_state || (bone->m_parent>=0 && m_flags[bone->m_parent])) {
+			if(bone->m_state<8 || (bone->m_parent>=0 && m_flags[bone->m_parent])) {
 				m_flags[i] = 1;
 				if(bone->m_state==1) bone->updateLocal();
 				Bone* parent = bone->getParent();
@@ -207,7 +208,7 @@ bool Skeleton::update() {
 			changed = true;
 			m_flags[i] = 1;
 		}
-		bone->m_state = 0;
+		bone->m_state |= 8;
 	}
 	return changed;
 }
