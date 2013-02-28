@@ -146,6 +146,7 @@ namespace model {
 	inline uint Mesh::getVertexCount() const { return m_vertexBuffer->size * sizeof(VertexType) / m_stride; }
 	inline uint Mesh::getFormat() const      { return m_format; }
 	inline uint Mesh::getMode() const        { return m_mode; }
+	inline void Mesh::setMode(uint mode)      { m_mode = mode; }
 	inline bool Mesh::hasIndices() const     { return m_indexBuffer; }
 
 	// Does this work?

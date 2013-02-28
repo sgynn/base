@@ -88,8 +88,10 @@ set(headers
 	include/base/model.h
 	include/base/opengl.h
 	include/base/png.h
+	include/base/quaternion.h
 	include/base/scene.h
 	include/base/shader.h
+	include/base/skeleton.h
 	include/base/state.h
 	include/base/texture.h
 	include/base/threads.h

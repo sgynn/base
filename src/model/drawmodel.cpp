@@ -67,13 +67,13 @@ int Model::drawMesh( const Mesh* m, int state) {
 	}
 
 	// Bind material
-	m->getMaterial()->bind();
+	if(m->getMaterial()) m->getMaterial()->bind();
 
 	// Set pointers
-	glVertexPointer(  3, GL_FLOAT, m->getStride(), m->getVertexPointer());
-	glNormalPointer(     GL_FLOAT, m->getStride(), m->getNormalPointer());
-	glTexCoordPointer(2, GL_FLOAT, m->getStride(), m->getTexCoordPointer());
-	glColorPointer( (f>>16)&7, GL_FLOAT, m->getStride(), m->getColourPointer());
+	glVertexPointer(f&0xf, GL_FLOAT, m->getStride(), m->getVertexPointer());
+	glNormalPointer(       GL_FLOAT, m->getStride(), m->getNormalPointer());
+	glTexCoordPointer(2,   GL_FLOAT, m->getStride(), m->getTexCoordPointer());
+	if(s&8) glColorPointer( (f>>16)&7, GL_FLOAT, m->getStride(), m->getColourPointer());
 	// Tangent?
 	if(f&TANGENT) {
 		Shader::current().AttributePointer("tangent", 3, GL_FLOAT, 0, m->getStride(), m->getTangentPointer());
