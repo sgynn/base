@@ -4,7 +4,7 @@
 using namespace base;
 using namespace model;
 
-Morph::Morph(): m_name(""), m_size(0), m_max(0), m_format(0), m_ref(0) {}
+Morph::Morph(): m_name(""), m_type(ABSOLUTE), m_size(0), m_max(0), m_format(0), m_ref(0) {}
 Morph::Morph(const Morph& m) {
 	memcpy(this, &m, sizeof(Morph));
 	// Duplicate data
@@ -25,11 +25,13 @@ Morph::~Morph() {
 }
 
 
-void Morph::setData(int size, IndexType* ix, VertexType* vx, uint format) {
+void Morph::setData(Type type, int size, IndexType* ix, VertexType* vx, uint format) {
 	// Set data
 	m_size = size;
 	m_data = vx;
 	m_indices = ix;
+	m_format = format;
+	m_type = type;
 
 	// Get format size and pointer offsets
 	m_offset[0] = 0;
@@ -52,27 +54,45 @@ void Morph::apply(const Mesh* input, Mesh* output, float value) const {
 	int off[8]; off[0]=0;
 	for(int i=0; i<7; ++i) off[i+1] = off[i] + (input->getFormat() & (0xf<<(i*4)));
 
-	// do each part separately
-	for(int i=0; i<8; ++i) {
-		if(m_parts[i]) {
-			// Loop through points in morph data
-			for(int j=0; j<m_size; ++j) {
-				int p = m_indices[j]*stride + off[i];
-				float* t = m_data + j*m_formatSize + m_offset[i];
-				// Interpolate values
-				for(int k=0; k<m_parts[i]; ++k) {
-					out[p+k] = in[p+k] + (t[k]-in[p+k]) * value;
+	if(m_type==ABSOLUTE) {
+		// Loop through parts
+		for(int i=0; i<8; ++i) {
+			if(m_parts[i]) {
+				// Loop through points in morph data
+				for(int j=0; j<m_size; ++j) {
+					int p = m_indices[j]*stride + off[i];
+					float* t = m_data + j*m_formatSize + m_offset[i];
+					// Interpolate values
+					for(int k=0; k<m_parts[i]; ++k) {
+						out[p+k] = in[p+k] + (t[k]-in[p+k]) * value;
+					}
 				}
 			}
 		}
+	} else { // RELATIVE Morph
+		// Loop through parts
+		for(int i=0; i<8; ++i) {
+			if(m_parts[i]) {
+				// Loop through points in morph data
+				for(int j=0; j<m_size; ++j) {
+					int p = m_indices[j]*stride + off[i];
+					float* t = m_data + j*m_formatSize + m_offset[i];
+					// Interpolate values
+					for(int k=0; k<m_parts[i]; ++k) {
+						out[p+k] = in[p+k] + t[k] * value;
+					}
+				}
+			}
+		}
+
 	}
 }
 
 
-Morph* Morph::create(Mesh* src, Mesh* tgt, uint format) {
+Morph* Morph::create(Type t, Mesh* src, Mesh* tgt, uint format) {
 	// List all vertices that are different
 	// copy list into index array
-	// copy tgt vertices into vertex array, probably changing the format
+	// copy tgt vertices into vertex array, probably changing the format (deltas if relative)
 	return 0;
 }
 

@@ -11,6 +11,7 @@ namespace model {
 	 * */
 	class Morph {
 		public:
+		enum Type { ABSOLUTE, RELATIVE };
 		Morph();								/**< Default constructor */
 		Morph(const Morph&);					/**< Copy constructor */
 		~Morph();								/**< Destructor */
@@ -21,14 +22,15 @@ namespace model {
 
 		const char* getName() const;			/** Get the name of this morph */
 		void        setName(const char* name);	/** Set the name of this morph */
-		void        setData(int size, IndexType* indices, VertexType* data, uint format);	/** Set morph data */
-		void        apply(const Mesh* input, Mesh* output, float value) const;				/** Apply morph to output from input */
-		void        apply(Mesh* mesh, float value) const;									/** Apply morph to a mesh */ 
+		void        setData(Type type, int size, IndexType* indices, VertexType* data, uint format);/** Set morph data */
+		void        apply(const Mesh* input, Mesh* output, float value) const;						/** Apply morph to output from input */
+		void        apply(Mesh* mesh, float value) const;											/** Apply morph to a mesh */ 
 
-		static Morph* create(Mesh* source, Mesh* target, uint format);						/** Create a morph between two meshes */
+		static Morph* create(Type type, Mesh* source, Mesh* target, uint format);					/** Create a morph between two meshes */
 
 		protected:
 		const char* m_name;			// Morph name
+		Type        m_type;			// Morph type
 		int         m_size;			// Vertex count
 		IndexType   m_max;			// Highest vertex index for mesh validation
 		VertexType* m_data;			// Morph data
