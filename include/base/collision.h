@@ -11,23 +11,23 @@ namespace base {
 
 	/** Get the closest point on a line to a point
 	 * @param point The point to test
-	 * @param a Line start point
-	 * @param b Line end point
+	 * @param p Line start point
+	 * @param q Line end point
 	 * @return Closest point
 	 * */
-	BASEAPI vec3 closestPointOnLine(const vec3& point, const vec3& a, const vec3& b);
+	BASEAPI vec3 closestPointOnLine(const vec3& point, const vec3& p, const vec3& q);
 
 	/** Get the point where a pait=r of 3D lines are closest
-	 * @param a0 Start of first line
-	 * @param a1 End of forst line
-	 * @param b0 Start of second line
-	 * @param b1 End of second line
-	 * @param p0 Output: Point on first line that is closest to the second line
-	 * @param p1 Output: Point on second line that is closest to the first line
+	 * @param p0 Start of first line
+	 * @param q0 End of forst line
+	 * @param p1 Start of second line
+	 * @param q1 End of second line
+	 * @param c0 Output: Point on first line that is closest to the second line
+	 * @param c1 Output: Point on second line that is closest to the first line
 	 * @return Squared distance between the two output points
 	 * */
-	BASEAPI float closestPointBetweenLines(const vec3& a0, const vec3& a1, const vec3& b0, const vec3& b1, vec3& pa, vec3& pb);
-	BASEAPI float closestPointBetweenLines(const vec3& a0, const vec3& a1, const vec3& b0, const vec3& b1, float& u, float& v);
+	BASEAPI float closestPointBetweenLines(const vec3& p0, const vec3& q0, const vec3& p1, const vec3& q1, vec3& c0, vec3& c1);
+	BASEAPI float closestPointBetweenLines(const vec3& p0, const vec3& q0, const vec3& p1, const vec3& q1, float& u, float& v);
 
 	/** Intersection point between a ray and a plane
 	 * @param p Start of ray

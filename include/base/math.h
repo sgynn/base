@@ -199,9 +199,9 @@ class aabb {
 	aabb(const vec3& min, const vec3& max) : min(min), max(max) {};
 	aabb(float ax, float ay, float az, float bx, float by, float bz) : min(ax,ay,az), max(bx,by,bz) {};
 	
-	aabb& operator=(const aabb& b) { min=b.min; max=b.max; return *this; }
-	aabb operator+(const vec3& v) const { return aabb(min+v, max+v); }
-	aabb operator-(const vec3& v) const { return aabb(min-v, max-v); }
+	aabb& operator= (const aabb& b) { min=b.min; max=b.max; return *this; }
+	aabb  operator+ (const vec3& v) const { return aabb(min+v, max+v); }
+	aabb  operator- (const vec3& v) const { return aabb(min-v, max-v); }
 	aabb& operator+=(const vec3& v) { min+=v, max+=v; return *this;  }
 	aabb& operator-=(const vec3& v) { min-=v, max-=v; return *this;  }
 	
@@ -284,8 +284,8 @@ struct Point {
 	int x, y;
 	Point() : x(0), y(0) {};
 	Point(int x, int y) : x(x), y(y) {};
-	bool operator<(const Point& p) const { return x<p.x || (x==p.x && y<p.y);  }
-	bool operator==(const Point& p) const { return x==p.x && y==p.y; }
+	bool  operator< (const Point& p) const { return x<p.x || (x==p.x && y<p.y);  }
+	bool  operator==(const Point& p) const { return x==p.x && y==p.y; }
 	Point operator+ (const Point& b) const { return Point(x+b.x,y+b.y); }
 	Point operator- (const Point& b) const { return Point(x-b.x,y-b.y); }
 };
@@ -294,8 +294,8 @@ struct Point3 {
 	int x, y, z;
 	Point3() : x(0), y(0), z(0) {};
 	Point3(int x, int y, int z) : x(x), y(y), z(z) {};
-	bool operator<(const Point3& p) const { return x<p.x || (x==p.x && y<p.y) || (x==p.x && y==p.y && z<p.z); }
-	bool operator==(const Point3& p) const { return x==p.x && y==p.y && z==p.z; }
+	bool   operator< (const Point3& p) const { return x<p.x || (x==p.x && y<p.y) || (x==p.x && y==p.y && z<p.z); }
+	bool   operator==(const Point3& p) const { return x==p.x && y==p.y && z==p.z; }
 	Point3 operator+ (const Point3& b) const { return Point3(x+b.x,y+b.y,z+b.z); }
 	Point3 operator- (const Point3& b) const { return Point3(x-b.x,y-b.y,z-b.z); }
 };
@@ -305,8 +305,8 @@ struct Rect {
 	Rect(): x(0), y(0), width(0), height(0) {}
 	Rect(int x, int y, int w, int h): x(x), y(y), width(w), height(h) {}
 	Rect(const Point& pos, const Point& size): x(pos.x), y(pos.y), width(size.x), height(size.y) {}
-	bool contains(int px, int py) const { return px>=x && px<=x+width && py>=y && py<=y+height; }
-	bool contains(const Point& p) const { return contains(p.x, p.y); }
+	bool contains(int px, int py) const  { return px>=x && px<=x+width && py>=y && py<=y+height; }
+	bool contains(const Point& p) const  { return contains(p.x, p.y); }
 	bool intersects(const Rect& o) const { return x<o.x+o.width && x+width>o.x && y<o.y+o.height && y+height>o.y; }
 };
 

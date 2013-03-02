@@ -97,7 +97,8 @@ namespace base {
 			// Child items
 			for(XML::iterator i=e->begin(); i!=e->end(); ++i) {
 				if(strcmp(i->name(), "item")==0) {
-					list->addItem(i->attribute("name"), i->attribute("selected",0)>0);
+					const char* itm = i->text()? i->text(): i->attribute("name");
+					list->addItem(itm, i->attribute("selected",0)>0);
 				}
 			}
 			return list;
@@ -111,7 +112,8 @@ namespace base {
 			// Child items
 			for(XML::iterator i=e->begin(); i!=e->end(); ++i) {
 				if(strcmp(i->name(), "item")==0) {
-					list->addItem(i->attribute("name"), i->attribute("selected",0)>0);
+					const char* itm = i->text()? i->text(): i->attribute("name");
+					list->addItem(itm, i->attribute("selected",0)>0);
 				}
 			}
 			return list;
