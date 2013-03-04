@@ -1,4 +1,3 @@
-
 #ifndef _BASE_FPS_CAMERA_
 #define _BASE_FPS_CAMERA_
 

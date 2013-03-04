@@ -1,4 +1,3 @@
-
 #ifndef _BASE_ORBIT_CAMERA_
 #define _BASE_ORBIT_CAMERA_
 

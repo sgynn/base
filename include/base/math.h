@@ -24,6 +24,7 @@ class Vec2 {
 	Vec2& operator+=(const Vec2& v) { x+=v.x; y+=v.y; return *this; }
 	Vec2& operator-=(const Vec2& v) { x-=v.x; y-=v.y; return *this; }
 	Vec2& operator*=(float v) { x*=v; y*=v; return *this; }
+	Vec2 operator- () const { return Vec2(-x, -y); }
 	Vec2 operator+ (const Vec2& b) const { return Vec2(x+b.x,y+b.y); }
 	Vec2 operator- (const Vec2& b) const { return Vec2(x-b.x,y-b.y); }
 	Vec2 operator* (const float s) const { return Vec2(x*s,y*s); }
@@ -67,6 +68,7 @@ class Vec3 {
 		Vec3& operator+=(const Vec3& v) { x+=v.x; y+=v.y; z+=v.z; return *this; }
 		Vec3& operator-=(const Vec3& v) { x-=v.x; y-=v.y; z-=v.z; return *this; }
 		Vec3& operator*=(float v) { x*=v; y*=v; z*=v; return *this; }
+		Vec3 operator- () const { return Vec3(-x, -y, -z); }
 		Vec3 operator+ (const Vec3& b) const { return Vec3(x+b.x,y+b.y,z+b.z); }
 		Vec3 operator- (const Vec3& b) const { return Vec3(x-b.x,y-b.y,z-b.z); }
 		Vec3 operator* (const float s) const { return Vec3(x*s,y*s,z*s); }
