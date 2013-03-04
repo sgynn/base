@@ -35,6 +35,7 @@ namespace model {
 		int getMeshCount() const;			/**< Get the number of output meshes in this model */
 		Mesh* getMesh(int index);			/**< Get output mesh by index */
 		Mesh* getMesh(const char* name);	/**< Get output mesh by name */
+		Mesh* getSource(int index);			/**< Get source mesh by index */
 
 		int addMesh(Mesh* mesh, Bone* bone=0);					/**< Add an output mesh to the model attached to a bone */
 		int addMesh(Mesh* mesh, const char* name, Bone* bone=0);	/**< Add a named output mesh to the model */
@@ -94,7 +95,7 @@ namespace model {
 		};
 		struct MeshInfo {
 			const Bone* bone;				// Bone attached to
-			const Mesh* source;				// Mesh source
+			Mesh*       source;				// Mesh source
 			Mesh*       morphed;			// Morphed mesh
 			Mesh*       skinned;			// Skinned mesh
 			Mesh*       output;				// Output mesh - points to source, morphed or skinned
@@ -134,6 +135,7 @@ namespace model {
 	inline int        Model::getMeshCount() const   { return m_meshes.size(); }
 	inline Mesh*      Model::getMesh(int index)     { return m_meshes[index].output; }
 	inline Mesh*      Model::getMesh(const char* n) { int i=mapValue(m_maps->meshes, n, -1); return i<0? 0: getMesh(i); }
+	inline Mesh*      Model::getSource(int index)   { return m_meshes[index].source; }
 	inline int        Model::addMesh(Mesh* mesh, Bone* bone) { return addMesh(mesh, 0, bone); };
 	inline Skeleton*  Model::getSkeleton() const      { return m_skeleton; }
 

@@ -19,11 +19,13 @@ Model::Model(const Model& m) {
 	++m_maps->ref;
 
 	// Copy meshes
-	m_meshes = m.m_meshes;
-	for(uint i=0; i<m_meshes.size(); ++i) {
-		m_meshes[i].source->grab();
-		if(m_meshes[i].bone) m_meshes[i].bone = m_skeleton->getBone( m_meshes[i].bone->getIndex() );
-		if(m_meshes[i].output != m_meshes[i].source) m_meshes[i].output = 0;
+	for(uint i=0; i<m.m_meshes.size(); ++i) {
+		if(m.m_meshes[i].skinned) addSkin(m.m_meshes[i].source);
+		else {
+			Bone* b = 0;
+			if(m_skeleton && m.m_meshes[i].bone) b = m_skeleton->getBone( m.m_meshes[i].bone->getIndex() );
+			addMesh(m.m_meshes[i].source, 0, b);
+		}
 	}
 
 	// Copy animation state
@@ -39,6 +41,9 @@ Model::Model(const Model& m) {
 		m_morphs[i].morph->grab();
 		if(m_morphs[i].value != 0) m_meshes[ m_morphs[i].mesh ].morphChanged = true;
 	}
+
+	// Build any meshes
+	update(0);
 }
 
 Model::~Model() {
