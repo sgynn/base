@@ -99,7 +99,7 @@ int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, con
 	return r;
 }
 /** Triangle intersection with line - Barycentric version */
-int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float* b) {
+int base::intersectLineTriangleb(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float* bary) {
 	vec3 pq = q - p;
 	float u,v,w;
 	vec3 m = pq.cross(p);
@@ -111,9 +111,9 @@ int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, con
 	
 	// Compute the barycentric coordinates (u, v, w) determining the
 	float denom = 1.0f / (u+v+w);
-	b[0] = u * denom;
-	b[1] = v * denom;
-	b[2] = w * denom;
+	bary[0] = u * denom;
+	bary[1] = v * denom;
+	bary[2] = w * denom;
 	return 1;
 }
 /** Intersection point between two 2D lines */
