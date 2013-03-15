@@ -90,10 +90,17 @@ int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, f
 	if(t < 0) t=0;
 	return 1;
 }
+
 /** Triangle intersection with line */
 int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, vec3& out) {
+	float bary[3];
+	int r = intersectLineTriangleb(p,q,a,b,c,bary);
+	if(r) out = a*bary[0] + b*bary[1] + c*bary[2];
+	return r;
+}
+/** Triangle intersection with line - Barycentric version */
+int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float* b) {
 	vec3 pq = q - p;
-	
 	float u,v,w;
 	vec3 m = pq.cross(p);
 	u = pq.dot(c.cross(b)) + m.dot(c - b);
@@ -103,14 +110,10 @@ int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, con
 	if((u<0&&v>0) || (v<0&&u>0) || (u<0&&w>0) || (w<0&&u>0) || (v<0&&w>0) || (w<0&&v>0)) return 0;
 	
 	// Compute the barycentric coordinates (u, v, w) determining the
-	// intersection point r, r = u*a + v*b + w*c
 	float denom = 1.0f / (u+v+w);
-	u *= denom;
-	v *= denom;
-	w *= denom;
-	
-	//convert from barycentric coordinates
-	out = a*u + b*v + c*w;
+	b[0] = u * denom;
+	b[1] = v * denom;
+	b[2] = w * denom;
 	return 1;
 }
 /** Intersection point between two 2D lines */

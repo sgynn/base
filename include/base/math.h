@@ -245,8 +245,9 @@ struct RangeT {
 	T min, max;
 	RangeT(T r=0): min(r), max(r) {}
 	RangeT(T min, T max) : min(min), max(max) {}
-	void addPoint(T v) { if(v<min) min=v; if(v>max) max=v; }
+	void expand(T v) { if(v<min) min=v; if(v>max) max=v; }
 	bool contains(T p) const { return p>=min && p<=max; }
+	T centre() const { return (min+max)/2; }
 	T range() const { return max - min; }
 	T clamp(T v) const { return v<min? min: v>max?max: v; }
 	T wrap(T v) const { return v - floor((v+min)/range())*range(); }
@@ -310,6 +311,8 @@ struct Rect {
 	bool contains(int px, int py) const  { return px>=x && px<=x+width && py>=y && py<=y+height; }
 	bool contains(const Point& p) const  { return contains(p.x, p.y); }
 	bool intersects(const Rect& o) const { return x<o.x+o.width && x+width>o.x && y<o.y+o.height && y+height>o.y; }
+	int right()  const { return x+width; }
+	int bottom() const { return y+height; }
 };
 
 #ifndef PI

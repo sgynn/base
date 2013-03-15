@@ -61,17 +61,19 @@ namespace base {
 	 * @return if intersects
 	 */
 	BASEAPI int intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, vec3& out);
+	/** Same as intersectLineTriangle but gets barycentric coordinates */
+	BASEAPI int intersectLineTriangleb(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float* barycentric);
 
 	/** Get the intersection point of two 2D lines
-	 * @param a0 Start of first line
-	 * @param a1 End of first line
-	 * @param b0 Start of second line
-	 * @param b1 End of second line
+	 * @param p0 Start of first line
+	 * @param q0 End of first line
+	 * @param p1 Start of second line
+	 * @param q1 End of second line
 	 * @param out Output: Intersection point
 	 * @return if the lines intersect
 	 */
-	BASEAPI int intersectLines(const vec2& a0, const vec2& a1, const vec2& b0, const vec2& b1, vec2& out);
-	BASEAPI int intersectLines(const vec2& a0, const vec2& a1, const vec2& b0, const vec2& b1, float& u, float& v);
+	BASEAPI int intersectLines(const vec2& p0, const vec2& q0, const vec2& p1, const vec2& q1, vec2& out);
+	BASEAPI int intersectLines(const vec2& p0, const vec2& q0, const vec2& p1, const vec2& q1, float& u, float& v);
 
 };
 #endif

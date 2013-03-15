@@ -60,7 +60,7 @@ namespace base {
 		/// Terminate thread
 		void terminate();
 		/// is the thread running?
-		bool running() { return m_running; }
+		bool running() const { return m_running; }
 		
 		/// set thread priority
 		void priority(int p) {
@@ -109,47 +109,30 @@ namespace base {
 			return 0;
 		}
 	};
-	
+
+	#ifdef WIN32
 	class Mutex {
 		public:
-		Mutex() {
-			#ifdef WIN32
-			InitializeCriticalSection(&m_lock);
-			#else
-			pthread_mutex_init(&m_lock, 0);
-			#endif	
-		}
-		~Mutex() {
-			#ifdef WIN32
-			DeleteCriticalSection(&m_lock);
-			#else
-			pthread_mutex_destroy(&m_lock);
-			#endif	
-
-		}
-		void lock() {
-			#ifdef WIN32
-			EnterCriticalSection(&m_lock);
-			#else
-			pthread_mutex_lock(&m_lock);
-			#endif	
-
-		}
-		void unlock() { 
-			#ifdef WIN32
-			LeaveCriticalSection(&m_lock);
-			#else
-			pthread_mutex_unlock(&m_lock);
-			#endif	
-
-		}
+		Mutex()       { InitializeCriticalSection(&m_lock); }
+		~Mutex()      { DeleteCriticalSection(&m_lock); }
+		void lock()   { EnterCriticalSection(&m_lock); }
+		void unlock() { LeaveCriticalSection(&m_lock); }
 		private:
-		#ifdef WIN32
 		CRITICAL_SECTION m_lock;
-		#else
-		pthread_mutex_t m_lock;
-		#endif
 	};
+	#else 
+	class Mutex {
+		public:
+		Mutex()       { pthread_mutex_init(&m_lock, 0); }
+		~Mutex()      { pthread_mutex_destroy(&m_lock); }
+		void lock()   { pthread_mutex_lock(&m_lock); }
+		void unlock() { pthread_mutex_unlock(&m_lock); }
+		private:
+		pthread_mutex_t m_lock;
+	};
+	#endif
+	
+
 };
 
 #endif
