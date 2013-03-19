@@ -11,7 +11,43 @@ using namespace model;
 
 // Vertex buffer object functions
 
-
+void Mesh::bindBuffer() const {
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer? m_vertexBuffer->bufferObject: 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer? m_indexBuffer->bufferObject: 0);
+}
+void Mesh::useBuffer(bool use) {
+	if(use) {
+		// Create Vertex Buffer
+		if(m_vertexBuffer && m_vertexBuffer->bufferObject==0) {
+			glGenBuffers(1, &m_vertexBuffer->bufferObject);
+			updateBuffer();
+		}
+		// Create Index buffer
+		if(m_indexBuffer && m_indexBuffer->bufferObject==0) {
+			glGenBuffers(1, &m_indexBuffer->bufferObject);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer->bufferObject);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer->size*sizeof(IndexType), m_indexBuffer->data, GL_STATIC_DRAW);
+		}
+	} else {
+		// Delete buffers
+		if(m_vertexBuffer && m_vertexBuffer->ref<=1 && m_vertexBuffer->bufferObject) {
+			glDeleteBuffers(1, &m_vertexBuffer->bufferObject);
+			m_vertexBuffer->bufferObject = 0;
+		}
+		if(m_indexBuffer  && m_indexBuffer->ref<=1  && m_indexBuffer->bufferObject) {
+			glDeleteBuffers(1, &m_indexBuffer->bufferObject);
+			m_indexBuffer->bufferObject = 0;
+		}
+	}
+	// Update pointers
+	cachePointers();
+}
+void Mesh::updateBuffer() {
+	if(m_vertexBuffer && m_vertexBuffer->bufferObject) {
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer->bufferObject);
+		glBufferData(GL_ARRAY_BUFFER, m_vertexBuffer->size*sizeof(VertexType), m_vertexBuffer->data, GL_STATIC_DRAW);
+	}
+}
 
 
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
@@ -68,6 +104,9 @@ int Model::drawMesh( const Mesh* m, int state) {
 
 	// Bind material
 	if(m->getMaterial()) m->getMaterial()->bind();
+
+	// Bind buffer objects
+	m->bindBuffer();
 
 	// Set pointers
 	glVertexPointer(f&0xf, GL_FLOAT, m->getStride(), m->getVertexPointer());

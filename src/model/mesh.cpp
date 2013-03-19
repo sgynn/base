@@ -48,18 +48,19 @@ Mesh::Mesh(const Mesh& m): m_ref(0), m_mode(m.m_mode), m_format(m.m_format), m_s
 }
 
 Mesh::~Mesh() {
+	// Delete buffer objects
+	useBuffer(false);
+
 	// Delete vertices
 	if(m_vertexBuffer && --m_vertexBuffer->ref==0) {
 		delete [] m_vertexBuffer->data;
 		delete m_vertexBuffer;
-		// Delete VBO
 	}
 	
 	// Delete indices
 	if(m_indexBuffer && --m_indexBuffer->ref==0) {
 		delete [] m_indexBuffer->data;
 		delete m_indexBuffer;
-		// Delete Index buffer object
 	}
 	//delete skins
 	if(m_skins && --m_skins->ref==0) {

@@ -67,8 +67,9 @@ namespace model {
 		const Mesh* grab() const;						/**< Take a reference to this mesh */
 		int         drop() const;						/**< Drop a reference to this mesh */
 
-		void useBufferObject(bool use=true);		/**< Use buffer objects for this mesh */
-		void updateBufferObject();					/**< Update buffer object if mesh has changd */
+		void bindBuffer() const;					/**< Bind buffer objects */
+		void useBuffer(bool use=true);				/**< Use buffer objects for this mesh */
+		void updateBuffer();						/**< Update vertex buffer if mesh has changd */
 
 		uint getSize() const;						/**< Number of vertices to draw */
 		uint getVertexCount() const;				/**< Number of vertices in the mesh */
@@ -132,7 +133,6 @@ namespace model {
 		void cachePointers();
 		static int calculateTangent(VertexType*const* a, VertexType*const* b, VertexType*const* c, VertexType* t);
 		static int formatSize(uint format);
-		
 	};
 
 
@@ -162,7 +162,7 @@ namespace model {
 	inline const void*      Mesh::getTexCoordPointer(int u) const { return m_pointers[2+u]; }
 	inline const void*      Mesh::getColourPointer()   const      { return m_pointers[4]; }
 	inline const void*      Mesh::getTangentPointer()  const      { return m_pointers[5]; }
-	inline const IndexType* Mesh::getIndexPointer() const         { return m_indexBuffer? m_indexBuffer->data: 0; }
+	inline const IndexType* Mesh::getIndexPointer() const         { return m_indexBuffer && !m_indexBuffer->bufferObject? m_indexBuffer->data: 0; }
 
 	inline int         Mesh::getSkinCount() const                 { return m_skins? m_skins->size: 0; }
 	inline const Skin* Mesh::getSkin(int index) const             { return &m_skins->data[index]; }
