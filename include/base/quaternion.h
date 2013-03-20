@@ -37,6 +37,8 @@ class Quaternion {
 	// Operators
 	bool        operator==(const Quaternion& q) const;		/** Compare two quaternions */
 	bool        operator!=(const Quaternion& q) const;		/** Compare quaternions */
+	Quaternion& operator*=(const Quaternion& q);
+	Quaternion  operator* (const Quaternion& q) const;
 
 	float dot(const Quaternion&) const;
 	float getAngle(const Quaternion&) const;
@@ -67,9 +69,23 @@ inline vec3         Quaternion::getEuler() const                        { vec3 e
 inline Matrix       Quaternion::getMatrix() const                       { Matrix m; toMatrix(m); return m; }
 inline float        Quaternion::getAngle() const                        { return 2 * acos(w); }
 inline Quaternion   Quaternion::getInverse() const                      { return Quaternion(-x, -y, -z, w); }
-inline float        Quaternion::dot(const Quaternion& q) const          { return x*x + y*y + z*z + w*w; }
+inline float        Quaternion::dot(const Quaternion& q) const          { return x*q.x + y*q.y + z*q.z + w*q.w; }
 inline float        Quaternion::length2() const                         { return dot(*this); }
 inline float        Quaternion::length() const                          { return sqrt( length2() ); }
+
+inline Quaternion& Quaternion::operator*=(const Quaternion& q) {
+	set(w*q.x + x*q.w + y*q.z - z*q.y,
+	    w*q.y + y*q.w + z*q.x - x*q.z,
+	    w*q.z + z*q.w + x*q.y - y*q.x,
+	     w*q.w - x*q.x - y*q.y - z*q.z);
+	return *this;
+}
+inline Quaternion Quaternion::operator*(const Quaternion& q) const {
+	return Quaternion(w*q.x + x*q.w + y*q.z - z*q.y,
+					  w*q.y + y*q.w + z*q.x - x*q.z,
+					  w*q.z + z*q.w + x*q.y - y*q.x,
+					  w*q.w - x*q.x - y*q.y - z*q.z);
+}
 
 inline vec3 Quaternion::getAxis() const {
 	float sq = 1.0f - w*w;
@@ -87,7 +103,7 @@ inline Quaternion Quaternion::arc(const vec3& a, const vec3& b) {
 	vec3  nb = b.normalised();
 	vec3  c = na.cross(nb);
 	float d = na.dot(nb);
-	if(d==-1) { // pick a vector orthogonal to a
+	if(d<-0.9999) { // pick a vector orthogonal to a
 		vec3 n;
 		if(fabs(na.z)>0.700706f) { // use yz plane
 			float s = na.y*na.y + na.z*na.z;
@@ -187,18 +203,16 @@ inline void Quaternion::toMatrix(Matrix& m) const {
 }
 
 inline Quaternion slerp(const Quaternion& a, const Quaternion& b, float v) {
-	float w1, w2;
 	float dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
+	if(dot>1) dot=1; else if(dot<-1) dot=-1;
 	float theta = acos(dot);
-	float sintheta = sin(theta);
-	if (sintheta > 0.001) {
-		w1 = sin((1.0f-v)*theta) / sintheta;
-		w2 = sin(v*theta) / sintheta;
-	} else {
-		w1 = 1.0f - v;
-		w2 = v;
-	}
-	return Quaternion(a.x*w1 + b.x*w2, a.y*w1 + b.y*w2, a.z*w1 + b.z*w2, a.w*w1 + b.w*w2);
+	if(theta!=0.0) {
+		float d = 1 / sin(theta);
+		float s = sin((1.0-v)*theta) * d;
+		float t = sin(v*theta) * d;
+		if(dot<0) t = -t;
+		return Quaternion(a.x*s+b.x*t, a.y*s+b.y*t, a.z*s+b.z*t, a.w*s+b.w*t);
+	} else return a;
 }
 
 
