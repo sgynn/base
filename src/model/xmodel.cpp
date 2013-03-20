@@ -161,6 +161,13 @@ int XModel::read() {
 		else if(startBlock("Mesh", name)) {
 			XMesh* mesh = readMesh(name);
 			if(!mesh) break;
+			// Add meshes to model
+			Mesh* m[32];
+			int c = build(mesh, m);
+			for(int i=0; i<c; ++i) {
+				if(m[i]->getSkinCount()) m_model->addSkin(m[i]);
+				else m_model->addMesh(m[i]);
+			}
 			endBlock();
 		}
 		else if(startBlock("AnimationSet", name)) {
