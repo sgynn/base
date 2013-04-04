@@ -106,24 +106,24 @@ template<typename T> bool base::HashMap<T>::contains(const char* key) const {
 	return i<m_capacity && m_data[i].key;
 }
 template<typename T> T& base::HashMap<T>::insert(const char* key, const T& value) {
-	if(m_size*THRESHOLD > m_capacity) resize((unsigned int)(m_capacity*THRESHOLD));
-	unsigned int i = index(key, m_capacity); //should never be invalid due to resize line above
-	m_data[i].key = strdup(key);
-	m_data[i].value = value;
-	m_size++;
-	return m_data[i].value;
+	T& item = (*this)[key];
+	item = value;
+	return item;
 }
 template<typename T> T& base::HashMap<T>::operator[](const char* key) {
-	if(m_size*THRESHOLD > m_capacity) resize((unsigned int)(m_capacity*THRESHOLD));
-	unsigned int i = index(key, m_capacity); //should never be invalid due to resize line above
+	// Check if extsts first to save unnessesary resize
+	unsigned int i = index(key, m_capacity);
 	if(m_data[i].key==0) {
-		m_data[i].key = strdup(key);
-		m_size++;
-		//printf("Insert: %s [%d]\n", key, i);
-		return m_data[i].value;
-	} else {
-		return m_data[i].value;
+		// Do we need to resize array
+		if(m_size*THRESHOLD > m_capacity) {
+			resize((unsigned int)(m_capacity*THRESHOLD));
+			i = index(key, m_capacity); // index will have changed
+		}
+		// Create new entry
+		m_data[i].key = strdup( key );
+		++m_size;
 	}
+	return m_data[i].value;
 }
 template<typename T> const T& base::HashMap<T>::operator[](const char* key) const {
 	unsigned int i = index(key, m_capacity);
@@ -149,9 +149,7 @@ template<typename T> unsigned int base::HashMap<T>::hash(const char* c) {
 	return h;
 }
 template<typename T> bool base::HashMap<T>::compare(const char* a, const char* b) {
-	unsigned int i;
-	for(i=0; a[i] && b[i]; i++) if(a[i]!=b[i]) return false;
-	return a[i]==b[i];
+	return strcmp(a, b)==0;
 }
 template<typename T> unsigned int base::HashMap<T>::index(const char* c, unsigned int n) const {
 	unsigned int h=hash(c)%n;

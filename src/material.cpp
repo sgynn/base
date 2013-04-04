@@ -13,7 +13,7 @@ enum SHADER_VARIABLE_TYPES {
 };
 
 
-Material::Material(): m_textureCount(0) {}
+Material::Material(): m_textureCount(0), m_blend(BLEND_ALPHA) {}
 Material::~Material() { }
 
 void Material::setFloat(const char* name, float f) {
@@ -90,6 +90,23 @@ void Material::bind(int flags) const {
 		glBindTexture(GL_TEXTURE_2D, texture[i].unit());
 	}
 	if(m_textureCount>1) glActiveTexture(GL_TEXTURE0);
+
+	// Blend mode
+	static BlendMode sBlend = BLEND_NONE;
+	if(m_blend!=sBlend) {
+		sBlend = m_blend;
+		switch(m_blend) {
+		case BLEND_NONE:  glDisable(GL_BLEND); break;
+		case BLEND_ALPHA: 
+			glEnable(GL_BLEND); 
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+			break;
+		case BLEND_ADD:
+			glEnable(GL_BLEND); 
+			glBlendFunc(GL_ONE, GL_ONE); 
+			break;
+		}
+	}
 
 	// Bind shader
 	m_shader.bind();

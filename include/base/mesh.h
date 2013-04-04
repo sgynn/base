@@ -79,8 +79,9 @@ namespace model {
 		void setMode(uint mode);					/**< Set the draw mode. Default GL_TRIANGLES */
 		bool hasIndices() const;					/**< Is the mesh indexed */
 
-		const vec3& getVertex(uint index) const;	/**< Get a vertex */
-		const vec3& getNormal(uint index) const;	/**< get a vertex normal */
+		const vec3&     getVertex(uint index) const;	/**< Get a vertex */
+		const vec3&     getNormal(uint index) const;	/**< get a vertex normal */
+		const IndexType getIndex(uint index) const;		/**< Get vertex index */
 
 		const VertexType* getData() const;			/**< Get raw data pointer - used in morphs and skinning */
 		VertexType*       getData();				/**< Get raw data pointer - used in morphs and skinning */
@@ -150,8 +151,9 @@ namespace model {
 	inline bool Mesh::hasIndices() const     { return m_indexBuffer; }
 
 	// Does this work?
-	inline const vec3& Mesh::getVertex(uint index) const { return *(vec3*)((ubyte*)getVertexPointer() + index * getStride()); }
-	inline const vec3& Mesh::getNormal(uint index) const { return *(vec3*)((ubyte*)getNormalPointer() + index * getStride()); }
+	inline const vec3&     Mesh::getVertex(uint index) const { return *reinterpret_cast<vec3*>(m_vertexBuffer->data + index*(m_stride/sizeof(VertexType))); }
+	inline const vec3&     Mesh::getNormal(uint index) const { return *reinterpret_cast<vec3*>(m_vertexBuffer->data + index*(m_stride/sizeof(VertexType)) + (m_format&0xf)); }
+	inline const IndexType Mesh::getIndex(uint index)  const { return m_indexBuffer->data[ index ]; };
 
 	inline const VertexType* Mesh::getData() const       { return m_vertexBuffer? m_vertexBuffer->data: 0; }
 	inline       VertexType* Mesh::getData()             { return m_vertexBuffer? m_vertexBuffer->data: 0; }

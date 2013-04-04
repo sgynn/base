@@ -8,6 +8,8 @@
 
 
 namespace base {
+
+	enum BlendMode { BLEND_NONE, BLEND_ALPHA, BLEND_ADD };
 	
 	/** Advanced material - contains shader and variables */
 	class Material : private SMaterial {
@@ -39,6 +41,9 @@ namespace base {
 		void setSpecular(const Colour& c) 			{ specular = c; }
 		void setShininess(float s) 					{ shininess = s; }
 
+		/** Set blend mode */
+		void setBlend(BlendMode mode)				{ m_blend = mode; }
+
 		void bind(int flags=0) const;
 
 		protected:
@@ -46,6 +51,7 @@ namespace base {
 		HashMap<SVar> m_variables;
 		Shader m_shader;
 		uint m_textureCount;
+		BlendMode m_blend;
 	};
 
 };

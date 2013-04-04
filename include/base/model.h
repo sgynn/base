@@ -32,10 +32,11 @@ namespace model {
 		Model(const Model&);
 		~Model();
 
-		int getMeshCount() const;			/**< Get the number of output meshes in this model */
-		Mesh* getMesh(int index);			/**< Get output mesh by index */
-		Mesh* getMesh(const char* name);	/**< Get output mesh by name */
-		Mesh* getSource(int index);			/**< Get source mesh by index */
+		int         getMeshCount() const;				/**< Get the number of output meshes in this model */
+		Mesh*       getMesh    (int index);				/**< Get output mesh by index */
+		Mesh*       getMesh    (const char* name);		/**< Get output mesh by name */
+		Mesh*       getSource  (int index) const;		/**< Get source mesh by index */
+		const Bone* getMeshBone(int index) const;		/**< Get bone this mesh is attached to */
 
 		int addMesh(Mesh* mesh, Bone* bone=0);					/**< Add an output mesh to the model attached to a bone */
 		int addMesh(Mesh* mesh, const char* name, Bone* bone=0);	/**< Add a named output mesh to the model */
@@ -135,9 +136,10 @@ namespace model {
 	inline int        Model::getMeshCount() const   { return m_meshes.size(); }
 	inline Mesh*      Model::getMesh(int index)     { return m_meshes[index].output; }
 	inline Mesh*      Model::getMesh(const char* n) { int i=mapValue(m_maps->meshes, n, -1); return i<0? 0: getMesh(i); }
-	inline Mesh*      Model::getSource(int index)   { return m_meshes[index].source; }
+	inline Mesh*      Model::getSource(int index) const      { return m_meshes[index].source; }
+	inline const Bone*Model::getMeshBone(int index) const    { return m_meshes[index].bone; }
 	inline int        Model::addMesh(Mesh* mesh, Bone* bone) { return addMesh(mesh, 0, bone); };
-	inline Skeleton*  Model::getSkeleton() const      { return m_skeleton; }
+	inline Skeleton*  Model::getSkeleton() const             { return m_skeleton; }
 
 	inline void       Model::addAnimation(Animation* a)                    { m_maps->animations[ a->getName() ] = a; a->grab(); }
 	inline Animation* Model::getAnimation(const char* name) const          { return mapValue(m_maps->animations, name, (Animation*)0); }
