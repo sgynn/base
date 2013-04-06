@@ -307,6 +307,13 @@ void Control::raise() {
 }
 
 //// //// //// ////  Accessor Functions //// //// //// ////
+Style* Control::getStyle() const { return m_style; }
+void   Control::setStyle(Style* s) {
+	if(m_style) m_style->drop();
+	m_style = s;
+	++m_style->m_ref;
+}
+
 void Frame::setCaption(const char* caption) {
 	if(m_caption) free(m_caption);
 	m_caption = caption? strdup(caption): 0;
@@ -329,8 +336,25 @@ void gui::Input::setText(const char* c) {
 	m_len = m_loc = strlen(c);
 }
 
+//// //// //// //// Event Handlers //// //// //// ////
+void Control::addHandler(Handler* h) { m_handlers.push_back(h); }
+void Control::removeHandler(Handler* h) {
+	for(std::vector<Handler*>::iterator i=m_handlers.begin(); i!=m_handlers.end(); ++i) {
+		if(*i == h) { m_handlers.erase(i); break; }
+	}
+}
+void Control::callHandlers(Control* c, uint value) const {
+	for(uint i=0; i<m_handlers.size(); ++i) {
+		if(m_handlers[i]->guiEvent(c, value)) return;
+	}
+	// Recurse to any handlers in parent control
+	if(m_parent) m_parent->callHandlers(c, value);
+}
+
+
 //// //// //// //// Utility Functions //// //// //// ////
 uint Control::setEvent(Event& e, uint value, const char* txt) {
+	callHandlers(this, value); // Use new event handler system
 	e.id = m_command;
 	e.value = value;
 	e.text = txt;

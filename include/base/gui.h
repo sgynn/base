@@ -119,6 +119,12 @@ namespace gui {
 		Event() : id(0), value(0), text(0), control(0) {}
 	};
 
+	/** Event Handler Interface */
+	class Handler {
+		public:
+		virtual bool guiEvent(Control* c, uint value) = 0;
+	};
+
 
 	/** GUI manager. All elements contain a link to this. 
 	 * can me implicit, not directly created. The root control will create it.
@@ -192,6 +198,8 @@ namespace gui {
 		Control(Style* style=0, uint cmd=0);	// Constructor
 		virtual ~Control();						// Destructor
 		virtual void draw() = 0;				// Draw control (and children)
+		void setStyle(Style* s);				// Change the style object
+		Style* getStyle() const;				// Get the style
 		uint update();							// Calls Root::update()
 		uint update(Event& event);				// Calls Root::update()
 		void setPosition(int x, int y);	 		// Set relative positions
@@ -209,6 +217,9 @@ namespace gui {
 		bool hasFocus() const;	// Is the focus here?
 		bool visible() const { return m_visible; }				// Is this control drawn
 		bool enabled() const { return m_enabled && m_visible; }	// Do events affect this
+		void addHandler(Handler* h);							// Add event handler
+		void removeHandler(Handler* h);							// Remove event handler
+		uint eventId() const { return m_command; };				// Get event id
 		virtual bool isContainer() const { return false; }		// Does this class inherit Container
 		Container* getParent() const { return m_parent; }		// Get parent control
 		Control* getControl(const char* name) const;			// Get named control in this heirachy (Root)
@@ -221,6 +232,10 @@ namespace gui {
 		bool m_enabled;				// Control in enabled state
 		Container* m_parent;		// Parent control
 		Root* m_root;				// Root object
+
+		// External event handlers
+		std::vector<Handler*> m_handlers;
+		void callHandlers(Control* c, uint value) const;
 
 		// Internal update events -  use these instead of click() and update();
 		virtual uint mouseEvent( Event&, const Point&, int)               { return 0; }
