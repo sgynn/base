@@ -123,6 +123,8 @@ class Matrix {
 		m[0]=m[5]=m[10]=m[15]=1;
 		return *this;
 	}
+	void setTranslation(const vec3& t) { m[12]=t.x; m[13]=t.y; m[14]=t.z; }
+
 	operator float*() { return &m[0]; }
 	operator const float*() const { return &m[0]; }
 	Matrix& operator=(const Matrix& a) {

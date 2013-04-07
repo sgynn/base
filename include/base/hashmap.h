@@ -80,10 +80,11 @@ template<typename T> base::HashMap<T>::HashMap(int cap) : m_capacity(cap), m_siz
 }
 template<typename T> base::HashMap<T>::HashMap(const HashMap& m) : m_capacity(m.m_capacity), m_size(m.m_size) {
 	m_data = new Pair[ m_capacity ];
-	memcpy(m_data, m.m_data, m_capacity*sizeof(Pair));
-	for(unsigned int i=0; i<m_capacity; i++) if(m_data[i].key) {
-		m_data[i].key = strdup(m_data[i].key);
-		m_data[i].value = m.m_data[i].value;
+	for(unsigned int i=0; i<m_capacity; i++) {
+		if(m.m_data[i].key) {
+			m_data[i].key = strdup(m.m_data[i].key);
+			m_data[i].value = m.m_data[i].value;
+		} else m_data[i].key = 0;
 	}
 }
 template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(const HashMap& m) {
@@ -91,10 +92,11 @@ template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(const HashMap
 	m_capacity = m.m_capacity;
 	m_size = m.m_size;
 	m_data = new Pair[ m_capacity ];
-	memcpy(m_data, m.m_data, m_capacity*sizeof(Pair));
-	for(unsigned int i=0; i<m_capacity; i++) if(m_data[i].key) {
-		m_data[i].key = strdup(m_data[i].key);
-		m_data[i].value = m.m_data[i].value;
+	for(unsigned int i=0; i<m_capacity; i++) {
+		if(m.m_data[i].key) {
+			m_data[i].key = strdup(m.m_data[i].key);
+			m_data[i].value = m.m_data[i].value;
+		} else m_data[i].key = 0;
 	}
 	return *this;
 }
@@ -167,6 +169,7 @@ template<typename T> void base::HashMap<T>::resize(unsigned int newSize) {
 	for(unsigned int i=0; i<m_capacity; i++) if(tmp[i].key) {
 		unsigned int k=index( tmp[i].key, newSize );
 		memcpy(&m_data[k], &tmp[i], sizeof(Pair));
+		memset(&tmp[i], 0, sizeof(Pair)); // Make sure destructors dont do anything
 	}
 	m_capacity = newSize;
 	delete [] tmp;
