@@ -80,6 +80,7 @@ class XML {
 	typedef std::vector<Element>::const_iterator iterator;
 
 	XML();
+	XML(const char* root);
 
 	/** Get the XML root node */
 	const Element& getRoot() const { return m_root; }

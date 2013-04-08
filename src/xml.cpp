@@ -108,6 +108,7 @@ bool XMLElement::operator==(const char* s) const {
 
 
 XML::XML() {}
+XML::XML(const char* root): m_root(root) {}
 
 XML XML::load(const char* file) {
 	FILE* fp = fopen(file, "r");
