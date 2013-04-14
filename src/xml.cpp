@@ -146,7 +146,7 @@ int XML::save(const char* filename) const {
 
 
 const char* XML::toString() const {
-	#define expand(n) { char* tmp=s; s = new char[len+n]; memcpy(s,tmp,len); delete[]tmp; } 
+	#define expand(n) { char* tmp=s; s = new char[len+n]; memcpy(s,tmp,len); len+=n; delete[]tmp; } 
 	const char* head = "<?xml version=\"1.0\"?>\n";
 	size_t len = 1024;
 	size_t p = 0;

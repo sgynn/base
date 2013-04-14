@@ -79,12 +79,13 @@ namespace gui {
 		void setSprite(const Sprite& sprite)	{ m_sprite = sprite; }
 
 		/** Set colour (loads to avoid ambiguity) */
-		void setColour(int type, int colour, double alpha=1)            { setColour(type, 0xf, Colour(colour), (float)alpha); }
-		void setColour(int type, int state, int colour, double alpha=1) { setColour(type, state, Colour(colour), (float)alpha); }
-		void setColour(int type, int colour, float alpha=1)             { setColour(type, 0xf, Colour(colour), alpha); }
-		void setColour(int type, int state, int colour, float alpha=1)  { setColour(type, state, Colour(colour), alpha); }
-		void setColour(int type, const Colour& colour)                  { setColour(type,0xf,colour); }
-		void setColour(int type, const Colour& colour, float alpha)     { setColour(type,0xf,colour,alpha); }
+		void setColour(int type, int colour)                            { setColour(type, 0xf,   Colour(colour)); }
+		void setColour(int type, int colour, double alpha)              { setColour(type, 0xf,   Colour(colour, alpha)); }
+		void setColour(int type, int state, int colour, double alpha=1) { setColour(type, state, Colour(colour, alpha)); }
+		void setColour(int type, int colour, float alpha)               { setColour(type, 0xf,   Colour(colour, alpha)); }
+		void setColour(int type, int state, int colour, float alpha=1)  { setColour(type, state, Colour(colour, alpha)); }
+		void setColour(int type, const Colour& colour)                  { setColour(type, 0xf,   colour); }
+		void setColour(int type, const Colour& colour, float alpha)     { setColour(type, 0xf,   Colour(colour,alpha)); }
 		void setColour(int type, int state, const Colour& colour);
 		void setColour(int type, int state, const Colour& colour, float alpha);
 
