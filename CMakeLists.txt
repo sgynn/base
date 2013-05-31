@@ -86,6 +86,7 @@ set(headers
 	include/base/mesh.h
 	include/base/morph.h
 	include/base/model.h
+	include/base/noise.h
 	include/base/opengl.h
 	include/base/png.h
 	include/base/quaternion.h

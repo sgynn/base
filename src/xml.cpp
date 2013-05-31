@@ -298,7 +298,7 @@ int XML::parseInternal(char* string) {
 				if(*c==quote) {
 					*ne=0; 		// End of name
 					*c=0; ++c;	// End of value
-					t->m_attributes[name] = value;
+					t->setAttribute(name, value);
 				} else fail("No end quote");
 				whitespace(c);
 			}

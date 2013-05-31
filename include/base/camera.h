@@ -120,7 +120,7 @@ namespace base {
 		/** Update camera */
 		virtual void update() = 0;
 		/** Set camera speeds */
-		void setSpeed(float movement, float rotation);
+		void setSpeed(float movement=1.0, float rotation=0.004);
 		/** Movement smoothing - parameters {0>x>=1} */
 		void setSmooth(float movement, float rotation);
 		/** Up vector - set to null vector if unconstrained */

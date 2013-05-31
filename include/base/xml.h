@@ -66,8 +66,8 @@ class XMLElement {
 	int m_type; // XML::TagType
 	RefString m_name;
 	RefString m_text;
-	std::vector<XMLElement>  m_children;
-	base::HashMap<RefString> m_attributes;
+	std::vector<XMLElement>  m_children;	// Child nodes
+	base::HashMap<RefString> m_attributes;	// Attribute map
 };
 
 

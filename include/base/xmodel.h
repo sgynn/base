@@ -53,6 +53,7 @@ namespace model {
 		static int parseIntArray(const char* in, int n, int* d);
 		static int parseFloatArray(const char* in, int n, float* d);
 		static int parseFloatKArray(const char* in, int n, int k, float* d);
+		static int parseSpace(const char* in);
 
 
 		// Structure functions

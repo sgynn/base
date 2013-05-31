@@ -51,12 +51,23 @@ Model* XModel::parse(const char* string) {
 
 
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
+int XModel::parseSpace(const char* in) {
+	int n = ::parseSpace(in);
+	// Parse comments too
+	if(in[n]=='/' && in[n+1]=='/') {
+		while(in[n] && in[n]!='\n' && in[n]!='\r') ++n;
+		n += ::parseSpace(in+n);
+	}
+	return n;
+}
+
 int XModel::parseIntArray(const char* in, int n, int* d) {
 	int t=0;
 	for(int i=0; i<n; ++i) {
 		t += parseInt(in+t, d[i]);
-		if(in[t]==',' && i<n-1) t += parseSpace(in+t+1)+1;
-		else if(in[t]==';' && i==n-1) ++t;
+		if(in[t]==',' || in[t]==';') t  += parseSpace(in+t+1)+1;
+		//if(in[t]==',' && i<n-1) t += parseSpace(in+t+1)+1;
+		//else if(in[t]==';' && i==n-1) ++t;
 		else return 0;
 	}
 	return t;
@@ -100,7 +111,7 @@ bool XModel::startBlock(const char* block, char* name) {
 		char* n = name? name: tmp;
 		if(!validate( parseAlphaNumeric(m_read, n))) n[0] = 0;
 		validate( parseSpace(m_read) );
-	}
+	} else if(name) name[0] = 0;
 	if(*m_read=='{') ++m_read;
 	else return false;
 	validate( parseSpace(m_read) );
@@ -209,7 +220,7 @@ int XModel::readFrame(const char* name, Bone* parent) {
 
 		} else if(startBlock("Mesh", tmp)) {
 			XMesh* mesh = readMesh(tmp);
-			if(!mesh) break;
+			if(!mesh) { Error("Failed to load mesh\n"); break; }
 			// Add meshes to frame
 			Mesh* m[32];
 			int c = build(mesh, m);
@@ -295,7 +306,7 @@ XModel::XMesh* XModel::readMesh(const char* name) {
 
 		} else if(startBlock("VertexDuplicationIndices")) {
 			endBlock();
-		} else if(startBlock("MeshMaterialList")) {			//// MATRIAL LIST ////
+		} else if(startBlock("MeshMaterialList")) {			//// MATERIAL LIST ////
 			int mat = mesh->materialCount = readCount();
 			mesh->materials = new SMaterial*[mat];
 
@@ -303,6 +314,7 @@ XModel::XMesh* XModel::readMesh(const char* name) {
 			if(count<=0) break;
 			mesh->materialList = new int[count];
 			t = parseIntArray(m_read, count, mesh->materialList);
+			if(m_read[t]==';') ++t; // Blender puts an extra ';' here
 			validate(t);
 
 			// Read mat materials or references
