@@ -19,7 +19,10 @@ namespace base {
 
 		/** Set shadere variables */
 		void setFloat(const char* name, float f);
-		void setFloatv(const char* name, int v, float* fp);
+		void setFloat2(const char* name, const float* v);
+		void setFloat3(const char* name, const float* v);
+		void setFloat4(const char* name, const float* v);
+		void setFloatv(const char* name, int v, const float* fp);
 		void setInt(const char* name, int i);
 
 		/** Get shader variables */

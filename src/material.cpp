@@ -20,19 +20,26 @@ void Material::setFloat(const char* name, float f) {
 	SVar v; v.type=FLOAT; v.f = f;
 	m_variables[name] = v;
 }
-void Material::setFloatv(const char* name, int v, float* fp) {
+void Material::setFloat2(const char* name, const float* p) { setFloatv(name, 2, p); }
+void Material::setFloat3(const char* name, const float* p) { setFloatv(name, 3, p); }
+void Material::setFloat4(const char* name, const float* p) { setFloatv(name, 4, p); }
+
+void Material::setFloatv(const char* name, int v, const float* fp) {
 	HashMap<SVar>::iterator it = m_variables.find(name);
+	int type = FLOAT + v - 1;
 	// Check if it exists to so we can use already allocated memory
 	if(it!=m_variables.end()) {
 		// Allocate new memory for array if size is different
-		if(it->type!=v+FLOAT) {
+		if(it->type!=type) {
 			if(it->type>=FLOAT) delete [] it->p;
 			it->p = new float[v];
+			it->type = type;
 		}
 		memcpy(it->p, fp, v*sizeof(float));
 	} else {
 		// Allocate new variable
-		SVar var; var.type = FLOAT+v;
+		SVar var;
+		var.type = type;
 		var.p = new float[v];
 		memcpy(var.p, fp, v*sizeof(float));
 		m_variables.insert(name, var);

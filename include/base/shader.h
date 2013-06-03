@@ -99,9 +99,18 @@ class Shader {
 	void Uniform3f(const char* name, float v1, float v2, float v3);
 	void Uniform4f(const char* name, float v1, float v2, float v3, float v4);
 	void Uniformfv(const char* name, int size, const float *v);
+
+	unsigned getName(const char* name) const;
+	void uniform1i(unsigned name, int v1) const;
+	void uniformiv(unsigned name, int size, const int* v) const;
+	void uniform1f(unsigned name, float v1) const;
+	void uniform2f(unsigned name, float v1, float v2) const;
+	void uniform3f(unsigned name, float v1, float v2, float v3) const;
+	void uniform4f(unsigned name, float v1, float v2, float v3, float v4) const;
+
 	
 	//There are a hell of a lot more where these came from: short1-4, double1-4, many others types in array form 1-4
-	//If ou want them, #include glext.h, and use Shader.variable(name, type) to get the variable's index.
+	//If you want them, #include glext.h, and use Shader.variable(name, type) to get the variable's index.
 	void Attribute1f(const char* name, float v1);
 	void Attribute2f(const char* name, float v1, float v2);
 	void Attribute3f(const char* name, float v1, float v2, float v3);
