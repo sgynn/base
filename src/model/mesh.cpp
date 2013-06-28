@@ -449,11 +449,11 @@ int Mesh::smoothNormals(float angle) {
 	return affected;
 }
 
-const aabb& Mesh::calculateBounds() {
+const BoundingBox& Mesh::calculateBounds() {
 	m_bounds.min = m_bounds.max = getVertex(0);
 	for(uint i=1; i<getVertexCount(); ++i) {
 		const vec3& v = getVertex(i);
-		m_bounds.addPoint(v);
+		m_bounds.add(v);
 	}
 	return m_bounds;
 }

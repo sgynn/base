@@ -52,7 +52,7 @@ void Material::setInt(const char* name, int i) {
 
 float Material::getFloat(const char* name) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type==INTEGER) return it->f;
+	if(it!=m_variables.end() && it->type==FLOAT) return it->f;
 	else return 0;
 }
 int Material::getFloatv(const char* name, float* fp) {

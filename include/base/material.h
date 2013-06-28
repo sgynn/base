@@ -12,7 +12,7 @@ namespace base {
 	enum BlendMode { BLEND_NONE, BLEND_ALPHA, BLEND_ADD };
 	
 	/** Advanced material - contains shader and variables */
-	class Material : private SMaterial {
+	class Material : public SMaterial {
 		public:
 		Material();
 		~Material();

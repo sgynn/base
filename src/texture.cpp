@@ -31,13 +31,13 @@ void Texture::bind() const {
 }
 
 /** Set raw opengl filter values */
-void Texture::setFilter(unsigned min, unsigned mag) {
+void Texture::setFilter(unsigned min, unsigned mag) const {
 	bind();
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag);
 }
 /** Set enumerated filter */
-void Texture::setFilter(int f) {
+void Texture::setFilter(int f) const {
 	switch(f) {
 	case NEAREST: setFilter(GL_LINEAR, GL_NEAREST); break;
 	case BILINEAR: setFilter(GL_LINEAR, GL_LINEAR); break;
@@ -50,7 +50,7 @@ void Texture::setFilter(int f) {
 }
 
 /** Set wrapping behaviour */
-void Texture::setWrap(uint s, uint t) {
+void Texture::setWrap(uint s, uint t) const {
 	bind();
 	s = s==REPEAT? GL_REPEAT: s==CLAMP? GL_CLAMP_TO_EDGE: s;
 	t = t==REPEAT? GL_REPEAT: t==CLAMP? GL_CLAMP_TO_EDGE: t;

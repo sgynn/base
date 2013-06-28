@@ -52,7 +52,7 @@ float base::closestPointBetweenLines(const vec3& a1, const vec3& b1, const vec3&
 			}
 		}
 	}
-	return (a1+(b1-a1)*s).distanceSq( a2+(b2-a2)*t );
+	return (a1+(b1-a1)*s).distance2( a2+(b2-a2)*t );
 }
 
 /** Intersection of a ray with Plane (page 177) */

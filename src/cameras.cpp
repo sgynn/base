@@ -59,8 +59,8 @@ void FPSCamera::update() {
 		float dy = m_last.y - m.y;
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
 
-		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(AXIS_Y, m_rVelocity.x);
-		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(AXIS_X, m_rVelocity.y);
+		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
+		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
 
 		if(m_rotateAcc<1) m_rVelocity -= m_rVelocity * m_rotateAcc;
 		else m_rVelocity = vec2();
@@ -127,8 +127,8 @@ void OrbitCamera::update() {
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
 
 		float distance = m_target.distance(m_position);
-		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(AXIS_Y, m_rVelocity.x);
-		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(AXIS_X, m_rVelocity.y);
+		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
+		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
 
 		if(m_rotateAcc<1) m_rVelocity -= m_rVelocity * m_rotateAcc;
 		else m_rVelocity = vec2();

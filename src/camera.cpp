@@ -42,19 +42,19 @@ void Camera::setRotation(float pitch, float yaw, float roll) {
 	fwd = vec3(sin(yaw), 0, cos(yaw)) * cos(pitch);
 	fwd.y = sin(pitch);
 	lookat(m_position, m_position+fwd, vec3(0,1,0));
-	//roll
-	if(roll!=0) rotateLocal(AXIS_Z, roll);
+	// roll - rotate in local Z axis
+	if(roll!=0) rotateLocal(2, roll);
 }
 
 /** Rotate a matrix about a local axis. Must be a rotation matrix */
-void Camera::rotateLocal(M_AXIS axis, float radians) {
+void Camera::rotateLocal(int axis, float radians) {
 	Matrix& mat = m_rotation;
 	//New axis vector
 	vec3 v;
 	switch(axis) {
-	case AXIS_X: v = vec3(0,cos(radians),-sin(radians)); break; //X axis
-	case AXIS_Y: v = vec3(sin(radians),0,cos(radians)); break; //Y axis
-	case AXIS_Z: v = vec3(cos(radians),sin(radians),0); break; //Z axis
+	case 0: v = vec3(0,cos(radians),-sin(radians)); break; //X axis
+	case 1: v = vec3(sin(radians),0,cos(radians)); break; //Y axis
+	case 2: v = vec3(cos(radians),sin(radians),0); break; //Z axis
 	default: return;
 	}
 	//Rotate axis vector
@@ -82,7 +82,7 @@ void Camera::rotateLocal(M_AXIS axis, float radians) {
 #include <iostream>
 void Camera::updateFrustum() {
 	//calculate combined matrix
-	Matrix modelview = m_rotation.transpose();
+	Matrix modelview = m_rotation.transposed();
 	//translation
 	vec3 t = modelview * (m_position * -1);
 	modelview[12] = t.x;
@@ -168,7 +168,7 @@ int Camera::onScreen(const vec3& point, float radius, int flags) const {
 }
 
 
-int Camera::onScreen(const aabb& box, int flags) const {
+int Camera::onScreen(const BoundingBox& box, int flags) const {
 	if(flags<=1) return flags; //No processing needed - flagged as inside or outside
 	vec3 accept, reject;
 	for(int i=0; i<6; i++) {
@@ -276,7 +276,7 @@ vec3 Camera::project(const vec3& world, const Point& size) const {
 	vec3 out;
 	int viewport[4] = { 0, 0, size.x, size.y };
 	//calculate modelview matrix
-	Matrix modelview = m_rotation.transpose();
+	Matrix modelview = m_rotation.transposed();
 	//translation
 	vec3 t = modelview * (m_position * -1);
 	modelview[12] = t.x;
@@ -291,7 +291,7 @@ vec3 Camera::unproject(const vec3& screen, const Point& size) const {
 	vec3 out;
 	int viewport[4] = { 0, 0, size.x, size.y };
 	//calculate modelview matrix
-	Matrix modelview = m_rotation.transpose();
+	Matrix modelview = m_rotation.transposed();
 	//translation
 	vec3 t = modelview * (m_position * -1);
 	modelview[12] = t.x;

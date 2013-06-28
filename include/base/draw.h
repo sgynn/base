@@ -2,6 +2,7 @@
 #define _BASE_DRAW_
 
 #include "math.h"
+#include "colour.h"
 #include "opengl.h"
 
 /* A static class for drawing a few primitives */
@@ -78,7 +79,7 @@ class Draw {
 		glPopMatrix();
 	}
 	/** Draw a wireframe AABB */
-	static void Box(const aabb& box, const Colour& colour=blue) {
+	static void Box(const BoundingBox& box, const Colour& colour=blue) {
 		static const unsigned char ix[16] = {0,1,3,2,0, 4,5,7,6,4, 5,1,3,7,6,2 };
 		vec3 p[8];
 		for(int i=0; i<8; i++) {

@@ -2,7 +2,6 @@
 #define _BASE_SKELETON_
 
 #include "math.h"
-#include "quaternion.h"
 
 namespace base {
 namespace model {

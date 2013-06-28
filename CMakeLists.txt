@@ -67,6 +67,7 @@ set( zlib
 set(headers
 	include/base/animation.h
 	include/base/camera.h
+	include/base/colour.h
 	include/base/fpscamera.h
 	include/base/orbitcamera.h
 	include/base/collision.h
@@ -82,14 +83,12 @@ set(headers
 	include/base/inifile.h
 	include/base/input.h
 	include/base/material.h
-	include/base/math.h
 	include/base/mesh.h
 	include/base/morph.h
 	include/base/model.h
 	include/base/noise.h
 	include/base/opengl.h
 	include/base/png.h
-	include/base/quaternion.h
 	include/base/scene.h
 	include/base/shader.h
 	include/base/skeleton.h
@@ -99,6 +98,13 @@ set(headers
 	include/base/window.h
 	include/base/xml.h
 	include/base/xmodel.h
+
+	include/base/math.h
+	include/base/bounds.h
+	include/base/matrix.h
+	include/base/point.h
+	include/base/quaternion.h
+	include/base/vec.h
 )
 
 

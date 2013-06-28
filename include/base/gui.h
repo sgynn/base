@@ -2,6 +2,7 @@
 #define _BASE_GUI_
 
 #include <base/math.h>
+#include <base/colour.h>
 #include <base/hashmap.h>
 #include <list>
 #include <vector>

@@ -4,6 +4,7 @@
 #define MAX_TEXTURE_UNITS 16
 
 #include "math.h"
+#include "colour.h"
 
 namespace base {
 
@@ -30,10 +31,10 @@ namespace base {
 		unsigned unit() const { return m_unit; }
 
 		/** Texture properties */
-		void setFilter(unsigned min, unsigned mag);
-		void setFilter(int filter);
-		void setWrap(unsigned e) { setWrap(e,e); }
-		void setWrap(unsigned s, unsigned t);
+		void setFilter(unsigned min, unsigned mag) const;
+		void setFilter(int filter) const;
+		void setWrap(unsigned e) const { setWrap(e,e); }
+		void setWrap(unsigned s, unsigned t) const;
 
 		private:
 		unsigned m_unit;

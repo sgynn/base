@@ -2,7 +2,6 @@
 #define _BASE_ANIMATION_
 
 #include "math.h"
-#include "quaternion.h"
 #include <vector>
 
 namespace base {

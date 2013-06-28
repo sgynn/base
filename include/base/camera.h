@@ -28,7 +28,7 @@ namespace base {
 		/** Set camera rotation based on standard coordinates */
 		void setRotation(float pitch=0, float yaw=0, float roll=0);
 		/** Rotate camera about local axis */
-		void rotateLocal(M_AXIS axis, float radians);
+		void rotateLocal(int axis, float radians);
 		/** Update field of view - only works for perspective cameras */
 		void setFov(float fov) { m_fov=fov; }
 		/** Update the aspect ratio - only for perspective cameras */
@@ -67,7 +67,7 @@ namespace base {
 		/** Is a sphere on screen? based on frutsum */
 		int onScreen(const vec3& point, float radius, int clipFlags=0x7e) const;
 		/** Is an axis aligned bounding box on screen */
-		int onScreen(const aabb& box, int clipFlags=0x7e) const;
+		int onScreen(const BoundingBox& box, int clipFlags=0x7e) const;
 		/** Get all of the frustum planes */
 		const float* getFrustumPlanes() const;
 		/** Get a specific frustum plane */
@@ -105,7 +105,7 @@ namespace base {
 		static Matrix frustum(float left, float right, float bottom, float top, float near, float far);
 
 		int insidePlane(const vec3& n, float d, const vec3& point, float radius);
-		int insidePlane(const vec3& n, float d, const aabb& box);
+		int insidePlane(const vec3& n, float d, const BoundingBox& box);
 
 	};
 

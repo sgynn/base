@@ -112,8 +112,8 @@ namespace model {
 		int  normaliseWeights();						/**< Normalise the skin weights */
 		int  optimise();								/**< Optimise mesh by removing any duplicate vertices and using an index array */
 
-		const aabb& getBounds() const;					/**< Get the last calculated axis aligned bounding box */
-		const aabb& calculateBounds();					/**< Calculate axis aligned bounding box */
+		const BoundingBox& getBounds() const;					/**< Get the last calculated axis aligned bounding box */
+		const BoundingBox& calculateBounds();					/**< Calculate axis aligned bounding box */
 
 		protected:
 		mutable int m_ref;			// Reference counter
@@ -123,7 +123,7 @@ namespace model {
 		void*       m_pointers[8];	// Cached vertex pointers
 		int         m_formatSize;	// Number of floats in format;
 		SMaterial*  m_material;		// Material
-		aabb        m_bounds;		// Axis aligned bounding box
+		BoundingBox m_bounds;		// Axis aligned bounding box
 
 		Buffer<VertexType>* m_vertexBuffer;	// Vertex buffer data
 		Buffer<IndexType>*  m_indexBuffer;	// Index bufer data
@@ -173,9 +173,7 @@ namespace model {
 	inline SMaterial*       Mesh::getMaterial()                   { return m_material; }
 	inline const SMaterial* Mesh::getMaterial() const             { return m_material; }
 
-	inline const aabb&     Mesh::getBounds() const                { return m_bounds; }
-
-
+	inline const BoundingBox& Mesh::getBounds() const                { return m_bounds; }
 	
 };
 };
