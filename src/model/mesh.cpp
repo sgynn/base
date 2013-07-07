@@ -133,26 +133,28 @@ void Mesh::setFormat(uint format) {
 	int size = formatSize(format);
 	VertexType* src  = m_vertexBuffer->data;
 	VertexType* data = new VertexType[ size * count ];
-	memset(data, 0, size * count * sizeof(VertexFormat));
+	memset(data, 0, size * count * sizeof(VertexType));
 
 	// Calculate offsets
-	int sOff[8];	// Source offsets
-	int dSize[8];	// Destination data sizes
-	int dOff[8];	// Destination offsets
-	sOff[0]=0; dOff[0]=0; dSize[0]=format&0xf;
-	for(int i=1; i<8; ++i) {
-		sOff[i] = sOff[i-1] + ((m_format>>(i*4))&0xf);
-		dSize[i] = (format>>(i*4))&0xf * sizeof(VertexType);
-		dOff[i] = dOff[i-1] + dSize[i-1]/sizeof(VertexType);
+	int cSize[8];	// Values to copy for this
+	int sOff[9];	// Source offsets
+	int dOff[9];	// Destination offsets
+	sOff[0]=0; dOff[0]=0;
+	for(int i=0; i<8; ++i) {
+		int ds = (format>>(i*4))&0xf;
+		int ss = (m_format>>(i*4))&0xf;
+		sOff[i+1] = sOff[i] + ss;
+		dOff[i+1] = dOff[i] + ds;
+		cSize[i] = ss<ds? ss: ds;
 	}
 
 	// Copy data
 	int stride = size * sizeof(VertexType);
 	for(int i=0; i<count; ++i) {
+		VertexType* vs = src + i*m_stride/sizeof(VertexType);
+		VertexType* vd = data + i*stride/sizeof(VertexType);
 		for(int j=0; j<8; ++j) {
-			if(dSize[j]) {
-				memcpy(data + i*stride + dOff[j], src + i*m_stride + sOff[j], dSize[j]*sizeof(VertexType));
-			}
+			if(cSize[j]) memcpy(vd + dOff[j], vs + sOff[j], cSize[j]*sizeof(VertexType));
 		}
 	}
 

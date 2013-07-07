@@ -103,15 +103,15 @@ inline Quaternion Quaternion::arc(const vec3& a, const vec3& b) {
 	vec3  nb = b.normalised();
 	vec3  c = na.cross(nb);
 	float d = na.dot(nb);
-	if(d<-0.9999) { // pick a vector orthogonal to a
+	if(d<-0.9999f) { // pick a vector orthogonal to a
 		vec3 n;
 		if(fabs(na.z)>0.700706f) { // use yz plane
 			float s = na.y*na.y + na.z*na.z;
-			float k = 1.0 / sqrt(s);
+			float k = 1.0f / sqrt(s);
 			return Quaternion(0, -na.z*k, na.y*k, 0);
 		} else { // use xy plane
 			float s = na.x*na.x + na.y*na.y;
-			float k = 1.0 / sqrt(s);
+			float k = 1.0f / sqrt(s);
 			return Quaternion(-na.y*k, na.x*k, 0, 0);
 		}
 	}
@@ -162,8 +162,8 @@ inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
 	float trace = m[0] + m[5] + m[10];
 	if(trace>0) {
 		float s = sqrt(trace+1);
-		w = s * 0.5;
-		s = 0.5 / s;
+		w = s * 0.5f;
+		s = 0.5f / s;
 		x = (m[6] - m[9]) * s;
 		y = (m[8] - m[2]) * s;
 		z = (m[1] - m[4]) * s;
@@ -174,8 +174,8 @@ inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
 
 		float* q = *this;
 		float s = sqrt(m[i*4+i] - m[j*4+j] - m[k*4+k] + 1.0f);
-		q[i] = s * 0.5;
-		s = 0.5 / s;
+		q[i] = s * 0.5f;
+		s = 0.5f / s;
 		q[3] = (m[j*4+k] - m[k*4+j]) * s;
 		q[j] = (m[i*4+j] + m[j*4+i]) * s;
 		q[k] = (m[i*4+k] + m[k*4+i]) * s;
@@ -184,7 +184,7 @@ inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
 }
 inline void Quaternion::toMatrix(Matrix& m) const {
 	float d = length2();
-	float s = 2.0 / d;
+	float s = 2.0f / d;
 	float xs=x*s,  ys=y*s,  zs=z*s;
 	float wx=w*xs, wy=w*ys, wz=w*zs;
 	float xx=x*xs, xy=x*ys, xz=x*zs;
@@ -206,9 +206,9 @@ inline Quaternion slerp(const Quaternion& a, const Quaternion& b, float v) {
 	float dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
 	if(dot>1) dot=1; else if(dot<-1) dot=-1;
 	float theta = acos(dot);
-	if(theta!=0.0) {
+	if(theta!=0.0f) {
 		float d = 1 / sin(theta);
-		float s = sin((1.0-v)*theta) * d;
+		float s = sin((1.0f-v)*theta) * d;
 		float t = sin(v*theta) * d;
 		if(dot<0) t = -t;
 		return Quaternion(a.x*s+b.x*t, a.y*s+b.y*t, a.z*s+b.z*t, a.w*s+b.w*t);

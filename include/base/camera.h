@@ -19,6 +19,8 @@ namespace base {
 		Camera(float fov, float aspect, float near, float far);
 		/** Generic frustum */
 		Camera(float left, float right, float bottom, float top, float near, float far);
+		/** Destructor */
+		virtual ~Camera() {}
 
 
 		/** Just set camera position */
@@ -50,9 +52,6 @@ namespace base {
 		const Matrix& getProjection() const { return m_projection; }
 		Matrix getModelview() const;
 
-		/** Update camera */
-		virtual void update(float time) {}
-		
 		/** Apply camera transformations */
 		void applyProjection();
 		void applyRotation();
