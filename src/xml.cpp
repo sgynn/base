@@ -101,7 +101,6 @@ XMLElement& XMLElement::add(const XMLElement& e) {
 	return m_children.back();
 }
 
-
 bool XMLElement::operator==(const char* s) const {
 	return m_name && strcmp(m_name, s)==0;
 }
@@ -193,7 +192,7 @@ const char* XML::toString() const {
 			child = 0;
 		} else {
 			++child;
-			if(child==stack.back()->size()) {
+			while(!stack.empty() && child==stack.back()->size()) {
 				// Pop stack
 				e = stack.back();
 				child = index.back() + 1;

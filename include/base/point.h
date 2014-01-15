@@ -29,7 +29,7 @@ struct Point3 {
 	operator int*() { return &x; }
 };
 
-/** 2D Rectangle. Boundingg shape */
+/** 2D Rectangle. Bounding shape */
 struct Rect {
 	int x, y, width, height;
 

@@ -50,12 +50,13 @@ int Directory::clean(const char* in, char* out) {
 		else if(strncmp(c, "/../", 4)==0 || strncmp(c, "/..", 4)==0) { //up
 			if((k==2 && strncmp(out, "..", 2)) || (k>2 && strncmp(&out[k-3], "/..", 3))) {
 				//remove segment
-				while(k>1 && out[k-1]!='/') k--;
+				while(k>0 && out[k-1]!='/') k--;
 				c+=2;
 			} else out[k++] = *c;
 		} else out[k++] = *c;
 	}
 	out[k]=0;
+	if(k==0) strcpy(out, ".");
 	return strlen(out);
 }
 

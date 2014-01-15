@@ -896,13 +896,13 @@ void Slider::draw() {
 		int h = m_size.y/2;
 		drawRect(m_position.x, m_position.y + h-2, m_size.x, 4, m_style->getColour(Style::BORDER), true);
 		int b = h + v * (m_size.x-m_size.y);
-		drawCircle(m_position.x+b, m_position.y+h, h, m_style->getColour(Style::BACK, getState()), true);
+		drawCircle(m_position.x+b, m_position.y+h, h, m_style->getColour(Style::TEXT, getState()), true);
 		drawCircle(m_position.x+b, m_position.y+h, h, m_style->getColour(Style::BORDER, getState()), false);
 	} else {
 		int h = m_size.x/2;
 		drawRect(m_position.x+h-2, m_position.y, 4, m_size.y, m_style->getColour(Style::BORDER), true);
 		int b = h + (1-v) * (m_size.y-m_size.x);
-		drawCircle(m_position.x+h, m_position.y+b, h, m_style->getColour(Style::BACK, getState()), true);
+		drawCircle(m_position.x+h, m_position.y+b, h, m_style->getColour(Style::TEXT, getState()), true);
 		drawCircle(m_position.x+h, m_position.y+b, h, m_style->getColour(Style::BORDER, getState()), false);
 	}
 }
@@ -998,6 +998,8 @@ void gui::Input::draw() {
 			//draw it
 			drawText(m_position.x+cp+1, m_position.y, "_", state);
 		}
+	} else if(hasFocus()) {
+		drawText(m_position.x+1, m_position.y, "_", state);
 	}
 }
 
