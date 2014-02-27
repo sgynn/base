@@ -1,10 +1,9 @@
 #include "base/window.h"
 #include <GL/gl.h>
-#include <GL/glu.h>
+
 
 // Antialiasing support
 #ifdef LINUX
-#include <GL/glx.h>
 int attriblistAA[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, GLX_SAMPLE_BUFFERS_ARB, GL_TRUE, GLX_SAMPLES_ARB, 2 , None }; 
 int attriblist[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, None };
 #endif 

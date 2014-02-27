@@ -70,7 +70,7 @@ int Texture::bppFormat(int bpp) {
 }
 
 /** Create basic texture */
-Texture Texture::create(int width, int height, int format, const void* data) {
+Texture Texture::create(int width, int height, int format, const void* data, bool mip) {
 	// Create texture object
 	Texture t;
 	switch(format) {
@@ -98,7 +98,34 @@ Texture Texture::create(int width, int height, int format, const void* data) {
 	// Set data
 	glTexImage2D( GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data); 
 	t.m_width = width; t.m_height = height;
+	// Generate MipMaps
+	if(mip) t.generateMipMaps(format, (const char*)data);
 	return t;
+}
+
+int Texture::generateMipMaps(int format, const void* source) {
+	int w = m_width>>1;
+	int h = m_height>>1;
+	int bpp = m_depth;
+	int sl = m_width * bpp;
+	unsigned char buffer[w*h*bpp + w*h*bpp/4];
+	unsigned char* sbuffer = buffer + w*h*bpp;
+	const unsigned char* s = (const unsigned char*) source;
+	unsigned char* t = buffer;
+	int level = 1;
+	while(w>0 && h>0) {
+		// Sample level above
+		for(int x=0; x<w; ++x) for(int y=0; y<h; ++y) for(int z=0; z<bpp; ++z) {
+			int k = z + x*2*bpp + y*2*sl;	// first pixel address
+			t[z+(x+y*w)*bpp] = (s[k] + s[k+bpp] + s[k+sl] + s[k+sl+bpp]) / 4;
+		}
+		glTexImage2D( GL_TEXTURE_2D, level, format, w, h, 0, format, GL_UNSIGNED_BYTE, t);
+		// Setup values for next level
+		t = t==buffer? sbuffer: buffer;
+		s = s==buffer? sbuffer: buffer;
+		sl=w*bpp; w>>=1; h>>=1; ++level;
+	}
+	return level;
 }
 
 /** Create texture from whatever */

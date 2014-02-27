@@ -16,7 +16,7 @@ namespace base {
 		enum Wrapping { REPEAT, CLAMP };
 		Texture();
 		/** Texture creation */
-		static Texture create(int width, int height, int format, const void* data=0);
+		static Texture create(int width, int height, int format, const void* data=0, bool mip=false);
 		static Texture create(int width, int height, int iFormat, int sFormat, int type, const void* data);
 		static int bppFormat(int bpp);
 		/** Destroy texture */
@@ -39,6 +39,7 @@ namespace base {
 		private:
 		unsigned m_unit;
 		int m_width, m_height, m_depth;
+		int generateMipMaps(int format, const void* data);
 	};
 
 

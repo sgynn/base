@@ -20,7 +20,7 @@ const INIFile::Section& INIFile::operator[](const char* name) const {
 	else return nullSection;
 }
 INIFile::Section& INIFile::operator[](const char* name) { return *section(name); }
-
+bool INIFile::containsSection(const char* s) const { return m_sections.contains(s); }
 
 INIFile INIFile::load(const char* filename) {
 	FILE* fp = fopen(filename, "r");
@@ -51,53 +51,62 @@ bool INIFile::save(const char* filename) {
 }
 
 INIFile INIFile::parse(const char* data) {
-	#define whitespace(c) while(*c && (*c==' ' || *c=='\t')) ++c;
-
+	#define whitespace(c) (*c==' ' || *c=='\t')
+	#define newline(c) (*c=='\n' || *c=='\r')
 	char buffer[128];
 	const char* c = data;
 	const char* e;
 	INIFile ini;
 	Section* s = 0;
 	while(*c) {
-		if(*c=='#' || *c==';') while(*c && *c!='\n') ++c; // Comment
+		if(*c=='#' || *c==';') while(*c && !newline(c)) ++c; // Comment
 		//Section header
 		else if(*c == '[') {
 			++c;
-			whitespace(c);
-			e=c; while(*e && *e!='\n' && *e!=']') ++e; // find end of name
+			while(*c && whitespace(c)) ++c;
+			e=c;
+			while(*e && !newline(e) && *e!=']') ++e; // find end of name
 			if(*e==']') {
-				while(*e==']' || *e==' ' || *e=='\t') --e; // trim
+				while(*e==']' || whitespace(e)) --e; // trim
 				if(e>c) { // Make sure name exists
 					strncpy(buffer, c, e-c+1);
 					buffer[e-c+1] = 0;
 					s = ini.section(buffer); // Create section
-				}
-			}
-			while(*c && *c!='\n') ++c;
+				} else printf("Invalid ini section name\n");
+			} else printf("Expected ']' for ini section\n");
+			while(*c && !newline(c)) ++c;
 
-		} else if(s) { //Attributes
-			whitespace(c);
-			e=c; while(*e && *e!='\n' && *e!='=' && *e!=';') ++e; // find end of name
+		}
+		// Attribute values
+		else if(s) {
+			while(*c && whitespace(c)) ++c;
+			e=c;
+			while(*e && !newline(e) && *e!='=' && *e!=';' && *e!='#') ++e; // find end of name
 			if(*e=='=') {
-				while(*e==']' || *e==' ' || *e=='\t') --e; // trim
+				const char* v=e+1;
+				while(*e=='=' || whitespace(e)) --e; // trim
 				if(e>c) { // Make sure name exists
-					strncpy(buffer, c, e-c);
-					buffer[e-c] = 0;
+					strncpy(buffer, c, e-c+1);
+					buffer[e-c+1] = 0;
 
 					// Get value
-					c=e+1; whitespace(c); ++c; whitespace(c);
-					e=c; while(*e && *e!='\n' && *e!=';') ++e; // find end of name
-					while(*e==' ' || *e=='\t') --e; // trim
+					while(*v && whitespace(v)) ++v;
+					e = c = v;
+					while(*e && !newline(e) && *e!=';' && *e!='#') ++e; // find end of name
+					while(whitespace(e)) --e; // trim
 					if(e>c) { // Make sure value exists
 						Value value;
-						value.m_source = (char*)malloc(e-c+1);
-						strncpy(value.m_source, c, e-c+1);
+						value.m_source = (char*)malloc(e-c);
+						strncpy(value.m_source, c, e-c);
+						value.m_source[e-c] = 0;
 						s->set(buffer, value);
+						c = e;
 					}
 				} else printf("INI Warning: found '=' with no name\n");
 			}
-			while(*c && *c!='\n') ++c;
+			while(*c && !newline(c)) ++c;
 		}
+		while(whitespace(c) || newline(c)) ++c;
 	}
 	return ini;
 }
@@ -111,6 +120,7 @@ INIFile::Section::Section(const char* name) {
 INIFile::Section::~Section() {
 }
 
+bool INIFile::Section::contains(const char* key) const { return m_values.contains(key); }
 const INIFile::Value& INIFile::Section::operator[](const char* c) const { return get(c); }
 INIFile::Value& INIFile::Section::operator[](const char* c) { return m_values[c]; }
 void INIFile::Section::set(const char* c, const Value& v) { m_values[c] = v; }

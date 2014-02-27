@@ -53,6 +53,7 @@ class INIFile {
 		Value& operator[](const char*);              // Get value
 		const Value& get(const char* s) const;       // Get value
 		void set(const char* s, const Value& v);     // Set value
+		bool contains(const char* s) const;          // Does a key exist
 		private:
 		char m_name[32];
 		base::HashMap<Value> m_values;
@@ -75,6 +76,8 @@ class INIFile {
 
 	/** Get section pointer */
 	Section* section(const char* name);
+	/** Does a section exist? */
+	bool containsSection(const char* name) const;
 
 	private:
 	base::HashMap<Section*> m_sections;

@@ -9,11 +9,13 @@ namespace base {
 	int  parseFloat       (const char* in, float& f);			/** Parse a float value              -?[0-9]+(.[0-9]*)?(e[0-9]+)?  */
 	int  parseAlphaNumeric(const char* in, char* s, int l=64);	/** Parse an alphanumeric string     [a-zA-Z_][0-9a-zA-Z_]*        */
 	int  parseString      (const char* in, char* s);			/** Parse quote encapsulated string  "[^"]*"|'[^']*'               */
+	int  parseKeyword     (const char* s, const char* key, bool d=true); /** Parse a keyword */
+	int  parseDelimiter   (const char* s, char delim='\n', char* out=0, int max=64); /** Parse up to a delimeter */
 
-	
 
-
-
+	#define isAZ(in) (*in>='A' && *in<='Z')
+	#define isaz(in) (*in>='a' && *in<='z')
+	#define is09(in) (*in>='0' && *in<='9')
 
 
 	// Implement them all inline
@@ -27,13 +29,13 @@ namespace base {
 		// Sign
 		if(*in=='+' || *in=='-') { ++t; m = 0x2c-*in; }
 		// Digits
-		while(in[t]>='0' && in[t]<='9') { v = v*10 + (in[t] - '0'); ++t; }
+		while( is09(in) ) { v = v*10 + (in[t] - '0'); ++t; }
 		v *= m;
 		return t;
 	}
 	inline int parseHex(const char* in, unsigned v) {
 		int t=0; v=0;
-		while((in[t]>='0' && in[t]<='9') || (in[t]>='A' && in[t]<='F') || (in[t]>='a' && in[t]<='f')  ) { 
+		while( is09(in) || (in[t]>='A' && in[t]<='F') || (in[t]>='a' && in[t]<='f')  ) { 
 			int k = in[t]<='9'? in[t]-'0':  in[t]<='F'? in[t]-'A'+10: in[t]-'a'+10;
 			v = v*0xf + k;
 			++t;
@@ -69,10 +71,10 @@ namespace base {
 	inline int parseAlphaNumeric(const char* in, char* s, int lim) {
 		int t=0;
 		// First digit must not be a numeric
-		if((*in>='A' && *in<='Z') || (*in>='a' && *in<='z') || *in=='_') { *s = *in; ++in; }
+		if( isAZ(in) || isaz(in) || *in=='_') { *s = *in; ++in; }
 		else return 0;
 		// and the rest
-		while(t<lim && ((*in>='A' && *in<='Z') || (*in>='a' && *in<='z') || (*in>='0' && *in<='9') || *in=='_')) { s[++t] = *in; ++in; }
+		while(t<lim && ( isAZ(in) || isaz(in) || is09(in) || *in=='_')) { s[++t] = *in; ++in; }
 		s[++t] = 0;
 		return ++t;
 	}
@@ -84,6 +86,20 @@ namespace base {
 			if(in[t]==q) return t+1;
 		}
 		return 0;
+	}
+	inline int parseKeyword(const char* in, const char* key, bool d) {
+		int t = 0;
+		while(*in && *in==*key) { ++in; ++key; ++t; }
+		if(d && ( isAZ(in) || isaz(in) || is09(in) || *in=='_')) return 0;
+		return t;
+	}
+	inline int parseDelimiter(const char* s, char d, char* out, int max) {
+		int t = 0;
+		while(*s && *s!=d) {
+			if(out && t<max) out[t] = *s;
+			++t;
+		}
+		return t+1;
 	}
 
 };

@@ -129,7 +129,7 @@ void Material::bind(int flags) const {
 			case FLOAT:	 	s->Uniform1f( it.key(), it->f ); break;
 			case FLOAT2:    s->Uniform2f( it.key(), it->p[0], it->p[1] ); break;
 			case FLOAT3:    s->Uniform3f( it.key(), it->p[0], it->p[1], it->p[2] ); break;
-			case FLOAT4:    s->Uniform4f( it.key(), it->p[0], it->p[1], it->p[2], it->p[4] ); break;
+			case FLOAT4:    s->Uniform4f( it.key(), it->p[0], it->p[1], it->p[2], it->p[3] ); break;
 			default: s->Uniformfv( it.key(), it->type-FLOAT, it->p ); break;
 			}
 		}

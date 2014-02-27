@@ -277,10 +277,10 @@ namespace gui {
 		Container(int x, int y, int w, int h, bool clip=false, Style* style=0);
 		virtual ~Container() { clear(); }
 		virtual void draw();
-		Control* add( Control* c, int x, int y );
+		virtual Control* add( Control* c, int x, int y );
 		Control* add( const char* caption, Control* c, int x, int y, int cw=120);
-		Control* remove( Control* c );
-		void clear();
+		virtual Control* remove( Control* c );
+		virtual void clear();
 		uint count() const { return m_contents.size(); }
 		Control* getControl(uint index);
 		Control* getControl(const Point&, bool recursive=true);
