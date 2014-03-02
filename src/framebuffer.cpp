@@ -14,6 +14,10 @@
 #define GL_RENDERBUFFER                   0x8D41
 #define GL_COLOR_ATTACHMENT0              0x8CE0
 #define GL_DEPTH_ATTACHMENT               0x8D00
+#define GL_DEPTH_COMPONENT16              0x81A5
+#define GL_DEPTH_COMPONENT24              0x81A6
+#define GL_DEPTH_COMPONENT32              0x81A7
+#define GL_FRAMEBUFFER_COMPLETE           0x8CD5
 
 typedef void (APIENTRYP PFNGLBINDRENDERBUFFERPROC) (GLenum target, GLuint renderbuffer);
 typedef void (APIENTRYP PFNGLDELETERENDERBUFFERSPROC) (GLsizei n, const GLuint *renderbuffers);
@@ -26,30 +30,30 @@ typedef GLenum (APIENTRYP PFNGLCHECKFRAMEBUFFERSTATUSPROC) (GLenum target);
 typedef void (APIENTRYP PFNGLFRAMEBUFFERTURE2DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFERPROC) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 
-PFNGLBINDRENDERBUFFERPROC	glBindRenderbuffer	= 0;
-PFNGLDELETERENDERBUFFERSPROC	glDeleteRenderbuffers	= 0;
-PFNGLGENRENDERBUFFERSPROC	glGenRenderbuffers	= 0;
-PFNGLRENDERBUFFERSTORAGEPROC	glRenderbufferStorage	= 0;
-PFNGLBINDFRAMEBUFFERPROC	glBindFramebuffer	 = 0;
-PFNGLDELETEFRAMEBUFFERSPROC	glDeleteFramebuffers	 = 0;
-PFNGLGENFRAMEBUFFERSPROC	glGenFramebuffers	 = 0;
-PFNGLCHECKFRAMEBUFFERSTATUSPROC	glCheckFramebufferStatus = 0;
-PFNGLFRAMEBUFFERTURE2DPROC	glFramebufferTexture2D     = 0;
+PFNGLBINDRENDERBUFFERPROC        glBindRenderbuffer	       = 0;
+PFNGLDELETERENDERBUFFERSPROC     glDeleteRenderbuffers     = 0;
+PFNGLGENRENDERBUFFERSPROC        glGenRenderbuffers        = 0;
+PFNGLRENDERBUFFERSTORAGEPROC     glRenderbufferStorage     = 0;
+PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer         = 0;
+PFNGLDELETEFRAMEBUFFERSPROC      glDeleteFramebuffers      = 0;
+PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers         = 0;
+PFNGLCHECKFRAMEBUFFERSTATUSPROC	 glCheckFramebufferStatus  = 0;
+PFNGLFRAMEBUFFERTURE2DPROC	     glFramebufferTexture2D    = 0;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer = 0;
 
 int initialiseExtensions() {
 	if(glBindRenderbuffer) return 1;
-	glBindRenderbuffer	= (PFNGLBINDRENDERBUFFERPROC)		wglGetProcAddress("glBindRenderBuffer");
-	glDeleteRenderbuffers	= PFNGLDELETERENDERBUFFERSPROC		wglGetProcAddress("glDeleteRenderbuffers");
-	glGenRenderbuffers	= PFNGLGENRENDERBUFFERSPROC		wglGetProcAddress("glGenRenderbuffers");
-	glRenderbufferStorage	= PFNGLRENDERBUFFERSTORAGEPROC		wglGetProcAddress("glRenderbufferStorage");
-	glBindFramebuffer	= PFNGLBINDFRAMEBUFFERPROC		wglGetProcAddress("glBindFramebuffer");
-	glDeleteFramebuffers	= PFNGLDELETEFRAMEBUFFERSPROC		wglGetProcAddress("glDeleteFramebuffers");
-	glGenFramebuffers	= PFNGLGENFRAMEBUFFERSPROC		wglGetProcAddress("glGenFramebuffers");
-	glCheckFramebufferStatus= PFNGLCHECKFRAMEBUFFERSTATUSPROC	wglGetProcAddress("glCheckFramebufferStatus");
-	glFramebufferTexture2D 	= PFNGLFRAMEBUFFERTURE2DPROC		wglGetProcAddress("glFramebufferTexture2D ");
-	glFramebufferRenderbuffer= PFNGLFRAMEBUFFERRENDERBUFFERPROC	wglGetProcAddress("glFramebufferRenderbuffer");
-	return glBindRenderBuffer? 1: 0;
+	glBindRenderbuffer        = (PFNGLBINDRENDERBUFFERPROC)			wglGetProcAddress("glBindRenderBuffer");
+	glDeleteRenderbuffers     = (PFNGLDELETERENDERBUFFERSPROC)		wglGetProcAddress("glDeleteRenderbuffers");
+	glGenRenderbuffers        = (PFNGLGENRENDERBUFFERSPROC)			wglGetProcAddress("glGenRenderbuffers");
+	glRenderbufferStorage     = (PFNGLRENDERBUFFERSTORAGEPROC)		wglGetProcAddress("glRenderbufferStorage");
+	glBindFramebuffer         = (PFNGLBINDFRAMEBUFFERPROC)			wglGetProcAddress("glBindFramebuffer");
+	glDeleteFramebuffers      = (PFNGLDELETEFRAMEBUFFERSPROC)		wglGetProcAddress("glDeleteFramebuffers");
+	glGenFramebuffers         = (PFNGLGENFRAMEBUFFERSPROC)			wglGetProcAddress("glGenFramebuffers");
+	glCheckFramebufferStatus  = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)	wglGetProcAddress("glCheckFramebufferStatus");
+	glFramebufferTexture2D    = (PFNGLFRAMEBUFFERTURE2DPROC)		wglGetProcAddress("glFramebufferTexture2D ");
+	glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)	wglGetProcAddress("glFramebufferRenderbuffer");
+	return glBindRenderbuffer? 1: 0;
 }
 #else
 int initialiseExtensions() { return 1; }

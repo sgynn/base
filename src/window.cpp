@@ -474,8 +474,8 @@ uint base::Window::pumpEvents(Input* input) {
 		case WM_QUIT:
 			return 0x100; //Exit signal
 		case WM_SIZE: //Window resized
-			m_width = msg.lparam & 0xffff;
-			m_height = msg.lparam >> 16;
+			m_width = msg.lParam & 0xffff;
+			m_height = msg.lParam >> 16;
 			break;
 		
 		//Keyboard
@@ -485,7 +485,7 @@ uint base::Window::pumpEvents(Input* input) {
 			int word = (msg.lParam & 0xffff0000) >> 16;
 			bool down = msg.message==WM_KEYDOWN;
 			bool extended = (word & 0x100) > 0;
-			bool repeat = (word & 0xf000) == 0x4000;
+			// bool repeat = (word & 0xf000) == 0x4000; // UNUSED
 			int chr = word & 0xff;
 			
 			//if(repeat) break; //stop repeating keystrokes - maybe handle them differently?

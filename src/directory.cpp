@@ -7,6 +7,7 @@
 
 
 #ifdef WIN32
+#include <windows.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -84,15 +85,13 @@ int Directory::scan() {
 	if(hFind  != INVALID_HANDLE_VALUE) {
 		do {
 			File file;
-			// onvert to char* from wchar_t
-			for(int i=0; i<64; i++) {
-				file.name[i] = (char)findFileData.cFileName[i];
-				if(f[i]==0) break;
-			}
+			// Convert to char* from wchar_t
+			TCHAR* wName = findFileData.cFileName;
+			for(int i=0; i<64 && (!i||wName[i-1]); i++) file.name[i] = (char) wName[i];
 
 			// Is it a directory?
 			if(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) file.type=DIRECTORY;
-			else file.type=Directory::FILE;
+			else file.type = Directory::FILE;
 
 			//extract extension
 			for(file.ext=0; file.name[file.ext]; ++file.ext) {

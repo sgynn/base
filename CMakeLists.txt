@@ -108,7 +108,12 @@ set(headers
 )
 
 
-set(CMAKE_CXX_FLAGS "-g -Wall -DLINUX")
+if(${UNIX})
+	set(CMAKE_CXX_FLAGS "-g -Wall -DLINUX")
+elseif(${WIN32})
+	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
+endif(${WIN32})
+
 include_directories( include )
 add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
 target_link_libraries(base GL X11 Xxf86vm)

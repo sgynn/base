@@ -11,7 +11,7 @@ namespace model {
 	 * */
 	class Morph {
 		public:
-		enum Type { ABSOLUTE, RELATIVE };
+		enum Type { ABSOLUTE_MORPH, RELATIVE_MORPH };
 		Morph();								/**< Default constructor */
 		Morph(const Morph&);					/**< Copy constructor */
 		~Morph();								/**< Destructor */

@@ -188,7 +188,7 @@ PNG PNG::load(const char* filename) {
 int PNG::save(const char* filename) {
 	if(!width || !height || !bpp || !data) return -2; // Invalid image data
 	FILE* fp = fopen(filename, "wb");
-	uint iFormat = bpp/8;
+	unsigned iFormat = bpp/8;
 	png_structp png_ptr;
 	png_infop info_ptr;
 	png_bytep *row_pointers = NULL;
