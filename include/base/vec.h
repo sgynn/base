@@ -53,6 +53,9 @@ class vec3 {
 	vec3(float x, float y, float z);
 	vec3(const float*);
 	vec3& set(float x, float y, float z);
+
+	vec2 xy() const { return vec2(x,y); }
+	vec2 xz() const { return vec2(x,z); }
 	
 	operator float*();
 	operator const float*() const;

@@ -13,9 +13,9 @@ namespace base {
 	int  parseDelimiter   (const char* s, char delim='\n', char* out=0, int max=64); /** Parse up to a delimeter */
 
 
-	#define isAZ(in) (*in>='A' && *in<='Z')
-	#define isaz(in) (*in>='a' && *in<='z')
-	#define is09(in) (*in>='0' && *in<='9')
+	#define isAZ(in) (*(in)>='A' && *(in)<='Z')
+	#define isaz(in) (*(in)>='a' && *(in)<='z')
+	#define is09(in) (*(in)>='0' && *(in)<='9')
 
 
 	// Implement them all inline
@@ -29,13 +29,13 @@ namespace base {
 		// Sign
 		if(*in=='+' || *in=='-') { ++t; m = 0x2c-*in; }
 		// Digits
-		while( is09(in) ) { v = v*10 + (in[t] - '0'); ++t; }
+		while( is09(in+t) ) { v = v*10 + (in[t] - '0'); ++t; }
 		v *= m;
 		return t;
 	}
 	inline int parseHex(const char* in, unsigned v) {
 		int t=0; v=0;
-		while( is09(in) || (in[t]>='A' && in[t]<='F') || (in[t]>='a' && in[t]<='f')  ) { 
+		while( is09(in+t) || (in[t]>='A' && in[t]<='F') || (in[t]>='a' && in[t]<='f')  ) { 
 			int k = in[t]<='9'? in[t]-'0':  in[t]<='F'? in[t]-'A'+10: in[t]-'a'+10;
 			v = v*0xf + k;
 			++t;
