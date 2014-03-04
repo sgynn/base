@@ -108,7 +108,7 @@ int Texture::generateMipMaps(int format, const void* source) {
 	int h = m_height>>1;
 	int bpp = m_depth;
 	int sl = m_width * bpp;
-	unsigned char buffer[w*h*bpp + w*h*bpp/4];
+	unsigned char* buffer = new unsigned char[w*h*bpp + w*h*bpp/4];
 	unsigned char* sbuffer = buffer + w*h*bpp;
 	const unsigned char* s = (const unsigned char*) source;
 	unsigned char* t = buffer;
@@ -125,6 +125,7 @@ int Texture::generateMipMaps(int format, const void* source) {
 		s = s==buffer? sbuffer: buffer;
 		sl=w*bpp; w>>=1; h>>=1; ++level;
 	}
+	delete [] buffer;
 	return level;
 }
 
