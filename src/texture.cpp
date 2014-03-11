@@ -4,8 +4,9 @@
 
 #ifndef GL_CLAMP_TO_EDGE
 # define GL_CLAMP_TO_EDGE 0x812f
+# define GL_TEXTURE0      0x84C0
 #endif
-#ifdef WIN32b
+#ifdef WIN32
 PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
 int initialiseTextureExtensions() {
 	if(glActiveTexture) return 1;

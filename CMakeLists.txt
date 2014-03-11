@@ -107,16 +107,15 @@ set(headers
 	include/base/vec.h
 )
 
+add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
+include_directories( include )
+install(FILES ${headers} DESTINATION include/base)
 
 if(${UNIX})
 	set(CMAKE_CXX_FLAGS "-g -Wall -DLINUX")
+	install(TARGETS base DESTINATION lib64)
 elseif(${WIN32})
 	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
+	install(TARGETS base DESTINATION lib)
 endif(${WIN32})
-
-include_directories( include )
-add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
-target_link_libraries(base GL X11 Xxf86vm)
-install(TARGETS base DESTINATION lib64)
-install(FILES ${headers} DESTINATION include/base)
 

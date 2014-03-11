@@ -8,7 +8,7 @@
 
 //Extensions
 #ifndef GL_VERSION_2_0
-#define APIENTRYP *
+#define APIENTRYP __stdcall *
 typedef char GLchar;	/* native character */
 
 #define GL_FRAGMENT_SHADER                0x8B30
@@ -260,7 +260,7 @@ bool Shader::compile(ShaderBase& shader, const char** code, int l) {
 		printf("Shader failed to compile\n");
 		char buf[1024]; printf("-----------\n%s\n-----------\n", shader.log(buf,1024));
 	}
-	GL_DEBUG_ERROR;
+	GL_CHECK_ERROR;
 	delete [] lines;
 	return shader.m_compiled;
 }
@@ -276,7 +276,7 @@ Shader Shader::link(const VertexShader& vs, const FragmentShader& fs) {
 	glLinkProgram(s.m_program);
 	s.m_linked = queryProgram(s.m_program, GL_LINK_STATUS);
 	if(!s.m_linked) printf("Shader failed to link\n");
-	GL_DEBUG_ERROR;
+	GL_CHECK_ERROR;
 	return s;
 }
 Shader Shader::link(const VertexShader& vs, const GeometryShader& gs, const FragmentShader& fs) {

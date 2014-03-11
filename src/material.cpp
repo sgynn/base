@@ -3,6 +3,10 @@
 
 using namespace base;
 
+#ifdef WIN32
+extern PFNGLACTIVETEXTUREARBPROC glActiveTexture;
+#endif
+
 enum SHADER_VARIABLE_TYPES {
 	INTEGER = 0, // Integer (or texture)
 	FLOAT1  = 1, // Single float
