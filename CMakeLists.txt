@@ -94,7 +94,7 @@ set(headers
 	include/base/skeleton.h
 	include/base/state.h
 	include/base/texture.h
-	include/base/threads.h
+	include/base/thread.h
 	include/base/window.h
 	include/base/xml.h
 	include/base/xmodel.h
