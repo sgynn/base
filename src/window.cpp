@@ -524,14 +524,9 @@ Point base::Window::queryMouse() {
 	#ifdef WIN32
 	POINT pnt;
 	GetCursorPos(&pnt);
-	//get window borders for adjustment
-	RECT rect;
-	rect.top = 0; rect.left = 0; rect.right = 100; rect.bottom=100;
-	if (!fullScreen()) AdjustWindowRect(&rect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
-	//get window position
-	//calculate mouse position relative to the window
-	result.x = pnt.x + rect.left - m_position.x;
-	result.y = pnt.y + rect.top  - m_position.y;
+	ScreenToClient(m_hWnd, &pnt);
+	result.x = pnt.x;
+	result.y = pnt.y;
 	#endif
 	
 	#ifdef LINUX
@@ -553,11 +548,11 @@ Point base::Window::queryMouse() {
 
 void base::Window::warpMouse(int x, int y) { 
 	#ifdef WIN32
-	RECT rect; rect.top = 0; rect.left = 0; rect.right = 100; rect.bottom=100;
-	if (!fullScreen()) AdjustWindowRect(&rect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
-	x = m_position.x + x - rect.left;
-	y = m_position.y + y - rect.top;
-	SetCursorPos(x, y);
+	POINT point;
+	point.x = x;
+	point.y = y;
+	ClientToScreen(m_hWnd, &point);
+	SetCursorPos(point.x, point.y);
 	#elif LINUX
 	XWarpPointer(getXDisplay(), 0, getXWindow(), 0, 0, 0, 0, x, y);
 	#endif
