@@ -137,7 +137,7 @@ INIFile::Value::operator const char*() {
 	default: setString(); return m_source;
 	}
 }
-INIFile::Value::operator float() {
+INIFile::Value::operator float() const {
 	switch(m_type) {
 	case SOURCE: return m_source? atof(m_source): 0;
 	case STRING: return atof(m_c);
@@ -147,7 +147,7 @@ INIFile::Value::operator float() {
 	default: return 0;
 	}
 }
-INIFile::Value::operator bool() {
+INIFile::Value::operator bool() const {
 	switch(m_type) {
 	case SOURCE: return strcmp(m_source, "1")==0 || strcmp(m_source, "true")==0 || strcmp(m_source, "yes")==0;
 	case STRING: return strcmp(m_source, "1")==0 || strcmp(m_source, "true")==0 || strcmp(m_source, "yes")==0;
@@ -157,7 +157,7 @@ INIFile::Value::operator bool() {
 	default: return 0;
 	}
 }
-INIFile::Value::operator int() {
+INIFile::Value::operator int() const {
 	switch(m_type) {
 	case SOURCE: return m_source? atoi(m_source): 0;
 	case STRING: return atoi(m_c);

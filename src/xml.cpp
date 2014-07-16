@@ -101,8 +101,27 @@ XMLElement& XMLElement::add(const XMLElement& e) {
 	return m_children.back();
 }
 
+XMLElement& XMLElement::add(const char* tag) {
+	return add( XMLElement(tag) );
+}
+
 bool XMLElement::operator==(const char* s) const {
 	return m_name && strcmp(m_name, s)==0;
+}
+
+XMLElement& XMLElement::find(const char* tag, int index) {
+	static XMLElement none;
+	for(uint i=0; i<size(); ++i) {
+		if(m_children[i]==tag && --index<0) return m_children[i];
+	}
+	return none;
+}
+const XMLElement& XMLElement::find(const char* tag, int index) const {
+	static XMLElement none;
+	for(uint i=0; i<size(); ++i) {
+		if(m_children[i]==tag && --index<0) return m_children[i];
+	}
+	return none;
 }
 
 

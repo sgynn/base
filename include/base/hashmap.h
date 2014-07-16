@@ -141,8 +141,10 @@ template<typename T> void base::HashMap<T>::erase(const char* key) {
 	}
 }
 template<typename T> void base::HashMap<T>::clear() {
-	for(unsigned int i=0; i<m_capacity; i++) if(m_data[i].key) free((void*)m_data[i].key);
-	delete [] m_data;
+	for(unsigned int i=0; i<m_capacity; i++) {
+		if(m_data[i].key) free((void*)m_data[i].key);
+		m_data[i].key = 0;
+	}
 	m_size = 0;
 }
 template<typename T> unsigned int base::HashMap<T>::hash(const char* c) {

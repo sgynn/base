@@ -52,6 +52,12 @@ class XMLElement {
 	void setText(const char* text);
 	/** Add a child element */
 	XMLElement& add(const XMLElement& child);
+	/** Add child element */
+	XMLElement& add(const char* tag);
+	/** Find a child element */
+	XMLElement& find(const char* tag, int index=0);
+	/** Find a child element */
+	const XMLElement& find(const char* tag, int index=0) const;
 	/** Child element iterator start */
 	std::vector<XMLElement>::const_iterator begin() const { return m_children.begin(); }
 	/** Child node iterator end */

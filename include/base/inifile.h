@@ -26,9 +26,9 @@ class INIFile {
 		const Value& operator=(bool b)        { setType(BOOL);    m_b=b; return *this; }
 		const Value& operator=(int i)         { setType(INTEGER); m_i=i; return *this; }
 		operator const char*();
-		operator float();
-		operator bool();
-		operator int();
+		operator float() const;
+		operator bool() const;
+		operator int() const;
 		private:
 		void setType(int t);
 		void setString();
@@ -54,6 +54,7 @@ class INIFile {
 		const Value& get(const char* s) const;       // Get value
 		void set(const char* s, const Value& v);     // Set value
 		bool contains(const char* s) const;          // Does a key exist
+		template<typename T> T get(const char* s, T d) const { return contains(s)? (T)get(s): d; }
 		private:
 		char m_name[32];
 		base::HashMap<Value> m_values;
