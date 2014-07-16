@@ -474,8 +474,8 @@ uint base::Window::pumpEvents(Input* input) {
 		case WM_QUIT:
 			return 0x100; //Exit signal
 		case WM_SIZE: //Window resized
-			m_width = msg.lparam & 0xffff;
-			m_height = msg.lparam >> 16;
+			m_width = msg.lParam & 0xffff;
+			m_height = msg.lParam >> 16;
 			break;
 		
 		//Keyboard
@@ -485,7 +485,7 @@ uint base::Window::pumpEvents(Input* input) {
 			int word = (msg.lParam & 0xffff0000) >> 16;
 			bool down = msg.message==WM_KEYDOWN;
 			bool extended = (word & 0x100) > 0;
-			bool repeat = (word & 0xf000) == 0x4000;
+			// bool repeat = (word & 0xf000) == 0x4000; // UNUSED
 			int chr = word & 0xff;
 			
 			//if(repeat) break; //stop repeating keystrokes - maybe handle them differently?
@@ -524,14 +524,9 @@ Point base::Window::queryMouse() {
 	#ifdef WIN32
 	POINT pnt;
 	GetCursorPos(&pnt);
-	//get window borders for adjustment
-	RECT rect;
-	rect.top = 0; rect.left = 0; rect.right = 100; rect.bottom=100;
-	if (!fullScreen()) AdjustWindowRect(&rect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
-	//get window position
-	//calculate mouse position relative to the window
-	result.x = pnt.x + rect.left - m_position.x;
-	result.y = pnt.y + rect.top  - m_position.y;
+	ScreenToClient(m_hWnd, &pnt);
+	result.x = pnt.x;
+	result.y = pnt.y;
 	#endif
 	
 	#ifdef LINUX
@@ -553,11 +548,11 @@ Point base::Window::queryMouse() {
 
 void base::Window::warpMouse(int x, int y) { 
 	#ifdef WIN32
-	RECT rect; rect.top = 0; rect.left = 0; rect.right = 100; rect.bottom=100;
-	if (!fullScreen()) AdjustWindowRect(&rect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
-	x = m_position.x + x - rect.left;
-	y = m_position.y + y - rect.top;
-	SetCursorPos(x, y);
+	POINT point;
+	point.x = x;
+	point.y = y;
+	ClientToScreen(m_hWnd, &point);
+	SetCursorPos(point.x, point.y);
 	#elif LINUX
 	XWarpPointer(getXDisplay(), 0, getXWindow(), 0, 0, 0, 0, x, y);
 	#endif

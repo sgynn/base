@@ -4,7 +4,7 @@
 using namespace base;
 using namespace model;
 
-Morph::Morph(): m_name(""), m_type(ABSOLUTE), m_size(0), m_max(0), m_format(0), m_ref(0) {}
+Morph::Morph(): m_name(""), m_type(ABSOLUTE_MORPH), m_size(0), m_max(0), m_format(0), m_ref(0) {}
 Morph::Morph(const Morph& m) {
 	memcpy(this, &m, sizeof(Morph));
 	// Duplicate data
@@ -54,7 +54,7 @@ void Morph::apply(const Mesh* input, Mesh* output, float value) const {
 	int off[8]; off[0]=0;
 	for(int i=0; i<7; ++i) off[i+1] = off[i] + (input->getFormat() & (0xf<<(i*4)));
 
-	if(m_type==ABSOLUTE) {
+	if(m_type==ABSOLUTE_MORPH) {
 		// Loop through parts
 		for(int i=0; i<8; ++i) {
 			if(m_parts[i]) {
@@ -69,7 +69,7 @@ void Morph::apply(const Mesh* input, Mesh* output, float value) const {
 				}
 			}
 		}
-	} else { // RELATIVE Morph
+	} else { // RELATIVE_MORPH Morph
 		// Loop through parts
 		for(int i=0; i<8; ++i) {
 			if(m_parts[i]) {

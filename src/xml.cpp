@@ -132,7 +132,7 @@ XML XML::load(const char* file) {
 	FILE* fp = fopen(file, "r");
 	if(!fp) return XML();
 	fseek(fp, 0, SEEK_END);
-	uint len = ftell(fp);
+	unsigned len = ftell(fp);
 	rewind(fp);
 	char* string = new char[len+1];
 	fread(string, 1, len, fp); 
@@ -172,9 +172,9 @@ const char* XML::toString() const {
 	sprintf(s, head);
 	p = strlen(head);
 	std::vector<const Element*> stack;
-	std::vector<uint> index;
+	std::vector<unsigned> index;
 	const Element* e = &m_root;
-	uint child = 0;
+	unsigned child = 0;
 	int n;
 	// Construct string
 	while(e) {

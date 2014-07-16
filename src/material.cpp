@@ -3,9 +3,13 @@
 
 using namespace base;
 
+#ifdef WIN32
+extern PFNGLACTIVETEXTUREARBPROC glActiveTexture;
+#endif
+
 enum SHADER_VARIABLE_TYPES {
 	INTEGER = 0, // Integer (or texture)
-	FLOAT   = 1, // Single float
+	FLOAT1  = 1, // Single float
 	FLOAT2  = 2, // vec2
 	FLOAT3  = 3, // vec3
 	FLOAT4  = 4, // vec4 or colour
@@ -17,7 +21,7 @@ Material::Material(): m_textureCount(0), m_blend(BLEND_ALPHA) {}
 Material::~Material() { }
 
 void Material::setFloat(const char* name, float f) {
-	SVar v; v.type=FLOAT; v.f = f;
+	SVar v; v.type=FLOAT1; v.f = f;
 	m_variables[name] = v;
 }
 void Material::setFloat2(const char* name, const float* p) { setFloatv(name, 2, p); }
@@ -26,12 +30,12 @@ void Material::setFloat4(const char* name, const float* p) { setFloatv(name, 4, 
 
 void Material::setFloatv(const char* name, int v, const float* fp) {
 	HashMap<SVar>::iterator it = m_variables.find(name);
-	int type = FLOAT + v - 1;
+	int type = FLOAT1 + v - 1;
 	// Check if it exists to so we can use already allocated memory
 	if(it!=m_variables.end()) {
 		// Allocate new memory for array if size is different
 		if(it->type!=type) {
-			if(it->type>=FLOAT) delete [] it->p;
+			if(it->type>=FLOAT1) delete [] it->p;
 			it->p = new float[v];
 			it->type = type;
 		}
@@ -52,14 +56,14 @@ void Material::setInt(const char* name, int i) {
 
 float Material::getFloat(const char* name) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type==FLOAT) return it->f;
+	if(it!=m_variables.end() && it->type==FLOAT1) return it->f;
 	else return 0;
 }
 int Material::getFloatv(const char* name, float* fp) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type>=FLOAT) {
-		memcpy(fp, it->p, (it->type-FLOAT)*sizeof(float));
-		return it->type-FLOAT;
+	if(it!=m_variables.end() && it->type>=FLOAT1) {
+		memcpy(fp, it->p, (it->type-FLOAT1)*sizeof(float));
+		return it->type-FLOAT1;
 	} else return 0;
 }
 int Material::getInt(const char* name) {
@@ -126,11 +130,11 @@ void Material::bind(int flags) const {
 		for(base::HashMap<SVar>::const_iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
 			switch(it->type) {
 			case INTEGER:	s->Uniform1i( it.key(), it->i ); break;
-			case FLOAT:	 	s->Uniform1f( it.key(), it->f ); break;
+			case FLOAT1: 	s->Uniform1f( it.key(), it->f ); break;
 			case FLOAT2:    s->Uniform2f( it.key(), it->p[0], it->p[1] ); break;
 			case FLOAT3:    s->Uniform3f( it.key(), it->p[0], it->p[1], it->p[2] ); break;
 			case FLOAT4:    s->Uniform4f( it.key(), it->p[0], it->p[1], it->p[2], it->p[3] ); break;
-			default: s->Uniformfv( it.key(), it->type-FLOAT, it->p ); break;
+			default: s->Uniformfv( it.key(), it->type-FLOAT1, it->p ); break;
 			}
 		}
 	}
