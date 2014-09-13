@@ -347,18 +347,19 @@ XModel::XMesh* XModel::readMesh(const char* name) {
 
 			// Read weight data
 			skin.size = readCount();
-			if(skin.size<=0) break;
-			skin.indices = new int[skin.size];
-			skin.weights = new float[skin.size];
-			t  = parseIntArray(m_read, skin.size, skin.indices);
-			t += parseSpace(m_read+t);
-			t += parseFloatArray(m_read+t, skin.size, skin.weights);
-			validate(t);
+			if(skin.size>0) {
+				skin.indices = new int[skin.size];
+				skin.weights = new float[skin.size];
+				t  = parseIntArray(m_read, skin.size, skin.indices);
+				t += parseSpace(m_read+t);
+				t += parseFloatArray(m_read+t, skin.size, skin.weights);
+				validate(t);
 
-			// Skin offset matrix
-			validate( parseSpace(m_read) );
-			t = parseFloatArray(m_read, 16, skin.offset);
-			validate(t);
+				// Skin offset matrix
+				validate( parseSpace(m_read) );
+				t = parseFloatArray(m_read, 16, skin.offset);
+				validate(t);
+			}
 
 			endBlock();
 
@@ -444,14 +445,15 @@ int XModel::build(XMesh* m, Mesh** out) {
 	struct IMap { int to; bool used; };
 	IMap* map = new IMap[m->vertexCount];
 	int count = 0;
+	bool noMat = m->materialCount==0;
 
 	// one mesh per material (unless empty)
-	for(int mi=0; mi<m->materialCount; ++mi) {
+	for(int mi=0; mi<m->materialCount || (noMat&&mi==0); ++mi) {
 		// Count vertices, indices and create index transformation map
 		int vcount=0, icount=0;
 		memset(map, 0, m->vertexCount*sizeof(IMap));
 		for(int i=0; i<m->size; ++i) {
-			if(m->materialList[i] == mi) {
+			if(noMat || m->materialList[i] == mi) {
 				// Count vertices and add to map
 				for(int j=0; j<m->faces[i].n; ++j) {
 					int k = m->faces[i].ix[j];
@@ -485,7 +487,7 @@ int XModel::build(XMesh* m, Mesh** out) {
 			int k=0;
 			IndexType*  ix = new IndexType[ icount ];
 			for(int i=0; i<m->size; ++i) {
-				if(m->materialList[i] == mi) {
+				if(noMat || m->materialList[i] == mi) {
 					if(m->faces[i].n<3) {
 						for(int j=0; j<m->faces[i].n; ++j) ix[k+j] = map[ m->faces[i].ix[j] ].to;
 						for(int j=m->faces[i].n; j<3; ++j)  ix[k+j] = map[ m->faces[i].ix[0] ].to;
@@ -505,7 +507,7 @@ int XModel::build(XMesh* m, Mesh** out) {
 			Mesh* mesh = new Mesh;
 			mesh->setVertices(vcount, vx, VERTEX_DEFAULT);
 			mesh->setIndices(icount, ix);
-			mesh->setMaterial( m->materials[mi] );
+			if(!noMat) mesh->setMaterial( m->materials[mi] );
 
 
 			// Add skins

@@ -117,5 +117,5 @@ if(${UNIX})
 elseif(${WIN32})
 	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
 	install(TARGETS base DESTINATION lib)
-endif(${WIN32})
+endif(${UNIX})
 

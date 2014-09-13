@@ -152,6 +152,7 @@ Style* Loader::style() const {
 	// Find style by 'style' attribute
 	const char* name = attribute("style", (const char*)0);
 	if(name) return getStyle(name);
+	else if(m_parent) return m_parent->getStyle();
 	return 0;
 }
 Style* Loader::getStyle(const char* name) const {
