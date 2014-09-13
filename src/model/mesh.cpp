@@ -327,10 +327,12 @@ int Mesh::calculateNormals(float smooth) {
 			a = m_vertexBuffer->data + ia*size;
 			b = m_vertexBuffer->data + ib*size;
 			c = m_vertexBuffer->data + ic*size;
-			// Normal
-			n[0] = (b[1]-a[1]) * (b[2]-a[2]) - (b[2]-a[2]) * (b[1]-a[1]);
-			n[1] = (b[2]-a[2]) * (b[0]-a[0]) - (b[0]-a[0]) * (b[2]-a[2]);
-			n[2] = (b[0]-a[0]) * (b[1]-a[1]) - (b[1]-a[1]) * (b[2]-a[2]);
+			// Normal : n = cross( b-a, c-a );
+			
+
+			n[0] = (b[1]-a[1]) * (c[2]-a[2]) - (b[2]-a[2]) * (c[1]-a[1]);
+			n[1] = (b[2]-a[2]) * (c[0]-a[0]) - (b[0]-a[0]) * (c[2]-a[2]);
+			n[2] = (b[0]-a[0]) * (c[1]-a[1]) - (b[1]-a[1]) * (c[2]-a[2]);
 			// Normalise
 			float l = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 			n[0]/=l; n[1]/=l; n[2]/=l;
