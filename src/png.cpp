@@ -49,10 +49,10 @@ PNG PNG::load(const char* filename) {
 	if(!fp) return PNG();
 	
 	/* read magic number */
-	fread (magic, 1, sizeof(magic), fp);
+	size_t r = fread (magic, 1, sizeof(magic), fp);
 
 	/* check for valid magic number */
-	if (!png_check_sig (magic, sizeof (magic))) {
+	if (r!=sizeof(magic) || !png_check_sig(magic, sizeof(magic))) {
 		printf("Invalid PNG image\n"); 
 		fclose(fp);
 		return PNG();

@@ -81,6 +81,7 @@ namespace model {
 
 		const vec3&     getVertex(uint index) const;	/**< Get a vertex */
 		const vec3&     getNormal(uint index) const;	/**< get a vertex normal */
+		const vec2&     getTexCoord(uint index) const;	/**< get a vertex texture coordinates */
 		const IndexType getIndex(uint index) const;		/**< Get vertex index */
 
 		const VertexType* getData() const;			/**< Get raw data pointer - used in morphs and skinning */
@@ -133,7 +134,9 @@ namespace model {
 		// Processing functions
 		void cachePointers();
 		static int calculateTangent(VertexType*const* a, VertexType*const* b, VertexType*const* c, VertexType* t);
-		static int formatSize(uint format);
+
+		public:
+		static int formatSize(uint format);		// Helper function to get the stride of a mesh format
 	};
 
 
@@ -153,6 +156,7 @@ namespace model {
 	// Does this work?
 	inline const vec3&     Mesh::getVertex(uint index) const { return *reinterpret_cast<vec3*>(m_vertexBuffer->data + index*(m_stride/sizeof(VertexType))); }
 	inline const vec3&     Mesh::getNormal(uint index) const { return *reinterpret_cast<vec3*>(m_vertexBuffer->data + index*(m_stride/sizeof(VertexType)) + (m_format&0xf)); }
+	inline const vec2&     Mesh::getTexCoord(uint index) const { return *reinterpret_cast<vec2*>(m_vertexBuffer->data + index*(m_stride/sizeof(VertexType)) + (m_format&0xf) + ((m_format>>4)&0xf)); }
 	inline const IndexType Mesh::getIndex(uint index)  const { return m_indexBuffer->data[ index ]; };
 
 	inline const VertexType* Mesh::getData() const       { return m_vertexBuffer? m_vertexBuffer->data: 0; }

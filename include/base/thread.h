@@ -209,6 +209,9 @@ namespace base {
 	};
 	#endif
 	
+	struct synchronised {
+		
+	};
 
 };
 

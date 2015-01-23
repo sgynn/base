@@ -62,6 +62,8 @@ void Texture::setWrap(uint s, uint t) const {
 /** Clear texture unit */
 void Texture::destroy() {
 	glDeleteTextures(1, &m_unit);
+	m_width = m_height = m_depth = 0;
+	m_unit = 0;
 }
 
 /** Get texture format from image bits per pixel value */

@@ -22,6 +22,7 @@ class INIFile {
 		Value(bool b):        m_type(BOOL),   m_source(0), m_b(b) {}
 		Value(int i):         m_type(INTEGER),m_source(0), m_i(i) {}
 		const Value& operator=(const char* c) { setType(STRING);  m_c=c; return *this; }
+		const Value& operator=(double f)      { setType(FLOAT);   m_f=f; return *this; }
 		const Value& operator=(float f)       { setType(FLOAT);   m_f=f; return *this; }
 		const Value& operator=(bool b)        { setType(BOOL);    m_b=b; return *this; }
 		const Value& operator=(int i)         { setType(INTEGER); m_i=i; return *this; }

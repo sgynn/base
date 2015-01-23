@@ -95,8 +95,8 @@ namespace base {
 	}
 	inline int parseDelimiter(const char* s, char d, char* out, int max) {
 		int t = 0;
-		while(*s && *s!=d) {
-			if(out && t<max) out[t] = *s;
+		while(s[t] && s[t]!=d) {
+			if(out && t<max) out[t] = s[t];
 			++t;
 		}
 		return t+1;

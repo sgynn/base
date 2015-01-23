@@ -31,6 +31,7 @@ set(src
 	src/model/animation.cpp
 	src/model/drawmodel.cpp
 	src/model/xmodel.cpp
+	src/model/wavefront.cpp
 )
 
 set( png
@@ -98,6 +99,7 @@ set(headers
 	include/base/window.h
 	include/base/xml.h
 	include/base/xmodel.h
+	include/base/wavefront.h
 
 	include/base/math.h
 	include/base/bounds.h

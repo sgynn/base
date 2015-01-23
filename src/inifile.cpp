@@ -84,8 +84,8 @@ INIFile INIFile::parse(const char* data) {
 			while(*e && !newline(e) && *e!='=' && *e!=';' && *e!='#') ++e; // find end of name
 			if(*e=='=') {
 				const char* v=e+1;
-				while(*e=='=' || whitespace(e)) --e; // trim
-				if(e>c) { // Make sure name exists
+				while(e>=c && (*e=='=' || whitespace(e))) --e; // trim
+				if(e>=c) { // Make sure name exists
 					strncpy(buffer, c, e-c+1);
 					buffer[e-c+1] = 0;
 
