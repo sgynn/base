@@ -48,6 +48,9 @@ class XMLElement {
 	void setAttribute(const char* name, double value);
 	void setAttribute(const char* name, float value);
 	void setAttribute(const char* name, int value, bool hex=false);
+	/** Attribute iteration */
+	base::HashMap<RefString>::const_iterator attributesBegin() const { return m_attributes.begin(); }
+	base::HashMap<RefString>::const_iterator attributesEnd() const { return m_attributes.end(); }
 	/** Set internal text */
 	void setText(const char* text);
 	/** Add a child element */
@@ -84,6 +87,7 @@ class XML {
 	typedef XMLElement Element;
 	/** XML Element iterator */
 	typedef std::vector<Element>::const_iterator iterator;
+	typedef base::HashMap<RefString>::const_iterator AttributeIterator;
 
 	XML();
 	XML(const char* root);

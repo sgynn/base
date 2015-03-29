@@ -11,10 +11,11 @@
   //   -RigidMultiFractal   //
   ////////////////////////////
 
-#ifndef _BASE_FRACTAL_
-#define _BASE_FRACTAL_
+#ifndef _FRACTAL_
+#define _FRACTAL_
 
 #include <cstdlib>
+#include <cstring>
 #include <cmath>
 
 #define MULT(v, m) v[0]*=m; v[1]*=m; v[2]*=m;
@@ -133,7 +134,7 @@ template <typename T>
 class FBM : public Fractal<T> {
 	public:
 	FBM(Perlin<T>* perlin, T H=0.76, T lacunarity=0.6, T octaves=5.0) : perlin(perlin), H(H), lacunarity(lacunarity), octaves(octaves), exponent_array(0) {
-		expArray(exponent_array, (int)octaves+1, H, lacunarity);
+		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	~FBM() { delete [] exponent_array; }
 	
@@ -141,7 +142,7 @@ class FBM : public Fractal<T> {
 		this->H = H;
 		this->lacunarity = lacunarity;
 		this->octaves = octaves;
-		expArray(exponent_array, (int)octaves+1, H, lacunarity);
+		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
 	T value(T* v, int n) {
@@ -175,7 +176,7 @@ template <typename T>
 class HybridMultiFractal : public Fractal<T> {
 	public:
 	HybridMultiFractal(Perlin<T>* perlin, T H=0.5, T lacunarity=0.551, T octaves=3.57, T offset=0.01) : perlin(perlin), H(H), lacunarity(lacunarity), octaves(octaves), offset(offset), exponent_array(0) {
-		expArray(exponent_array, (int)octaves+1, H, lacunarity);
+		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	~HybridMultiFractal() { delete [] exponent_array; }
 	
@@ -184,7 +185,7 @@ class HybridMultiFractal : public Fractal<T> {
 		this->lacunarity = lacunarity;
 		this->octaves = octaves;
 		this->offset = offset;
-		expArray(exponent_array, (int)octaves+1, H, lacunarity);
+		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
 	T value(T* v, int n) {
@@ -222,7 +223,7 @@ template <typename T>
 class RigidMultiFractal : public Fractal<T> {
 	public:
 	RigidMultiFractal(Perlin<T>* perlin, T H=0.526, T lacunarity=1.0, T octaves=6.85, T offset=0.011, T gain=0.49) : perlin(perlin), H(H), lacunarity(lacunarity), octaves(octaves), offset(offset), gain(gain), exponent_array(0) {
-		expArray(exponent_array, (int)octaves+1, H, lacunarity);
+		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	~RigidMultiFractal() { delete [] exponent_array; }
 	
@@ -232,7 +233,7 @@ class RigidMultiFractal : public Fractal<T> {
 		this->octaves = octaves;
 		this->offset = offset;
 		this->gain = gain;
-		expArray(exponent_array, (int)octaves+1, H, lacunarity);
+		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
 	T value(T* v, int n) {

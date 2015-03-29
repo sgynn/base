@@ -16,8 +16,9 @@ namespace base {
 		enum Wrapping { REPEAT, CLAMP };
 		Texture();
 		/** Texture creation */
-		static Texture create(int width, int height, int format, const void* data=0, bool mip=false);
+		static Texture create(int width, int height, int format, const void* data=0, bool generateMips=false);
 		static Texture create(int width, int height, int iFormat, int sFormat, int type, const void* data);
+		static Texture create1(int width, int height, int format, const ubyte*const* data, int mipmaps=0);
 		static int bppFormat(int bpp);
 		/** Destroy texture */
 		void destroy();

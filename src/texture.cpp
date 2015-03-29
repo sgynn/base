@@ -148,6 +148,38 @@ Texture Texture::create(int width, int height, int format, int sFormat, int type
 	return t;
 }
 
+/** Create texture with pre-generated mipmaps */
+Texture Texture::create1(int width, int height, int format, const ubyte*const* data, int mips) {
+	// Create texture object
+	Texture t;
+	// Create texture
+	glGenTextures(1, &t.m_unit);
+	glBindTexture(GL_TEXTURE_2D, t.m_unit);
+	// Default to bilinear texturing
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Compressed?
+	bool compressed = format >= GL_COMPRESSED_RGB_S3TC_DXT1_EXT && format <= GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+	// Set data
+	if(!compressed) {
+		for(int i=0; i<mips+1; ++i) {
+			glTexImage2D( GL_TEXTURE_2D, i, format, width>>i, height>>i, 0, format, GL_UNSIGNED_BYTE, data[i]); 
+		}
+	}
+	else {
+		int w = width, h = height;
+		int blockSize = format>GL_COMPRESSED_RGBA_S3TC_DXT1_EXT? 16: 8;
+		for(int i=0; i<mips+1; ++i) {
+			if(w==0) w=1; if(h==0) h=1;
+			int size = ((w+3)/4) * ((h+3)/4) * blockSize;
+			glCompressedTexImage2D( GL_TEXTURE_2D, i, format, w, h, 0, size, data[i]); 
+			w >>= 1; h >>= 1;
+		}
+	}
+	t.m_width = width; t.m_height = height;
+	return t;
+}
+
 /** Material bind function */
 void SMaterial::bind() const {
 	// Bind textures
