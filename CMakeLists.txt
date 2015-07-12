@@ -17,6 +17,7 @@ set(src
 	src/input.cpp
 	src/material.cpp
 	src/png.cpp
+	src/dds.cpp
 	src/scene.cpp
 	src/shader.cpp
 	src/state.cpp
@@ -72,6 +73,7 @@ set(headers
 	include/base/fpscamera.h
 	include/base/orbitcamera.h
 	include/base/collision.h
+	include/base/dds.h
 	include/base/draw.h
 	include/base/directory.h
 	include/base/file.h

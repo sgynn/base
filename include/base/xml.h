@@ -71,6 +71,7 @@ class XMLElement {
 	XMLElement&       child(unsigned int i)       { return m_children.at(i); }
 	/** String comparitor */
 	bool operator==(const char* s) const;
+	bool operator!=(const char* s) const;
 	private:
 	int m_type; // XML::TagType
 	RefString m_name;

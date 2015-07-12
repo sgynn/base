@@ -108,6 +108,9 @@ XMLElement& XMLElement::add(const char* tag) {
 bool XMLElement::operator==(const char* s) const {
 	return m_name && strcmp(m_name, s)==0;
 }
+bool XMLElement::operator!=(const char* s) const {
+	return !m_name || strcmp(m_name, s)!=0;
+}
 
 XMLElement& XMLElement::find(const char* tag, int index) {
 	static XMLElement none;
