@@ -27,11 +27,15 @@ class Matrix {
 	vec3     unrotate   (const vec3&) const; 	// Multiply vector by inverse rotation part
 	vec3     untransform(const vec3&) const;	// Multiply vector by inverse affine matrix
 
-	Matrix&  setIdentity();
-	Matrix&  transpose();
-	Matrix   transposed() const;
+	Matrix&  setIdentity();			// Set this matrix to the identity matrix
+	Matrix&  transpose();			// Transpose this matrix
+	Matrix   transposed() const;	// Get a transposed copy of this matrix
 
-	bool isAffine() const;
+	Matrix&  translate(const vec3& t);	// Translate this matrix by t
+	Matrix&  scale(const vec3& s);		// scale this matrix by s
+	Matrix&  scale(float s);			// scale this matrix by s
+
+	bool isAffine() const;			// Is this an affine matrix
 
 	static void inverseAffine(Matrix& out, const Matrix& in);
 };
@@ -148,6 +152,27 @@ inline Matrix Matrix::transposed() const {
 	mat[8] = m[2];	mat[9] = m[6];	mat[10] = m[10]; mat[11] = m[14];
 	mat[12] = m[3];	mat[13] = m[7];	mat[14] = m[11]; mat[15] = m[15];
 	return mat;
+}
+
+inline Matrix& Matrix::translate(const vec3& t) {
+	m[12] += t.x;
+	m[13] += t.y;
+	m[14] += t.z;
+	return *this;
+}
+
+inline Matrix& Matrix::scale(const vec3& s) {
+	m[0] *= s.x; m[1] *= s.x; m[2] *= s.x;
+	m[4] *= s.y; m[5] *= s.y; m[6] *= s.y;
+	m[8] *= s.z; m[9] *= s.z; m[10] *= s.z;
+	return *this;
+}
+
+inline Matrix& Matrix::scale(float s) {
+	m[0] *= s; m[1] *= s; m[2] *= s;
+	m[4] *= s; m[5] *= s; m[6] *= s;
+	m[8] *= s; m[9] *= s; m[10] *= s;
+	return *this;
 }
 
 /** A simple fast inverse matrix. Limited to translation and rotation matrices */

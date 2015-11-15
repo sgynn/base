@@ -27,6 +27,8 @@ class INIFile {
 		const Value& operator=(bool b)        { setType(BOOL);    m_b=b; return *this; }
 		const Value& operator=(int i)         { setType(INTEGER); m_i=i; return *this; }
 		operator const char*();
+		operator const char*() const;
+		operator double() const;
 		operator float() const;
 		operator bool() const;
 		operator int() const;

@@ -39,6 +39,7 @@ class Quaternion {
 	bool        operator!=(const Quaternion& q) const;		/** Compare quaternions */
 	Quaternion& operator*=(const Quaternion& q);
 	Quaternion  operator* (const Quaternion& q) const;
+	vec3        operator* (const vec3&) const;
 
 	float dot(const Quaternion&) const;
 	float getAngle(const Quaternion&) const;
@@ -213,6 +214,20 @@ inline Quaternion slerp(const Quaternion& a, const Quaternion& b, float v) {
 		if(dot<0) t = -t;
 		return Quaternion(a.x*s+b.x*t, a.y*s+b.y*t, a.z*s+b.z*t, a.w*s+b.w*t);
 	} else return a;
+}
+
+// vector multiplication (nVidia SDK implementation)
+inline vec3 Quaternion::operator*(const vec3& v) const {
+	vec3 uv, uuv;
+	vec3 qvec(x, y, z);
+	uv = qvec.cross(v);
+	uuv = qvec.cross(uv);
+	uv *= (2.0f - w);
+	uuv *= 2.0f;
+	return v + uv + uuv;
+}
+inline vec3 operator*(const vec3& v, const Quaternion& q) {
+	return q * v;
 }
 
 

@@ -77,6 +77,7 @@ int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, f
 	return r;
 }
 int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, float radius, float& t) {
+	// Note: d must be unit length
 	vec3 m = p - centre;
 	float b = m.dot(d);
 	float c = m.dot(m) - radius*radius;

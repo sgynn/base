@@ -32,8 +32,20 @@ inline void RefString::drop() {
 }
 inline RefString::~RefString() { drop(); }
 
-
-
+inline RefString RefString::substr(size_t start, size_t len) {
+	size_t slen = s? strlen(s): 0;
+	if(start==0 && len>=slen) return RefString(*this);
+	else if(start>=slen || len==0) return RefString();
+	else {
+		if(start+len > slen) len = slen-start;
+		RefString sub;
+		char tmp = s[start+len];
+		s[start+len] = 0;
+		sub = s;
+		s[start+len] = tmp;
+		return sub;
+	}
+}
 
 
 
@@ -333,11 +345,17 @@ int XML::parseInternal(char* string) {
 				else stack.push_back(&stack.back()->m_children.back());
 				// Internal text - Note: This will be broken by child nodes
 				++c; whitespace(c);
-				const char* text = c;
+				char* text = c;
 				while(*c!=0 && *c!='<') inc(c);
 				// Erase trailing whitespace
-				if(*c=='<') for(char* t=c-1; *t==' '||*t=='\t'||*t=='\n' || *t=='\r'; --t) *t=0;
-				if(text[0]!='<' && text[0]!=0) stack.back()->m_text = text;
+				if(*c=='<') {
+					for(char* t=c-1; *t==' '||*t=='\t'||*t=='\n' || *t=='\r'; --t) *t=0;
+					if(text[0]!='<' && text[0]!=0) {
+						*c = 0;
+						stack.back()->m_text = text;
+						*c = '<';
+					}
+				}
 			} else c+=2; // "/>"
 		}
 	}

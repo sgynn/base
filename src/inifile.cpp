@@ -130,12 +130,22 @@ const INIFile::Value& INIFile::Section::get(const char* c) const {
 }
 
 //// //// Value Functions //// ////
+INIFile::Value::operator const char*() const {
+	switch(m_type) {
+	case SOURCE: return m_source;
+	case STRING: return m_c;
+	default: return 0;
+	}
+}
 INIFile::Value::operator const char*() {
 	switch(m_type) {
 	case SOURCE: return m_source;
 	case STRING: return m_c;
 	default: setString(); return m_source;
 	}
+}
+INIFile::Value::operator double() const {
+	return (float)*this;
 }
 INIFile::Value::operator float() const {
 	switch(m_type) {

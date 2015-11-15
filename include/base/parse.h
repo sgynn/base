@@ -102,7 +102,28 @@ namespace base {
 		return t+1;
 	}
 
-};
+	inline int parseArray(const char* in, int count, float* out) {
+		int t=0;
+		for(int i=0; i<count; ++i) {
+			int r = parseFloat(in+t, out[i]);
+			if(!r) return 0;
+			t += r;
+			t += parseSpace(in+t);
+		}
+		return t;
+	}
+	inline int parseArray(const char* in, int count, int* out) {
+		int t=0;
+		for(int i=0; i<count; ++i) {
+			int r = parseInt(in+t, out[i]);
+			if(!r) return 0;
+			t += r;
+			t += parseSpace(in+t);
+		}
+		return t;
+	}
+
+}
 
 #endif
 
