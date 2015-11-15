@@ -93,12 +93,13 @@ INIFile INIFile::parse(const char* data) {
 					while(*v && whitespace(v)) ++v;
 					e = c = v;
 					while(*e && !newline(e) && *e!=';' && *e!='#') ++e; // find end of name
+					--e;
 					while(whitespace(e)) --e; // trim
-					if(e>c) { // Make sure value exists
+					if(e>=c) { // Make sure value exists
 						Value value;
-						value.m_source = (char*)malloc(e-c+1);
-						strncpy(value.m_source, c, e-c);
-						value.m_source[e-c] = 0;
+						value.m_source = (char*)malloc(e-c+2);
+						strncpy(value.m_source, c, e-c+1);
+						value.m_source[e-c+1] = 0;
 						s->set(buffer, value);
 						c = e;
 					}

@@ -138,6 +138,7 @@ inline void BoundingBox::include(const vec3& p) {
 	if(p.z>max.z) max.z=p.z;
 }
 inline void BoundingBox::include(const BoundingBox& b) {
+	if(!b.isValid()) return;
 	include(b.min);
 	include(b.max);
 }
