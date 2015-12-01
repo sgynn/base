@@ -541,6 +541,7 @@ int XModel::build(XMesh* m, Mesh** out) {
 			++count;
 		}
 	}
+	delete [] map;
 	return count;
 }
 

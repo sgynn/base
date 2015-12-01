@@ -31,6 +31,7 @@ INIFile INIFile::load(const char* filename) {
 	char* data = new char[length+1];
 	length = fread(data, 1, length, fp);
 	data[length] = 0;
+	fclose(fp);
 	INIFile ini = parse(data);
 	delete [] data;
 	return ini;

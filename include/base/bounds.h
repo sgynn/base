@@ -65,6 +65,7 @@ class BoundingBox {
 	bool intersects(const BoundingBox& b) const;	/// Does a box intersect with this box */
 	bool isValid() const;							/// Is the box valid? min < max
 	bool isEmpty() const;							/// Is the box empty? min = max
+	vec3 clamp(const vec3&) const;					/// Clamp a vector inside box
 	
 };
 
@@ -100,6 +101,7 @@ class BoundingBox2D {
 	bool intersects(const BoundingBox2D& b) const;	/// Does a box intersect with this box */
 	bool isValid() const;							/// Is the box valid? min < max
 	bool isEmpty() const;							/// Is the box empty? min = max
+	vec2 clamp(const vec2&) const;					/// Clamp a point inside the box
 };
 
 // Range implementation
@@ -155,6 +157,17 @@ inline bool BoundingBox::contains(const BoundingBox& b) const {
 inline bool BoundingBox::intersects(const BoundingBox& b) const {
 	return b.max.x>min.x && b.min.x<max.x && b.max.y>min.y && b.min.y<max.y && b.max.z>min.z && b.min.z<max.z;
 }
+inline vec3 BoundingBox::clamp(const vec3& p) const {
+	if(!isValid()) return p;
+	vec3 r = p;
+	if     (r.x < min.x) r.x = min.x;
+	else if(r.x > max.x) r.x = max.x;
+	if     (r.y < min.y) r.y = min.y;
+	else if(r.y > max.y) r.y = max.y;
+	if     (r.z < min.z) r.z = min.z;
+	else if(r.z > max.z) r.z = max.z;
+	return r;
+}
 
 
 
@@ -189,6 +202,15 @@ inline bool BoundingBox2D::contains(const BoundingBox2D& b) const {
 }
 inline bool BoundingBox2D::intersects(const BoundingBox2D& b) const {
 	return b.max.x>min.x && b.min.x<max.x && b.max.y>min.y && b.min.y<max.y;
+}
+inline vec2 BoundingBox2D::clamp(const vec2& p) const {
+	if(!isValid()) return p;
+	vec2 r = p;
+	if     (r.x < min.x) r.x = min.x;
+	else if(r.x > max.x) r.x = max.x;
+	if     (r.y < min.y) r.y = min.y;
+	else if(r.y > max.y) r.y = max.y;
+	return r;
 }
 
 #endif

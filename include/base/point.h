@@ -6,11 +6,14 @@ struct Point {
 	int x, y;
 	Point() : x(0), y(0) {};
 	Point(int x, int y) : x(x), y(y) {};
+	Point operator-() const { return Point(-x, -y); }
 	bool  operator< (const Point& p) const { return x<p.x || (x==p.x && y<p.y);  }
 	bool  operator==(const Point& p) const { return x==p.x && y==p.y; }
 	bool  operator!=(const Point& p) const { return x!=p.x || y!=p.y; }
 	Point operator+ (const Point& b) const { return Point(x+b.x,y+b.y); }
 	Point operator- (const Point& b) const { return Point(x-b.x,y-b.y); }
+	Point& operator+=(const Point& p)      { x+=p.x; y+=p.y; return *this; }
+	Point& operator-=(const Point& p)      { x-=p.x; y-=p.y; return *this; }
 	operator const int*() const { return &x; }
 	operator int*() { return &x; }
 };
@@ -20,11 +23,14 @@ struct Point3 {
 	int x, y, z;
 	Point3() : x(0), y(0), z(0) {};
 	Point3(int x, int y, int z) : x(x), y(y), z(z) {};
+	Point3 operator-() const { return Point3(-x, -y, -z); }
 	bool   operator< (const Point3& p) const { return x<p.x || (x==p.x && y<p.y) || (x==p.x && y==p.y && z<p.z); }
 	bool   operator==(const Point3& p) const { return x==p.x && y==p.y && z==p.z; }
 	bool   operator!=(const Point3& p) const { return x!=p.x || y!=p.y || z!=p.z; }
 	Point3 operator+ (const Point3& b) const { return Point3(x+b.x,y+b.y,z+b.z); }
 	Point3 operator- (const Point3& b) const { return Point3(x-b.x,y-b.y,z-b.z); }
+	Point3& operator+=(const Point3& p)      { x+=p.x; y+=p.y; z+=p.z; return *this; }
+	Point3& operator-=(const Point3& p)      { x-=p.x; y-=p.y; z-=p.z; return *this; }
 	operator const int*() const { return &x; }
 	operator int*() { return &x; }
 };
@@ -50,6 +56,7 @@ struct Rect {
 
 	const Point& position() const { return *reinterpret_cast<const Point*>(&x); }
 	const Point& size() const     { return *reinterpret_cast<const Point*>(&width); }
+	Point bottomRight() const     { return Point(x+width, y+height); }
 
 	bool valid      () const { return width >= 0 && height >= 0; }
 	bool empty      () const { return width == 0 && height == 0; }

@@ -174,6 +174,7 @@ DDS DDS::load(const char* filename) {
 			d = d>>1;
 		}
 	}
+	fclose(fp);
 	return dds;
 }
 

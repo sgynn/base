@@ -93,6 +93,13 @@ namespace base {
 			#endif
 		}
 
+		void setName(const char* name) {
+			if(!m_running) return;
+			#ifdef LINUX
+			pthread_setname_np(m_thread, name);
+			#endif
+		}
+
 		/** Tell current thread to sleep (milliseconds) */
 		static void sleep(int time) {
 			#ifdef LINUX
@@ -194,6 +201,7 @@ namespace base {
 		~Mutex()      { DeleteCriticalSection(&m_lock); }
 		void lock()   { EnterCriticalSection(&m_lock); }
 		void unlock() { LeaveCriticalSection(&m_lock); }
+		bool tryLock(){ return TryEnterCriticalSection(&m_lock); }
 		private:
 		CRITICAL_SECTION m_lock;
 	};
@@ -204,13 +212,26 @@ namespace base {
 		~Mutex()      { pthread_mutex_destroy(&m_lock); }
 		void lock()   { pthread_mutex_lock(&m_lock); }
 		void unlock() { pthread_mutex_unlock(&m_lock); }
+		bool tryLock(){ return pthread_mutex_lock(&m_lock)==0; }
 		private:
 		pthread_mutex_t m_lock;
 	};
 	#endif
 	
-	struct synchronised {
-		
+	/** Exception safe mutex aquistion class */
+	class MutexLock {
+		public:
+		MutexLock(Mutex& mutex, bool block=true) : m_mutex(mutex), m_locked(true) {
+			if(block) mutex.lock();
+			else m_locked = mutex.tryLock();
+		}
+		~MutexLock() {
+			if(m_locked) m_mutex.unlock();
+		}
+		operator bool() const { return m_locked; }
+		protected:
+		Mutex& m_mutex;
+		bool m_locked;
 	};
 
 };

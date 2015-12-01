@@ -8,10 +8,12 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include <direct.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 #endif
 
 // FIle list sorting functor //
@@ -42,7 +44,7 @@ Directory::~Directory() {
 }
 
 /** Get a clean path */
-int Directory::clean(const char* in, char* out) {
+int Directory::clean(const char* in, char* out, int lim) {
 	int k=0;
 	for(const char* c=in; *c; c++) {
 		if(strncmp(c, "//", 2)==0) continue ; // repeated slashes
@@ -59,6 +61,61 @@ int Directory::clean(const char* in, char* out) {
 	out[k]=0;
 	if(k==0) strcpy(out, ".");
 	return strlen(out);
+}
+
+bool Directory::isRelative(const char* path) {
+	#ifdef WIN32
+	return path[1] != ':';
+	#else
+	return path[0] != '/';
+	#endif
+}
+
+int Directory::getFullPath(const char* in, char* out, int lim) {
+	if(lim<=0) lim = FILENAME_MAX;
+	if(isRelative(in)) {
+		// Get working directory
+		char buffer[FILENAME_MAX];
+		#ifdef WIN32
+		if(!_getcwd(buffer, FILENAME_MAX)) return 0;
+		#else
+		if(!getcwd(buffer, FILENAME_MAX)) return 0;
+		#endif
+
+		// Append in
+		size_t l = strlen(buffer);
+		buffer[l] = '/';
+		strncpy(buffer+l+1, in, lim-l-2);
+		return clean(buffer, out, lim);
+	}
+	return clean(in, out, lim);
+}
+
+int Directory::getRelativePath(const char* in, char* out, int lim) {
+	if(lim<=0) lim = FILENAME_MAX;
+	if(!isRelative(in)) {
+		// Get working directory
+		char buffer[FILENAME_MAX];
+		#ifdef WIN32
+		if(!_getcwd(buffer, FILENAME_MAX)) return 0;
+		#else
+		if(!getcwd(buffer, FILENAME_MAX)) return 0;
+		#endif
+		// match ...
+		int m=0, up=0;
+		while(buffer[m] == in[m]) ++m;
+		for(char* c = buffer+m; *c; ++c) if(*c=='/' || *c=='\\') ++up;
+		// Build
+		int k = 2;
+		if(up==0) strcpy(buffer, "./");
+		else {
+			for(int i=0; i<up; ++i) strcpy(buffer+i*3, "../");
+			k = up*3;
+		}
+		strncpy(buffer+k, in+m, lim-k);
+		return clean(buffer, out, lim);
+	}
+	return clean(in, out, lim);
 }
 
 /** Scan directory for files */

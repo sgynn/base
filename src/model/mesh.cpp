@@ -303,6 +303,7 @@ int Mesh::normaliseWeights() {
 			}
 		}
 	}
+	delete [] ix;
 	return changed;
 }
 
