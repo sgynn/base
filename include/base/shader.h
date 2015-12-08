@@ -125,9 +125,10 @@ class Shader {
 	int variable(const char* name, VType type);
 	
 	static const char* loadFile(const char* filename);
+	static bool preprocess(const char* data, int type, int& version, char*& output);
 	static bool compile(ShaderBase& shader, const char** code, int l);
-	static int queryShader(unsigned int shader, int param);
-	static int queryProgram(unsigned int shader, int param);
+	static int  queryShader(unsigned int shader, int param);
+	static int  queryProgram(unsigned int shader, int param);
 	
 	//store variable pointers
 	std::map<std::string, int> m_vars;

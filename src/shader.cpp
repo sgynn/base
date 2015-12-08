@@ -4,6 +4,7 @@
 #include "base/shader.h"
 #include <iostream>
 #include <string.h>
+#include <cstdlib>
 #include "base/file.h"
 
 //Extensions
@@ -235,33 +236,144 @@ const char* Shader::loadFile(const char* filename) {
 	}
 }
 
+//// //// //// //// //// //// //// //// Comple preprocessor //// //// //// //// //// //// //// ////
+
+const char* findDirective(const char* src, const char* directive) {
+	while(true) {
+		const char* result = strstr(src, directive);
+		if(!result) return 0;
+		// Validate result
+		bool valid = true;
+		for(const char* c=result-1; valid && c>=src && *c!='\n'; --c) {
+			if(*c != ' ' && *c != '\t') valid = false;	// only allow whitespace before directive
+		}
+		if(valid) return result;
+		src = result + 4;
+	}
+	return 0; // compiler
+}
+
+bool Shader::preprocess(const char* code, int type, int& version, char*& output) {
+	// Preprocessor - search for #pragma
+	// Also find and remove #version to pull it to the start
+	// If keys are found, need to to edit a temporary copy of the shader source
+	// Can delete the chunk and use the #line directive to correct the line number
+	
+	// Find version directive
+	const char* versionDirective = findDirective(code, "#version");
+	if(versionDirective) {
+		const char* c = versionDirective + 8;
+		while(*c==' ' || *c=='\t') ++c;
+		version = atoi(c);
+	}
+
+	// Find pragmas: vertex_shader, fragment_shader, geometry_shader
+	struct Pragma { const char* loc; int type; int line; };
+	Pragma pragmas[32];
+	int count = 0;
+	const char* pragma = code;
+	while(pragma) {
+		pragma = strstr(pragma, "#pragma");
+		if(pragma && (pragma[7]==' ' || pragma[7]=='\t')) {
+			pragmas[count].loc = pragma;
+			pragma += 8;
+			while(*pragma==' ' || *pragma=='\t') ++pragma;
+			// Determine type
+			if(     strncmp(pragma, "vertex_shader",  13)==0) pragmas[count].type = 1;
+			else if(strncmp(pragma, "fragment_shader",15)==0) pragmas[count].type = 2;
+			else if(strncmp(pragma, "geometry_shader",15)==0) pragmas[count].type = 3;
+			else continue;	// Something else
+			// Get line
+			pragmas[count].line = count>0? pragmas[count-1].line: 0;
+			const char* anchor = count>0? pragmas[count-1].loc: code;
+			for(const char* c=pragma; c>=anchor; --c) {
+				if(*c == '\n') ++pragmas[count].line;
+			}
+			++count;
+		}
+	}
+
+	// Nothing doing
+	if(!versionDirective && count==0) return false;
+
+	// Build new source
+	size_t size = strlen(code);
+	pragmas[count].loc = code + size;
+	for(int i=0; i<count; ++i) {
+		if(pragmas[i].type != type) size -= pragmas[i+1].loc - pragmas[i].loc;
+		else size += 8;	// just in case
+	}
+
+	output = new char[size];
+	size_t commonSize = count>0? pragmas[0].loc - code: size;
+	memcpy(output, code, commonSize);
+	if(versionDirective) {
+		char* c = output + (versionDirective - code);
+		memcpy(c, "//  --  ", 8);
+	}
+
+	char* out = output + commonSize;
+	for(int i=0; i<count; ++i) {
+		if(pragmas[i].type == type) {
+			sprintf(out, "#line %d\n//", pragmas[i].line);
+			out += strlen(out);
+			size_t length = pragmas[i+1].loc - pragmas[i].loc;
+			memcpy(out, pragmas[i].loc + 7, length - 7);
+			out += length - 7;
+		}
+	}
+	*out = 0; // ensure null terminated
+	return true;
+}
+
+
 //// //// //// //// //// //// //// //// Compile functions //// //// //// //// //// //// //// ////
 bool Shader::compile(ShaderBase& shader, const char** code, int l) {
 	if(!supported()) return 0;
 	int glType[4] = { 0, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_GEOMETRY_SHADER };
 
-	//Add #define to start of shader code
-	char const ** lines = new char const*[l+1];
-	switch(shader.m_type) {
-		case 1: lines[0] = "#define VERTEX_SHADER\n"; break;
-		case 2: lines[0] = "#define FRAGMENT_SHADER\n"; break;
-		case 3: lines[0] = "#define GEOMETRY_SHADER\n"; break;
+	// Preprocessor stuff
+	int version = 0;
+	char** temp = new char*[l];
+	const char** parts = new const char*[l+1];
+	for(int i=0; i<l; ++i) {
+		temp[i] = 0;
+		if(preprocess(code[i], shader.m_type, version, temp[i])) {
+			parts[i+1] = temp[i];
+		} else parts[i+1] = code[i];
 	}
-	for(int i=0; i<l; i++) lines[i+1] = code[i];
+
+	// Automatic code
+	char header[1024];
+	parts[0] = header;
+	if(version>0) sprintf(header, "#version %d\n", version);
+	else header[0] = 0;
+	// Add extra defines here
+	switch(shader.m_type) { // Deprecated shader type defines
+	case 1: strcat(header, "#define VERTEX_SHADER\n"); break;
+	case 2: strcat(header, "#define FRAGMENT_SHADER\n"); break;
+	case 3: strcat(header, "#define GEOMETRY_SHADER\n"); break;
+	}
 
 	// Create and compile shader
 	unsigned int s = glCreateShader( glType[shader.m_type] );
-	glShaderSource(s,  l+1, lines, NULL);
+	glShaderSource(s,  l+1, parts, NULL);
 	glCompileShader(s);
+
 	//Success?
 	shader.m_shader = s;
 	shader.m_compiled = queryShader(s, GL_COMPILE_STATUS);
 	if(!shader.m_compiled) {
 		printf("Shader failed to compile\n");
-		char buf[1024]; printf("-----------\n%s\n-----------\n", shader.log(buf,1024));
+		char buf[10000];
+		printf("-----------\n%s\n-----------\n", shader.log(buf,10000));
 	}
 	GL_CHECK_ERROR;
-	delete [] lines;
+
+	// clean up
+	for(int i=0; i<l; ++i) if(temp[i]) delete [] temp[i];
+	delete [] parts;
+	delete [] temp;
 	return shader.m_compiled;
 }
 
@@ -297,7 +409,7 @@ Shader Shader::link(const VertexShader& vs, const GeometryShader& gs, const Frag
 
 char* ShaderBase::log(char* buf, int max) const {
 	int l = Shader::queryShader(m_shader, GL_INFO_LOG_LENGTH);
-	if(Shader::supported()) glGetShaderInfoLog(m_shader, l, &l, buf);
+	if(Shader::supported()) glGetShaderInfoLog(m_shader, max, &l, buf);
 	return buf;
 }
 

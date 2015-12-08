@@ -298,7 +298,7 @@ Style* Loader::readStyle(const XML::Element& e) {
 
 // Load sprite texture from file //
 Texture* Loader::loadTexture(const char* file) {
-	static const int fmt[] = { 0, Texture::LUMINANCE, Texture::LUMINANCE_ALPHA, Texture::RGB, Texture::RGBA };
+	static const Texture::Format fmt[] = { Texture::NONE, Texture::R8, Texture::RG8, Texture::RGB8, Texture::RGBA8 };
 	HashMap<Texture*>::iterator it = m_textures.find(file);
 	if(it==m_textures.end()) {
 		PNG png = PNG::load(file);
