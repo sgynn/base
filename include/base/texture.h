@@ -70,9 +70,12 @@ namespace base {
 		int m_width, m_height, m_depth;	// Size
 		int generateMipMaps(int format, const void* data);
 		unsigned getTarget() const;
-		static unsigned convertFormat(Format);
-		static unsigned getDataFormat(Format);
-		static bool compressedFormat(Format);
+
+		public:
+		static unsigned getInternalFormat(Format);
+		static unsigned getInternalDataType(Format);
+		static bool     isCompressedFormat(Format);
+		static unsigned getMemorySize(Format, int w, int h, int d=1);
 	};
 
 

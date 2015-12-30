@@ -98,7 +98,7 @@ void Material::bind(int flags) const {
 	// bind textures
 	for(uint i=0; i<m_textureCount; ++i) {
 		glActiveTexture(GL_TEXTURE0+i);
-		glBindTexture(GL_TEXTURE_2D, texture[i].unit());
+		texture[i].bind();
 	}
 	if(m_textureCount>1) glActiveTexture(GL_TEXTURE0);
 
