@@ -183,7 +183,7 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 			GL_CHECK_ERROR;
 			if(width>1) width >>=1;
 			if(height>1 && type != ARRAY1D) height >>= 1;
-			if(depth>0 && type != ARRAY2D)  depth >>= 1;
+			if(depth>1 && type != ARRAY2D)  depth >>= 1;
 		}
 	} else {
 		for(int mip=0; mip<mipmaps; ++mip) {
@@ -203,7 +203,7 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 			GL_CHECK_ERROR;
 			if(width>1) width >>=1;
 			if(height>1 && type != ARRAY1D) height >>= 1;
-			if(depth>0 && type != ARRAY2D)  depth >>= 1;
+			if(depth>1 && type != ARRAY2D)  depth >>= 1;
 		}
 	}
 

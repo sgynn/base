@@ -116,7 +116,7 @@ inline bool  vec2::operator!=(const vec2& v) const { return x!=v.x || y!=v.y; }
 inline vec2  operator+(float s, const vec2& v) { return vec2(s+v.x, s+v.y); }
 inline vec2  operator-(float s, const vec2& v) { return vec2(s-v.x, s-v.y); }
 inline vec2  operator*(float s, const vec2& v) { return v*s; }
-inline vec2  operator/(float s, const vec2& v) { return v/s; }
+inline vec2  operator/(float s, const vec2& v) { return vec2(s/v.x, s/v.y); }
 
 inline float vec2::length2() const    { return x*x + y*y; }
 inline float vec2::length() const     { return sqrt(x*x+y*y); }
@@ -168,7 +168,7 @@ inline bool  vec3::operator!=(const vec3& v) const { return x!=v.x || y!=v.y || 
 inline vec3  operator+(float s, const vec3& v) { return vec3(s+v.x, s+v.y, s+v.z); }
 inline vec3  operator-(float s, const vec3& v) { return vec3(s-v.x, s-v.y, s-v.z); }
 inline vec3  operator*(float s, const vec3& v) { return v*s; }
-inline vec3  operator/(float s, const vec3& v) { return v/s; }
+inline vec3  operator/(float s, const vec3& v) { return vec3(s/v.x, s/v.y, s/v.z); }
 
 inline float vec3::length2() const    { return x*x + y*y + z*z; }
 inline float vec3::length() const     { return sqrt(x*x+y*y+z*z); }
