@@ -304,7 +304,7 @@ bool Shader::preprocess(const char* code, int type, int& version, char*& output)
 		else size += 8;	// just in case
 	}
 
-	output = new char[size];
+	output = new char[size+1];
 	size_t commonSize = count>0? pragmas[0].loc - code: size;
 	memcpy(output, code, commonSize);
 	if(versionDirective) {
@@ -322,7 +322,7 @@ bool Shader::preprocess(const char* code, int type, int& version, char*& output)
 			out += length - 7;
 		}
 	}
-	*out = 0; // ensure null terminated
+	output[size] = 0; // ensure null terminated
 	return true;
 }
 
