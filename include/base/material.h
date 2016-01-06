@@ -16,6 +16,7 @@ namespace base {
 		public:
 		Material();
 		~Material();
+		Material(const Material&);
 
 		/** Set shadere variables */
 		void setFloat(const char* name, float f);

@@ -26,8 +26,8 @@ namespace base {
 		
 		/** Clean a path */
 		static int clean(const char* path, char* out, int lim=0);
-		static int getFullPath(const char* rel, char* out, int lim=0);
-		static int getRelativePath(const char* rel, char* out, int lim=0);
+		static int getFullPath(const char* path, char* out, int lim=0);
+		static int getRelativePath(const char* path, char* out, int lim=0);
 		static bool isRelative(const char*);
 		protected:
 		int scan();

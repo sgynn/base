@@ -18,7 +18,22 @@ enum SHADER_VARIABLE_TYPES {
 
 
 Material::Material(): m_textureCount(0), m_blend(BLEND_ALPHA) {}
-Material::~Material() { }
+Material::~Material() {
+	// delete any variable pointers
+	for(base::HashMap<SVar>::iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
+		if(it->type > FLOAT1) delete [] it->p;
+	}
+}
+Material::Material(const Material& m) : SMaterial(m), m_variables(m.m_variables), m_shader(m.m_shader), m_textureCount(m.m_textureCount), m_blend(m.m_blend) {
+	// Fix any variables that use pointers
+	for(base::HashMap<SVar>::iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
+		if(it->type > FLOAT1) {
+			float* p = new float[ it->type ];
+			memcpy(p, it->p, it->type * sizeof(float));
+			it->p = p;
+		}
+	}
+}
 
 void Material::setFloat(const char* name, float f) {
 	SVar v; v.type=FLOAT1; v.f = f;
@@ -35,17 +50,21 @@ void Material::setFloatv(const char* name, int v, const float* fp) {
 	if(it!=m_variables.end()) {
 		// Allocate new memory for array if size is different
 		if(it->type!=type) {
-			if(it->type>=FLOAT1) delete [] it->p;
-			it->p = new float[v];
+			if(it->type > FLOAT1) delete [] it->p;
+			if(type > FLOAT1) it->p = new float[v];
 			it->type = type;
 		}
-		memcpy(it->p, fp, v*sizeof(float));
+		if(type == FLOAT1) it->f = *fp;
+		else memcpy(it->p, fp, v*sizeof(float));
 	} else {
 		// Allocate new variable
 		SVar var;
 		var.type = type;
-		var.p = new float[v];
-		memcpy(var.p, fp, v*sizeof(float));
+		if(type == FLOAT1) var.f = *fp;
+		else {
+			var.p = new float[v];
+			memcpy(var.p, fp, v*sizeof(float));
+		}
 		m_variables.insert(name, var);
 	}
 }
@@ -63,7 +82,7 @@ int Material::getFloatv(const char* name, float* fp) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
 	if(it!=m_variables.end() && it->type>=FLOAT1) {
 		memcpy(fp, it->p, (it->type-FLOAT1)*sizeof(float));
-		return it->type-FLOAT1;
+		return it->type-FLOAT1+1;
 	} else return 0;
 }
 int Material::getInt(const char* name) {

@@ -104,6 +104,7 @@ int Directory::getRelativePath(const char* in, char* out, int lim) {
 		// match ...
 		int m=0, up=0;
 		while(buffer[m] == in[m]) ++m;
+		while(m>0 && in[m]=='/') ++m;
 		for(char* c = buffer+m; *c; ++c) if(*c=='/' || *c=='\\') ++up;
 		// Build
 		int k = 2;
