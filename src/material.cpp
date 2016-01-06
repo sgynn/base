@@ -81,8 +81,9 @@ float Material::getFloat(const char* name) {
 int Material::getFloatv(const char* name, float* fp) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
 	if(it!=m_variables.end() && it->type>=FLOAT1) {
-		memcpy(fp, it->p, (it->type-FLOAT1)*sizeof(float));
-		return it->type-FLOAT1+1;
+		if(it->type == FLOAT1) *fp = it->f;
+		else memcpy(fp, it->p, it->type*sizeof(float));
+		return it->type;
 	} else return 0;
 }
 int Material::getInt(const char* name) {
