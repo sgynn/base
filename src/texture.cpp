@@ -9,10 +9,12 @@
 #ifdef WIN32
 PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
 PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = 0;
+PFNGLCOMPRESSEDTEXIMAGE3DPROC glCompressedTexImage3D = 0;
 int initialiseTextureExtensions() {
 	if(glActiveTexture) return 1;
 	glActiveTexture = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
 	glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)wglGetProcAddress("glCompressedTexImage2D");
+	glCompressedTexImage3D = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)wglGetProcAddress("glCompressedTexImage3D");
 	return glActiveTexture? 1: 0;
 }
 #else
