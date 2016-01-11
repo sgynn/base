@@ -17,6 +17,8 @@
 #define GL_DEPTH_COMPONENT24              0x81A6
 #define GL_DEPTH_COMPONENT32              0x81A7
 #define GL_FRAMEBUFFER_COMPLETE           0x8CD5
+#define GL_DEPTH_STENCIL_ATTACHMENT       0x821A
+#define GL_DEPTH24_STENCIL8               0x88F0
 
 typedef void (APIENTRYP PFNGLBINDRENDERBUFFERPROC) (GLenum target, GLuint renderbuffer);
 typedef void (APIENTRYP PFNGLDELETERENDERBUFFERSPROC) (GLsizei n, const GLuint *renderbuffers);

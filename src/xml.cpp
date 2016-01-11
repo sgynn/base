@@ -126,14 +126,14 @@ bool XMLElement::operator!=(const char* s) const {
 
 XMLElement& XMLElement::find(const char* tag, int index) {
 	static XMLElement none;
-	for(uint i=0; i<size(); ++i) {
+	for(unsigned i=0; i<size(); ++i) {
 		if(m_children[i]==tag && --index<0) return m_children[i];
 	}
 	return none;
 }
 const XMLElement& XMLElement::find(const char* tag, int index) const {
 	static XMLElement none;
-	for(uint i=0; i<size(); ++i) {
+	for(unsigned i=0; i<size(); ++i) {
 		if(m_children[i]==tag && --index<0) return m_children[i];
 	}
 	return none;
