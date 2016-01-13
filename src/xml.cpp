@@ -156,6 +156,7 @@ XML XML::load(const char* file) {
 	XML xml;
 	xml.parseInternal(string);
 	delete [] string;
+	fclose(fp);
 	return xml;
 }
 XML XML::parse(const char* string) {
@@ -199,10 +200,10 @@ const char* XML::toString() const {
 		
 		switch(e->type()) {
 		case TAG:
-			sprintf(s+p, "<%s%n", e->name(), &n); p+=n;
+			p += sprintf(s+p, "<%s", e->name());
 			// Attributes
 			for(HashMap<RefString>::const_iterator i=e->m_attributes.begin(); i!=e->m_attributes.end(); ++i) {
-				sprintf(s+p, " %s=\"%s\"%n", i.key(), (const char*)*i, &n); p+=n;
+				p += sprintf(s+p, " %s=\"%s\"", i.key(), (const char*)*i);
 			}
 			// Children?
 			if(e->size()) { sprintf(s+p, ">\n"); p+=2; }
@@ -236,7 +237,7 @@ const char* XML::toString() const {
 				// Close tag
 				int tab = stack.size();
 				for(int i=0; i<tab; ++i) s[p++] = '\t';
-				sprintf(s+p, "</%s>\n%n", e->name(), &n); p+=n;
+				p += sprintf(s+p, "</%s>\n", e->name());
 			} 
 			// Next child element
 			if(stack.empty()) e = 0;
