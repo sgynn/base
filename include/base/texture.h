@@ -91,7 +91,7 @@ namespace base {
 
 		/** Bind material */
 		void bind() const;
-		SMaterial(): ambient(0x101010), shininess(50) {}
+		SMaterial(): diffuse(0xffffff), ambient(0x101010), shininess(50) {}
 	};
 };
 

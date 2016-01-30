@@ -31,6 +31,12 @@ class FrameBuffer {
 	/** is this framebuffer bound? */
 	bool isBound() const { return s_bound==this; }
 
+	/** Is this a depth only buffer */
+	bool isDepthOnly() const { return m_colour[0].type==0 && m_depth.type; }
+
+	/** Is this a valid framebuffer */
+	bool isValid() const;
+
 	/** Null framebuffer - used for unbinding */
 	static const FrameBuffer Screen;
 

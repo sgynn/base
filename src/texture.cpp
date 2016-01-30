@@ -170,6 +170,13 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 		printf("Invalid texture format\n");
 		return Texture();
 	}
+	
+	// data format may be different
+	unsigned dfmt = fmt;
+	if(format == D16 || format == D24 || format == D32) dfmt = GL_DEPTH_COMPONENT;
+	else if(format == D24S8) dfmt = GL_DEPTH_STENCIL;
+
+
 
 	Texture t;
 	t.m_type   = type;
@@ -217,14 +224,14 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 		for(int mip=0; mip<mipmaps; ++mip) {
 			const void* src = data? data[mip]: 0;
 			switch(type) {
-			case TEX1D: glTexImage1D(target, mip, fmt, width, 0, fmt, ftype, src); break;
+			case TEX1D: glTexImage1D(target, mip, fmt, width, 0, dfmt, ftype, src); break;
 			case ARRAY1D:
-			case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, fmt, ftype, src); break;
+			case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, dfmt, ftype, src); break;
 			case ARRAY2D:
-			case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, fmt, ftype, src); break;
+			case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, dfmt, ftype, src); break;
 			case CUBE: 
 				for(int face=0; face<6; ++face)
-					glTexImage2D(GL_TEXTURE_2D, mip, fmt, width, height, 0, fmt, ftype, data? data[face+6*mip]: 0);
+					glTexImage2D(GL_TEXTURE_2D, mip, fmt, width, height, 0, dfmt, ftype, data? data[face+6*mip]: 0);
 				break;
 			}
 
