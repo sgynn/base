@@ -8,7 +8,8 @@ using namespace base;
 
 CameraBase::CameraBase(float fov, float aspect, float near, float far) 
 	: Camera(fov,aspect,near,far), m_active(true), m_grabMouse(false),
-	m_moveSpeed(10), m_rotateSpeed(0.004), m_moveAcc(1), m_rotateAcc(1) {}
+	m_moveSpeed(10), m_rotateSpeed(0.004), m_moveAcc(1), m_rotateAcc(1),
+	m_useUpVector(false), m_constraint(-8,8) {}
 
 void CameraBase::setSpeed(float m, float r) {
 	m_moveSpeed = m;
@@ -127,28 +128,24 @@ void OrbitCamera::update() {
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
 
 		float distance = m_target.distance(m_position);
-		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
-		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
-
-		if(m_rotateAcc<1) m_rVelocity -= m_rVelocity * m_rotateAcc;
-		else m_rVelocity = vec2();
-
-		// Limits
 		if(m_useUpVector) {
-			vec3 face = getLeft().cross(m_upVector);
-			vec3 direction = getDirection();
-			float dot = face.dot(direction);
-			float angle = dot>1? 0: dot<-1? PI: acos(dot);
-			if(!m_constraint.contains(angle)) {
-				angle = m_constraint.clamp(angle);
-				direction = m_rotation * vec3(0, sin(angle), cos(angle));
-			}
-			float inv = face.dot(direction)>0? 1: -1;
-			lookat(m_target + getDirection()*distance, m_target, m_upVector * inv);
+			float yaw = atan2( getDirection().x, getDirection().z ) + m_rVelocity.x;
+			float pitch = asin( getDirection().y );
+			if(getUp().y < 0) pitch = PI - pitch, yaw += PI;
+			pitch = m_constraint.clamp(pitch + m_rVelocity.y);
+			if(pitch > PI) pitch -= TWOPI;
+			float inv = pitch > -HALFPI && pitch < HALFPI? 1: -1;
+			vec3 dir( cos(pitch) * sin(yaw), sin(pitch), cos(pitch) * cos(yaw) );
+			lookat( m_target + dir * distance, m_target, m_upVector * inv );
 		} else {
-			// Fix distance
+			// Rotate local axes and normalise
+			if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
+			if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
 			m_position = m_target + getDirection() * distance;
 		}
+
+		if(m_rotateAcc<1) m_rVelocity -= m_rVelocity * m_rotateAcc;
+		else m_rVelocity.x = m_rVelocity.y = 0.f;
 
 		// Warp mouse
 		if(m_grabMouse && (m_last.x!=m.x || m_last.y!=m.y)) {
