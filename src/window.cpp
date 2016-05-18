@@ -155,6 +155,46 @@ bool base::Window::create() {
 		}
 	}
 
+	// NEW VERSION //
+	static int visualAttribs [] = {
+		GLX_X_RENDERABLE,   True,
+		GLX_DRAWABLE_TYPE,  GLX_WINDOW_BIT,
+		GLX_RENDER_TYPE,    GLX_RGBA_BIT,
+		GLX_X_VISUAL_TYPE,  GLX_TRUE_COLOR,
+		GLX_RED_SIZE,       8,
+		GLX_GREEN_SIZE,     8,
+		GLX_BLUE_SIZE,      8,
+		GLX_ALPHA_SIZE,     8,
+		GLX_DEPTH_SIZE,     24,
+		GLX_STENCIL_SIZE,   8,
+		GLX_DOUBLEBUFFER,   True,
+		//GLX_SAMPLE_BUFFERS, 1,
+		//GLX_SAMPLES,        m_samples,
+		None
+	};
+	//if(!m_samples) visualAttribs[22] = None;
+
+	// Get matching framebuffer configurations
+	int fbCount;
+	GLXFBConfig* fbc = glXChooseFBConfig(m_display, m_screen, visualAttribs, &fbCount);
+	if(!fbc) return false;
+
+	// Possibly select best one from list ?
+	GLXFBConfig fbConfig = fbc[0];
+	XFree(fbc);
+	m_visual = glXGetVisualFromFBConfig(m_display, fbConfig);
+
+	// Extension
+	PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC) glXGetProcAddress((GLubyte*)"glXCreateContextAttribsARB");
+
+	// Create context
+	int attribs[] = { GLX_CONTEXT_MAJOR_VERSION_ARB, 3, GLX_CONTEXT_MINOR_VERSION_ARB, 0 };
+	m_context = glXCreateContextAttribsARB(m_display, fbConfig, 0, GL_TRUE, attribs);
+
+
+	/*
+	// OLD VERSION //
+
 	//Window Attribute list
 	int attriblist[] = { GLX_DEPTH_SIZE, m_depthBuffer, GLX_DOUBLEBUFFER, GLX_RGBA, GLX_SAMPLE_BUFFERS_ARB, GL_TRUE, GLX_SAMPLES_ARB, m_samples , None };  
 	attriblist[4] = m_samples? GLX_SAMPLE_BUFFERS_ARB: None;
@@ -169,9 +209,11 @@ bool base::Window::create() {
 		printf("Invalid window\n"); 
 		return false;
 	}
-
-	//Here we attempt to create a direct rendering opengl context (needed for shaders...).
 	m_context = glXCreateContext(m_display, m_visual, 0, GL_TRUE);
+	*/
+
+
+	// Create window
 	m_colormap = XCreateColormap(m_display, RootWindow(m_display, m_visual->screen), m_visual->visual, AllocNone);
 	m_swa.colormap = m_colormap;
 	m_swa.border_pixel = 0;
