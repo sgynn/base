@@ -18,6 +18,7 @@ namespace base {
 		File(const File&);
 		~File();
 		const char* data() const { return m_data; }
+		bool isOpen() const { return m_file != 0; }
 		size_t size() const { return m_size; }
 		int read(char* data, size_t length);
 		int write(char* data, size_t length);
@@ -25,10 +26,11 @@ namespace base {
 		protected:
 		int open();
 		int find();
-		const char* m_name;	//File name
-		const char* m_path;
 
-		char* m_data;		//buffered file data (read only)
+		char* m_name;	// File name
+		char* m_path;	// Full path
+
+		char* m_data;	// Buffered file data (read only)
 		FILE* m_file;		
 		size_t m_size;
 		Mode m_mode;

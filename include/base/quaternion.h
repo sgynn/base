@@ -205,13 +205,13 @@ inline void Quaternion::toMatrix(Matrix& m) const {
 
 inline Quaternion slerp(const Quaternion& a, const Quaternion& b, float v) {
 	float dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
-	if(dot>1) dot=1; else if(dot<-1) dot=-1;
-	float theta = acos(dot);
+	if(dot<=-1 || dot >= 1) return a;
+	float flip = dot<0? -1: 1;
+	float theta = acos(dot * flip);
 	if(theta!=0.0f) {
 		float d = 1 / sin(theta);
 		float s = sin((1.0f-v)*theta) * d;
-		float t = sin(v*theta) * d;
-		if(dot<0) t = -t;
+		float t = sin(v*theta) * d * flip;
 		return Quaternion(a.x*s+b.x*t, a.y*s+b.y*t, a.z*s+b.z*t, a.w*s+b.w*t);
 	} else return a;
 }
