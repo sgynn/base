@@ -31,13 +31,13 @@ class Fractal {
 	 *  @param n Vector dimensions
 	 *  @return Procedural value at this point
 	 */
-	virtual T value(T* v, int n) = 0;
+	virtual T value(const T* v, int n) = 0;
 	/** get a procedural value for a 1d point */
-	T value(T x) { return value(&x, 1); }
+	T value(const T x) { return value(&x, 1); }
 	/** get a procedural value for a 2d point */
-	T value(T x, T y) { T v[2] = { x, y }; return value(v, 2); }
+	T value(const T x, T y) { T v[2] = { x, y }; return value(v, 2); }
 	/** get a procedural value for a 3d point */
-	T value(T x, T y, T z) { T v[3] = { x, y, z }; return value(v, 3); }
+	T value(const T x, T y, T z) { T v[3] = { x, y, z }; return value(v, 3); }
 	
 	/** Get a random number between min and max */
 	inline static T random(T a, T b) { return ((T)rand() / RAND_MAX) * (b-a) + a; }
@@ -59,7 +59,7 @@ class Perlin : public Fractal<T> {
 	public:
 	Perlin();
 	~Perlin();
-	T value(T* v, int n);
+	T value(const T* v, int n);
 	
 	private:
 	static const int B = 0x100;
@@ -69,9 +69,9 @@ class Perlin : public Fractal<T> {
 	float* g[3];
 	int p[B];
 	
-	T noise1(T* vec);
-	T noise2(T* vec);
-	T noise3(T* vec);
+	T noise1(const T* vec);
+	T noise2(const T* vec);
+	T noise3(const T* vec);
 	void init(int n);
 	
 	T lerp(T a, T b, T t) const { return a + (b-a)*t; }
@@ -86,7 +86,7 @@ template <typename T>
 class Perlin2 : public Fractal<T> {
 	public:
 	Perlin2(Perlin<T>* perlin, int octaves=1) : perlin(perlin), octaves(octaves) {};
-	T value(T*v, int n);
+	T value(const T*v, int n);
 	private:
 	Perlin<T>* perlin;
 	int octaves;
@@ -101,7 +101,7 @@ class Turbulance : public Fractal<T> {
 	public:
 	Turbulance(Perlin<T>* perlin, T frequencies=2.3) : perlin(perlin), freq(frequencies) { }
 	void set(T frequencies) { freq = frequencies; }
-	T value(T* v, int n);
+	T value(const T* v, int n);
 	private:
 	Perlin<T>* perlin;
 	T freq;
@@ -116,7 +116,7 @@ class CellNoise : public Fractal<T> {
 	public:
 	CellNoise();
 	
-	T value(T* v, int n);
+	T value(const T* v, int n);
 	
 	private:
 	static const int B = 0x100;
@@ -145,7 +145,7 @@ class FBM : public Fractal<T> {
 		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
-	T value(T* v, int n) {
+	T value(const T* v, int n) {
 		T value, remainder;
 		T vc[3] = {0,0,0}; memcpy(vc, v, n*sizeof(T));
 		int i;
@@ -188,7 +188,7 @@ class HybridMultiFractal : public Fractal<T> {
 		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
-	T value(T* v, int n) {
+	T value(const T* v, int n) {
 		T result, signal, weight, remainder;
 		T vc[3] = {0,0,0}; memcpy(vc, v, n*sizeof(T));
 		result = (perlin->value(vc, n) + offset) * exponent_array[0];
@@ -236,7 +236,7 @@ class RigidMultiFractal : public Fractal<T> {
 		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
-	T value(T* v, int n) {
+	T value(const T* v, int n) {
 		double result, signal, weight;
 		T vc[3] = {0,0,0}; memcpy(vc, v, n*sizeof(T));
 		int i;
@@ -316,7 +316,7 @@ Perlin<T>::~Perlin() {
 }
 
 template <typename T>
-T Perlin<T>::value(T* v, int n) {
+T Perlin<T>::value(const T* v, int n) {
 	switch(n) {
 		case 1: return noise1(v);
 		case 2: return noise2(v);
@@ -338,7 +338,7 @@ void Perlin<T>::init(int n) {
 	r1 = r0 - 1.0f;
 
 template <typename T>
-T Perlin<T>::noise1(T* vec) {
+T Perlin<T>::noise1(const T* vec) {
 	init(1);
 	int bx0, bx1;
 	T rx0, rx1, a, b;
@@ -349,7 +349,7 @@ T Perlin<T>::noise1(T* vec) {
 	return lerp(a, b, t);
 }
 template <typename T>
-T Perlin<T>::noise2(T* vec) {
+T Perlin<T>::noise2(const T* vec) {
 	init(2);
 	int bx0, bx1, by0, by1, b00, b10, b01, b11;
 	T rx0, rx1, ry0, ry1, *q, sx, sy, a, b, u, v;
@@ -378,7 +378,7 @@ T Perlin<T>::noise2(T* vec) {
 	return lerp(a, b, sy);
 }
 template <typename T>
-T Perlin<T>::noise3(T* vec) {
+T Perlin<T>::noise3(const T* vec) {
 	int bx0, bx1, by0, by1, bz0, bz1, b00, b10, b01, b11;
 	T rx0, rx1, ry0, ry1, rz0, rz1, *q, sy, sz, a, b, c, d, t, u, v;
 	register int i, j;
@@ -416,7 +416,7 @@ T Perlin<T>::noise3(T* vec) {
 #undef setup
 // ------------------------------------------------------------------------------------------------------------------------------
 template <typename T>
-T Perlin2<T>::value(T* v, int n) {
+T Perlin2<T>::value(const T* v, int n) {
 	T t=0, vc[3];
 	for(int i=0; i<octaves; i++) {
 		for(int j=0; j<n; j++) vc[j] = v[j] / (1<<i);
@@ -427,7 +427,7 @@ T Perlin2<T>::value(T* v, int n) {
 }
 // ------------------------------------------------------------------------------------------------------------------------------
 template <typename T>
-T Turbulance<T>::value(T* v, int n) {
+T Turbulance<T>::value(const T* v, int n) {
 	T t, vc[3], f=freq;
 	for(t=0; f>=1; f/=2) {
 		vc[0] = f * v[0];
@@ -445,7 +445,7 @@ CellNoise<T>::CellNoise() {
 	Fractal<T>::index(p, B);
 }
 template <typename T>
-T CellNoise<T>::value(T* v, int n) {
+T CellNoise<T>::value(const T* v, int n) {
 	T vc[3] = {0,0,0}; memcpy(vc, v, n*sizeof(T));
 	int ix[3] = { (int)floor(vc[0]), (int)floor(vc[1]), (int)floor(vc[2]) };
 	T fx[3] = { vc[0]-ix[0], vc[1]-ix[1], vc[2]-ix[2] };

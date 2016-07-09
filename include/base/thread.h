@@ -134,7 +134,7 @@ namespace base {
 		template<typename T, typename A> struct ThreadDataMA : public ThreadData {
 			T* cls;
 			A  arg;
-			void(T::*func)();
+			void(T::*func)(A);
 			void run() { (cls->*func)(arg); };
 		};
 

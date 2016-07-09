@@ -31,6 +31,26 @@ typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
 #endif
 
 #ifdef WIN32
+#define GL_TEXTURE_1D_ARRAY	 0x8C18
+#define GL_TEXTURE_2D_ARRAY  0x8C1A
+#define GL_R32F              0x822E
+#define GL_RG32F             0x8230
+#define GL_RGB32F            0x8815
+#define GL_RGBA32F           0x8814
+#define GL_R16F              0x822D
+#define GL_RG16F             0x822F
+#define GL_RGB16F            0x881B
+#define GL_RGBA16F           0x881A
+#define GL_RGB565            0x8D62
+#define GL_R11F_G11F_B10F    0x8C3A
+#define GL_DEPTH_COMPONENT16 0x81A5
+#define GL_DEPTH_COMPONENT24 0x81A6
+#define GL_DEPTH_COMPONENT32 0x81A7
+#define GL_DEPTH24_STENCIL8  0x88F0
+#define GL_HALF_FLOAT        0x140B
+
+#define APIENTRYP __stdcall *
+typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
 PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
 PFNGLTEXIMAGE3DPROC glTexImage3D = 0;
 PFNGLCOMPRESSEDTEXIMAGE1DPROC glCompressedTexImage1D = 0;
@@ -174,6 +194,13 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 		printf("Invalid texture format\n");
 		return Texture();
 	}
+	
+	// data format may be different
+	unsigned dfmt = fmt;
+	if(format == D16 || format == D24 || format == D32) dfmt = GL_DEPTH_COMPONENT;
+	else if(format == D24S8) dfmt = GL_DEPTH_STENCIL;
+
+
 
 	Texture t;
 	t.m_type   = type;
@@ -221,14 +248,14 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 		for(int mip=0; mip<mipmaps; ++mip) {
 			const void* src = data? data[mip]: 0;
 			switch(type) {
-			case TEX1D: glTexImage1D(target, mip, fmt, width, 0, fmt, ftype, src); break;
+			case TEX1D: glTexImage1D(target, mip, fmt, width, 0, dfmt, ftype, src); break;
 			case ARRAY1D:
-			case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, fmt, ftype, src); break;
+			case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, dfmt, ftype, src); break;
 			case ARRAY2D:
-			case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, fmt, ftype, src); break;
+			case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, dfmt, ftype, src); break;
 			case CUBE: 
 				for(int face=0; face<6; ++face)
-					glTexImage2D(GL_TEXTURE_2D, mip, fmt, width, height, 0, fmt, ftype, data? data[face+6*mip]: 0);
+					glTexImage2D(GL_TEXTURE_2D, mip, fmt, width, height, 0, dfmt, ftype, data? data[face+6*mip]: 0);
 				break;
 			}
 

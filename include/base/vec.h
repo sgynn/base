@@ -129,6 +129,7 @@ inline float vec2::distance (const vec2& v) const { return (*this-v).length(); }
 inline vec2 fabs (const vec2& v) { return vec2(fabs(v.x), fabs(v.y)); }
 inline vec2 floor(const vec2& v) { return vec2(floor(v.x), floor(v.y)); }
 inline vec2 ceil (const vec2& v) { return vec2(ceil(v.x), ceil(v.y)); }
+inline vec2 pow  (const vec2& v, float p) { return vec2( powf(v.x,p), powf(v.y,p) ); }
 inline vec2 lerp(const vec2& a, const vec2& b, float t) { 
 	return vec2(a.x+(b.x-a.x)*t, a.y+(b.y-a.y)*t);
 }
@@ -182,6 +183,7 @@ inline float vec3::distance (const vec3& v) const { return (*this-v).length(); }
 inline vec3 fabs (const vec3& v) { return vec3(fabs(v.x), fabs(v.y), fabs(v.z)); }
 inline vec3 floor(const vec3& v) { return vec3(floor(v.x), floor(v.y), floor(v.z)); }
 inline vec3 ceil (const vec3& v) { return vec3(ceil(v.x), ceil(v.y), ceil(v.z)); }
+inline vec3 pow  (const vec3& v, float p) { return vec3( powf(v.x,p), powf(v.y,p), powf(v.z,p) ); }
 inline vec3 lerp (const vec3& a, const vec3& b, float t) { 
 	return vec3(a.x+(b.x-a.x)*t, a.y+(b.y-a.y)*t, a.z+(b.z-a.z)*t);
 }

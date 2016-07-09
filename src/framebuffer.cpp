@@ -87,15 +87,24 @@ FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffe
 	s_bound = this;
 
 	//Attach stuff
-	if(f&COLOUR) attachColour(TEXTURE, Texture::RGBA8);
-	else if(f&DEPTH) attachColour(TEXTURE, Texture::RGBA8); //Must have a colour buffer
-	if(f&DEPTH)  attachDepth(TEXTURE, Texture::D24S8);
+	if(f) {
+		if(f&COLOUR) attachColour(TEXTURE, Texture::RGBA8);
+		else {
+			glDrawBuffer(GL_NONE);
+			glReadBuffer(GL_NONE);
+		}
+		if(f&DEPTH)  attachDepth(TEXTURE, Texture::D24S8);
+	}
 
 
 	if(!m_buffer || glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE) {
 		printf("Error creating frame buffer\n");
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	if(isDepthOnly()) {
+		glDrawBuffer(GL_BACK);
+		glReadBuffer(GL_BACK);
+	}
 	s_bound = last;
 }
 FrameBuffer::~FrameBuffer() {
@@ -162,10 +171,28 @@ uint FrameBuffer::attachDepth(uint type, Texture::Format format) {
 	return 0; //Fail
 }
 
+bool FrameBuffer::isValid() const {
+	return glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE;
+}
+
 void FrameBuffer::bind() const {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
-	if(m_buffer) glViewport(0,0,m_width, m_height);
-	else glViewport(0, 0, Game::getSize().x, Game::getSize().y);
+	if(m_buffer) {
+		glViewport(0,0,m_width, m_height);
+		// Disable colour drawing if depth only
+		if( isDepthOnly() ) {
+			glDrawBuffer(GL_NONE);
+			glReadBuffer(GL_NONE);
+		}
+	}
+	// Null frame buffer
+	else {
+		glViewport(0, 0, Game::getSize().x, Game::getSize().y);
+		if(s_bound->isDepthOnly()) {
+			glDrawBuffer(GL_BACK);
+			glReadBuffer(GL_BACK);
+		}
+	}
 	s_bound = this;
 }
 
