@@ -9,6 +9,7 @@
 #ifdef WIN32
 #include <windows.h>
 #include <direct.h>
+#define PATH_MAX 2048
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -45,6 +46,17 @@ Directory::~Directory() {
 
 /** Get a clean path */
 int Directory::clean(const char* in, char* out, int lim) {
+	// remove any backslashes
+	if(strchr(in, '\\')) {
+		size_t l = strlen(in)+1;
+		char* tmp = new char[l];
+		memcpy(tmp, in, l);
+		for(size_t i=0; i<l; ++i) if(tmp[i]=='\\') tmp[i]='/';
+		int r = clean(tmp, out, lim);
+		delete [] tmp;
+		return r;
+	}
+
 	int k=0;
 	for(const char* c=in; *c; c++) {
 		if(strncmp(c, "//", 2)==0) continue ; // repeated slashes
@@ -72,14 +84,14 @@ bool Directory::isRelative(const char* path) {
 }
 
 int Directory::getFullPath(const char* in, char* out, int lim) {
-	if(lim<=0) lim = FILENAME_MAX;
+	if(lim<=0) lim = PATH_MAX;
 	if(isRelative(in)) {
 		// Get working directory
-		char buffer[FILENAME_MAX];
+		char buffer[PATH_MAX];
 		#ifdef WIN32
-		if(!_getcwd(buffer, FILENAME_MAX)) return 0;
+		if(!_getcwd(buffer, PATH_MAX)) return 0;
 		#else
-		if(!getcwd(buffer, FILENAME_MAX)) return 0;
+		if(!getcwd(buffer, PATH_MAX)) return 0;
 		#endif
 
 		// Append in
@@ -92,19 +104,20 @@ int Directory::getFullPath(const char* in, char* out, int lim) {
 }
 
 int Directory::getRelativePath(const char* in, char* out, int lim) {
-	if(lim<=0) lim = FILENAME_MAX;
+	if(lim<=0) lim = PATH_MAX;
 	if(!isRelative(in)) {
 		// Get working directory
-		char buffer[FILENAME_MAX];
+		char buffer[PATH_MAX];
 		#ifdef WIN32
-		if(!_getcwd(buffer, FILENAME_MAX)) return 0;
+		if(!_getcwd(buffer, PATH_MAX)) return 0;
+		//if(buffer[0] != in[0]) return clean(in, out, lim);	// Impossible
 		#else
-		if(!getcwd(buffer, FILENAME_MAX)) return 0;
+		if(!getcwd(buffer, PATH_MAX)) return 0;
 		#endif
 		// match ...
 		int m=0, up=0;
 		while(buffer[m] == in[m]) ++m;
-		while(m>0 && in[m]=='/') ++m;
+		while(m>0 && (in[m]=='/' || in[m]=='\\')) ++m;
 		for(char* c = buffer+m; *c; ++c) if(*c=='/' || *c=='\\') ++up;
 		// Build
 		int k = 2;

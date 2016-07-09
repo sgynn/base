@@ -1,4 +1,3 @@
-#define GL_GLEXT_PROTOTYPES
 #include "base/opengl.h"
 
 #include "base/shader.h"
@@ -7,10 +6,11 @@
 #include <cstdlib>
 #include "base/file.h"
 
+
 //Extensions
 #ifndef GL_VERSION_2_0
-#define APIENTRYP __stdcall *
-typedef char GLchar;	/* native character */
+//#define APIENTRYP __stdcall *
+typedef char GLchar;	// native character
 
 #define GL_FRAGMENT_SHADER                0x8B30
 #define GL_VERTEX_SHADER                  0x8B31
@@ -21,7 +21,7 @@ typedef char GLchar;	/* native character */
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
 
 typedef GLuint (APIENTRYP PFNGLCREATESHADERPROC) (GLenum type);
-typedef void (APIENTRYP PFNGLSHADERSOURCEPROC) (GLuint shader, GLsizei count, const GLchar* *string, const GLint *length);
+//typedef void (APIENTRYP PFNGLSHADERSOURCEPROC) (GLuint shader, GLsizei count, const GLchar* *string, const GLint *length);
 typedef void (APIENTRYP PFNGLCOMPILESHADERPROC) (GLuint shader);
 typedef void (APIENTRYP PFNGLCOMPILESHADERPROC) (GLuint shader);
 typedef GLuint (APIENTRYP PFNGLCREATEPROGRAMPROC) (void);
@@ -58,7 +58,9 @@ typedef void (APIENTRYP PFNGLVERTEXATTRIB4FPROC) (GLuint index, GLfloat x, GLflo
 typedef void (APIENTRYP PFNGLENABLEVERTEXATTRIBARRAYPROC) (GLuint index);
 typedef void (APIENTRYP PFNGLDISABLEVERTEXATTRIBARRAYPROC) (GLuint index);
 typedef void (APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
+#endif
 
+#ifdef WIN32
 PFNGLCREATESHADERPROC	glCreateShader		= 0;
 PFNGLSHADERSOURCEPROC	glShaderSource		= 0;
 PFNGLCOMPILESHADERPROC	glCompileShader		= 0;
@@ -152,7 +154,7 @@ int Shader::supported() {
 	if(s_supported<0) {
 		const GLubyte* version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 		printf("GLSL %s\n", version);
-		initialiseShaderExtensions();
+		//initialiseShaderExtensions();
 		s_supported=1; // this should reflect what is supported FIXME
 	}
 	return s_supported;

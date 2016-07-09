@@ -1,20 +1,50 @@
-#include <base/texture.h>
 #include <base/opengl.h>
+#include <base/texture.h>
 #include <cstdio>
 
 #ifndef GL_CLAMP_TO_EDGE
 # define GL_CLAMP_TO_EDGE 0x812f
 # define GL_TEXTURE0      0x84C0
 #endif
+
+#ifndef GL_VERSION_2_0
+#define GL_TEXTURE_1D_ARRAY	 0x8C18
+#define GL_TEXTURE_2D_ARRAY  0x8C1A
+#define GL_R32F              0x822E
+#define GL_RG32F             0x8230
+#define GL_RGB32F            0x8815
+#define GL_RGBA32F           0x8814
+#define GL_R16F              0x822D
+#define GL_RG16F             0x822F
+#define GL_RGB16F            0x881B
+#define GL_RGBA16F           0x881A
+#define GL_RGB565            0x8D62
+#define GL_R11F_G11F_B10F    0x8C3A
+#define GL_DEPTH_COMPONENT16 0x81A5
+#define GL_DEPTH_COMPONENT24 0x81A6
+#define GL_DEPTH_COMPONENT32 0x81A7
+#define GL_DEPTH24_STENCIL8  0x88F0
+#define GL_HALF_FLOAT        0x140B
+
+#define APIENTRYP __stdcall *
+typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
+#endif
+
 #ifdef WIN32
 PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
+PFNGLTEXIMAGE3DPROC glTexImage3D = 0;
+PFNGLCOMPRESSEDTEXIMAGE1DPROC glCompressedTexImage1D = 0;
 PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = 0;
 PFNGLCOMPRESSEDTEXIMAGE3DPROC glCompressedTexImage3D = 0;
+PFNGLGENERATEMIPMAPPROC glGenerateMipmap = 0;
 int initialiseTextureExtensions() {
 	if(glActiveTexture) return 1;
-	glActiveTexture = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
+	glActiveTexture        = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
+	glTexImage3D           = (PFNGLTEXIMAGE3DPROC)wglGetProcAddress("glTexImage3D");
+	glCompressedTexImage1D = (PFNGLCOMPRESSEDTEXIMAGE1DPROC)wglGetProcAddress("glCompressedTexImage1D");
 	glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)wglGetProcAddress("glCompressedTexImage2D");
 	glCompressedTexImage3D = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)wglGetProcAddress("glCompressedTexImage3D");
+	glGenerateMipmap       = (PFNGLGENERATEMIPMAPPROC)wglGetProcAddress("glGenerateMipmap");
 	return glActiveTexture? 1: 0;
 }
 #else

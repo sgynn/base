@@ -6,7 +6,7 @@
 #include "base/shader.h"
 
 // Extensions
-#ifndef GL_VERSION_2_0
+#ifndef GL_VERSION_1_5
 #define GL_ARRAY_BUFFER          0x8892
 #define GL_ELEMENT_ARRAY_BUFFER  0x8893
 #define GL_STATIC_DRAW           0x88E4
@@ -16,7 +16,8 @@ typedef void (*PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
 typedef void (*PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
 typedef void (*PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
 typedef void (*PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
-
+#endif
+#ifdef WIN32
 PFNGLBINDBUFFERPROC    glBindBuffer    = (PFNGLBINDBUFFERPROC)    wglGetProcAddress("glBindBuffer");
 PFNGLDELETEBUFFERSPROC glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) wglGetProcAddress("glDeleteBuffers");
 PFNGLGENBUFFERSPROC    glGenBuffers    = (PFNGLGENBUFFERSPROC)    wglGetProcAddress("glGenBuffers");
