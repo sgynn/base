@@ -68,10 +68,10 @@ class BMExporter:
         self.Log("Done")
 
         self.AnimationWriter = None
-        if self.Config.ExportAnimation:
+        if self.Config.ExportAnimations or self.Config.ExportAllAnimations:
             # Collect all animated object data
             self.Log("Gathering animation data...")
-            AnimationGenerators = self.__GatherAnimationGenerators()
+            AnimationGenerators = self.GatherAnimationGenerators()
             self.AnimationWriter = AnimationWriter(self.Config, self, AnimationGenerators)
             self.Log("Done")
 
@@ -87,7 +87,7 @@ class BMExporter:
         self.Log("Done")
 
         self.Log("Writing header...")
-        self.__WriteHeader()
+        self.WriteHeader()
         self.Log("Done")
 
         self.Log("Writing objects...")
@@ -100,7 +100,7 @@ class BMExporter:
             self.AnimationWriter.WriteAnimations()
             self.Log("Done writing animation")
 
-        self.__WriteFooter();
+        self.WriteFooter();
         self.Log("Closing file...")
         self.File.Close()
         self.Log("Done")
@@ -111,17 +111,53 @@ class BMExporter:
 
     # "Private" Methods
 
-    def __WriteHeader(self):
+    def WriteHeader(self):
         self.File.Write("<?xml version='1.0'?>\n<model>\n")
         self.File.Indent();
 
-    def __WriteFooter(self):
+    def WriteFooter(self):
         self.File.Unindent();
         self.File.Write("</model>\n")
 
-    def __GatherAnimationGenerators(self):
+    def GatherAnimationGenerators(self):
         Generators = []
 
+        for obj in self.ExportList:
+            if obj.BlenderObject.animation_data:
+                # Collect actions
+                actions = []
+                animData = obj.BlenderObject.animation_data
+                if animData.action:
+                    actions.append(animData.action)
+
+                # list actions from NLA
+                if animData.nla_tracks and self.Config.ExportAllAnimations:
+                    for track in animData.nla_tracks.values():
+                        for strip in track.strips.values():
+                            if strip.action and strip.action not in actions:
+                                actions.append(strip.action)
+
+                # ToDo: Handle un-referenced animations
+
+                print(str(actions))
+
+                # If an object has an action, build its appropriate generator
+                activeAction = animData.action
+                for action in actions:
+                    print('Action', action.name, ':', action.frame_range[1] - action.frame_range[0], "frames")
+
+                    # Action needs to be active for this
+                    animData.action = action
+                    if obj.BlenderObject.type == 'ARMATURE':
+                        gen = ArmatureAnimationGenerator( self.Config, action.name, obj )
+                        Generators.append( gen )
+                    else:
+                        gen = GenericAnimationGenerator(self.Config, action.name, obj)
+                        Generators.append( gen )
+
+                animData.action = activeAction
+
+        """
         # Keep track of which objects have no action.  These will be
         # lumped together in a Default_Action AnimationSet.
         ActionlessObjects = []
@@ -196,7 +232,7 @@ class BMExporter:
             if len(ActionlessObjects):
                 Generators.append(GroupAnimationGenerator(self.Config,
                     "Default_Action", ActionlessObjects))
-
+        """
         return Generators
 
 # This class wraps a Blender object and writes its data to the file
@@ -274,9 +310,9 @@ class MeshExportObject(ExportObject):
         # Split meshes by materials
         if Mesh.materials:
             for Material in Mesh.materials:
-                self.__WriteMesh(Mesh, Material)
+                self.WriteMesh(Mesh, Material)
         else:
-            self.__WriteMesh(Mesh)
+            self.WriteMesh(Mesh)
 
         # Cleanup
         bpy.data.meshes.remove(Mesh)
@@ -319,8 +355,9 @@ class MeshExportObject(ExportObject):
             self.Map = [[] for _ in range(0,len(Mesh.vertices))]    # array of empty arrays
 
             UVs = Mesh.uv_layers.active.data if useUVs and Mesh.uv_layers else []
-            Colours = Mesh.vertex_colors.active.data if useColours else []
+            if not Mesh.vertex_colors.active: useColours = False
             if not useNormals or not UVs: useTangents = False
+            Colours = Mesh.vertex_colors.active.data if useColours else []
 
             # Colour alpha - see if there is a non-active layer called alpha
             Alphas = []
@@ -418,7 +455,7 @@ class MeshExportObject(ExportObject):
 
 
     # Needs to go in a separate section as these are global. Preferably at the top
-    def __WriteMaterials(self, Mesh):
+    def WriteMaterials(self, Mesh):
         for Material in Mesh.materials:
             self.Exporter.File.Write("<material name='{}'>\n".format(Material.name))
             self.Exporter.File.Indent()
@@ -439,7 +476,7 @@ class MeshExportObject(ExportObject):
             self.Exporter.File.Write("</material>\n");
 
 
-    def __WriteMesh(self, Mesh, Material=None):
+    def WriteMesh(self, Mesh, Material=None):
 
         # Create intermediate mesh
         MaterialIndex = Mesh.materials.values().index(Material) if Material else 0
@@ -675,14 +712,14 @@ class ArmatureExportObject(ExportObject):
             self.Exporter.Log("Writing skeleton...")
             self.Exporter.File.Write("<skeleton name='{}' size='{}'>\n".format(self.name, len(Armature.bones)))
             self.Exporter.File.Indent()
-            self.__WriteBones(RootBones)
+            self.WriteBones(RootBones)
             self.Exporter.File.Unindent()
             self.Exporter.File.Write("</skeleton>\n");
             self.Exporter.Log("Done")
 
     # "Private" Methods
 
-    def __WriteBones(self, Bones):
+    def WriteBones(self, Bones):
         for Bone in Bones:
             BoneMatrix = Matrix()
 
@@ -694,12 +731,11 @@ class ArmatureExportObject(ExportObject):
             else:
                 BoneMatrix = rot * Bone.matrix_local * rot
 
-
             self.Exporter.File.Write("<bone name='{}' length='{:f}'>\n".format(Bone.name, Bone.length))
             self.Exporter.File.Indent()
 
             Util.WriteMatrix(self.Exporter.File, BoneMatrix)
-            self.__WriteBones(Bone.children);
+            self.WriteBones(Bone.children);
 
             self.Exporter.File.Unindent()
             self.Exporter.File.Write("</bone>\n")
@@ -748,6 +784,7 @@ class AnimationGenerator: # Base class, do not use
         self.name = Name
         self.ExportObject = ExportObject
         self.KeySets = []
+        self.length = 0
 
 
 # Creates one Animation object that contains the rotation, scale, and position
@@ -762,9 +799,11 @@ class GenericAnimationGenerator(AnimationGenerator):
         BlenderCurrentFrame = Scene.frame_current
         CurrentAnimation = AnimationKeySet(self.ExportObject.name)
         BlenderObject = self.ExportObject.BlenderObject
+        start, end = BlenderObject.animation_data.action.frame_range
+        self.length = int(end - start) + 1
 
-        for Frame in range(Scene.frame_start, Scene.frame_end + 1):
-            Scene.frame_set(Frame)
+        for Frame in range(self.length):
+            Scene.frame_set(Frame + start)
 
             Rotation = BlenderObject.rotation_euler.to_quaternion()
             Scale = BlenderObject.matrix_local.to_scale()
@@ -811,17 +850,25 @@ class ArmatureAnimationGenerator(GenericAnimationGenerator):
         BlenderCurrentFrame = Scene.frame_current
         ArmatureObject = self.ExportObject.BlenderObject
         ArmatureName = self.ExportObject.name
+        Action = ArmatureObject.animation_data.action
 
+        # Rotation fix
         rot = Matrix.Rotation(radians(-90), 4, 'X') # Rotate all bones so direction = Z
         qrot = rot.to_quaternion();
 
+        # create keysets
+        AnimationData = []
+        for bone in ArmatureObject.pose.bones:
+            if bone.name in Action.groups.keys():
+                AnimationData.append( (bone, AnimationKeySet(bone.name)) )
 
-        # Create Animation objects for each bone
-        AnimationKeySets = [AnimationKeySet(Bone.name) for Bone in ArmatureObject.pose.bones]
 
-        for Frame in range(Scene.frame_start, Scene.frame_end + 1):
-            Scene.frame_set(Frame)
-            for Bone, Keys in zip(ArmatureObject.pose.bones, AnimationKeySets):
+        # Extract keyframe data
+        start, end = Action.frame_range
+        self.length = int(end - start) + 1
+        for Frame in range(self.length):
+            Scene.frame_set(Frame + start)
+            for Bone, Keys in AnimationData:
 
                 PoseMatrix = Matrix()
                 if Bone.parent:
@@ -836,10 +883,11 @@ class ArmatureAnimationGenerator(GenericAnimationGenerator):
                 Position = PoseMatrix.to_translation()
 
                 Keys.RotationKeys.append((Frame, Rotation))
-                Keys.ScaleKeys.append((Frame, Scale))
                 Keys.PositionKeys.append((Frame, Position))
+                Keys.ScaleKeys.append((Frame, Scale))
 
-        for Keys in AnimationKeySets:
+        # Delete unnessesary keys
+        for _,Keys in AnimationData:
             Keys.optimise()
             if Keys.hasKeys():
                 self.KeySets.append(Keys)
@@ -859,7 +907,7 @@ class AnimationWriter:
 
         for Animation in self.Animations:
             self.Exporter.Log("Writing animation {}".format(Animation.name))
-            self.Exporter.File.Write("<animation name='{}' frames='{}' rate='{}'>\n".format(Animation.name, 0, FrameRate))
+            self.Exporter.File.Write("<animation name='{}' frames='{}' rate='{}'>\n".format(Animation.name, Animation.length, FrameRate))
             self.Exporter.File.Indent()
 
             # Write each keyset
