@@ -50,6 +50,7 @@ void SceneState::draw() {
 		Draw::Line( vec3(), vec3(1, 0, 0), 0x0000ff, 2);
 		Draw::Line( vec3(), vec3(0, 1, 0), 0x00ff00, 2);
 		Draw::Line( vec3(), vec3(0, 0, 1), 0xff0000, 2);
+		glColor4f(1,1,1,1);
 	}
 
 	//Draw scene
