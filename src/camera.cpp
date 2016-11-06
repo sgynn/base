@@ -9,15 +9,34 @@ Camera::Camera(int width, int height) : m_mode(0), m_near(-1), m_far(1) {
 	m_left = m_bottom = 0;
 	m_right = width;
 	m_top = height;
+	updateProjectionMatrix();
 }
 
 Camera::Camera(float fov, float aspect, float near, float far)
 	: m_mode(1), m_fov(fov), m_aspect(aspect), m_near(near), m_far(far) {
+	updateProjectionMatrix();
 }
 
 
 Camera::Camera(float left, float right, float bottom, float top, float near, float far)
 	: m_mode(2), m_left(left), m_right(right), m_bottom(bottom), m_top(top), m_near(near), m_far(far) {
+	updateProjectionMatrix();
+}
+
+void Camera::adjustDepth(float near, float far) {
+	m_near=near;
+	m_far=far;
+	updateProjectionMatrix();
+}
+
+void Camera::setFov(float fov) {
+	m_fov = fov;
+	updateProjectionMatrix();
+}
+
+void Camera::setAspect(float aspect) {
+	m_aspect = aspect;
+	updateProjectionMatrix();
 }
 
 void Camera::lookat(const vec3& pos, const vec3& tgt, const vec3& up) {
@@ -194,13 +213,15 @@ int Camera::onScreen(const BoundingBox& box, int flags) const {
 
 
 
-
-void Camera::applyProjection() {
+void Camera::updateProjectionMatrix() {
 	switch(m_mode) {
 	case 0:	m_projection = orthographic(m_left, m_right, m_bottom, m_top, m_near, m_far); break; //glOrtho(m_left, m_right, m_bottom, m_top, m_near, m_far); break;
 	case 1: m_projection = perspective(m_fov, m_aspect, m_near, m_far); break;
 	case 2:	m_projection = frustum(m_left, m_right, m_bottom, m_top, m_near, m_far); break;  //glFrustum(m_left, m_right, m_bottom, m_top, m_near, m_far); break;
 	}
+}
+
+void Camera::applyProjection() {
 	glLoadMatrixf(m_projection);
 }
 void Camera::applyRotation() {

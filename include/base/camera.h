@@ -32,11 +32,11 @@ namespace base {
 		/** Rotate camera about local axis */
 		void rotateLocal(int axis, float radians);
 		/** Update field of view - only works for perspective cameras */
-		void setFov(float fov) { m_fov=fov; }
+		void setFov(float fov);
 		/** Update the aspect ratio - only for perspective cameras */
-		void setAspect(float aspect) { m_aspect = aspect; }
+		void setAspect(float aspect);
 		/** Adjust near and far cliping planes */
-		void adjustDepth(float near, float far) { m_near=near; m_far=far; }
+		void adjustDepth(float near, float far);
 		
 		/** Get camera position */
 		const vec3& getPosition() const { return m_position; }
@@ -96,6 +96,9 @@ namespace base {
 
 		//Frustum planes
 		struct Plane { vec3 n; float d; } m_frustum[6];
+
+		// calculate projection matrix
+		void updateProjectionMatrix();
 
 		public:
 		//Some utility functions
