@@ -39,14 +39,15 @@ void Input::warpMouse(int x, int y) {
 	Game::window()->warpMouse(x, Game::window()->height()-y);
 }
 
-void Input::setButton(int code, bool down) {
+void Input::setButton(int code, bool down, const Point& pt) {
 	int mask = 1<<(code-1);
 	if(down) m_mouseButton |= mask;
 	else m_mouseButton &= ~mask;
 	//Click
 	if(down) {
 		m_mouseClick = mask; 
-		m_mouseClickPoint = queryMouse();
+		m_mouseClickPoint.x = pt.x;
+		m_mouseClickPoint.y = Game::window()->height() - pt.y;
 	}
 }
 

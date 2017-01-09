@@ -201,7 +201,7 @@ namespace base {
 		//set method from system events - needs converting to wgd keycodes
 		static void createMap();
 		void setKey(int code, bool down);	//Set a key state (used by system)
-		void setButton(int code, bool down);//Set mouse button state (used by system)
+		void setButton(int code, bool down, const Point&); //Set mouse button state (used by system)
 		void clear();	//set all keys to 0
 	};
 };

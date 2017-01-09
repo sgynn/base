@@ -445,9 +445,10 @@ class MeshExportObject(ExportObject):
 
             # Normalise
             l = sqrt(tx*tx + ty*ty + tz * tz)
-            tx = tx / l
-            ty = ty / l
-            tz = tz / l
+            if l != 0:
+                tx = tx / l
+                ty = ty / l
+                tz = tz / l
 
             va.Tangent = (tx, ty, tz)
             vb.Tangent = (tx, ty, tz)

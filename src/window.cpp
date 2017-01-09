@@ -495,12 +495,12 @@ uint base::Window::pumpEvents(Input* input) {
 				buttonevent = (XButtonEvent*)&event;
 				if(buttonevent->button==4) input->m_mouseWheel ++;
 				else if(buttonevent->button==5) input->m_mouseWheel --; 
-				input->setButton( buttonevent->button, 1 );
+				input->setButton( buttonevent->button, 1, Point(buttonevent->x, buttonevent->y));
 				break;
 
 			case ButtonRelease:
 				buttonevent = (XButtonEvent*)&event;
-				input->setButton( buttonevent->button, 0 );
+				input->setButton( buttonevent->button, 0, Point(buttonevent->x, buttonevent->y));
 				break;
 				
 			default:
