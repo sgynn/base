@@ -15,18 +15,6 @@ class BMExporter:
 
         self.File = File(self.Config.filepath)
 
-        self.Log("Setting up coordinate system...")
-
-        # SystemMatrix converts from right-handed, z-up to the target coordinate system
-        self.SystemMatrix = Matrix()
-        if self.Config.CoordinateSystem == 'LEFT_HANDED':
-            self.SystemMatrix *= Matrix.Scale(-1, 4, Vector((0, 0, 1)))
-
-        if self.Config.UpAxis == 'Y':
-            self.SystemMatrix *= Matrix.Rotation(radians(-90), 4, 'X')
-
-        self.Log("Done")
-
         self.Log("Generating object lists for export...")
         if self.Config.SelectedOnly:
             ExportList = list(self.context.selected_objects)
@@ -307,6 +295,17 @@ class MeshExportObject(ExportObject):
             Mesh = self.BlenderObject.to_mesh(self.Exporter.context.scene, False, 'PREVIEW')
         self.Exporter.Log("Done")
 
+        # SystemMatrix converts from right-handed, z-up to the target coordinate system
+        yUp = self.Config.UpAxis == 'Y'
+        leftHanded = self.Config.CoordinateSystem == 'RIGHT_HANDED'
+        if leftHanded or yUp:
+            transform = Matrix()
+            if leftHanded:
+                transform *= Matrix.Scale(-1, 4, Vector((0, 0, 1)))
+            if yUp:
+                transform *= Matrix.Rotation(radians(-90), 4, 'X')
+            Mesh.transform(transform)
+
         # Split meshes by materials
         if Mesh.materials:
             for Material in Mesh.materials:
@@ -383,6 +382,8 @@ class MeshExportObject(ExportObject):
                         if Colours:
                             vx.Colour = Colours[ Polygon.loop_indices[i] ].color
                             if Alphas: vx.Colour += (Alphas[ Polygon.loop_indices[i] ].color[0],)
+
+                        # y-up: y=z; z=-y; use setting. may be faster to preprocess mesh
 
                         # Find existing vertex
                         if self.Map[Vertex]:
