@@ -305,6 +305,7 @@ class MeshExportObject(ExportObject):
             if yUp:
                 transform *= Matrix.Rotation(radians(-90), 4, 'X')
             Mesh.transform(transform)
+            Mesh.calc_normals()
 
         # Split meshes by materials
         if Mesh.materials:
