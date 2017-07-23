@@ -21,8 +21,9 @@ class BMExporter:
         else:
             ExportList = list(self.context.scene.objects)
 
-        # If skeletons are set to export, add them to the list if not selected
-        if self.Config.ExportArmatureBones:
+        # Add linked skeletons to export list
+        exportAnimations = self.Config.ExportAnimations or self.Config.ExportAllAnimations
+        if self.Config.ExportArmatureBones or exportAnimations:
             for obj in ExportList:
                 if obj.type == 'MESH':
                     arm = obj.find_armature()
@@ -34,7 +35,7 @@ class BMExporter:
         for Object in ExportList:
             if Object.type == 'EMPTY':
                 ExportMap[Object] = EmptyExportObject(self.Config, self, Object)
-            elif Object.type == 'MESH':
+            elif Object.type == 'MESH' and self.Config.ExportMeshes:
                 ExportMap[Object] = MeshExportObject(self.Config, self, Object)
             elif Object.type == 'ARMATURE':
                 ExportMap[Object] = ArmatureExportObject(self.Config, self, Object)
@@ -56,7 +57,7 @@ class BMExporter:
         self.Log("Done")
 
         self.AnimationWriter = None
-        if self.Config.ExportAnimations or self.Config.ExportAllAnimations:
+        if exportAnimations:
             # Collect all animated object data
             self.Log("Gathering animation data...")
             AnimationGenerators = self.GatherAnimationGenerators()
@@ -125,9 +126,7 @@ class BMExporter:
                             if strip.action and strip.action not in actions:
                                 actions.append(strip.action)
 
-                # ToDo: Handle un-referenced animations
-
-                print(str(actions))
+                # ToDo: Handle un-referenced animations ?
 
                 # If an object has an action, build its appropriate generator
                 activeAction = animData.action

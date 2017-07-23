@@ -23,12 +23,19 @@ bl_info = {
     "author": "Sam Gynn",
     "version": (3, 1, 0),
     "blender": (2, 69, 0),
-    "location": "File > Export > Base (.bum)",
+    "location": "File > Export > Base (.bm)",
     "description": "Export mesh vertices, UV's, materials, textures, "
         "vertex colors, armatures, empties, and actions.",
     "wiki_url": "",
     "tracker_url": "",
     "category": "Import-Export"}
+
+
+# Support reloading package
+if "bpy" in locals():
+    import imp
+    if "export_bm" in locals():
+        imp.reload(export_bm)
 
 
 import bpy
@@ -122,14 +129,14 @@ class ExportBaseLib(bpy.types.Operator):
         description="Export armature bones",
         default=True)
 
-    ExportAnimation = BoolProperty(
-        name="Export Animations",
-        description="Export object and bone animations.",
+    ExportAnimations = BoolProperty(
+        name="Export active Animations",
+        description="Export active actions of the selection",
         default=True)
 
-    AttachToFirstArmature = BoolProperty(
-        name="Export unused animations",
-        description="Export each unused action as if used by the first armature object",
+    ExportAllAnimations = BoolProperty(
+        name="Export all animations",
+        description="Export all actions in the scene",
         default=False)
 
     Verbose = BoolProperty(
@@ -144,7 +151,10 @@ class ExportBaseLib(bpy.types.Operator):
         sel.prop(self, 'SelectedOnly')
 
         mesh = layout.box()
+        mesh.enabled = self.hasMesh(context)
         mesh.prop(self, 'ExportMeshes')
+        mesh = mesh.column()
+        mesh.enabled = self.ExportMeshes
         mesh.prop(self, 'ExportNormals')
         mesh.prop(self, 'ExportTangents')
         mesh.prop(self, 'ExportUVCoordinates')
@@ -155,17 +165,43 @@ class ExportBaseLib(bpy.types.Operator):
         mesh.prop(self, 'ApplyTransform')
 
         mat = layout.box()
+        mat.enabled = self.ExportMeshes and self.hasMesh(context)
         mat.prop(self, 'ExportMaterials')
 
         skel = layout.box()
+        skel.enabled = self.hasSkeleton(context)
         skel.prop(self, 'ExportArmatureBones')
-        skel.prop(self, 'ExportAnimation')
-        skel.prop(self, 'AttachToFirstArmature')
+
+        skel = skel.column()
+        skel.enabled = self.hasAnimation(context)
+        skel.prop(self, 'ExportAnimations')
+        skel.prop(self, 'ExportAllAnimations')
 
         main = layout.box()
         main.prop(self, 'CoordinateSystem')
         main.prop(self, 'UpAxis')
         main.prop(self, 'Verbose')
+
+    def hasMesh(self, context):
+        things = list(context.selected_objects) if self.SelectedOnly else list(context.scene.objects)
+        for obj in things:
+            if obj.type == 'MESH': return True
+        return False
+
+    def hasSkeleton(self, context):
+        things = list(context.selected_objects) if self.SelectedOnly else list(context.scene.objects)
+        for obj in things:
+            if obj.type == 'ARMATURE': return True
+            elif obj.type == 'MESH' and obj.find_armature(): return True
+        return False
+
+    def hasAnimation(self, context):
+        things = list(context.selected_objects) if self.SelectedOnly else list(context.scene.objects)
+        for obj in things:
+            if obj.animation_data: return True
+            elif obj.type == 'MESH' and obj.find_armature():
+                if obj.find_armature().animation_data: return True;
+        return False
 
 
     def execute(self, context):
@@ -180,6 +216,10 @@ class ExportBaseLib(bpy.types.Operator):
         if not self.filepath:
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bm")
         context.window_manager.fileselect_add(self)
+
+        # Disable controls based on selection
+
+
         return {'RUNNING_MODAL'}
 
 
