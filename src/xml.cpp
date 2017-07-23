@@ -50,18 +50,15 @@ inline RefString RefString::substr(size_t start, size_t len) {
 
 
 /** Parse an integer or hex value */
-int parseInt(const char* c) {
-	if((c[0]=='0' && c[1]=='x') || c[0]=='#') { //hex
-		c += c[0]=='#'? 1: 2;
-		int v;
-		for(v=0; *c; ++c) {
-			if(*c>='0' && *c<='9') v = (v<<4) + *c-'0';
-			else if(*c>='a' && *c<='f') v = (v<<4) + *c-'a'+ 10;
-			else if(*c>='A' && *c<='F') v = (v<<4) + *c-'A'+ 10;
-			else break;
-		}
-		return v;
-	} else return atoi(c);
+inline int parseInt(const char* c) {
+	char* end;
+	if(c[0] == '#') return strtol(c+1, &end, 16);
+	return strtol(c, &end, 0);
+}
+inline unsigned parseUint(const char* c) {
+	char* end;
+	if(c[0] == '#') return strtoul(c+1, &end, 16);
+	return strtoul(c, &end, 0);
 }
 
 
@@ -82,6 +79,10 @@ double XMLElement::attribute(const char* name, double defaultValue) const {
 int XMLElement::attribute(const char* name, int defaultValue) const {
 	const char* v = attribute(name, (const char*)0);
 	return v? parseInt(v): defaultValue;
+}
+unsigned XMLElement::attribute(const char* name, unsigned defaultValue) const {
+	const char* v = attribute(name, (const char*)0);
+	return v? parseUint(v): defaultValue;
 }
 bool XMLElement::hasAttribute(const char* name) const {
 	return m_attributes.contains(name);

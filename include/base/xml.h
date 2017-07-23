@@ -42,6 +42,8 @@ class XMLElement {
 	double attribute(const char* name, double defaultValue) const;
 	/** Get an integer attribute */
 	int attribute(const char* name, int defaultValue) const;
+	/** Get an unsigned integer attribute */
+	unsigned attribute(const char* name, unsigned defaultValue) const;
 	/** Does this element have a named attribute */
 	bool hasAttribute(const char*) const;
 	/** Set attribute value */
