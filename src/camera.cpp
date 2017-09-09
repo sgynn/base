@@ -247,6 +247,7 @@ Matrix Camera::getModelview() const {
 
 /** Load perspective matrix - taken from Lib4 */
 Matrix Camera::perspective(float fov, float aspect, float near, float far) {
+	if(aspect==0) printf("Error: Invalid camera aspect ratio\n");
 	fov *= 3.14159265359f/180; //fov in radians
 	float f = 1.0f / tan( fov / 2.0f ); //cotangent(fov/2);
 	float m[16]; //the matrix;

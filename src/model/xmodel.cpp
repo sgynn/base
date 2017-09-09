@@ -583,7 +583,7 @@ Animation* XModel::readAnimation(const char* name) {
 						validate(parseSpace(m_read));
 						// Add key to animation
 						switch(type) {
-						case 0: anim->addRotationKey(boneIndex, f, Quaternion(-key[1], -key[2], -key[3], key[0])); break;
+						case 0: anim->addRotationKey(boneIndex, f, Quaternion(key[0], -key[1], -key[2], -key[3])); break;
 						case 1: anim->addScaleKey   (boneIndex, f, vec3(key)); break;
 						case 2: anim->addPositionKey(boneIndex, f, vec3(key)); break;
 						}

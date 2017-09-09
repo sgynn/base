@@ -52,7 +52,7 @@ float base::closestPointBetweenLines(const vec3& a1, const vec3& b1, const vec3&
 			}
 		}
 	}
-	return (a1+(b1-a1)*s).distance2( a2+(b2-a2)*t );
+	return (a1+d1*s).distance2( a2+d2*t );
 }
 
 /** Intersection of a ray with Plane (page 177) */
@@ -99,6 +99,18 @@ int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, con
 	if(r) out = a*bary[0] + b*bary[1] + c*bary[2];
 	return r;
 }
+/** Triangle intersection with line - line distance version */
+int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float& t) {
+	float bary[3];
+	int r = intersectLineTriangleb(p,q,a,b,c,bary);
+	if(r){
+		vec3 hit = a*bary[0] + b*bary[1] + c*bary[2];
+		vec3 d = q - p;
+		t = d.dot(hit - a) / d.dot(d);
+	}
+	return r;
+}
+
 /** Triangle intersection with line - Barycentric version */
 int base::intersectLineTriangleb(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float* bary) {
 	vec3 pq = q - p;

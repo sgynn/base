@@ -61,6 +61,7 @@ namespace base {
 	 * @return if intersects
 	 */
 	BASEAPI int intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, vec3& out);
+	BASEAPI int intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float& t);
 	/** Same as intersectLineTriangle but gets barycentric coordinates */
 	BASEAPI int intersectLineTriangleb(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float* barycentric);
 

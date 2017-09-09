@@ -922,7 +922,7 @@ class AnimationWriter:
                     self.Exporter.File.Write("<rotation size='{}'>\n".format( len(Keys.RotationKeys)))
                     self.Exporter.File.Indent()
                     for Frame, Value in Keys.RotationKeys:
-                        self.Exporter.File.Write("<key frame='{}' value='{:f} {:f} {:f} {:f}'/>\n".format(Frame, Value[1], Value[2], Value[3], Value[0]))
+                        self.Exporter.File.Write("<key frame='{}' value='{:f} {:f} {:f} {:f}'/>\n".format(Frame, Value[0], Value[1], Value[2], Value[3]))
                     self.Exporter.File.Unindent()
                     self.Exporter.File.Write("</rotation>\n");
 

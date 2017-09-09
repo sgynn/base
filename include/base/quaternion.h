@@ -6,10 +6,10 @@
 /** Quaternion class */
 class Quaternion {
 	public:
-	float x,y,z,w;
+	float w,x,y,z;
 
 	Quaternion();											/** Construct empty quaternion */
-	Quaternion(float x, float y, float z, float w);			/** Construct quaternion with specified value */
+	Quaternion(float w, float x, float y, float z);			/** Construct quaternion with specified value */
 	Quaternion(const vec3& euler);							/** Construct quaternion from euler angles (pitch,yaw,roll) */
 	Quaternion(const Matrix& m);							/** Construct quaternion from rotation matrix */
 	Quaternion(const float* f);								/** Construct quaternion from float array */
@@ -20,7 +20,7 @@ class Quaternion {
 	operator      float*();									/** typecast to float array */
 	const float&  operator[](int) const;					/** Access elements by index */
 	float&        operator[](int);							/** Access elements by index */
-	Quaternion&   set(float x, float y, float z, float w);	/** Set the element values */
+	Quaternion&   set(float w, float x, float y, float z);	/** Set the element values */
 
 
 	// Conversion
@@ -35,6 +35,9 @@ class Quaternion {
 	float       getAngle() const;							/** Get angle represented by this quaternion */
 	Quaternion  getInverse() const;							/** Get the inverse of this quaternion */
 
+	vec3        xAxis() const;								/** Get rotated x axis vector */
+	vec3        yAxis() const;								/** Get rotated y axis vector */
+	vec3        zAxis() const;								/** Get rotated z axis vector */
 
 	// Operators
 	bool        operator==(const Quaternion& q) const;		/** Compare two quaternions */
@@ -57,24 +60,24 @@ class Quaternion {
 
 
 // Inline implementation
-inline Quaternion::Quaternion() : x(0),y(0),z(0),w(1) {};
-inline Quaternion::Quaternion(float x, float y, float z, float w): x(x), y(y), z(z), w(w) {}
-inline Quaternion::Quaternion(const float* f) : x(f[0]), y(f[1]), z(f[2]), w(f[3]) {}
+inline Quaternion::Quaternion() : w(1), x(0),y(0),z(0) {};
+inline Quaternion::Quaternion(float w, float x, float y, float z): w(w), x(x), y(y), z(z) {}
+inline Quaternion::Quaternion(const float* f) : w(f[0]), x(f[1]), y(f[2]), z(f[3]) {}
 inline Quaternion::Quaternion(const vec3& e)                            { fromEuler(e); }
 inline Quaternion::Quaternion(const Matrix& m)                          { fromMatrix(m); }
 inline Quaternion::Quaternion(const vec3& axis, float angle)            { fromAxis(axis, angle); }
-inline Quaternion::operator const float*() const                        { return &x; }
-inline Quaternion::operator float*()                                    { return &x; }
-inline const float& Quaternion::operator[](int i) const                 { return *((&x)+i); }
-inline float&       Quaternion::operator[](int i)                       { return *((&x)+i); }
-inline Quaternion&  Quaternion::set(float x, float y, float z, float w) { this->x=x; this->y=y; this->z=z; this->w=w; return *this; }
-inline bool         Quaternion::operator==(const Quaternion& q) const   { return x==q.x && y==q.y && z==q.z && w==q.w; }
-inline bool         Quaternion::operator!=(const Quaternion& q) const   { return x!=q.x || y!=q.y || z!=q.z || w!=q.w; }
+inline Quaternion::operator const float*() const                        { return &w; }
+inline Quaternion::operator float*()                                    { return &w; }
+inline const float& Quaternion::operator[](int i) const                 { return *((&w)+i); }
+inline float&       Quaternion::operator[](int i)                       { return *((&w)+i); }
+inline Quaternion&  Quaternion::set(float a, float b, float c, float d) { w=a; x=b; y=c; z=d; return *this; }
+inline bool         Quaternion::operator==(const Quaternion& q) const   { return w==q.w && x==q.x && y==q.y && z==q.z; }
+inline bool         Quaternion::operator!=(const Quaternion& q) const   { return w!=q.w || x!=q.x || y!=q.y || z!=q.z; }
 inline vec3         Quaternion::getEuler() const                        { vec3 e; toEuler(e); return e; }
 inline Matrix       Quaternion::getMatrix() const                       { Matrix m; toMatrix(m); return m; }
 inline float        Quaternion::getAngle() const                        { return 2 * acos(w); }
-inline Quaternion   Quaternion::getInverse() const                      { return Quaternion(-x, -y, -z, w); }
-inline float        Quaternion::dot(const Quaternion& q) const          { return x*q.x + y*q.y + z*q.z + w*q.w; }
+inline Quaternion   Quaternion::getInverse() const                      { return Quaternion(w, -x, -y, -z); }
+inline float        Quaternion::dot(const Quaternion& q) const          { return w*q.w + x*q.x + y*q.y + z*q.z; }
 inline float        Quaternion::length2() const                         { return dot(*this); }
 inline float        Quaternion::length() const                          { return sqrt( length2() ); }
 
@@ -86,21 +89,22 @@ inline Quaternion& Quaternion::normalise() {
 		y /= l;
 		z /= l;
 	}
+	else set(1,0,0,0);
 	return *this;
 }
 
 inline Quaternion& Quaternion::operator*=(const Quaternion& q) {
-	set(w*q.x + x*q.w + y*q.z - z*q.y,
+	set(w*q.w - x*q.x - y*q.y - z*q.z,
+		w*q.x + x*q.w + y*q.z - z*q.y,
 	    w*q.y + y*q.w + z*q.x - x*q.z,
-	    w*q.z + z*q.w + x*q.y - y*q.x,
-	     w*q.w - x*q.x - y*q.y - z*q.z);
+	    w*q.z + z*q.w + x*q.y - y*q.x);
 	return *this;
 }
 inline Quaternion Quaternion::operator*(const Quaternion& q) const {
-	return Quaternion(w*q.x + x*q.w + y*q.z - z*q.y,
-					  w*q.y + y*q.w + z*q.x - x*q.z,
-					  w*q.z + z*q.w + x*q.y - y*q.x,
-					  w*q.w - x*q.x - y*q.y - z*q.z);
+	return Quaternion( w*q.w - x*q.x - y*q.y - z*q.z,
+					   w*q.x + x*q.w + y*q.z - z*q.y,
+					   w*q.y + y*q.w + z*q.x - x*q.z,
+					   w*q.z + z*q.w + x*q.y - y*q.x);
 }
 
 inline vec3 Quaternion::getAxis() const {
@@ -133,7 +137,7 @@ inline Quaternion Quaternion::arc(const vec3& a, const vec3& b) {
 	}
 	float s  = sqrt((1.0f+d) * 2.0f);
 	float rs = 1.0f / s;
-	return Quaternion(c.x*rs, c.y*rs, c.z*rs, s*0.5f);
+	return Quaternion(s*0.5f, c.x*rs, c.y*rs, c.z*rs);
 }
 
 inline Quaternion& Quaternion::fromEuler(const vec3& e) {
@@ -147,10 +151,10 @@ inline Quaternion& Quaternion::fromEuler(const vec3& e) {
 	float cr = cos(hr);
 	float sr = sin(hr);
 
+	w = cr*cp*cy + sr*sp*sy;
 	x = cr*sp*cy + sr*cp*sy;  
 	y = cr*cp*sy - sr*sp*cy;  
 	z = sr*cp*cy - cr*sp*sy;
-	w = cr*cp*cy + sr*sp*sy;
 	return *this;
 
 }
@@ -238,7 +242,7 @@ inline Quaternion slerp(const Quaternion& a, const Quaternion& b, float v) {
 		float d = 1 / sin(theta);
 		float s = sin((1.0f-v)*theta) * d;
 		float t = sin(v*theta) * d * flip;
-		return Quaternion(a.x*s+b.x*t, a.y*s+b.y*t, a.z*s+b.z*t, a.w*s+b.w*t);
+		return Quaternion(a.w*s+b.w*t, a.x*s+b.x*t, a.y*s+b.y*t, a.z*s+b.z*t);
 	} else return a;
 }
 
@@ -254,6 +258,16 @@ inline vec3 Quaternion::operator*(const vec3& v) const {
 }
 inline vec3 operator*(const vec3& v, const Quaternion& q) {
 	return q * v;
+}
+
+inline vec3 Quaternion::xAxis() const {
+	return vec3(1.0f - 2*y*y - 2*z*z, 2*x*y + 2*w*z, 2*x*z - 2*w*y);
+}
+inline vec3 Quaternion::yAxis() const {
+	return vec3(2*x*y - 2*w*z, 1.0f - 2*x*x - 2*z*z, 2*y*z + 2*w*x);
+}
+inline vec3 Quaternion::zAxis() const {
+	return vec3(2*x*z + 2*w*y, 2*y*z - 2*w*x, 1.0f - 2*x*x - 2*y*y);
 }
 
 

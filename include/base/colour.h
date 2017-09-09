@@ -10,6 +10,7 @@ class Colour {
 	Colour(float r, float g, float b, float a=1.0);
 	Colour(const Colour&, float a);
 	Colour(unsigned c, float a=1.0);
+	void set(float r, float g, float b, float a=1.0);
 	operator float*();
 	operator const float*() const;
 	operator unsigned() const;
@@ -28,6 +29,7 @@ inline Colour::Colour(): r(0), g(0), b(0), a(1) {}
 inline Colour::Colour(float r, float g, float b, float a): r(r), g(g), b(b), a(a) {}
 inline Colour::Colour(const Colour& c, float a): r(c.r), g(c.g), b(c.b), a(a) {}
 inline Colour::Colour(unsigned c, float a) { fromRGB(c); this->a=a; }
+inline void    Colour::set(float cr, float cg, float cb, float ca) { r=cr; b=cb; g=cg; a=ca; }
 inline Colour& Colour::operator=(unsigned c) { return fromRGB(c); }
 inline Colour::operator float*()             { return &r; }
 inline Colour::operator const float*() const { return &r; }
