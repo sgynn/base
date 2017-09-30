@@ -188,17 +188,20 @@ inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
 		y = (m[8] - m[2]) * s;
 		z = (m[1] - m[4]) * s;
 	} else {
-		int i = m[0]<m[5]?  (m[5]<m[10]? 2: 1): (m[0]<m[10]? 2: 0); // Biggest diagonal
-		int j = (i+1) % 3;
-		int k = (i+2) % 3;
+		static int nexti[3] = { 1, 2, 0 };
+		int i = 0;	// Biggest diagonal
+		if(m[5]  > m[0])   i = 1;
+		if(m[10] > m[i*5]) i = 2;
+		int j = nexti[i];
+		int k = nexti[j];
 
-		float* q = *this;
+		float* q = *this + 1;	// xyz
 		float s = sqrt(m[i*4+i] - m[j*4+j] - m[k*4+k] + 1.0f);
 		q[i] = s * 0.5f;
 		s = 0.5f / s;
-		q[3] = (m[j*4+k] - m[k*4+j]) * s;
 		q[j] = (m[i*4+j] + m[j*4+i]) * s;
 		q[k] = (m[i*4+k] + m[k*4+i]) * s;
+		w = (m[j*4+k] - m[k*4+j]) * s;
 	}
 	return *this;
 }
