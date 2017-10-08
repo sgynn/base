@@ -32,7 +32,7 @@ class FrameBuffer {
 	bool isBound() const { return s_bound==this; }
 
 	/** Is this a depth only buffer */
-	bool isDepthOnly() const { return m_colour[0].type==0 && m_depth.type; }
+	bool isDepthOnly() const { return m_count==0; }
 
 	/** Is this a valid framebuffer */
 	bool isValid() const;
@@ -52,8 +52,9 @@ class FrameBuffer {
 		Texture texture;
 	};
 
-	Storage m_colour[4];
-	Storage m_depth;
+	Storage m_colour[4];	// Colour buffers
+	Storage m_depth;		// Depth buffer
+	int     m_count;		// Number of attached colour buffers
 
 	//What is bound?
 	static const  FrameBuffer* s_bound;

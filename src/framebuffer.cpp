@@ -70,10 +70,10 @@ using namespace base;
 const FrameBuffer FrameBuffer::Screen;
 const FrameBuffer* FrameBuffer::s_bound = &FrameBuffer::Screen;
 
-FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0) {
+FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0), m_count(0) {
 	memset(m_colour, 0, 5*sizeof(Storage));
 }
-FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0) {
+FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0), m_count(0) {
 	initialiseFBOExtensions();
 	memset(m_colour, 0, 5*sizeof(Storage));
 	if(w==0 || h==0) return; //Invalid size
@@ -113,8 +113,7 @@ FrameBuffer::~FrameBuffer() {
 }
 
 uint FrameBuffer::attachColour(uint type, Texture::Format format) {
-	int index;
-	for(index=0; index<4&&m_colour[index].type; index++);
+	int index = m_count;
 	if(!format) format = Texture::RGBA8;
 	if(type==TEXTURE) {
 		m_colour[index].type = 1;
@@ -125,7 +124,7 @@ uint FrameBuffer::attachColour(uint type, Texture::Format format) {
 			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+index, GL_TEXTURE_2D, m_colour[index].data, 0);
 			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
-			return 0;
+			++m_count;
 			return m_colour[index].data;
 		}
 	} else if(type==BUFFER) {
@@ -183,6 +182,10 @@ void FrameBuffer::bind() const {
 		if( isDepthOnly() ) {
 			glDrawBuffer(GL_NONE);
 			glReadBuffer(GL_NONE);
+		}
+		else {
+			static GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+			glDrawBuffers(m_count, buffers);
 		}
 	}
 	// Null frame buffer

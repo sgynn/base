@@ -146,7 +146,8 @@ unsigned Texture::getInternalDataType(Format f) {
 	if(f <= DXT5)    return GL_UNSIGNED_BYTE;	// Not accurare
 	if(f <= RGBA32F) return GL_FLOAT;
 	if(f <= RGBA16F) return GL_HALF_FLOAT;
-	if(f <= D24S8)   return GL_UNSIGNED_BYTE;
+	if(f <= D32)     return GL_UNSIGNED_BYTE;
+	if(f == D24S8)   return GL_UNSIGNED_INT_24_8;
 	return 0;
 }
 bool Texture::isCompressedFormat(Format f) {
