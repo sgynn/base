@@ -128,11 +128,11 @@ inline Quaternion Quaternion::arc(const vec3& a, const vec3& b) {
 		if(fabs(na.z)>0.700706f) { // use yz plane
 			float s = na.y*na.y + na.z*na.z;
 			float k = 1.0f / sqrt(s);
-			return Quaternion(0, -na.z*k, na.y*k, 0);
+			return Quaternion(0, 0, -na.z*k, na.y*k);
 		} else { // use xy plane
 			float s = na.x*na.x + na.y*na.y;
 			float k = 1.0f / sqrt(s);
-			return Quaternion(-na.y*k, na.x*k, 0, 0);
+			return Quaternion(0, -na.y*k, na.x*k, 0);
 		}
 	}
 	float s  = sqrt((1.0f+d) * 2.0f);
