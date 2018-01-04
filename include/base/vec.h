@@ -21,6 +21,8 @@ class vec2 {
 	vec2& operator-=(const vec2& v);
 	vec2& operator*=(const float v);
 	vec2& operator/=(const float v);
+	vec2& operator*=(const vec2& v);
+	vec2& operator/=(const vec2& v);
 	vec2  operator- () const;
 	vec2  operator+ (const vec2& b) const;
 	vec2  operator- (const vec2& b) const;
@@ -65,6 +67,8 @@ class vec3 {
 	vec3& operator-=(const vec3& v);
 	vec3& operator*=(const float v);
 	vec3& operator/=(const float v);
+	vec3& operator*=(const vec3& v);
+	vec3& operator/=(const vec3& v);
 	vec3  operator- () const;
 	vec3  operator+ (const vec3& b) const;
 	vec3  operator- (const vec3& b) const;
@@ -102,6 +106,8 @@ inline vec2& vec2::operator+=(const vec2& v) { x+=v.x; y+=v.y; return *this; }
 inline vec2& vec2::operator-=(const vec2& v) { x-=v.x; y-=v.y; return *this; }
 inline vec2& vec2::operator*=(const float s) { x*=s; y*=s; return *this; }
 inline vec2& vec2::operator/=(const float s) { x/=s; y/=s; return *this; }
+inline vec2& vec2::operator*=(const vec2& s) { x*=s.x; y*=s.y; return *this; }
+inline vec2& vec2::operator/=(const vec2& s) { x/=s.x; y/=s.y; return *this; }
 inline vec2  vec2::operator- () const             { return vec2(-x, -y); }
 inline vec2  vec2::operator+ (const vec2& v) const { return vec2(x+v.x, y+v.y); }
 inline vec2  vec2::operator- (const vec2& v) const { return vec2(x-v.x, y-v.y); }
@@ -155,6 +161,8 @@ inline vec3& vec3::operator+=(const vec3& v) { x+=v.x; y+=v.y; z+=v.z; return *t
 inline vec3& vec3::operator-=(const vec3& v) { x-=v.x; y-=v.y; z-=v.z; return *this; }
 inline vec3& vec3::operator*=(const float s) { x*=s; y*=s; z*=s; return *this; }
 inline vec3& vec3::operator/=(const float s) { x/=s; y/=s; z/=s; return *this; }
+inline vec3& vec3::operator*=(const vec3& s) { x*=s.x; y*=s.y; z*=s.z; return *this; }
+inline vec3& vec3::operator/=(const vec3& s) { x/=s.x; y/=s.y; z/=s.z; return *this; }
 inline vec3  vec3::operator- () const        { return vec3(-x, -y, -z); }
 inline vec3  vec3::operator+ (const vec3& v) const { return vec3(x+v.x, y+v.y, z+v.z); }
 inline vec3  vec3::operator- (const vec3& v) const { return vec3(x-v.x, y-v.y, z-v.z); }
