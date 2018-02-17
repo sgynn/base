@@ -2,6 +2,7 @@
 #define _BASE_INPUT_
 
 #include "math.h"
+#include <vector>
 
 namespace base {
 	enum KeyCode {
@@ -138,14 +139,39 @@ namespace base {
 		KEY_CAPSLOCK	= 126,
 	};
 
-	struct Joystick { 
-		int axes;
-		vec2* axis;
-		int buttons; 
-		bool* button;
-		int hat;
+	/// Joystick class --------------------------------------------------------------
+	class Joystick { 
+		friend class Input;
+		public:
+		Joystick(int b, int a);
+		~Joystick();
+		bool button(uint) const;
+		bool pressed(uint) const;
+		bool released(uint) const;
+		float axis(uint) const;
+		const Point& hat() const;
+		void setDeadzone(float);
+		private:
+		bool update();
+		private:
+		int  m_index;
+		char m_name[128];
+		// State
+		uint   m_numAxes;
+		uint   m_numButtons;
+		struct Range { int min, max; } *m_range;
+		float  m_dead;
+		int*   m_axis;
+		int    m_buttons;
+		int    m_changed;
+		Point  m_hat;
+		private: // linux stuff
+		int    m_file;
+		uint8* m_keyMap;
+		uint8* m_absMap;
 	};
 	
+	// Global input class -------------------------------------------------------------
 	class Input {
 		friend class Window;
 		public:
@@ -177,7 +203,9 @@ namespace base {
 		Point queryMouse();
 		
 		/** Get a joystick state */
-		const Joystick& joystick(int id=0) const; 
+		Joystick& joystick(uint id=0); 
+		/** Initialise joysticks - returns number found */
+		int initialiseJoysticks();
 		
 		/** Update must be called once per frame BEFORE window events are processed */
 		void update();
@@ -197,6 +225,10 @@ namespace base {
 		int   m_mouseClick;
 		Point m_mouseClickPoint;
 		int   m_mouseWheel;
+
+		// Joysticks
+		std::vector<Joystick*> m_joysticks;
+		void updateJoysticks();
 		
 		//set method from system events - needs converting to wgd keycodes
 		static void createMap();

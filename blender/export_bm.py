@@ -144,82 +144,6 @@ class BMExporter:
 
                 animData.action = activeAction
 
-        """
-        # Keep track of which objects have no action.  These will be
-        # lumped together in a Default_Action AnimationSet.
-        ActionlessObjects = []
-
-        for Object in self.ExportList:
-            if Object.BlenderObject.animation_data is None:
-                ActionlessObjects.append(Object)
-                continue
-            else:
-                if Object.BlenderObject.animation_data.action is None:
-                    ActionlessObjects.append(Object)
-                    continue
-
-            # If an object has an action, build its appropriate generator
-            if Object.BlenderObject.type == 'ARMATURE':
-                Generators.append(ArmatureAnimationGenerator(self.Config,
-                        Object.BlenderObject.animation_data.action.name,
-                    Object))
-            else:
-                Generators.append(GenericAnimationGenerator(self.Config,
-                    Object.BlenderObject.animation_data.action.name,
-                    Object))
-
-            # If we should export unused actions as if the first armature was
-            # using them,
-            if self.Config.AttachToFirstArmature:
-                # Find the first armature
-                FirstArmature = None
-                for Object in self.ExportList:
-                    if Object.BlenderObject.type == 'ARMATURE':
-                        FirstArmature = Object
-                        break
-
-                if FirstArmature is not None:
-                    # Determine which actions are not used
-                    UsedActions = [BlenderObject.animation_data.action
-                        for BlenderObject in bpy.data.objects
-                        if BlenderObject.animation_data is not None]
-                    FreeActions = [Action for Action in bpy.data.actions
-                        if Action not in UsedActions]
-
-                    # If the first armature has no action, remove it from the
-                    # actionless objects so it doesn't end up in Default_Action
-                    if FirstArmature in ActionlessObjects and len(FreeActions):
-                        ActionlessObjects.remove(FirstArmature)
-
-                    # Keep track of the first armature's animation data so we
-                    # can restore it after export
-                    OldAction = None
-                    NoData = False
-                    if FirstArmature.BlenderObject.animation_data is not None:
-                        OldAction = FirstArmature.BlenderObject.animation_data.action
-                    else:
-                        NoData = True
-                        FirstArmature.BlenderObject.animation_data_create()
-
-                    # Build a generator for each unused action
-                    for Action in FreeActions:
-                        FirstArmature.BlenderObject.animation_data.action = Action
-
-                        Generators.append(ArmatureAnimationGenerator(
-                            self.Config, Action.name,
-                            FirstArmature))
-
-                    # Restore old animation data
-                    FirstArmature.BlenderObject.animation_data.action = OldAction
-
-                    if NoData:
-                        FirstArmature.BlenderObject.animation_data_clear()
-
-            # Build a special generator for all actionless objects
-            if len(ActionlessObjects):
-                Generators.append(GroupAnimationGenerator(self.Config,
-                    "Default_Action", ActionlessObjects))
-        """
         return Generators
 
 # This class wraps a Blender object and writes its data to the file
@@ -357,6 +281,7 @@ class MeshExportObject(ExportObject):
             if not Mesh.vertex_colors.active: useColours = False
             if not useNormals or not UVs: useTangents = False
             Colours = Mesh.vertex_colors.active.data if useColours else []
+            Mesh.calc_normals_split()
 
             # Colour alpha - see if there is a non-active layer called alpha
             Alphas = []
@@ -377,7 +302,7 @@ class MeshExportObject(ExportObject):
                     for i, Vertex in enumerate(Polygon.vertices):
                         index = -1
                         vx = MeshExportObject.Vertex( Mesh.vertices[Vertex].co )
-                        if useNormals: vx.Normal = Mesh.vertices[Vertex].normal if Polygon.use_smooth else Polygon.normal
+                        if useNormals: vx.Normal = Mesh.loops[ Polygon.loop_indices[i]].normal if Polygon.use_smooth else Polygon.normal
                         if UVs: vx.UV = UVs[ Polygon.loop_indices[i] ].uv
                         if Colours:
                             vx.Colour = Colours[ Polygon.loop_indices[i] ].color
@@ -488,6 +413,11 @@ class MeshExportObject(ExportObject):
             self.Config.ExportUVCoordinates,
             self.Config.ExportVertexColors,
             self.Config.ExportTangents)
+
+        # No vertices to export for this material
+        if not temp.Vertices:
+            return False
+
         self.Exporter.File.Write("<mesh name='{}' size='{}'>\n".format(self.name, len(temp.Vertices) ))
         self.Exporter.File.Indent()
 
@@ -563,6 +493,7 @@ class MeshExportObject(ExportObject):
 
         self.Exporter.File.Unindent()
         self.Exporter.File.Write("</mesh>\n")
+        return True
 
 
     class Skin:
@@ -632,29 +563,37 @@ class MeshExportObject(ExportObject):
         GroupNames = []
         index = 0
 
-        # Create group indices
+        # Compile bone validation lookup
+        HasAssiciatedBone = [False] * len(Groups)
         for obj in [m.object for m in ArmatureList]:
             for Bone in obj.pose.bones:
                 for Index, Group in enumerate(Groups):
                     if Group.name == Bone.name:
-                        GroupMap[Index] = index;
-                        GroupNames.append( Bone.name )
-                        index += 1
-                        break
+                        HasAssiciatedBone[Index] = True
+
 
         # Collect weight info
         maxWeights = 0
         Indices = [[] for x in range(0, len(Temp.Vertices))]
         Weights = [[] for x in range(0, len(Temp.Vertices))]
         for Index, Vertex in enumerate(Mesh.vertices):
-            for Group in Vertex.groups:
-                if GroupMap[Group.group] >= 0 and Group.weight > 0.0:
-                    for Vx in Temp.Map[Index]:
-                        Indices[Vx].append( GroupMap[Group.group] )
-                        Weights[Vx].append( Group.weight )
-            maxWeights = max(maxWeights, len( Weights[ Temp.Map[Index][0] ] ))
+            if Temp.Map[Index]:
+                for Group in Vertex.groups:
+                    if Group.weight != 0.0 and HasAssiciatedBone[Group.group]:
+                        # Assign group a new index if new
+                        if GroupMap[Group.group] < 0:
+                            GroupMap[Group.group] = index;
+                            GroupNames.append( Groups[Group.group].name );
+                            index += 1
+
+                        for Vx in Temp.Map[Index]:
+                            Indices[Vx].append( GroupMap[Group.group] )
+                            Weights[Vx].append( Group.weight )
+
+                maxWeights = max(maxWeights, len( Weights[ Temp.Map[Index][0] ] ))
 
         # Format data
+        if maxWeights > 4: print("Warning: Mesh has more than 4 weights on a vertex")
         maxWeights = min(maxWeights, 4)
         for Index in range(0, len(Indices)):
             Indices[Index] = [ x for (y,x) in sorted(zip(Weights[Index], Indices[Index]), reverse=True) ]

@@ -15,6 +15,7 @@ set(src
 	src/guifile.cpp
 	src/inifile.cpp
 	src/input.cpp
+	src/joystick.cpp
 	src/material.cpp
 	src/png.cpp
 	src/dds.cpp

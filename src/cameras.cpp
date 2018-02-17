@@ -7,7 +7,7 @@
 using namespace base;
 
 CameraBase::CameraBase(float fov, float aspect, float near, float far) 
-	: Camera(fov,aspect,near,far), m_active(true), m_grabMouse(false),
+	: Camera(fov,aspect?aspect:Game::aspect(),near,far), m_active(true), m_grabMouse(false),
 	m_moveSpeed(10), m_rotateSpeed(0.004), m_moveAcc(1), m_rotateAcc(1),
 	m_useUpVector(false), m_constraint(-8,8) {}
 
@@ -36,7 +36,6 @@ void CameraBase::setPitchLimits(float min, float max) {
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
 FPSCamera::FPSCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far) {
-	if(a==0) m_aspect = Game::aspect();
 	setUpVector( vec3(0,1,0) );
 }
 void FPSCamera::update() {
@@ -94,7 +93,6 @@ void FPSCamera::update() {
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
 OrbitCamera::OrbitCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far) {
-	if(a==0) m_aspect = Game::aspect();
 	setUpVector( vec3(0,1,0) );
 }
 void OrbitCamera::setTarget(const vec3& t) {

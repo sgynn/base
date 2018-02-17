@@ -149,6 +149,7 @@ XML XML::load(const char* file) {
 	if(!fp) return XML();
 	fseek(fp, 0, SEEK_END);
 	unsigned len = ftell(fp);
+	if(len == ~0u) len = 0;
 	rewind(fp);
 	char* string = new char[len+1];
 	fread(string, 1, len, fp); 

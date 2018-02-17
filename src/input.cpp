@@ -28,6 +28,8 @@ void Input::update() {
 	m_lastChar = 0;
 	//Cache mouse position
 	m_mousePosition = queryMouse();
+	// Joysticks
+	updateJoysticks();
 }
 
 Point Input::queryMouse() { 
