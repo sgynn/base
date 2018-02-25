@@ -106,7 +106,6 @@ int Input::initialiseJoysticks() {
 			}
 			// Create joystick object
 			Joystick* joy = new Joystick(axes, btn);
-			joy->m_created = false;
 			joy->m_file = js;
 			joy->m_keyMap = btnMap;
 			joy->m_absMap = absMap;
@@ -222,7 +221,7 @@ bool Joystick::update() {
 #endif
 
 
-Joystick::Joystick(int a, int b) : m_index(-1), m_numAxes(a), m_numButtons(b), m_dead(0.1), m_buttons(0), m_changed(0), m_file(-1), m_keyMap(0), m_absMap(0) {
+Joystick::Joystick(int a, int b) : m_index(-1), m_numAxes(a), m_numButtons(b), m_dead(0.1), m_buttons(0), m_changed(0), m_file(-1), m_keyMap(0), m_absMap(0), m_created(false) {
 	if(a>0) {
 		m_axis = new int[a];
 		m_range = new Range[a];
