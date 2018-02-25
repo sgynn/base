@@ -99,12 +99,14 @@ int Input::initialiseJoysticks() {
 				if(test_bit(j, keyBit)) btnMap[j-BTN_MISC] = btn++;
 			}
 			for(int j=0; j<ABS_MAX; ++j) {
-				if(j==ABS_HAT0X) j = ABS_HAT3Y + 1; // skip hat
-				if(ioctl(js, EVIOCGABS(j), values) < 0) continue;
-				absMap[j] = axes++;
+				if(test_bit(j, absBit)) {
+					if(j==ABS_HAT0X) j = ABS_HAT3Y; // skip hat
+					else if(ioctl(js, EVIOCGABS(j), values) >= 0) absMap[j] = axes++;
+				}
 			}
 			// Create joystick object
 			Joystick* joy = new Joystick(axes, btn);
+			joy->m_created = false;
 			joy->m_file = js;
 			joy->m_keyMap = btnMap;
 			joy->m_absMap = absMap;
@@ -125,6 +127,7 @@ bool Joystick::update() {
 	input_event events[32];
 	int lastb = m_buttons;
 	while((len = read(m_file, events, sizeof(events)))>0) {
+		if(!m_created) continue;
 		len /= sizeof(input_event);
 		for(int i=0; i<len; ++i) {
 			code = events[i].code;
@@ -154,6 +157,7 @@ bool Joystick::update() {
 		}
 	}
 	m_changed = lastb ^ m_buttons;
+	m_created = true;
 	return true;
 }
 

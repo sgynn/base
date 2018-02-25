@@ -169,6 +169,7 @@ namespace base {
 		int    m_file;
 		uint8* m_keyMap;
 		uint8* m_absMap;
+		bool   m_created;
 	};
 	
 	// Global input class -------------------------------------------------------------

@@ -47,6 +47,8 @@ class Quaternion {
 	vec3        operator* (const vec3&) const;				/** Rotate a vector */
 
 	Quaternion& normalise();
+	Quaternion& invert();
+
 	float dot(const Quaternion&) const;
 	float getAngle(const Quaternion&) const;
 	float length2() const;
@@ -80,6 +82,7 @@ inline Quaternion   Quaternion::getInverse() const                      { return
 inline float        Quaternion::dot(const Quaternion& q) const          { return w*q.w + x*q.x + y*q.y + z*q.z; }
 inline float        Quaternion::length2() const                         { return dot(*this); }
 inline float        Quaternion::length() const                          { return sqrt( length2() ); }
+inline Quaternion&  Quaternion::invert()                                { w = -w; return *this; }
 
 inline Quaternion& Quaternion::normalise() {
 	float l = length();
