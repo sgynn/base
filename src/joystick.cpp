@@ -132,7 +132,7 @@ bool Joystick::update() {
 			code = events[i].code;
 			switch(events[i].type) {
 			case EV_KEY:
-				code = code < BTN_MISC? 0xff: m_keyMap[code];
+				code = code < BTN_MISC? 0xff: m_keyMap[code-BTN_MISC];
 				if(code < m_numButtons) {
 					if(events[i].value) m_buttons |= 1<<code;
 					else m_buttons &= ~(1<<code);
