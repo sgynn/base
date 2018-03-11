@@ -2,6 +2,7 @@
 
 using namespace base;
 
+#define EPSILON 0.001
 #define clamp(v,min,max)	((v)<min?min:(v)>max?max:v)
 /** Closest point on a line to a point */
 vec3 base::closestPointOnLine(const vec3& point, const vec3& a, const vec3& b) {
@@ -92,6 +93,37 @@ int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, f
 	return 1;
 }
 
+/** Intersection of a ray with an axis aligned bounding box */
+int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const vec3& h, vec3& out) {
+	float t;
+	int r = intersectRayAABB(p,d,c,h,t);
+	if(r) out = p + d * r;
+	return r;
+}
+int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const vec3& h, float& t) {
+	float tmin=0, tmax=1e30f;
+	for(int i=0; i<3; ++i) {
+		if(fabs(d[i]) < EPSILON) {
+			// Parallel
+			if(fabs(p[i] - c[i]) > h[i]) return 0;
+		}
+		else {
+			// Plane intersections
+			float ood = 1.0f / d[i];
+			float t1 = (c[i] - h[i] - p[i]) * ood;
+			float t2 = (c[i] + h[i] - p[i]) * ood;
+			if(t1 > t2) ood=t1, t1=t2, t2=ood;	// Swap
+			if(t1>tmin) tmin=t1;
+			if(t2<tmax) tmax=t2;
+			if(tmin > tmax) return 0;
+		}
+	}
+	t = tmin;
+	return 1;
+}
+
+
+
 /** Triangle intersection with line */
 int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, vec3& out) {
 	float bary[3];
@@ -106,7 +138,7 @@ int base::intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, con
 	if(r){
 		vec3 hit = a*bary[0] + b*bary[1] + c*bary[2];
 		vec3 d = q - p;
-		t = d.dot(hit - a) / d.dot(d);
+		t = d.dot(hit - p) / d.dot(d);
 	}
 	return r;
 }

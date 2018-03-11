@@ -5,6 +5,7 @@ from math import sqrt
 import bpy
 from mathutils import *
 
+def StrValues(a): return ' '.join(str(round(x,6)) for x in a)
 
 class BMExporter:
     def __init__(self, Config, context):
@@ -79,6 +80,9 @@ class BMExporter:
         self.WriteHeader()
         self.Log("Done")
 
+        if self.Config.ExportLayout:
+            self.WriteLayout()
+
         self.Log("Writing objects...")
         for Object in self.ExportList:
             Object.Write()
@@ -107,6 +111,25 @@ class BMExporter:
     def WriteFooter(self):
         self.File.Unindent();
         self.File.Write("</model>\n")
+
+    def WriteLayout(self):
+        self.File.Write("<layout>\n")
+        self.File.Indent()
+
+        for obj in self.ExportList:
+            o = obj.BlenderObject
+            q = o.rotation_quaternion
+            r = (q.w, q.x, q.z, q.y)
+            p = (o.location.x, o.location.z, -o.location.y)
+            s = "<object name='{}'".format(o.name);
+            if o.location.to_tuple()!=(0,0,0): s += " position='{}'".format(StrValues(p))
+            if r != (1,0,0,0):                 s += " orientation='{}'".format(StrValues(r))
+            if o.scale.to_tuple()!=(1,1,1):    s += " scale='{}'".format(StrValues(o.scale.xzy))
+            if 'tag' in o:                     s += " tag='{}'".format(o['tag'])
+            self.File.Write(s+"/>\n");
+
+        self.File.Unindent()
+        self.File.Write("</layout>\n")
 
     def GatherAnimationGenerators(self):
         Generators = []
@@ -277,11 +300,11 @@ class MeshExportObject(ExportObject):
             self.Indices = []
             self.Map = [[] for _ in range(0,len(Mesh.vertices))]    # array of empty arrays
 
+            Mesh.calc_normals_split()
             UVs = Mesh.uv_layers.active.data if useUVs and Mesh.uv_layers else []
             if not Mesh.vertex_colors.active: useColours = False
             if not useNormals or not UVs: useTangents = False
             Colours = Mesh.vertex_colors.active.data if useColours else []
-            Mesh.calc_normals_split()
 
             # Colour alpha - see if there is a non-active layer called alpha
             Alphas = []
@@ -302,11 +325,12 @@ class MeshExportObject(ExportObject):
                     for i, Vertex in enumerate(Polygon.vertices):
                         index = -1
                         vx = MeshExportObject.Vertex( Mesh.vertices[Vertex].co )
-                        if useNormals: vx.Normal = Mesh.loops[ Polygon.loop_indices[i]].normal if Polygon.use_smooth else Polygon.normal
-                        if UVs: vx.UV = UVs[ Polygon.loop_indices[i] ].uv
+                        loop = Polygon.loop_indices[i]
+                        if useNormals: vx.Normal = Mesh.loops[ loop ].normal #if Polygon.use_smooth else Polygon.normal
+                        if UVs: vx.UV = UVs[ loop ].uv
                         if Colours:
-                            vx.Colour = Colours[ Polygon.loop_indices[i] ].color
-                            if Alphas: vx.Colour += (Alphas[ Polygon.loop_indices[i] ].color[0],)
+                            vx.Colour = Colours[ loop ].color
+                            if Alphas: vx.Colour += (Alphas[ loop ].color[0],)
 
                         # y-up: y=z; z=-y; use setting. may be faster to preprocess mesh
 
@@ -424,6 +448,11 @@ class MeshExportObject(ExportObject):
         # Write material name
         if Material:
             self.Exporter.File.Write("<material name='{}'/>\n".format(Material.name))
+
+        # Parent bone
+        if self.BlenderObject.parent and self.BlenderObject.parent_type == 'BONE':
+            self.Exporter.File.Write("<parent bone='{}'/>\n".format(self.BlenderObject.parent_bone))
+
 
         # Write vertices
         self.Exporter.Log("Writing vertices...");

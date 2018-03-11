@@ -51,6 +51,17 @@ namespace base {
 	BASEAPI int intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, float radius, vec3& out);
 	BASEAPI int intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, float radius, float& t);
 
+	/** Intersection between a ray and an axis aligned bounding box
+	 * @param p Start of ray
+	 * @param d Ray direction (doesn't have to be normalised)
+	 * @param centre Bounding box centre
+	 * @param halfsize Bounding box half size
+	 * @param t Intersection point
+	 */
+	BASEAPI int intersectRayAABB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, vec3& out);
+	BASEAPI int intersectRayAABB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, float& t);
+
+
 	/** Intersection of a line and a triangle
 	 * @param p Start of line
 	 * @param q End of line

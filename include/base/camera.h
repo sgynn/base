@@ -116,9 +116,9 @@ namespace base {
 		public:
 		CameraBase(float fov, float aspect, float near, float far);
 		/** camera state */
-		void setEnabled(bool e) { m_active = e; }
+		virtual void setEnabled(bool e) { m_active = e; }
 		/** Grab mouse */
-		void grabMouse(bool g) { m_grabMouse = g; }
+		virtual void grabMouse(bool g) { m_grabMouse = g; }
 		/** Update camera */
 		virtual void update() = 0;
 		/** Set camera speeds */
