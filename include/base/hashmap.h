@@ -22,6 +22,7 @@ namespace base {
 		bool contains(const char* key) const;
 		T& operator[](const char* key);
 		const T& operator[](const char* key) const;
+		const T& get(const char* key, const T& fallback) const;
 		T& insert(const char* key, const T& value);
 		void erase(const char* key);
 		void clear();
@@ -112,6 +113,12 @@ template<typename T> T& base::HashMap<T>::insert(const char* key, const T& value
 	item = value;
 	return item;
 }
+
+template<typename T> const T& base::HashMap<T>::get(const char* key, const T& fallback) const {
+	unsigned int i = index(key, m_capacity);
+	if(i<m_capacity) return m_data[i].value;
+	else return fallback;
+}
 template<typename T> T& base::HashMap<T>::operator[](const char* key) {
 	// Check if extsts first to save unnessesary resize
 	unsigned int i = index(key, m_capacity);
@@ -128,9 +135,7 @@ template<typename T> T& base::HashMap<T>::operator[](const char* key) {
 	return m_data[i].value;
 }
 template<typename T> const T& base::HashMap<T>::operator[](const char* key) const {
-	unsigned int i = index(key, m_capacity);
-	if(i<m_capacity) return m_data[i].value;
-	else return m_data[0].value; //undefined behaviour if element does not exist
+	return get(key, m_data[0].value); //undefined behaviour if element does not exist
 }
 
 template<typename T> void base::HashMap<T>::erase(const char* key) {
