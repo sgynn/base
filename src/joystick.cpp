@@ -181,12 +181,12 @@ int Input::initialiseJoysticks() {
 			result = joyGetDevCaps(i, &joyCaps, sizeof(joyCaps));
 			if(result == JOYERR_NOERROR) {
 				// valid
-				Joystick* joy = new Joystick(joyCaps.wNumAxes, wNumButtons);
+				Joystick* joy = new Joystick(joyCaps.wNumAxes, joyCaps.wNumButtons);
 				joy->m_index = i;
-				for(int j=0; j<sizeof(joy->name); ++j) joy->m_name[j] = (char)joyCaps.szPname[j];
-				uint* ranges = { &joyCaps.wXmin, &joyCaps.wYmin, &joyCaps.wZmin, &joyCaps.wRmin, &joyCaps.wUmin, &joyCaps.wVmin };
-				for(int j=0; j<joyCaps.wNumAxes; ++j) joy->m_range[i].min = range[i][0], joy->m_range[i].max = range[i][1];
-				printf("Joystick %s: %d axes, %d buttons\n", j->m_name, j->m_numAxes, j->m_numButtons);
+				for(size_t j=0; j<sizeof(joy->m_name) && joyCaps.szPname[j]; ++j) joy->m_name[j] = (char)joyCaps.szPname[j];
+				uint* ranges[] = { &joyCaps.wXmin, &joyCaps.wYmin, &joyCaps.wZmin, &joyCaps.wRmin, &joyCaps.wUmin, &joyCaps.wVmin };
+				for(size_t j=0; j<joyCaps.wNumAxes; ++j) joy->m_range[i].min = ranges[i][0], joy->m_range[i].max = ranges[i][1];
+				printf("Joystick %s: %d axes, %d buttons\n", joy->m_name, joy->m_numAxes, joy->m_numButtons);
 				m_joysticks.push_back(joy);
 			}
 		}
@@ -198,18 +198,18 @@ bool Joystick::update() {
 	JOYINFOEX info;
 	info.dwSize = sizeof(info);
 	info.dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS;
-	joyGetPosEx(index, &info);
+	joyGetPosEx(m_index, &info);
 	const DWORD returnFlags[6] = { JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, JOY_RETURNR, JOY_RETURNU, JOY_RETURNV };
-	for(int i=0; i<state.axes; ++i) {
+	for(size_t i=0; i<m_numAxes; ++i) {
 		if(info.dwFlags & returnFlags[i]) {
-			m_axis[i] = *((&info.dwXPos) + i);	// Assuming contiguous
+			m_axis[i] = *((&info.dwXpos) + i);	// Assuming contiguous
 		}
 	}
 	if(info.dwFlags & JOY_RETURNBUTTONS) {
-		m_changed = buttons ^ info.dwButtons;
+		m_changed = m_buttons ^ info.dwButtons;
 		m_buttons = info.dwButtons;
 	}
-	if(info.dwPOV > 36000) state.hat.x = state.hat.y = 0;
+	if(info.dwPOV > 36000) m_hat.x = m_hat.y = 0;
 	else {
 		int p = info.dwPOV;
 		m_hat.x = p == 0 || p == 18000? 0: p < 18000? 1: -1;
@@ -235,7 +235,9 @@ Joystick::Joystick(int a, int b) : m_index(-1), m_numAxes(a), m_numButtons(b), m
 }
 
 Joystick::~Joystick() {
+	#ifdef LINUX
 	if(m_file>=0) close(m_file);
+	#endif
 	delete [] m_keyMap;
 	delete [] m_absMap;
 	delete [] m_axis;

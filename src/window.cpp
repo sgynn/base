@@ -539,12 +539,15 @@ uint base::Window::pumpEvents(Input* input) {
 			}
 		
 		//mouse
-		case WM_LBUTTONDOWN:	input->setButton(1, 1); break;
-		case WM_LBUTTONUP:		input->setButton(1, 0); break;
-		case WM_MBUTTONDOWN:	input->setButton(2, 1); break;
-		case WM_MBUTTONUP:		input->setButton(2, 0); break;
-		case WM_RBUTTONDOWN:	input->setButton(3, 1); break;
-		case WM_RBUTTONUP:		input->setButton(3, 0); break;
+		//#define MPOS(msg) Point( GET_X_LPARAM(msg.lParam), GET_Y_LPARAM(msg.lParam) )
+		#define MPOS(msg) Point( LOWORD(msg.lParam), HIWORD(msg.lParam) )
+
+		case WM_LBUTTONDOWN:	input->setButton(1, 1, MPOS(msg)); break;
+		case WM_LBUTTONUP:		input->setButton(1, 0, MPOS(msg)); break;
+		case WM_MBUTTONDOWN:	input->setButton(2, 1, MPOS(msg)); break;
+		case WM_MBUTTONUP:		input->setButton(2, 0, MPOS(msg)); break;
+		case WM_RBUTTONDOWN:	input->setButton(3, 1, MPOS(msg)); break;
+		case WM_RBUTTONUP:		input->setButton(3, 0, MPOS(msg)); break;
 		case WM_MOUSEWHEEL:
 			input->m_mouseWheel += GET_WHEEL_DELTA_WPARAM(msg.wParam) / WHEEL_DELTA; 
 			break;

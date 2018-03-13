@@ -49,7 +49,7 @@ typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
 #define GL_DEPTH24_STENCIL8  0x88F0
 #define GL_HALF_FLOAT        0x140B
 
-#define APIENTRYP __stdcall *
+//#define APIENTRYP __stdcall *
 typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
 PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
 PFNGLTEXIMAGE3DPROC glTexImage3D = 0;

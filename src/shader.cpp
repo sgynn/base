@@ -154,7 +154,7 @@ int Shader::supported() {
 	if(s_supported<0) {
 		const GLubyte* version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 		printf("GLSL %s\n", version);
-		//initialiseShaderExtensions();
+		initialiseShaderExtensions();
 		s_supported=1; // this should reflect what is supported FIXME
 	}
 	return s_supported;

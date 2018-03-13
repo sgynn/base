@@ -28,6 +28,7 @@ typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSPROC) (GLsizei n, const GLuint *f
 typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSPROC) (GLsizei n, GLuint *framebuffers);
 typedef GLenum (APIENTRYP PFNGLCHECKFRAMEBUFFERSTATUSPROC) (GLenum target);
 typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFERPROC) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLDRAWBUFFERSPROC)(GLsizei n, const GLenum* bufs);
 #endif
 #ifndef GL_VERSION_3_0
 typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE2DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
@@ -44,6 +45,7 @@ PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers         = 0;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC  glCheckFramebufferStatus  = 0;
 PFNGLFRAMEBUFFERTEXTURE2DPROC     glFramebufferTexture2D    = 0;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer = 0;
+PFNGLDRAWBUFFERSPROC             glDrawBuffers = 0;
 
 int initialiseFBOExtensions() {
 	if(glBindRenderbuffer) return 1;
@@ -57,6 +59,7 @@ int initialiseFBOExtensions() {
 	glCheckFramebufferStatus  = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)	wglGetProcAddress("glCheckFramebufferStatus");
 	glFramebufferTexture2D    = (PFNGLFRAMEBUFFERTEXTURE2DPROC)		wglGetProcAddress("glFramebufferTexture2D");
 	glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)	wglGetProcAddress("glFramebufferRenderbuffer");
+	glDrawBuffers             = (PFNGLDRAWBUFFERSPROC)              wglGetProcAddress("glDrawBuffers");
 	if(glBindFramebuffer==0) printf("Error: Framebuffers not initialised\n");
 	return glBindRenderbuffer? 1: 0;
 }
