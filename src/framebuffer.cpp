@@ -177,10 +177,10 @@ bool FrameBuffer::isValid() const {
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE;
 }
 
-void FrameBuffer::bind() const {
+bool FrameBuffer::bind(const Rect& r) const {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 	if(m_buffer) {
-		glViewport(0,0,m_width, m_height);
+		glViewport(r.x,r.y,r.width, r.height);
 		// Disable colour drawing if depth only
 		if( isDepthOnly() ) {
 			glDrawBuffer(GL_NONE);
@@ -200,6 +200,11 @@ void FrameBuffer::bind() const {
 		}
 	}
 	s_bound = this;
+	return m_buffer || this==&Screen;
+}
+
+bool FrameBuffer::bind() const {
+	return bind( Rect(0,0,m_width,m_height) );
 }
 
 

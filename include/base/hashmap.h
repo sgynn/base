@@ -116,7 +116,7 @@ template<typename T> T& base::HashMap<T>::insert(const char* key, const T& value
 
 template<typename T> const T& base::HashMap<T>::get(const char* key, const T& fallback) const {
 	unsigned int i = index(key, m_capacity);
-	if(i<m_capacity) return m_data[i].value;
+	if(i<m_capacity && m_data[i].key) return m_data[i].value;
 	else return fallback;
 }
 template<typename T> T& base::HashMap<T>::operator[](const char* key) {

@@ -2,6 +2,7 @@
 #define _BASE_FRAMEBUFFER_
 
 #include "texture.h"
+#include "point.h"
 
 namespace base {
 class FrameBuffer {
@@ -26,7 +27,8 @@ class FrameBuffer {
 	uint attachStencil(uint type);
 
 	/** Bind the framebuffer as the current a render target */
-	void bind() const;
+	bool bind() const;
+	bool bind(const Rect& r) const;
 
 	/** is this framebuffer bound? */
 	bool isBound() const { return s_bound==this; }
