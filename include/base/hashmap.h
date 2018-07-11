@@ -103,6 +103,7 @@ template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(const HashMap
 }
 template<typename T> base::HashMap<T>::~HashMap() {
 	clear();
+	delete [] m_data;
 }
 template<typename T> bool base::HashMap<T>::contains(const char* key) const {
 	unsigned int i = index(key, m_capacity);

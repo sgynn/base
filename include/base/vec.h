@@ -53,6 +53,7 @@ class vec3 {
 
 	vec3();
 	vec3(float x, float y, float z);
+	vec3(const vec2&, float z);
 	vec3(const float*);
 	vec3& set(float x, float y, float z);
 
@@ -151,6 +152,7 @@ inline vec2 vec2::approach(const vec2& t, float step) const {
 
 inline vec3::vec3(): x(0), y(0), z(0) {}
 inline vec3::vec3(float x, float y, float z): x(x), y(y), z(z) {}
+inline vec3::vec3(const vec2& p, float z): x(p.x), y(p.y), z(z) {}
 inline vec3::vec3(const float* p): x(p[0]), y(p[1]), z(p[2]) {}
 inline vec3::operator float*() { return &x; }
 inline vec3::operator const float*() const { return &x; }

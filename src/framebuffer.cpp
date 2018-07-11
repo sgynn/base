@@ -74,11 +74,11 @@ const FrameBuffer FrameBuffer::Screen;
 const FrameBuffer* FrameBuffer::s_bound = &FrameBuffer::Screen;
 
 FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0), m_count(0) {
-	memset(m_colour, 0, 5*sizeof(Storage));
+	memset(m_colour, 0, 4*sizeof(Storage));
 }
 FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0), m_count(0) {
 	initialiseFBOExtensions();
-	memset(m_colour, 0, 5*sizeof(Storage));
+	memset(m_colour, 0, 4*sizeof(Storage));
 	if(w==0 || h==0) return; //Invalid size
 
 	// Create the frame buffer
