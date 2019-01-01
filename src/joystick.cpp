@@ -27,12 +27,30 @@ float Joystick::axis(uint i) const {
 
 	return 0;
 }
+int Joystick::axisRaw(uint i) const {
+	if(i>m_numAxes) return 0;
+	return m_axis[i];
+}
 const Point& Joystick::hat() const {
 	return m_hat;
 }
 
 void Joystick::setDeadzone(float dead) {
 	m_dead = dead;
+}
+void Joystick::getCalibration(uint n, int* data) const {
+	if(n>m_numAxes) n = m_numAxes;
+	for(uint i=0; i<n; ++i) {
+		data[i*2] = m_range[i].min;
+		data[i*2+1] = m_range[i].max;
+	}
+}
+void Joystick::setCalibration(uint n, const int* data) {
+	if(n>m_numAxes) n = m_numAxes;
+	for(uint i=0; i<n; ++i) {
+		m_range[i].min = data[i*2];
+		m_range[i].max = data[i*2+1];
+	}
 }
 
 // ================================================================= //

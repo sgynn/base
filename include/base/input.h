@@ -142,15 +142,18 @@ namespace base {
 	/// Joystick class --------------------------------------------------------------
 	class Joystick { 
 		friend class Input;
-		public:
 		Joystick(int b, int a);
+		public:
 		~Joystick();
-		bool button(uint) const;
-		bool pressed(uint) const;
-		bool released(uint) const;
-		float axis(uint) const;
-		const Point& hat() const;
-		void setDeadzone(float);
+		bool  button(uint) const;					/// Get state of a button
+		bool  pressed(uint) const;					/// Was this button pressed this frame
+		bool  released(uint) const;					/// Was this button released this frame
+		float axis(uint) const;						/// Get normalised axis value
+		int   axisRaw(uint) const;					/// Get raw axis value
+		const Point& hat() const;					/// Get POV hat state
+		void  setDeadzone(float);					/// Set axis deadzone
+		void  getCalibration(uint, int*) const;	/// Get axis calibration
+		void  setCalibration(uint, const int*);			/// Set axis calibration
 		private:
 		bool update();
 		private:

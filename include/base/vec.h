@@ -39,6 +39,7 @@ class vec2 {
 	float length() const;
 	vec2& normalise();
 	vec2  normalised() const;
+	float normaliseWithLength(); // normalise vector but return original length
 	float dot(const vec2& v) const;
 	int   size(const vec2& p) const;
 	float distance(const vec2& v) const;
@@ -86,6 +87,7 @@ class vec3 {
 	float length2() const;
 	vec3& normalise();
 	vec3  normalised() const;
+	float normaliseWithLength(); // normalise vector but return original length
 	float dot(const vec3& v) const;
 	vec3  cross(const vec3& v) const;
 	float distance(const vec3& v) const;
@@ -127,8 +129,9 @@ inline vec2  operator/(float s, const vec2& v) { return vec2(s/v.x, s/v.y); }
 
 inline float vec2::length2() const    { return x*x + y*y; }
 inline float vec2::length() const     { return sqrt(x*x+y*y); }
-inline vec2& vec2::normalise()        { if(x!=0||y!=0) { float l=length(); x/=l; y/=l; } return *this; }
-inline vec2  vec2::normalised() const { return *this/length(); }
+inline vec2& vec2::normalise()           { if(x!=0||y!=0) { float l=length(); x/=l; y/=l; } return *this; }
+inline float vec2::normaliseWithLength() { if(x!=0||y!=0) { float l=length(); x/=l; y/=l; return l; } return 0; }
+inline vec2  vec2::normalised() const    { return *this/length(); }
 inline float vec2::dot(const vec2& v) const       { return x*v.x + y*v.y; }
 inline float vec2::distance2(const vec2& v) const { return (*this-v).length2(); }
 inline float vec2::distance (const vec2& v) const { return (*this-v).length(); }
@@ -183,8 +186,9 @@ inline vec3  operator/(float s, const vec3& v) { return vec3(s/v.x, s/v.y, s/v.z
 
 inline float vec3::length2() const    { return x*x + y*y + z*z; }
 inline float vec3::length() const     { return sqrt(x*x+y*y+z*z); }
-inline vec3& vec3::normalise()        { if(x!=0||y!=0||z!=0) { float l=length(); x/=l; y/=l; z/=l; } return *this; }
-inline vec3  vec3::normalised() const { return *this/length(); }
+inline vec3& vec3::normalise()           { if(x!=0||y!=0||z!=0) { float l=length(); x/=l; y/=l; z/=l; } return *this; }
+inline float vec3::normaliseWithLength() { if(x!=0||y!=0||z!=0) { float l=length(); x/=l; y/=l; z/=l; return l; } return 0; }
+inline vec3  vec3::normalised() const             { return *this/length(); }
 inline float vec3::dot(const vec3& v) const       { return x*v.x + y*v.y + z*v.z; }
 inline vec3  vec3::cross(const vec3& v) const     { return vec3(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x);  }
 inline float vec3::distance2(const vec3& v) const { return (*this-v).length2(); }

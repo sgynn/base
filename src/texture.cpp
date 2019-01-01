@@ -295,6 +295,43 @@ Texture Texture::create(int w, int h, int channels, const void* data, bool genMi
 
 // ToDo: setPixels() functions
 
+int Texture::setPixels(int width, int height, Format format, const void* src, int mip) {
+	unsigned target = getTarget();
+	glBindTexture(target, m_unit);
+	unsigned fmt = getInternalFormat(format);
+	int depth = 1;
+	if(isCompressedFormat(format)) {
+		size_t size = getMemorySize(format, width, height, depth);
+		switch(m_type) {
+		case TEX1D: glCompressedTexImage1D(target, mip, fmt, width, 0, size, src); break;
+		case ARRAY1D:
+		case TEX2D: glCompressedTexImage2D(target, mip, fmt, width, height, 0, size, src); break;
+		case ARRAY2D:
+		case TEX3D: glCompressedTexImage3D(target, mip, fmt, width, height, depth, 0, size, src); break;
+		case CUBE: break;
+		default:
+			break;
+		}
+	} else {
+		// Depth formats need different enum value
+		unsigned dfmt = fmt;
+		if(format == D16 || format == D24 || format == D32) dfmt = GL_DEPTH_COMPONENT;
+		else if(format == D24S8) dfmt = GL_DEPTH_STENCIL;
+		unsigned ftype = getInternalDataType(format);
+
+		switch(m_type) {
+		case TEX1D: glTexImage1D(target, mip, fmt, width, 0, dfmt, ftype, src); break;
+		case ARRAY1D:
+		case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, dfmt, ftype, src); break;
+		case ARRAY2D:
+		case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, dfmt, ftype, src); break;
+		case CUBE: break;
+		}
+	}
+	GL_CHECK_ERROR;
+	return 1;
+}
+
 
 // ----------------------------------------------------------------------------------------------------- //
 

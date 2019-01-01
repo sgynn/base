@@ -38,6 +38,7 @@ Point Input::queryMouse() {
 	return p;
 }
 void Input::warpMouse(int x, int y) {
+	m_mousePosition.set(x, y);
 	Game::window()->warpMouse(x, Game::window()->height()-y);
 }
 
