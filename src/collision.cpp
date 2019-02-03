@@ -97,7 +97,7 @@ int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, f
 int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const vec3& h, vec3& out) {
 	float t;
 	int r = intersectRayAABB(p,d,c,h,t);
-	if(r) out = p + d * r;
+	if(r) out = p + d * t;
 	return r;
 }
 int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const vec3& h, float& t) {
