@@ -19,6 +19,7 @@ class RefString {
 	const RefString& operator=(const char*);
 	operator const char*() const { return s; }
 	RefString substr(size_t start, size_t len=~0ull);
+	RefString& append(const char* s);
 };
 
 
@@ -30,10 +31,10 @@ class XMLElement {
 	XMLElement(const char* tag);
 	/** Get the type of this node (XML::TagType) */
 	int type() const { return m_type; }
-	/** Get the element name. Returns null if type==COMMENT */
-	const char* name() const { return m_name; }
-	/** Get the body text or comment text - does not support child elements */
-	const char* text() const { return m_text; }
+	/** Get the element name. Returns null if type!=TAG */
+	const char* name() const;
+	/** Get the body text or comment text - returns null if type==TAG */
+	const char* text() const;
 	/** Get a string attribute */
 	const char* attribute(const char* name, const char* defaultValue="") const;
 	/** Get an float attribute */
@@ -54,14 +55,18 @@ class XMLElement {
 	/** Attribute iteration */
 	base::HashMap<RefString>::const_iterator attributesBegin() const { return m_attributes.begin(); }
 	base::HashMap<RefString>::const_iterator attributesEnd() const { return m_attributes.end(); }
-	/** Set internal text */
-	void setText(const char* text);
 	/** Add a child element */
 	XMLElement& add(const XMLElement& child);
 	/** Add child element */
 	XMLElement& add(const char* tag);
+	/** Add child text node */
+	XMLElement& addText(const char*);
+	/** Set element text. replaces all children if type==TAG */
+	void setText(const char* s);
 	/** Find a child element */
 	XMLElement& find(const char* tag, int index=0);
+	/** Delete all child elements */
+	void clear();
 	/** Find a child element */
 	const XMLElement& find(const char* tag, int index=0) const;
 	/** Child element iterator start */
@@ -78,7 +83,6 @@ class XMLElement {
 	private:
 	int m_type; // XML::TagType
 	RefString m_name;
-	RefString m_text;
 	std::vector<XMLElement>  m_children;	// Child nodes
 	base::HashMap<RefString> m_attributes;	// Attribute map
 };
@@ -87,7 +91,7 @@ class XMLElement {
 /** Simple XML reader, READ ONLY for now. */
 class XML {
 	public:
-	enum TagType { TAG, HEADER, COMMENT };
+	enum TagType { TAG, TEXT, HEADER, COMMENT };
 	typedef XMLElement Element;
 	/** XML Element iterator */
 	typedef std::vector<Element>::const_iterator iterator;

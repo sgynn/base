@@ -46,6 +46,18 @@ inline RefString RefString::substr(size_t start, size_t len) {
 		return sub;
 	}
 }
+RefString& RefString::append(const char* r) {
+	if(!r || !r[0]) return *this;
+	if(!s || !s[0]) { operator=(r); return *this; }
+	int l1 = strlen(s), l2 = strlen(r);
+	char* ss = (char*)malloc(l1+l2+1);
+	memcpy(ss, s, l1);
+	memcpy(ss+l1, r, l1+1);
+	drop();
+	s = ss;
+	ref = new int(1);
+	return *this;
+}
 
 
 
@@ -88,34 +100,60 @@ bool XMLElement::hasAttribute(const char* name) const {
 	return m_attributes.contains(name);
 }
 
+const char* XMLElement::text() const {
+	if(m_type==XML::TEXT || m_type==XML::COMMENT) return m_name;
+	if(m_type==XML::TAG && !m_children.empty() && m_children[0].type() == XML::TEXT) {
+		return m_children[0].text();
+	}
+	return 0;
+}
+const char* XMLElement::name() const {
+	return m_type==XML::TAG? m_name: 0;
+}
+
 //// Setting data ////
 
 void XMLElement::setAttribute(const char* name, const char* value) {
+	assert(m_type == XML::TAG);
 	m_attributes[name] = value;
 }
 void XMLElement::setAttribute(const char* name, double v) {
+	assert(m_type == XML::TAG);
 	char s[16]; sprintf(s, "%g", v);
 	setAttribute(name, s);
 }
 void XMLElement::setAttribute(const char* name, float v) {
+	assert(m_type == XML::TAG);
 	char s[16]; sprintf(s, "%g", v);
 	setAttribute(name, s);
 }
 void XMLElement::setAttribute(const char* name, int v, bool hex) {
+	assert(m_type == XML::TAG);
 	char s[16]; sprintf(s, hex? "#%x": "%d", v);
 	setAttribute(name, s);
 }
 void XMLElement::setText(const char* s) {
-	m_text = s;
+	if(m_type==XML::TEXT) m_name = s;
+	else if(m_type==XML::TAG) {
+		m_children.clear();
+		addText(s);
+	}
 }
 
 XMLElement& XMLElement::add(const XMLElement& e) {
+	assert(m_type == XML::TAG);
 	m_children.push_back(e);
 	return m_children.back();
 }
-
 XMLElement& XMLElement::add(const char* tag) {
+	assert(m_type == XML::TAG);
 	return add( XMLElement(tag) );
+}
+XMLElement& XMLElement::addText(const char* text) {
+	assert(m_type == XML::TAG);
+	XMLElement& e = add( XMLElement(XML::TEXT) );
+	e.setText(text);
+	return e;
 }
 
 bool XMLElement::operator==(const char* s) const {
@@ -138,6 +176,10 @@ const XMLElement& XMLElement::find(const char* tag, int index) const {
 		if(m_children[i]==tag && --index<0) return m_children[i];
 	}
 	return none;
+}
+
+void XMLElement::clear() {
+	m_children.clear();
 }
 
 
@@ -210,9 +252,18 @@ const char* XML::toString() const {
 			// Children?
 			if(e->size()) { sprintf(s+p, ">\n"); p+=2; }
 			else { sprintf(s+p, "/>\n"); p+=3; }
-			
+			break;
+
+		case TEXT:
+			n = strlen(e->text());;
+			if(len < p+n) expand(p+n-len+256);
+			sprintf(s+p, "%s", e->text());
+			p += n;
+			break;	
+
 		case HEADER:
 			break;
+
 		case COMMENT:
 			n = strlen(e->text()) + 8;
 			if(len < p+n) expand(p+n-len+256);
@@ -286,7 +337,7 @@ int XML::parseInternal(char* string) {
 				*c = 0; c+=3; //terminate the string
 				// Create comment element
 				if(!stack.empty()) {
-					stack.back()->add( Element(COMMENT) ).m_text = comment;
+					stack.back()->add( Element(COMMENT) ).m_name = comment;
 				} else printf("Warning: Comment outside root element\n");
 			} else return false;
 		} else if(*c=='/') {	//Closing tag
@@ -355,7 +406,7 @@ int XML::parseInternal(char* string) {
 					for(char* t=c-1; *t==' '||*t=='\t'||*t=='\n' || *t=='\r'; --t) *t=0;
 					if(text[0]!='<' && text[0]!=0) {
 						*c = 0;
-						stack.back()->m_text = text;
+						stack.back()->addText(text);
 						*c = '<';
 					}
 				}
