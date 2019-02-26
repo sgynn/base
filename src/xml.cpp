@@ -133,7 +133,7 @@ void XMLElement::setAttribute(const char* name, int v, bool hex) {
 	setAttribute(name, s);
 }
 void XMLElement::setText(const char* s) {
-	if(m_type==XML::TEXT) m_name = s;
+	if(m_type==XML::TEXT || m_type==XML::COMMENT) m_name = s;
 	else if(m_type==XML::TAG) {
 		m_children.clear();
 		addText(s);
