@@ -48,6 +48,9 @@ struct Rect {
 	Rect& set(int x, int y, int w, int h) { this->x=x; this->y=y; width=w; height=h; return *this; }
 	Rect& set(const Point& pos, const Point& size) { x=pos.x; y=pos.y; width=size.x; height=size.y; return *this; }
 
+	bool   operator==(const Rect& r) const { return x==r.x && y==r.y && width==r.width && height==r.height; }
+	bool   operator!=(const Rect& r) const { return x!=r.x || y!=r.y || width!=r.width || height!=r.height; }
+
 	void include(int x, int y);
 	void include(const Rect& r);
 	void include(const Point& p) { include(p.x, p.y); }

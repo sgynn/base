@@ -34,7 +34,7 @@ namespace base {
 		int setPixels(int width, int height, Format format, const void** data, int mipmaps);
 		int setPixels(int width, int height, int layer, Format format, const void* data, int miplevel=0);
 		int setPixels(int width, int height, int layer, Format format, const void** data, int mipmaps);
-		int setPixels(int xOffset, int yOffset, Format width, int height, int format, const void* data, int mipLevel=0);
+		int setPixels(int xOffset, int yOffset, int width, int height, Format format, const void* data, int mipLevel=0);
 		int setPixels(int xOffset, int yOffset, int width, int height, Format format, const void** data, int mipmaps);
 		int setPixels(int xOffset, int yOffset, int zOffset, int width, int height, int depth, Format format, const void* data, int mipLevel=0);
 		int setPixels(int xOffset, int yOffset, int zOffset, int width, int height, int depth, Format format, const void** data, int mipmaps);

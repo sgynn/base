@@ -13,8 +13,8 @@ class FrameBuffer {
 	FrameBuffer(int width, int height, int flags=COLOUR);
 	~FrameBuffer();
 
-	int width() const { return m_width; }
-	int height() const { return m_height; }
+	int width() const;
+	int height() const;
 
 	/** Get the framebuffer as a texture */
 	const Texture& texture(int index=0) const { return m_colour[index].texture; }

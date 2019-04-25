@@ -81,6 +81,7 @@ template<typename T> base::HashMap<T>::HashMap(int cap) : m_capacity(cap), m_siz
 }
 template<typename T> base::HashMap<T>::HashMap(const HashMap& m) : m_capacity(m.m_capacity), m_size(m.m_size) {
 	m_data = new Pair[ m_capacity ];
+	memset(m_data, 0, m_capacity*sizeof(Pair));
 	for(unsigned int i=0; i<m_capacity; i++) {
 		if(m.m_data[i].key) {
 			m_data[i].key = strdup(m.m_data[i].key);
@@ -93,6 +94,7 @@ template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(const HashMap
 	m_capacity = m.m_capacity;
 	m_size = m.m_size;
 	m_data = new Pair[ m_capacity ];
+	memset(m_data, 0, m_capacity*sizeof(Pair));
 	for(unsigned int i=0; i<m_capacity; i++) {
 		if(m.m_data[i].key) {
 			m_data[i].key = strdup(m.m_data[i].key);

@@ -177,6 +177,13 @@ bool FrameBuffer::isValid() const {
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE;
 }
 
+int FrameBuffer::width() const {
+	return m_buffer? m_width: Game::width();
+}
+int FrameBuffer::height() const {
+	return m_buffer? m_height: Game::height();
+}
+
 bool FrameBuffer::bind(const Rect& r) const {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 	if(m_buffer) {
@@ -193,7 +200,7 @@ bool FrameBuffer::bind(const Rect& r) const {
 	}
 	// Null frame buffer
 	else {
-		glViewport(0, 0, Game::getSize().x, Game::getSize().y);
+		glViewport(r.x,r.y,r.width, r.height);
 		if(s_bound->isDepthOnly()) {
 			glDrawBuffer(GL_BACK);
 			glReadBuffer(GL_BACK);
@@ -204,7 +211,7 @@ bool FrameBuffer::bind(const Rect& r) const {
 }
 
 bool FrameBuffer::bind() const {
-	return bind( Rect(0,0,m_width,m_height) );
+	return bind( Rect(0, 0, width(), height()) );
 }
 
 

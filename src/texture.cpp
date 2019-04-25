@@ -333,6 +333,23 @@ int Texture::setPixels(int width, int height, Format format, const void* src, in
 }
 
 
+int Texture::setPixels(int x, int y, int w, int h, Format format, const void* src, int mip) {
+	if(m_format != format || m_type != TEX2D) return 0; // Must be same format
+	unsigned target = getTarget();
+	glBindTexture(target, m_unit);
+	unsigned fmt = getInternalFormat(format);
+	if(isCompressedFormat(format)) {
+		size_t size = getMemorySize(format, w, h, 1);
+		glCompressedTexSubImage2D(target, mip, x, y, w, h, fmt, size, src);
+	}
+	else {
+		unsigned ftype = getInternalDataType(format);
+		glTexImage2D(target, mip, x, y, w, h, fmt, ftype, src);
+	}
+	GL_CHECK_ERROR;
+	return 1;
+}
+
 // ----------------------------------------------------------------------------------------------------- //
 
 
