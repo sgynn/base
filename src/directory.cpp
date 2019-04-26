@@ -126,7 +126,7 @@ int Directory::getRelativePath(const char* in, char* out, int lim) {
 			for(int i=0; i<up; ++i) strcpy(buffer+i*3, "../");
 			k = up*3;
 		}
-		strncpy(buffer+k, in+m, lim-k);
+		strncpy(buffer+k, in+m, PATH_MAX-k);
 		return clean(buffer, out, lim);
 	}
 	return clean(in, out, lim);
@@ -179,14 +179,14 @@ int Directory::scan() {
 	DIR* dp;
 	struct stat st;
 	struct dirent *dirp;
-	char buffer[1024];
+	char buffer[1280];
 	if((dp = opendir(m_path))) {
 		while((dirp = readdir(dp))) {
 			File file;
 			strcpy(file.name, dirp->d_name);
 
 			//is it a file or directory
-			sprintf(buffer, "%s/%s", m_path, dirp->d_name);
+			snprintf(buffer, 1280, "%s/%s", m_path, dirp->d_name);
 			stat(buffer, &st);
 			if(S_ISDIR(st.st_mode)) file.type = DIRECTORY;
 			else file.type = Directory::FILE;
