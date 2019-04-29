@@ -56,7 +56,11 @@ PFNGLTEXIMAGE3DPROC glTexImage3D = 0;
 PFNGLCOMPRESSEDTEXIMAGE1DPROC glCompressedTexImage1D = 0;
 PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = 0;
 PFNGLCOMPRESSEDTEXIMAGE3DPROC glCompressedTexImage3D = 0;
+PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glCompressedTexSubImage1D = 0;
+PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D = 0;
+PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glCompressedTexSubImage3D = 0;
 PFNGLGENERATEMIPMAPPROC glGenerateMipmap = 0;
+PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate = 0;
 int initialiseTextureExtensions() {
 	if(glActiveTexture) return 1;
 	glActiveTexture        = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
@@ -64,7 +68,11 @@ int initialiseTextureExtensions() {
 	glCompressedTexImage1D = (PFNGLCOMPRESSEDTEXIMAGE1DPROC)wglGetProcAddress("glCompressedTexImage1D");
 	glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)wglGetProcAddress("glCompressedTexImage2D");
 	glCompressedTexImage3D = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)wglGetProcAddress("glCompressedTexImage3D");
+	glCompressedTexSubImage1D = (PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC)wglGetProcAddress("glCompressedTexSubImage1D");
+	glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)wglGetProcAddress("glCompressedTexSubImage2D");
+	glCompressedTexSubImage3D = (PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)wglGetProcAddress("glCompressedTexSubImage3D");
 	glGenerateMipmap       = (PFNGLGENERATEMIPMAPPROC)wglGetProcAddress("glGenerateMipmap");
+	glBlendFuncSeparate    = (PFNGLBLENDFUNCSEPARATEPROC)wglGetProcAddress("glBlendFuncSeparate");
 	return glActiveTexture? 1: 0;
 }
 #else

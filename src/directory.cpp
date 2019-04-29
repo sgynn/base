@@ -9,6 +9,7 @@
 #ifdef WIN32
 #include <windows.h>
 #include <direct.h>
+#undef PATH_MAX
 #define PATH_MAX 2048
 #else
 #include <sys/types.h>
