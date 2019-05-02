@@ -5,7 +5,7 @@ namespace base {
 	class DDS {
 		public:
 		/** Internal data formats */
-		enum DDSFormat { INVALID, LUMINANCE, LUMINANCE_ALPHA, RGB, RGBA, DXT1, DXT3, DXT5 };
+		enum DDSFormat { INVALID, LUMINANCE, LUMINANCE_ALPHA, RGB, RGBA, BC1, BC2, BC3, BC4, BC5 };
 		enum DDSMode { FLAT, CUBE, VOLUME, ARRAY };
 
 		DDS() : format(INVALID), mode(FLAT), width(0), height(0), data(0) {}
@@ -23,7 +23,7 @@ namespace base {
 		void clear();
 
 		/** Is this texture a compressed format? */
-		bool isCompressed() const { return format==DXT1 || format==DXT3 || format==DXT5; }
+		bool isCompressed() const { return format>=BC1 && format <= BC5; }
 
 		/** Decompress image */
 		void decompress();
@@ -43,7 +43,8 @@ namespace base {
 		void decompress(const unsigned char* data, int width, int height, unsigned char* out) const;
 		static int decodeR5G6B5(const unsigned char*);
 		static void createTable(const unsigned char* a, const unsigned char* b, unsigned char* out);
-		static void createDXT5AlphaTable(unsigned char a, unsigned char b, unsigned char* out);
+		static void createBC4Table(unsigned char a, unsigned char b, unsigned char* out);
+		static void decompressBC4Channel(const unsigned char* data, int bx, int by, int stride, unsigned char* out, int bpp);
 
 	};
 };
