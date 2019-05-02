@@ -13,7 +13,7 @@ namespace base {
 		public:
 		enum Format { NONE,
 			R8, RG8, RGB8, RGBA8,			// Standard formats
-			DXT1, DXT3, DXT5,				// ST3C Compressed formats
+			BC1, BC2, BC3, BC4, BC5,		// Block compressed formats [rgb,rgba,rgba,r,rg]
 			R32F, RG32F, RGB32F, RGBA32F,	// Float formats
 			R16F, RG16F, RGB16F, RGBA16F,	// Half float formats
 			R11G11G10F, R5G6B5,				// Other formats

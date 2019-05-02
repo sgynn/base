@@ -179,3 +179,57 @@ int base::intersectLines(const vec2& as, const vec2& ae, const vec2& bs, const v
 }
 
 
+
+// Closest point on a triangle (Page 141)
+vec3 base::closestPointOnTriangle(const vec3& p, const vec3& a, const vec3& b, const vec3& c) {
+	// Region A
+	vec3 ab = b - a;
+	vec3 ac = c - a;
+	vec3 ap = p - a;
+	float d1 = ab.dot(ap);
+	float d2 = ac.dot(ap);
+	if(d1<=0 && d2<=0) return a;	// barycentric(1,0,0)
+
+	// Region B
+	vec3 bp = p - b;
+	float d3 = ab.dot(bp);
+	float d4 = ac.dot(bp);
+	if(d3>=0 && d4<=d3) return b;	// barycentric(0,1,0)
+
+	// Edge region AB
+	float vc = d1*d4 - d3*d2;
+	if(vc <= 0 && d1 >= 0 && d3 <= 0) {
+		float v = d1 / (d1-d3);
+		return a + v * ab;			// barycentric(1-v,v,0)
+	}
+
+	// Region C
+	vec3 cp = p - c;
+	float d5 = ab.dot(cp);
+	float d6 = ac.dot(cp);
+	if(d6 >=0 && d5 <= d6) return c;	// barycentric(0,0,1)
+
+	// Region AC
+	float vb = d5*d2 - d1*d6;
+	if(vb <= 0 && d2 >= 0 && d6 <= 0) {
+		float w = d2 / (d2 - d6);
+		return a + w * ac;			// barycentric(1-w,0,w);
+	}
+
+	// Region BC
+	float va = d3*d6 - d5*d4;
+	if(va <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
+		float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+		return b + w * (c-b);		// barycentric(0,1-w,w)
+	}
+
+	// Inside face region
+	float denom = 1 / (va + vb + vc);
+	float v = vb * denom;
+	float w = vc * denom;
+	return a + ab * v + ac * w;		// barycentric(1-v-w, v, w) or (va*denom,v,w)
+}
+
+
+
+

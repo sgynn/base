@@ -28,6 +28,13 @@ namespace base {
 	 * */
 	BASEAPI float closestPointBetweenLines(const vec3& p0, const vec3& q0, const vec3& p1, const vec3& q1, vec3& c0, vec3& c1);
 	BASEAPI float closestPointBetweenLines(const vec3& p0, const vec3& q0, const vec3& p1, const vec3& q1, float& u, float& v);
+	
+	/** Get the closest point on a triangle to a point
+	 * @param Point
+	 * @param a,b,c The triangle
+	 * @return Closest point on triangle
+	 */
+	BASEAPI vec3 closestPointOnTriangle(const vec3& point, const vec3& a, const vec3& b, const vec3& c);
 
 	/** Intersection point between a ray and a plane
 	 * @param p Start of ray

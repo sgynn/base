@@ -140,7 +140,8 @@ void Texture::destroy() {
 unsigned Texture::getInternalFormat(Format f) {
 	static unsigned formats[] = {
 		0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
-		GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+		GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // BC1,2,3
+		GL_COMPRESSED_RED_RGTC1, GL_COMPRESSED_RG_RGTC2,	// BC4, BC5
 		GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F,
 		GL_R16F, GL_RG16F, GL_RGB16F, GL_RGBA16F,
 		GL_R11F_G11F_B10F, GL_RGB565,
@@ -151,7 +152,7 @@ unsigned Texture::getInternalFormat(Format f) {
 unsigned Texture::getInternalDataType(Format f) {
 	if(f == NONE)    return 0;
 	if(f <= RGBA8)   return GL_UNSIGNED_BYTE;
-	if(f <= DXT5)    return GL_UNSIGNED_BYTE;	// Not accurare
+	if(f <= BC5)     return GL_UNSIGNED_BYTE;	// Not accurate due to block compression
 	if(f <= RGBA32F) return GL_FLOAT;
 	if(f <= RGBA16F) return GL_HALF_FLOAT;
 	if(f <= D32)     return GL_UNSIGNED_BYTE;
@@ -159,7 +160,7 @@ unsigned Texture::getInternalDataType(Format f) {
 	return 0;
 }
 bool Texture::isCompressedFormat(Format f) {
-	return f==DXT1 || f==DXT3 || f==DXT5;
+	return f >= BC1 && f <= BC5;
 }
 
 
@@ -173,9 +174,11 @@ unsigned Texture::getMemorySize(Format format, int w, int h, int d) {
 	case RG8:      return w*h*d*2;
 	case RGB8:     return w*h*d*3;
 	case RGBA8:    return w*h*d*4;
-	case DXT1:     return ((w+3)/4) * ((h+3)/4) * 8 * d;
-	case DXT3:
-	case DXT5:     return ((w+3)/4) * ((h+3)/4) * 16 * d;
+	case BC1:      return ((w+3)/4) * ((h+3)/4) * 8 * d;	// compressed 4 bits per pixel
+	case BC2:
+	case BC3:      return ((w+3)/4) * ((h+3)/4) * 16 * d;	// compressed 1 byte per pixel
+	case BC4:      return ((w+3)/4) * ((h+3)/4) * 8  * d;
+	case BC5:      return ((w+3)/4) * ((h+3)/4) * 16 * d;
 	case R32F:     return w*h*d*4;
 	case RG32F:    return w*h*d*8;
 	case RGB32F:   return w*h*d*12;
