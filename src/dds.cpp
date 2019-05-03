@@ -128,7 +128,7 @@ DDS DDS::load(const char* filename) {
 	if(header.caps2 & DDS_VOLUME && header.depth>0) dds.mode = VOLUME;
 
 	// Get compression
-	if(header.format.fourCC & DDS_FOURCC) {
+	if(header.format.flags == DDS_FOURCC) {
 		switch(header.format.fourCC) {
 		case FOURCC_DXT1: dds.format = BC1; break;
 		case FOURCC_DXT3: dds.format = BC2; break;
