@@ -5,6 +5,9 @@
 
 using namespace base;
 
+Camera::Camera() : m_mode(0), m_left(-1), m_right(1), m_bottom(-1), m_top(1), m_near(-1), m_far(1) {
+}
+
 Camera::Camera(int width, int height) : m_mode(0), m_near(-1), m_far(1) {
 	m_left = m_bottom = 0;
 	m_right = width;
@@ -21,6 +24,32 @@ Camera::Camera(float fov, float aspect, float near, float far)
 Camera::Camera(float left, float right, float bottom, float top, float near, float far)
 	: m_mode(2), m_left(left), m_right(right), m_bottom(bottom), m_top(top), m_near(near), m_far(far) {
 	updateProjectionMatrix();
+}
+
+void Camera::setProjection(int mode, float l, float r, float t, float b, float n, float f, float v, float a) {
+	m_mode = mode;
+	m_left = l;
+	m_right = r;
+	m_top = t;
+	m_bottom = b;
+	m_near = n;
+	m_far = f;
+	m_fov = v;
+	m_aspect = a;
+	updateProjectionMatrix();
+}
+
+void Camera::setOrthographic(int width, int height) {
+	setProjection(0, 0,width,0,height,-1,1,0,0);
+}
+void Camera::setOrthographic(float width, float height, float near, float far) {
+	setProjection(0, -width/2,width/2,-height/2,height/2,near,far,0,0);
+}
+void Camera::setPerspective(float fov, float aspect, float near, float far) {
+	setProjection(1,0,0,0,0,near,far,fov,aspect);
+}
+void Camera::setPerspective(float left, float right, float bottom, float top, float near, float far) {
+	setProjection(2,left,right,top,bottom,near,far,0,0);
 }
 
 void Camera::adjustDepth(float near, float far) {

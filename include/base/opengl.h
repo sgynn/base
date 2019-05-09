@@ -12,7 +12,7 @@
 #include <GL/glext.h>
 
 
-#define GL_CHECK_ERROR  { int e=glGetError(); if(e) printf("OpenGL Error %d: %s:%d\n", e, __FILE__, __LINE__); fflush(stdout); }
+#define GL_CHECK_ERROR  { int e=glGetError(); if(e) printf("OpenGL Error 0x%x: %s:%d\n", e, __FILE__, __LINE__); fflush(stdout); }
 
 #endif
 

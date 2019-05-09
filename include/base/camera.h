@@ -13,6 +13,7 @@ namespace base {
 	 * */
 	class Camera {
 		public:
+		Camera();
 		/** Orthographic camera */
 		Camera(int width, int height);
 		/** Perspective camera constructor */
@@ -21,6 +22,11 @@ namespace base {
 		Camera(float left, float right, float bottom, float top, float near, float far);
 		/** Destructor */
 		virtual ~Camera() {}
+
+		void setOrthographic(int width, int height);
+		void setOrthographic(float width, float height, float near, float far);
+		void setPerspective(float fov, float aspect, float near, float far);
+		void setPerspective(float left, float right, float bottom, float top, float near, float far);
 
 
 		/** Just set camera position */
@@ -99,6 +105,7 @@ namespace base {
 
 		// calculate projection matrix
 		void updateProjectionMatrix();
+		void setProjection(int mode, float l, float r, float t, float b, float n, float f, float fv, float as);
 
 		public:
 		//Some utility functions

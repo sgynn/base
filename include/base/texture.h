@@ -21,7 +21,7 @@ namespace base {
 		};
 		enum Filter { NEAREST, BILINEAR, TRILINEAR, ANISOTROPIC };
 		enum Type   { TEX1D, TEX2D, TEX3D, CUBE, ARRAY1D, ARRAY2D };
-		enum Wrapping { REPEAT, CLAMP };
+		enum Wrapping { REPEAT, CLAMP, BORDER };
 		Texture();
 		/** Texture creation */
 		static Texture create(int width, int height, int channels, const void* data=0, bool generateMips=false);
@@ -43,6 +43,8 @@ namespace base {
 		void destroy();
 		/** Bind texture */
 		void bind() const;
+		/** Bind texture to a specific slot */
+		void bind(int slot) const;
 
 		/** Get size */
 		int width()  const { return m_width; }
@@ -61,6 +63,7 @@ namespace base {
 		void setWrap(Wrapping e) const				{ setWrap(e,e,e); }
 		void setWrap(Wrapping s, Wrapping t) const	{ setWrap(s,t,t); }
 		void setWrap(Wrapping s, Wrapping t, Wrapping u) const;
+		void setBorderColour(float* rgba) const;
 
 		private:
 		unsigned m_unit;	// OpenGL texture unit
@@ -73,7 +76,8 @@ namespace base {
 
 		public:
 		static unsigned getInternalFormat(Format);
-		static unsigned getInternalDataType(Format);
+		static unsigned getDataFormat(Format);
+		static unsigned getDataType(Format);
 		static bool     isCompressedFormat(Format);
 		static unsigned getMemorySize(Format, int w, int h, int d=1);
 	};

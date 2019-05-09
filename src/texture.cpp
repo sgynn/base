@@ -99,6 +99,13 @@ void Texture::bind() const {
 	glBindTexture( getTarget(), m_unit );
 }
 
+/** Bind texture to specified unit */
+void Texture::bind(int unit) const {
+	glActiveTexture(GL_TEXTURE0 + unit);
+	bind();
+	glActiveTexture(GL_TEXTURE0);
+}
+
 /** Set raw opengl filter values */
 void Texture::setFilter(unsigned min, unsigned mag) const {
 	bind();
@@ -120,11 +127,16 @@ void Texture::setFilter(Filter f) const {
 
 /** Set wrapping behaviour */
 void Texture::setWrap(Wrapping s, Wrapping t, Wrapping r) const {
-	static const unsigned glv[] = { GL_REPEAT, GL_CLAMP_TO_EDGE };
+	static const unsigned glv[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER };
 	bind();
 	glTexParameteri(getTarget(), GL_TEXTURE_WRAP_S, glv[s]);
 	glTexParameteri(getTarget(), GL_TEXTURE_WRAP_T, glv[t]);
 	glTexParameteri(getTarget(), GL_TEXTURE_WRAP_R, glv[r]);
+}
+
+void Texture::setBorderColour(float* rgba) const {
+	bind();
+	glTexParameterfv(getTarget(), GL_TEXTURE_BORDER_COLOR, rgba);
 }
 
 /** Clear texture unit */
@@ -149,7 +161,18 @@ unsigned Texture::getInternalFormat(Format f) {
 	};
 	return formats[f];
 }
-unsigned Texture::getInternalDataType(Format f) {
+unsigned Texture::getDataFormat(Format f) {
+	static unsigned formats[] = { 
+		0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
+		0,0,0,0,0, // not applicable for compressed formats
+		GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
+		GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
+		GL_RGB, GL_RGB,
+		GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_STENCIL
+	};
+	return formats[f];
+}
+unsigned Texture::getDataType(Format f) {
 	if(f == NONE)    return 0;
 	if(f <= RGBA8)   return GL_UNSIGNED_BYTE;
 	if(f <= BC5)     return GL_UNSIGNED_BYTE;	// Not accurate due to block compression
@@ -207,13 +230,6 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 		return Texture();
 	}
 	
-	// data format may be different
-	unsigned dfmt = fmt;
-	if(format == D16 || format == D24 || format == D32) dfmt = GL_DEPTH_COMPONENT;
-	else if(format == D24S8) dfmt = GL_DEPTH_STENCIL;
-
-
-
 	Texture t;
 	t.m_type   = type;
 	t.m_format = format;
@@ -221,7 +237,8 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 	t.m_height = height;
 	t.m_depth  = depth;
 	unsigned target = t.getTarget();
-	unsigned ftype = getInternalDataType(format);
+	unsigned dfmt  = getDataFormat(format);
+	unsigned ftype = getDataType(format);
 
 	// Create texture
 	glGenTextures(1, &t.m_unit);
@@ -325,17 +342,15 @@ int Texture::setPixels(int width, int height, Format format, const void* src, in
 		}
 	} else {
 		// Depth formats need different enum value
-		unsigned dfmt = fmt;
-		if(format == D16 || format == D24 || format == D32) dfmt = GL_DEPTH_COMPONENT;
-		else if(format == D24S8) dfmt = GL_DEPTH_STENCIL;
-		unsigned ftype = getInternalDataType(format);
+		unsigned dfmt = getDataFormat(format);
+		unsigned dtype = getDataType(format);
 
 		switch(m_type) {
-		case TEX1D: glTexImage1D(target, mip, fmt, width, 0, dfmt, ftype, src); break;
+		case TEX1D: glTexImage1D(target, mip, fmt, width, 0, dfmt, dtype, src); break;
 		case ARRAY1D:
-		case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, dfmt, ftype, src); break;
+		case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, dfmt, dtype, src); break;
 		case ARRAY2D:
-		case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, dfmt, ftype, src); break;
+		case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, dfmt, dtype, src); break;
 		case CUBE: break;
 		}
 	}
@@ -354,8 +369,9 @@ int Texture::setPixels(int x, int y, int w, int h, Format format, const void* sr
 		glCompressedTexSubImage2D(target, mip, x, y, w, h, fmt, size, src);
 	}
 	else {
-		unsigned ftype = getInternalDataType(format);
-		glTexImage2D(target, mip, x, y, w, h, fmt, ftype, src);
+		unsigned dfmt = getDataFormat(format);
+		unsigned dtype = getDataType(format);
+		glTexImage2D(target, mip, x, y, w, h, dfmt, dtype, src);
 	}
 	GL_CHECK_ERROR;
 	return 1;
