@@ -112,25 +112,21 @@ set(headers
 	include/base/vec.h
 )
 
-# OS specific stuff
-if(${MSYS})
-	list(APPEND src src/window_win32.cpp)
-	list(APPEND headers include/base/window_win32.h)
-elseif(${UNIX})
-	list(APPEND src src/window_x11.cpp)
-	list(APPEND headers include/base/window_x11.h)
-endif(${MSYS})
-
-
 add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 
-if(${MSYS})
+if(MINGW)
+	list(APPEND src src/window_win32.cpp)
+	list(APPEND headers include/base/window_win32.h)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
 	install(TARGETS base DESTINATION lib)
-elseif(${UNIX})
+elseif(UNIX)
+	list(APPEND src src/window_x11.cpp)
+	list(APPEND headers include/base/window_x11.h)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DLINUX")
 	install(TARGETS base DESTINATION lib64)
-endif(${MSYS})
+else()
+	message(WARNING "Invalid target")
+endif()
 
