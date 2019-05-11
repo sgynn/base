@@ -26,18 +26,21 @@ HINSTANCE s_hInst;
 #pragma warning(disable:4996)
 #endif
 
+#ifndef WIN32
+#error "This file should not be compiled"
+#endif
+
 using namespace base;
 
 // ======================================================================================================== //
 
-#ifdef WIN32
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	//Use clicked window close button
 	if(message==WM_CLOSE) PostQuitMessage(0);
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
-Win32Window::Win32Window(int w, int h, bool fs, int bpp, int dep, int fsaa) : Window(w,h,fs,bpp,dep,fsaa)i, m_hWnd(0) {
+Win32Window::Win32Window(int w, int h, bool fs, int bpp, int dep, int fsaa) : Window(w,h,fs,bpp,dep,fsaa), m_hWnd(0) {
 	WNDCLASS wc;
 	s_hInst = GetModuleHandle(NULL);
 	//register window class
@@ -88,7 +91,7 @@ bool Win32Window::createWindow() {
 	if (!m_fullScreen) AdjustWindowRect(&crect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
 	
 	//create the window
-	m_hWnd = CreateWindow(	"game", "",
+	m_hWnd = CreateWindow(	"basegame", "",
 				((m_fullScreen) ? 0 : WS_CAPTION) | WS_POPUPWINDOW | WS_VISIBLE,
 				((m_fullScreen) ? 0 : m_position.x),
 				((m_fullScreen) ? 0 : m_position.y),
@@ -137,7 +140,7 @@ bool Win32Window::createWindow() {
 		UINT numFormats = 0;
 		float fAttributes[] = { 0, 0 };
 		if(!wglChoosePixelFormatARB(m_hDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats)) {
-			printf("Cannot support %dx antialiasing\n", m_samples); 
+			printf("Cannot support %dx antialiasing\n", m_fsaa); 
 			pixelFormat=0;
 		}
 	}
@@ -189,18 +192,8 @@ const Window::PointList& Win32Window::getValidResolutions() {
 void Win32Window::setTitle(const char *title) {
 	SetWindowTextA(m_hWnd, title);
 }
-void Win32Window::setIcon() {
-}
 
-bool Win32Window::fullScreen(bool f) {
-	if(f!=m_fullScreen) {
-		destroy();
-		m_fullScreen = f;
-		create();
-		makeCurrent();
-		return m_fullScreen==f;
-	}
-	return true;
+void Win32Window::setIcon() {
 }
 
 void Win32Window::setPosition(int x,int y) {
@@ -209,8 +202,9 @@ void Win32Window::setPosition(int x,int y) {
 		MoveWindow(m_hWnd, m_position.x, m_position.y, m_size.x, m_size.y, false);
 	}
 }
+
 void Win32Window::setSize(int w, int h) {
-	if(!created() !! !m_fullScreen()) {
+	if(!created() || !m_fullScreen) {
 		m_size.set(w,h);
 		MoveWindow(m_hWnd, m_position.x, m_position.y, m_size.x, m_size.y, false);
 	}
@@ -237,7 +231,7 @@ uint Win32Window::pumpEvents(Input* input) {
 		case WM_QUIT:
 			return 0x100; //Exit signal
 		case WM_SIZE: //Window resized
-			m_size,x = msg.lParam & 0xffff;
+			m_size.x = msg.lParam & 0xffff;
 			m_size.y = msg.lParam >> 16;
 			break;
 		
