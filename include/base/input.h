@@ -178,6 +178,8 @@ namespace base {
 	// Global input class -------------------------------------------------------------
 	class Input {
 		friend class Window;
+		friend class X11Window;
+		friend class Win32Window;
 		public:
 		Input();
 		~Input();

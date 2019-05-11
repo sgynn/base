@@ -1,6 +1,12 @@
 #include "base/opengl.h"
-#include "base/window.h"
 #include "base/input.h"
+
+#ifdef WIN32
+#include "base/window_win32.h"
+#endif
+#ifdef LINUX
+#include "base/window_x11.h"
+#endif
 
 #include "base/game.h"
 #include "base/state.h"
@@ -35,7 +41,16 @@ Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_stat
 	s_inst = this;
 
 	//Create window
-	s_window = new Window(width, height, bpp, 16, fullscreen, fsaa);
+	#ifdef WIN32
+	s_window = new Win32Window(width, height, fullscreen, bpp, 24, fsaa);
+	#endif
+	#ifdef LINUX
+	s_window = new X11Window(width, height, fullscreen, bpp, 24, fsaa);
+	#endif
+	s_window->centreScreen();
+	s_window->createWindow();
+	s_window->makeCurrent();
+	s_window->clear();
 
 	m_state = new StateManager();
 
@@ -63,6 +78,7 @@ void Game::setTitle(const char* title) {
 }
 
 void Game::resize(int width, int height) {
+	s_window->setSize(width, height);
 }
 
 void Game::resize(bool fullscreen) {
@@ -71,9 +87,9 @@ void Game::resize(bool fullscreen) {
 void Game::resize(int width, int height, bool fullscreen) {
 }
 
-Point Game::getSize() { return s_window->size(); } 
-int Game::width() { return s_window->size().x; }
-int Game::height() { return s_window->size().y; }
+Point Game::getSize() { return s_window->getSize(); } 
+int Game::width() { return s_window->getSize().x; }
+int Game::height() { return s_window->getSize().y; }
 
 void Game::setInitialState(GameState* state) {
 	m_state->change(state);
@@ -118,7 +134,7 @@ uint64 Game::getTickFrequency() {
 void Game::run() {
 	//Set up dome OpenGL stuff
 	glMatrixMode(GL_PROJECTION);
-	glOrtho(0, s_window->width(), 0, s_window->height(), -1, 1);
+	glOrtho(0, s_window->getSize().x, 0, s_window->getSize().y, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	
 	glEnable(GL_TEXTURE_2D);

@@ -1,106 +1,69 @@
 #ifndef _BASE_WINDOW_
 #define _BASE_WINDOW_
 
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-
-#ifdef LINUX
-#include <X11/Xlib.h>
-#include <GL/glx.h>
-#include <X11/extensions/xf86vmode.h>
-#endif
-
 #include "math.h"
+#include <vector>
 
 namespace base { 
 	class Input;
+
+	/// Window interface. Implementations in X11Window or Win32Window
 	class Window {
 		public:
 		static bool initialise();
 		static void finalise();
 
-		Window(int width, int height, int bpp=32, int depth=16, bool fullscreen=false, int fsaa=0);
-		~Window();
+		Window(int width, int height, bool fullscreen=false, int bpp=32, int depth=24, int fsaa=0);
+		virtual ~Window();
 		
-		/// set the window title
-		void setTitle(const char* title);
-		/// move the window to a new position
-		void setPosition(int x, int y);
-		/// switch between fullscreen and windowed modes
-		bool fullScreen(bool f);
-		/// get whether the window is fullscreen
-		bool fullScreen() const { return m_fullScreen; }
-		/// set the sampling for antialiasing
-		bool antialiasing(int samples);
+		virtual void setTitle(const char* title) = 0;	/// set the window title
+		virtual void setIcon() = 0;						/// Set window icon
+		virtual void setPosition(int x, int y) = 0;  	/// move the window to a new position
+		virtual void setSize(int width, int height) = 0;/// Resize window
+		virtual bool setFullScreen(bool f);		 		/// switch between fullscreen and windowed modes
+		virtual bool setFSAA(int fsaa);
+
+		virtual bool created() const = 0;
+		virtual bool createWindow() = 0;
+		virtual void destroyWindow() = 0;
+
+		void         clear();
+		void         centreScreen(); // Center the window on screen
+
+		/// Get window properties
+		bool isFullscreen() const { return m_fullScreen; }
+		int  getFSAA() const      { return m_fsaa; }
+		const Point& getPosition() const { return m_position; }
+		const Point& getSize() const { return m_size; }
 		
-		/// get window width
-		int width() const { return m_width; }
-		/// get window height
-		int height() const { return m_height; }
-		/// Get the window size
-		Point size() const { return Point( m_width, m_height ); }
-		//get window position
-		Point position() const { return m_position; }
-		
+
 		/// Get the native screen resolution
-		static Point screenResolution();
+		typedef std::vector<Point> PointList;
+		static const Point&     getScreenResolution();
+		static const PointList& getValidResolutions();
 		
 		/// set the window as the curent context
-		bool makeCurrent();
+		virtual bool makeCurrent() = 0;
 		
 		/// call this at the end of the drawing loop to swap buffers
-		void swapBuffers(); 
+		virtual void swapBuffers() = 0;
 
-		#ifdef WIN32
-		HDC getHDC() { return m_hDC; };
-		HWND getHWND() { return m_hWnd; };
-		#endif
+		/// Process window events
+		virtual uint pumpEvents(Input* input) = 0;
 
-		#ifdef LINUX
-		Display *getXDisplay() { return m_display; };
-		::Window getXWindow() { return m_window; };
-		int getXScreen() { return m_screen; };
-		#endif
+		/// Mouse data comes from window. Used by Input
+		virtual Point queryMouse() { return Point(); }
+		virtual void warpMouse(int x, int y) {}
 
-		//Pump window events and collate any input signals
-		uint pumpEvents(Input* input);
-
-		Point queryMouse();
-		void warpMouse(int x, int y);
-
-		private:
-		static bool s_initialised;
-		
-		#ifdef LINUX
-		Display *m_display;
-		XVisualInfo *m_visual;
-		Colormap m_colormap;
-		XSetWindowAttributes m_swa;
-		GLXContext m_context;
-		::Window m_window;
-		XF86VidModeModeInfo m_deskMode;
-		int m_screen;
-		#endif
-		
-		#ifdef WIN32
-		HWND m_hWnd;
-		HDC m_hDC;
-		HGLRC m_hRC;
-		#endif
-		
-		bool create();
-		void destroy();
-		
+		protected:
 		//Data
-		int m_samples;
+		int m_fsaa;
 		Point m_position;
-		int m_width;
-		int m_height;
+		Point m_size;
 		int m_colourDepth;
 		int m_depthBuffer;
 		bool m_fullScreen;
+		bool m_created;
 	};
 };
 	

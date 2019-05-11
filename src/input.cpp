@@ -34,12 +34,12 @@ void Input::update() {
 
 Point Input::queryMouse() { 
 	Point p = Game::window()->queryMouse();
-	p.y = Game::window()->height() - p.y;
+	p.y = Game::window()->getSize().y - p.y;
 	return p;
 }
 void Input::warpMouse(int x, int y) {
 	m_mousePosition.set(x, y);
-	Game::window()->warpMouse(x, Game::window()->height()-y);
+	Game::window()->warpMouse(x, Game::window()->getSize().y - y);
 }
 
 void Input::setButton(int code, bool down, const Point& pt) {
@@ -50,7 +50,7 @@ void Input::setButton(int code, bool down, const Point& pt) {
 	if(down) {
 		m_mouseClick = mask; 
 		m_mouseClickPoint.x = pt.x;
-		m_mouseClickPoint.y = Game::window()->height() - pt.y;
+		m_mouseClickPoint.y = Game::window()->getSize().y - pt.y;
 	}
 }
 

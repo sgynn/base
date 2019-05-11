@@ -112,6 +112,16 @@ set(headers
 	include/base/vec.h
 )
 
+# OS specific stuff
+if(${MSYS})
+	list(APPEND src src/window_win32.cpp)
+	list(APPEND headers include/base/window_win32.h)
+elseif(${UNIX})
+	list(APPEND src src/window_x11.cpp)
+	list(APPEND headers include/base/window_x11.h)
+endif(${MSYS})
+
+
 add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
