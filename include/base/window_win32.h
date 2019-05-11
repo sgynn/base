@@ -14,7 +14,7 @@ namespace base {
 		void setTitle(const char* title);
 		void setIcon();
 		void setPosition(int x, int y);
-		void setSize(ijt w, int h);
+		void setSize(int w, int h);
 
 		bool created() const { return m_hWnd!=0; }
 		static const Point& getScreenResolution();
