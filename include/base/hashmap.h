@@ -26,6 +26,7 @@ namespace base {
 		T& insert(const char* key, const T& value);
 		void erase(const char* key);
 		void clear();
+		bool validate() const;
 		/** iterator class. Works the same as stl iterators */
 		private:
 		template<class Map, class Item>
@@ -69,6 +70,7 @@ namespace base {
 		unsigned int index(const char* c, unsigned int n) const;
 		static unsigned int hash(const char* c);
 		static bool compare(const char* a, const char* b);
+		static void move(Pair* from, Pair* to);
 		void resize(unsigned int newSize);
 		Pair* m_data;
 		unsigned int m_capacity, m_size;
@@ -135,6 +137,7 @@ template<typename T> T& base::HashMap<T>::operator[](const char* key) {
 		m_data[i].key = strdup( key );
 		++m_size;
 	}
+	validate();
 	return m_data[i].value;
 }
 template<typename T> const T& base::HashMap<T>::operator[](const char* key) const {
@@ -146,7 +149,18 @@ template<typename T> void base::HashMap<T>::erase(const char* key) {
 	if(i<m_capacity && m_data[i].key) {
 		free((void*)m_data[i].key);
 		m_data[i].key = 0;
+		// Problem - this gap can break other entries
+		unsigned j;
+		for(j=i+1; j<m_capacity && m_data[j].key; ++j) {
+			unsigned t = index(m_data[j].key, m_capacity);
+			if(t!=j) move(m_data+j, m_data+t);
+		}
+		if(j==m_capacity) for(j=0; j<i && m_data[j].key; ++j) {
+			unsigned t = index(m_data[j].key, m_capacity);
+			if(t!=j) move(m_data+j, m_data+t);
+		}
 	}
+	validate();
 }
 template<typename T> void base::HashMap<T>::clear() {
 	for(unsigned int i=0; i<m_capacity; i++) {
@@ -178,11 +192,22 @@ template<typename T> void base::HashMap<T>::resize(unsigned int newSize) {
 	memset(m_data, 0, newSize*sizeof(Pair));
 	for(unsigned int i=0; i<m_capacity; i++) if(tmp[i].key) {
 		unsigned int k=index( tmp[i].key, newSize );
-		memcpy(&m_data[k], &tmp[i], sizeof(Pair));
-		memset(&tmp[i], 0, sizeof(Pair)); // Make sure destructors dont do anything
+		move(tmp+i, m_data+k);
 	}
 	m_capacity = newSize;
 	delete [] tmp;
+	validate();
+}
+template<typename T> void base::HashMap<T>::move(Pair* a, Pair* b) {
+	memcpy(b, a, sizeof(Pair));
+	memset(a, 0, sizeof(Pair)); // Make sure destructors dont do anything
+}
+
+template<typename T> bool base::HashMap<T>::validate() const {
+	for(unsigned i=0; i<m_capacity; ++i) {
+		if(m_data[i].key && index(m_data[i].key, m_capacity)!=i) { asm("int $3"); return false; }
+	}
+	return true;
 }
 
 #undef THRESHOLD
