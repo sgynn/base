@@ -21,16 +21,16 @@ Material::Material(): m_textureCount(0), m_blend(BLEND_ALPHA) {}
 Material::~Material() {
 	// delete any variable pointers
 	for(base::HashMap<SVar>::iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
-		if(it->type > FLOAT1) delete [] it->p;
+		if(it->value.type > FLOAT1) delete [] it->value.p;
 	}
 }
 Material::Material(const Material& m) : SMaterial(m), m_variables(m.m_variables), m_shader(m.m_shader), m_textureCount(m.m_textureCount), m_blend(m.m_blend) {
 	// Fix any variables that use pointers
 	for(base::HashMap<SVar>::iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
-		if(it->type > FLOAT1) {
-			float* p = new float[ it->type ];
-			memcpy(p, it->p, it->type * sizeof(float));
-			it->p = p;
+		if(it->value.type > FLOAT1) {
+			float* p = new float[ it->value.type ];
+			memcpy(p, it->value.p, it->value.type * sizeof(float));
+			it->value.p = p;
 		}
 	}
 }
@@ -49,13 +49,13 @@ void Material::setFloatv(const char* name, int v, const float* fp) {
 	// Check if it exists to so we can use already allocated memory
 	if(it!=m_variables.end()) {
 		// Allocate new memory for array if size is different
-		if(it->type!=type) {
-			if(it->type > FLOAT1) delete [] it->p;
-			if(type > FLOAT1) it->p = new float[v];
-			it->type = type;
+		if(it->value.type!=type) {
+			if(it->value.type > FLOAT1) delete [] it->value.p;
+			if(type > FLOAT1) it->value.p = new float[v];
+			it->value.type = type;
 		}
-		if(type == FLOAT1) it->f = *fp;
-		else memcpy(it->p, fp, v*sizeof(float));
+		if(type == FLOAT1) it->value.f = *fp;
+		else memcpy(it->value.p, fp, v*sizeof(float));
 	} else {
 		// Allocate new variable
 		SVar var;
@@ -75,26 +75,26 @@ void Material::setInt(const char* name, int i) {
 
 float Material::getFloat(const char* name) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type==FLOAT1) return it->f;
+	if(it!=m_variables.end() && it->value.type==FLOAT1) return it->value.f;
 	else return 0;
 }
 int Material::getFloatv(const char* name, float* fp) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type>=FLOAT1) {
-		if(it->type == FLOAT1) *fp = it->f;
-		else memcpy(fp, it->p, it->type*sizeof(float));
-		return it->type;
+	if(it!=m_variables.end() && it->value.type>=FLOAT1) {
+		if(it->value.type == FLOAT1) *fp = it->value.f;
+		else memcpy(fp, it->value.p, it->value.type*sizeof(float));
+		return it->value.type;
 	} else return 0;
 }
 int Material::getInt(const char* name) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type==INTEGER) return it->i;
+	if(it!=m_variables.end() && it->value.type==INTEGER) return it->value.i;
 	else return 0;
 }
 
 void Material::setTexture(const char* name, const Texture& tex) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type==INTEGER) texture[ it->i ] = tex;
+	if(it!=m_variables.end() && it->value.type==INTEGER) texture[ it->value.i ] = tex;
 	else {
 		// Add new texture
 		texture[ m_textureCount ] = tex;
@@ -104,7 +104,7 @@ void Material::setTexture(const char* name, const Texture& tex) {
 }
 Texture Material::getTexture(const char* name) {
 	base::HashMap<SVar>::iterator it = m_variables.find(name);
-	if(it!=m_variables.end() && it->type==INTEGER) return texture[ it->i ];
+	if(it!=m_variables.end() && it->value.type==INTEGER) return texture[ it->value.i ];
 	else return Texture();
 }
 
@@ -148,13 +148,13 @@ void Material::bind(int flags) const {
 		Shader* s = const_cast<Shader*>(&m_shader);
 
 		for(base::HashMap<SVar>::const_iterator it=m_variables.begin(); it!=m_variables.end(); ++it) {
-			switch(it->type) {
-			case INTEGER:	s->Uniform1i( it.key(), it->i ); break;
-			case FLOAT1: 	s->Uniform1f( it.key(), it->f ); break;
-			case FLOAT2:    s->Uniform2f( it.key(), it->p[0], it->p[1] ); break;
-			case FLOAT3:    s->Uniform3f( it.key(), it->p[0], it->p[1], it->p[2] ); break;
-			case FLOAT4:    s->Uniform4f( it.key(), it->p[0], it->p[1], it->p[2], it->p[3] ); break;
-			default: s->Uniformfv( it.key(), it->type-FLOAT1, it->p ); break;
+			switch(it->value.type) {
+			case INTEGER:	s->Uniform1i( it->key, it->value.i ); break;
+			case FLOAT1: 	s->Uniform1f( it->key, it->value.f ); break;
+			case FLOAT2:    s->Uniform2f( it->key, it->value.p[0], it->value.p[1] ); break;
+			case FLOAT3:    s->Uniform3f( it->key, it->value.p[0], it->value.p[1], it->value.p[2] ); break;
+			case FLOAT4:    s->Uniform4f( it->key, it->value.p[0], it->value.p[1], it->value.p[2], it->value.p[3] ); break;
+			default: s->Uniformfv( it->key, it->value.type-FLOAT1, it->value.p ); break;
 			}
 		}
 	}

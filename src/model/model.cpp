@@ -57,7 +57,7 @@ Model::~Model() {
 	// Delete maps
 	if(--m_maps->ref==0) {
 		for(HashMap<Animation*>::iterator i=m_maps->animations.begin(); i!=m_maps->animations.end(); ++i) {
-			(*i)->drop();
+			i->value->drop();
 		}
 		delete m_maps;
 	}

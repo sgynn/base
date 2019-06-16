@@ -40,10 +40,10 @@ bool INIFile::save(const char* filename) {
 	FILE* fp = fopen(filename, "w");
 	if(!fp) return false;
 	for(HashMap<Section*>::iterator i=m_sections.begin(); i!=m_sections.end(); i++) {
-		fprintf(fp, "[%s]\n", i.key());
-		Section* s = *i;
+		fprintf(fp, "[%s]\n", i->key);
+		Section* s = i->value;
 		for(HashMap<Value>::iterator j = s->m_values.begin(); j!=s->m_values.end(); j++) {
-			fprintf(fp, "%s = %s\n", j.key(), (const char*) *j);
+			fprintf(fp, "%s = %s\n", j->key, (const char*) j->value);
 		}
 		fprintf(fp, "\n");
 	}

@@ -130,7 +130,7 @@ namespace model {
 	
 	template<typename T> inline T Model::mapValue(const HashMap<T>& map, const char* name, T def) const {
 		typename HashMap<T>::const_iterator i = map.find(name);
-		return i==map.end()? def: *i;
+		return i==map.end()? def: i->value;
 	}
 
 	inline int        Model::getMeshCount() const   { return m_meshes.size(); }

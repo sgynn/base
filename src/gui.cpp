@@ -67,7 +67,7 @@ Control* Root::getControl(const char* name) const {
 	else return m_names[name];
 }
 void Root::merge(Root* r) {
-	for(HashMap<Control*>::iterator it=r->m_names.begin(); it!=r->m_names.end(); ++it) m_names[it.key()] = *it;
+	for(HashMap<Control*>::iterator it=r->m_names.begin(); it!=r->m_names.end(); ++it) m_names[it->key] = it->value;
 }
 int Root::update(Event& e) {
 	if(!m_control) return 0;

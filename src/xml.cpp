@@ -14,7 +14,7 @@ inline RefString::RefString(const char* str): s(0), ref(0) {
 inline RefString::RefString(const RefString& r): s(r.s), ref(r.ref) {
 	if(ref) ++*ref;
 }
-inline const RefString& RefString::operator=(const RefString& r) { 
+const RefString& RefString::operator=(const RefString& r) { 
 	drop();
 	s = r.s;
 	ref = r.ref; 
@@ -247,7 +247,7 @@ const char* XML::toString() const {
 			p += sprintf(s+p, "<%s", e->name());
 			// Attributes
 			for(HashMap<RefString>::const_iterator i=e->m_attributes.begin(); i!=e->m_attributes.end(); ++i) {
-				p += sprintf(s+p, " %s=\"%s\"", i.key(), (const char*)*i);
+				p += sprintf(s+p, " %s=\"%s\"", i->key, (const char*)i->value);
 			}
 			// Children?
 			if(e->size()) { sprintf(s+p, ">\n"); p+=2; }

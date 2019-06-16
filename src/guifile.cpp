@@ -306,7 +306,7 @@ Texture* Loader::loadTexture(const char* file) {
 		Texture* t = new Texture( Texture::create(png.width, png.height, fmt[png.bpp/8], png.data) );
 		m_textures[file] = t;
 		return t;
-	} else return *it;
+	} else return it->value;
 }
 // Load a font //
 Font* Loader::loadFont(const char* file) {
@@ -315,7 +315,7 @@ Font* Loader::loadFont(const char* file) {
 		Font* f = new Font(file);
 		m_fonts[file] = f;
 		return f;
-	} else return *it;
+	} else return it->value;
 }
 
 // Build controls //

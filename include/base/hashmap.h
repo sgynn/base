@@ -12,7 +12,7 @@ namespace base {
 	template <typename T>
 	class HashMap {
 		public:
-		struct Pair { const char* key; T value; };
+		struct Pair { const char* const key; T value; };
 		HashMap(int cap=8);
 		HashMap(const HashMap& m);
 		HashMap& operator=(const HashMap&);
@@ -29,79 +29,75 @@ namespace base {
 		bool validate() const;
 		/** iterator class. Works the same as stl iterators */
 		private:
-		template<class Map, class Item>
+		template<class Map, class Pair>
 		class t_iterator {
 			friend class HashMap;
 			public:
-			t_iterator() : m_index(0), m_map(0) {}
-			t_iterator operator++(int) { t_iterator tmp=*this; ++m_index; while(m_index<m_map->m_capacity && m_map->m_data[m_index].key==0) ++m_index; return tmp;}
-			t_iterator operator++() { ++m_index; while(m_index<m_map->m_capacity && !m_map->m_data[m_index].key) ++m_index; return *this; }
-			Item& operator*() { return m_map->m_data[m_index].value; }
-			Item* operator->() { return &m_map->m_data[m_index].value; }
-			const char* key() const { return m_map->m_data[m_index].key; }
-			bool operator==(const t_iterator& o) const { return m_map==o.m_map && m_index==o.m_index; }
-			bool operator!=(const t_iterator& o) const { return m_map!=o.m_map || m_index!=o.m_index; }
+			t_iterator() : m_item(0) {}
+			t_iterator operator++(int) { t_iterator tmp=*this; next(); return tmp; }
+			t_iterator operator++() { next(); return *this; }
+			Pair& operator*() { return *(*m_item); }
+			Pair* operator->() { return *m_item; }
+			bool operator==(const t_iterator& o) const { return m_item==o.m_item; }
+			bool operator!=(const t_iterator& o) const { return m_item!=o.m_item; }
 			private:
-			t_iterator( Map* map, int ix) : m_index(ix), m_map(map) {}
-			unsigned int m_index;
+			bool isItem(Pair**p) const { return *m_item || m_item>=m_map->m_data+m_map->m_capacity; }
+			void next() { ++m_item; while(!isItem(m_item)) ++m_item; }
+			t_iterator(Map* map, Pair** item) : m_item(item), m_map(map) { if(!isItem(m_item)) next(); }
+			Pair** m_item;
 			Map* m_map;
 		};
-		friend class t_iterator<HashMap, T>;
-		friend class t_iterator<const HashMap, const T>;
+		friend class t_iterator<HashMap, Pair>;
+		friend class t_iterator<const HashMap, Pair>;
 		public:
 
-		typedef t_iterator<HashMap, T> iterator;
-		typedef t_iterator<const HashMap, const T> const_iterator;
+		typedef t_iterator<HashMap, Pair> iterator;
+		typedef t_iterator<const HashMap, Pair> const_iterator;
 
-		iterator       begin()       { return ++iterator(this, ~0u); }
-		const_iterator begin() const { return ++const_iterator(this, ~0u); }
-		iterator       end()         { return iterator(this, m_capacity); }
-		const_iterator end() const   { return const_iterator(this, m_capacity); }
+		iterator       begin()       { return iterator(this, m_data); }
+		const_iterator begin() const { return const_iterator(this, m_data); }
+		iterator       end()         { return iterator(this, m_data+m_capacity); }
+		const_iterator end() const   { return const_iterator(this, m_data+m_capacity); }
 		iterator find(const char* key) {
 			unsigned int i=index(key, m_capacity);
-			return i<m_capacity && m_data[i].key? iterator(this, i): end();
+			return i<m_capacity && m_data[i]? iterator(this, m_data+i): end();
 		}
 		const_iterator find(const char* key) const {
 			unsigned int i=index(key, m_capacity);
-			return i<m_capacity && m_data[i].key? const_iterator(this, i): end();
+			return i<m_capacity && m_data[i]? const_iterator(this, m_data+i): end();
 		}
 		
 		private:
 		unsigned int index(const char* c, unsigned int n) const;
 		static unsigned int hash(const char* c);
 		static bool compare(const char* a, const char* b);
-		static void move(Pair* from, Pair* to);
 		void resize(unsigned int newSize);
-		Pair* m_data;
+		Pair** m_data;
 		unsigned int m_capacity, m_size;
 	};
 };
 
-template<typename T> base::HashMap<T>::HashMap(int cap) : m_capacity(cap), m_size(0) {
-	m_data = new Pair[cap];
-	memset(m_data, 0, cap*sizeof(Pair));
+template<typename T> base::HashMap<T>::HashMap(int cap) : m_data(0), m_capacity(0), m_size(0) {
+	if(cap>0) resize(cap);
 }
 template<typename T> base::HashMap<T>::HashMap(const HashMap& m) : m_capacity(m.m_capacity), m_size(m.m_size) {
-	m_data = new Pair[ m_capacity ];
-	memset(m_data, 0, m_capacity*sizeof(Pair));
+	m_data = new Pair*[ m_capacity ];
 	for(unsigned int i=0; i<m_capacity; i++) {
-		if(m.m_data[i].key) {
-			m_data[i].key = strdup(m.m_data[i].key);
-			m_data[i].value = m.m_data[i].value;
-		} else m_data[i].key = 0;
+		Pair* item = m.m_data[i];
+		if(item) m_data[i] = new Pair{ strdup(item->key), item->value };
+		else m_data[i] = 0;
 	}
 }
 template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(const HashMap& m) {
 	clear();
+	delete [] m_data;
 	m_capacity = m.m_capacity;
 	m_size = m.m_size;
-	m_data = new Pair[ m_capacity ];
-	memset(m_data, 0, m_capacity*sizeof(Pair));
+	m_data = new Pair*[ m_capacity ];
 	for(unsigned int i=0; i<m_capacity; i++) {
-		if(m.m_data[i].key) {
-			m_data[i].key = strdup(m.m_data[i].key);
-			m_data[i].value = m.m_data[i].value;
-		} else m_data[i].key = 0;
+		Pair* item = m.m_data[i];
+		if(item) m_data[i] = new Pair{ strdup(item->key), item->value };
+		else m_data[i] = 0;
 	}
 	return *this;
 }
@@ -111,7 +107,7 @@ template<typename T> base::HashMap<T>::~HashMap() {
 }
 template<typename T> bool base::HashMap<T>::contains(const char* key) const {
 	unsigned int i = index(key, m_capacity);
-	return i<m_capacity && m_data[i].key;
+	return i<m_capacity && m_data[i];
 }
 template<typename T> T& base::HashMap<T>::insert(const char* key, const T& value) {
 	T& item = (*this)[key];
@@ -121,51 +117,55 @@ template<typename T> T& base::HashMap<T>::insert(const char* key, const T& value
 
 template<typename T> const T& base::HashMap<T>::get(const char* key, const T& fallback) const {
 	unsigned int i = index(key, m_capacity);
-	if(i<m_capacity && m_data[i].key) return m_data[i].value;
+	if(i<m_capacity && m_data[i]) return m_data[i]->value;
 	else return fallback;
 }
 template<typename T> T& base::HashMap<T>::operator[](const char* key) {
 	// Check if extsts first to save unnessesary resize
 	unsigned int i = index(key, m_capacity);
-	if(m_data[i].key==0) {
+	if(!m_data[i]) {
 		// Do we need to resize array
 		if(m_size*THRESHOLD > m_capacity) {
 			resize((unsigned int)(m_capacity*THRESHOLD));
 			i = index(key, m_capacity); // index will have changed
 		}
 		// Create new entry
-		m_data[i].key = strdup( key );
+		m_data[i] = new Pair{ strdup(key), T() };
 		++m_size;
 	}
 	validate();
-	return m_data[i].value;
+	return m_data[i]->value;
 }
 template<typename T> const T& base::HashMap<T>::operator[](const char* key) const {
-	return get(key, m_data[0].value); //undefined behaviour if element does not exist
+	static T invalidValue;
+	return get(key, invalidValue);
 }
 
 template<typename T> void base::HashMap<T>::erase(const char* key) {
 	unsigned int i = index(key, m_capacity);
-	if(i<m_capacity && m_data[i].key) {
-		free((void*)m_data[i].key);
-		m_data[i].key = 0;
+	if(i<m_capacity && m_data[i]) {
+		// Delete item
+		free((void*)m_data[i]->key);
+		delete m_data[i];
+		m_data[i] = 0;
 		// Problem - this gap can break other entries
 		unsigned j;
-		for(j=i+1; j<m_capacity && m_data[j].key; ++j) {
-			unsigned t = index(m_data[j].key, m_capacity);
-			if(t!=j) move(m_data+j, m_data+t);
+		for(j=i+1; j<m_capacity && m_data[j]; ++j) {
+			unsigned t = index(m_data[j]->key, m_capacity);
+			if(t!=j) m_data[t] = m_data[j], m_data[j] = 0;
 		}
-		if(j==m_capacity) for(j=0; j<i && m_data[j].key; ++j) {
-			unsigned t = index(m_data[j].key, m_capacity);
-			if(t!=j) move(m_data+j, m_data+t);
+		if(j==m_capacity) for(j=0; j<i && m_data[j]; ++j) {
+			unsigned t = index(m_data[j]->key, m_capacity);
+			if(t!=j) m_data[t] = m_data[j], m_data[j] = 0;
 		}
 	}
 	validate();
 }
 template<typename T> void base::HashMap<T>::clear() {
 	for(unsigned int i=0; i<m_capacity; i++) {
-		if(m_data[i].key) free((void*)m_data[i].key);
-		m_data[i].key = 0;
+		if(m_data[i]) free((void*)m_data[i]->key);
+		delete m_data[i];
+		m_data[i] = 0;
 	}
 	m_size = 0;
 }
@@ -181,31 +181,27 @@ template<typename T> unsigned int base::HashMap<T>::index(const char* c, unsigne
 	unsigned int h=hash(c)%n;
 	for(unsigned int i=0; i<n; i++) {
 		unsigned int k=(h+i)%n;
-		if(m_data[k].key==0 || compare(m_data[k].key, c)) return k;
+		if(!m_data[k] || compare(m_data[k]->key, c)) return k;
 	}
 	return ~0u;
 }
 template<typename T> void base::HashMap<T>::resize(unsigned int newSize) {
 	//printf("Resize %u -> %u\n", m_capacity, newSize);
-	Pair* tmp = m_data;
-	m_data = new Pair[newSize];
-	memset(m_data, 0, newSize*sizeof(Pair));
-	for(unsigned int i=0; i<m_capacity; i++) if(tmp[i].key) {
-		unsigned int k=index( tmp[i].key, newSize );
-		move(tmp+i, m_data+k);
+	Pair** tmp = m_data;
+	m_data = new Pair*[newSize];
+	memset(m_data, 0, newSize*sizeof(Pair*));
+	for(unsigned int i=0; i<m_capacity; i++) if(tmp[i]) {
+		unsigned int k=index( tmp[i]->key, newSize );
+		m_data[k] = tmp[i];
 	}
 	m_capacity = newSize;
 	delete [] tmp;
 	validate();
 }
-template<typename T> void base::HashMap<T>::move(Pair* a, Pair* b) {
-	memcpy(b, a, sizeof(Pair));
-	memset(a, 0, sizeof(Pair)); // Make sure destructors dont do anything
-}
 
 template<typename T> bool base::HashMap<T>::validate() const {
 	for(unsigned i=0; i<m_capacity; ++i) {
-		if(m_data[i].key && index(m_data[i].key, m_capacity)!=i) { asm("int $3"); return false; }
+		if(m_data[i] && index(m_data[i]->key, m_capacity)!=i) { asm("int $3"); return false; }
 	}
 	return true;
 }
