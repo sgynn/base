@@ -41,7 +41,7 @@ namespace base {
 			bool operator==(const t_iterator& o) const { return m_item==o.m_item; }
 			bool operator!=(const t_iterator& o) const { return m_item!=o.m_item; }
 			private:
-			bool isItem(Pair**p) const { return *m_item || m_item>=m_map->m_data+m_map->m_capacity; }
+			bool isItem(Pair**p) const { return m_item>=m_map->m_data+m_map->m_capacity || *m_item; }
 			void next() { ++m_item; while(!isItem(m_item)) ++m_item; }
 			t_iterator(Map* map, Pair** item) : m_item(item), m_map(map) { if(!isItem(m_item)) next(); }
 			Pair** m_item;
