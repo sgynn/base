@@ -159,7 +159,7 @@ def construct_mesh(obj, config):
                     if group.weight > 0.001:
                         g = obj.vertex_groups[ group.group ]
                         index = mesh.groups.setdefault(g.name, len(mesh.groups))
-                        v.wgt.append( (index, g.weight) )
+                        v.wgt.append( (index, group.weight) )
                 mesh.weights = max(mesh.weights, len(v.wgt))
 
             # add vertex if new
@@ -221,18 +221,18 @@ def export_mesh(obj, config, xml):
 
         if m.weights > 0:
             node = append_element(mesh, "skin")
-            node.setAttribute("size", len(m.groups))
+            node.setAttribute("size", str(len(m.groups)))
             node.setAttribute("weightspervertex", str(m.weights))
             for g in m.groups:
                 group = append_element(node, "group")
-                group.setAttribute("name", g.Key)
+                group.setAttribute("name", g)
 
             indices = append_element(node, "indices")
-            ind = [' '.join( [str(g[0]) for g in v.wgt] + ['0']*(m.weigts-len(v.wgt))) for v in m.vertices]
+            ind = [' '.join( [str(g[0]) for g in v.wgt] + ['0']*(m.weights-len(v.wgt))) for v in m.vertices]
             set_text(indices, ' '.join(ind))
 
             weights = append_element(node, "weights")
-            wgt = [' '.join( [format_num(g[1]) for g in v.wgt] + ['0.0']*(m.weigts-len(v.wgt))) for v in m.vertices]
+            wgt = [' '.join( [format_num(g[1]) for g in v.wgt] + ['0.0']*(m.weights-len(v.wgt))) for v in m.vertices]
             set_text(weights, ' '.join(wgt))
 
 
@@ -282,7 +282,7 @@ def export_animations(context, config, skeleton, xml):
         # Export actions
         last = skeleton.animation_data.action
         for action in actions:
-            export_action(skeleton, action, xml)
+            export_action(context, skeleton, action, xml)
         skeleton.animation_data.action = last
 
 def export_action(context, skeleton, action, xml):
@@ -317,7 +317,7 @@ def export_action(context, skeleton, action, xml):
     anim = append_element(xml.firstChild, "animation")
     anim.setAttribute("name", action.name)
     anim.setAttribute("frames", str(length))
-    anim.setAttribute("rate", context.scene.render.fps)
+    anim.setAttribute("rate", str(context.scene.render.fps))
     for _,keys in data:
         if keys.rotation or keys.position or keys.scale:
             keyset = append_element(anim, "keyset")
@@ -397,6 +397,7 @@ def export(context, config):
 
     # save
     print("Saving to", config.filepath)
+    s = xml.toprettyxml('  ')
     f = open(config.filepath, "w")
     f.write( xml.toprettyxml('\t') )
     f.close()
