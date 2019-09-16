@@ -8,16 +8,31 @@
 
 using namespace base;
 
-PNG::PNG(const PNG& p) : width(p.width), height(p.height), bpp(p.bpp) {
-	size_t size = sizeof(unsigned char) * width * height * bpp/8;
-	data = (char*)malloc( size );
-	memcpy(data, p.data, size);
+PNG::PNG(const PNG& p) : data(0), width(p.width), height(p.height), bpp(p.bpp) {
+	if(p.data) {
+		size_t size = sizeof(unsigned char) * width * height * bpp/8;
+		data = (char*)malloc( size );
+		memcpy(data, p.data, size);
+	}
 }
 const PNG& PNG::operator=(const PNG& p) {
 	width=p.width; height=p.height; bpp=p.bpp;
-	size_t size = sizeof(unsigned char) * width * height * bpp/8;
-	data = (char*)malloc( size );
-	memcpy(data, p.data, size);
+	if(p.data) {
+		size_t size = sizeof(unsigned char) * width * height * bpp/8;
+		data = (char*)malloc( size );
+		memcpy(data, p.data, size);
+	}
+	else data = 0;
+	return *this;
+}
+
+PNG::PNG(PNG&& p) : data(p.data), width(p.width), height(p.height), bpp(p.bpp) { p.data = 0; }
+const PNG& PNG::operator=(PNG&& p) {
+	data = p.data;
+	width = p.width;
+	height = p.height;
+	bpp = p.bpp;
+	p.data = 0;
 	return *this;
 }
 

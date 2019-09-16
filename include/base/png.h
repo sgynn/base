@@ -9,6 +9,10 @@ namespace base {
 		~PNG() { clear(); }
 		const PNG& operator=(const PNG&);
 		
+		// c++11 move functions
+		PNG(PNG&& p);
+		const PNG& operator=(PNG&&);
+		
 		/** Load the bitmap image - returns image object or NULL */
 		static PNG load(const char* filename);
 		/** Create a blank image */
