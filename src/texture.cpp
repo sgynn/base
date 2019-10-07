@@ -284,7 +284,7 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 			case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, dfmt, ftype, src); break;
 			case CUBE: 
 				for(int face=0; face<6; ++face)
-					glTexImage2D(GL_TEXTURE_2D, mip, fmt, width, height, 0, dfmt, ftype, data? data[face+6*mip]: 0);
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, mip, fmt, width, height, 0, dfmt, ftype, data? data[face+6*mip]: 0);
 				break;
 			}
 
@@ -358,6 +358,35 @@ int Texture::setPixels(int width, int height, Format format, const void* src, in
 	return 1;
 }
 
+int Texture::setPixels(int width, int height, int layer, Format format, const void* data, int mip) {
+	if(format != m_format || m_type!=ARRAY2D || m_type!=CUBE) return 0;
+	unsigned target = getTarget();
+	glBindTexture(target, m_unit);
+	unsigned fmt = getInternalFormat(format);
+	int depth = 1;
+	if(isCompressedFormat(format)) {
+		size_t size = getMemorySize(format, width, height, depth);
+		switch(m_type) {
+		case ARRAY2D:
+		case TEX3D: glCompressedTexSubImage3D(target, mip, 0,0,layer, width, height, 1, fmt, size, data); break;
+		case CUBE: glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+layer, mip, fmt, width, height, 0, size, data); break;
+		default: break;
+		}
+	} else {
+		// Depth formats need different enum value
+		unsigned dfmt = getDataFormat(format);
+		unsigned dtype = getDataType(format);
+
+		switch(m_type) {
+		case ARRAY2D:
+		case TEX3D: glTexSubImage3D(target, mip, 0,0,layer, width, height, 1, dfmt, dtype, data); break;
+		case CUBE: glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+layer, mip, fmt, width, height, 0, dfmt, dtype, data); break;
+		default: break;
+		}
+	}
+	GL_CHECK_ERROR;
+	return 1;
+}
 
 int Texture::setPixels(int x, int y, int w, int h, Format format, const void* src, int mip) {
 	if(m_format != format || m_type != TEX2D) return 0; // Must be same format
