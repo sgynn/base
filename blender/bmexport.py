@@ -34,6 +34,9 @@ def set_text(parent, text):
 def format_num(value):
     return str( round(value,6) )
 
+def modified(obj, config):
+    return config.apply_modifiers and obj.type=='MESH' and len(obj.modifiers)
+
 # -------------------------------------------------------------------------- #
 
 class Vertex(object):
@@ -83,7 +86,7 @@ def make_colour(col, alpha):
     return (col[0], col[1], col[2], alpha[0])
 
 def construct_mesh(obj, config):
-    if config.apply_modifiers: obj = obj.evaluated_get(context.evaluated_depsgraph_get())
+    if config.apply_modifiers: obj = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
     m = obj.to_mesh()
 
     # object transform - this is for up axis / coordinate system conversion
@@ -149,7 +152,7 @@ def construct_mesh(obj, config):
             v = Vertex( m.vertices[index].co.to_tuple() )
             if uv: v.tex = uv[ loop ].uv.to_tuple()
             if config.export_normals: v.nrm = m.loops[ loop ].normal.to_tuple()
-            if uv and config.export_tangents: v.tan = m_loops[ loop ].tangent.to_tuple()
+            if uv and config.export_tangents: v.tan = m.loops[ loop ].tangent.to_tuple()
             if col: v.col = make_colour( col[loop].color, alpha[loop].color if alpha else white)
 
             # vertex groups
@@ -179,11 +182,12 @@ def construct_mesh(obj, config):
 
 def export_mesh(obj, config, xml):
     meshes = construct_mesh(obj, config)
+    name = obj.name if modified(obj,config) else obj.data.name
 
     # write meshes
     for m in meshes:
         mesh = append_element(xml.firstChild, "mesh")
-        mesh.setAttribute("name", obj.name)     # FIXME: duplicate name if mesh is split by material
+        mesh.setAttribute("name", name)                 #NOTE: duplicate name if mesh is split by material
         mesh.setAttribute("size", str(len(m.vertices)))
 
         if m.material:
@@ -344,7 +348,7 @@ def write_keyframes(keyset, name, data):
 
 # -------------------------------------------------------------------------- #
 
-def export_scene(objects, xml):
+def export_scene(objects, config, xml):
     scene = append_element(xml.firstChild, "layout")
     for obj in objects:
         r = obj.rotation_quaternion
@@ -357,7 +361,9 @@ def export_scene(objects, xml):
         if pos != (0,0,0):   node.setAttribute("position", ' '.join( format_num(v) for v in pos ))
         if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
         if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
-        if 'tag' in obj: node.setAttribute("tag", str(o['tag']));
+        if 'tag' in obj: node.setAttribute("tag", str(o['tag']))
+        if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
+
 
 
 # -------------------------------------------------------------------------- #
@@ -378,10 +384,16 @@ def export(context, config):
 
     xml = create_document("model")
 
+    # Need to not duplicate shared meshes
+    exportedMeshes = []
+
     # Export some stuff
     for obj in exportList:
         if obj.type == 'MESH' and config.export_meshes:
-            export_mesh(obj, config, xml)
+            if modified(obj,config) or obj.data.name not in exportedMeshes:
+                export_mesh(obj, config, xml)
+                exportedMeshes.append( obj.data.name )
+
         elif obj.type == 'ARMATURE' and config.export_skeletons:
             export_skeleton(obj, xml)
 
@@ -393,7 +405,7 @@ def export(context, config):
 
     # Layout
     if config.export_layout:
-        export_scene(exportList, xml)
+        export_scene(exportList, config, xml)
 
     # save
     print("Saving to", config.filepath)
