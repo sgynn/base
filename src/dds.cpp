@@ -79,11 +79,11 @@ inline DWORD calculateSize(DDS::DDSFormat f, int w, int h, int d) {
 }
 
 
-DDS::DDS(const DDS& o) {
-	memcpy(this, &o, sizeof(DDS));
-	const_cast<DDS*>(&o)->data = 0; // HACK
+DDS::DDS(DDS&& o) : format(o.format), mode(o.mode), mipmaps(o.mipmaps), width(o.width), height(o.width), depth(o.depth), data(o.data) {
+	o.data = 0;
+	o.format = INVALID;
 }
-DDS& DDS::operator=(DDS& o) {
+DDS& DDS::operator=(DDS&& o) {
 	memcpy(this, &o, sizeof(DDS));
 	o.data = 0;
 	o.format = INVALID;

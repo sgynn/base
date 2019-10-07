@@ -17,6 +17,7 @@ PNG::PNG(const PNG& p) : data(0), width(p.width), height(p.height), bpp(p.bpp) {
 }
 const PNG& PNG::operator=(const PNG& p) {
 	width=p.width; height=p.height; bpp=p.bpp;
+	if(data) free(data);
 	if(p.data) {
 		size_t size = sizeof(unsigned char) * width * height * bpp/8;
 		data = (char*)malloc( size );
@@ -28,6 +29,7 @@ const PNG& PNG::operator=(const PNG& p) {
 
 PNG::PNG(PNG&& p) : data(p.data), width(p.width), height(p.height), bpp(p.bpp) { p.data = 0; }
 const PNG& PNG::operator=(PNG&& p) {
+	if(data) free(data);
 	data = p.data;
 	width = p.width;
 	height = p.height;

@@ -9,9 +9,11 @@ namespace base {
 		enum DDSMode { FLAT, CUBE, VOLUME, ARRAY };
 
 		DDS() : format(INVALID), mode(FLAT), width(0), height(0), data(0) {}
-		DDS(const DDS&);
+		DDS(DDS&&);
+		DDS(const DDS&) = delete;
 		~DDS() { clear(); }
-		DDS& operator=(DDS&);
+		DDS& operator=(const DDS&) = delete;
+		DDS& operator=(DDS&&);
 		
 		/** Load the bitmap image - returns image object or NULL */
 		static DDS load(const char* filename);
