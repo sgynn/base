@@ -125,7 +125,7 @@ namespace base {
 		/** camera state */
 		virtual void setEnabled(bool e) { m_active = e; }
 		/** Grab mouse */
-		virtual void grabMouse(bool g) { m_grabMouse = g; }
+		virtual void grabMouse(bool g);
 		/** Update camera */
 		virtual void update() = 0;
 		/** Set camera speeds */

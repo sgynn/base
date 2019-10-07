@@ -32,6 +32,15 @@ void CameraBase::setPitchLimits(float min, float max) {
 	m_constraint = Range(min, max);
 }
 
+void CameraBase::grabMouse(bool g) {
+	m_grabMouse = g;
+	if(g && m_last.x==0 && m_last.y==0) {
+		m_last.x = Game::width()/2;
+		m_last.y = Game::height()/2;
+		Game::input()->warpMouse(m_last.x, m_last.y);
+	}
+}
+
 
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
@@ -92,7 +101,7 @@ void FPSCamera::update() {
 
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
-OrbitCamera::OrbitCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far) {
+OrbitCamera::OrbitCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far), m_zoomFactor(0.2) {
 	setUpVector( vec3(0,1,0) );
 }
 void OrbitCamera::setTarget(const vec3& t) {
@@ -109,12 +118,11 @@ void OrbitCamera::update() {
 	Input* in = Game::input();
 
 	// Zoom
-	const float factor = 0.2f;
 	int wheel = in->mouseWheel();
 	if(wheel) {
 		float distance = m_target.distance(m_position);
-		while(wheel<0) { distance *= 1+factor; wheel++; }
-		while(wheel>0) { distance *= 1-factor; wheel--; }
+		while(wheel<0) { distance *= 1+m_zoomFactor; wheel++; }
+		while(wheel>0) { distance *= 1-m_zoomFactor; wheel--; }
 		m_position = m_target + getDirection() * distance;
 	}
 

@@ -19,9 +19,14 @@ namespace base {
 		const vec3& getTarget() const { return m_target; }
 		/** Set position as angles */
 		void setPosition(float yaw, float pitch, float distance);
+		/** Set zoom factor */
+		void setZoomFactor(float z) { m_zoomFactor = z; }
+		/** Get zoom factor */
+		float getZoomFactor() const { return m_zoomFactor; }
 
 		private:
 		vec3 m_target;		// Target point
+		float m_zoomFactor;
 	};
 };
 
