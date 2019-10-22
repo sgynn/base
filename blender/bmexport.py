@@ -261,6 +261,7 @@ def write_bones(bones, parent):
         node.setAttribute("name", bone.name)
         node.setAttribute("length", format_num(bone.length))
 
+        matrix.transpose()
         m = [' '.join( format_num(v) for v in vec) for vec in matrix ]
         append_text(node, "matrix", ' '.join(m))
 
@@ -273,7 +274,7 @@ def export_animations(context, config, skeleton, xml):
     if skeleton.animation_data:
         actions = []
         if skeleton.animation_data.action:
-            action.append( skeleton.animation_data.action )
+            actions.append( skeleton.animation_data.action )
 
         if skeleton.animation_data.nla_tracks and config.export_all_animations:
             for track in skeleton.animation_data.nla_tracks.values():
@@ -289,11 +290,14 @@ def export_animations(context, config, skeleton, xml):
             export_action(context, skeleton, action, xml)
         skeleton.animation_data.action = last
 
+def same(a,b): return abs(a-b)<0.00001
+
 def export_action(context, skeleton, action, xml):
     skeleton.animation_data.action = action
 
     rot = Matrix.Rotation(radians(-90), 4, 'X') # Up axis fix
     qrot = rot.to_quaternion()
+    print(action.name)
 
     data = []
     for bone in skeleton.pose.bones:
@@ -307,15 +311,17 @@ def export_action(context, skeleton, action, xml):
         context.scene.frame_set(start + frame)
         for bone, keys in data:
             rot = qrot.inverted() @ bone.rotation_quaternion @ qrot
+            pos = bone.location.copy();
+            if bone.parent: pos.negate() # Hack ?
             keys.rotation.append( (frame, rot) )
-            keys.scale.append( (frame, bone.scale) )
-            keys.position.append( (frame, bone.location) )
+            keys.scale.append( (frame, bone.scale.copy()) )
+            keys.position.append( (frame, pos) )
 
     # Optimise
     for _,keys in data:
-        optimise_keys(keys.position, (0,0,0),   lambda a,b: a[0]==b[0] and a[1]==b[1] and a[2]==b[2])
-        optimise_keys(keys.rotation, (1,0,0,0), lambda a,b: a[0]==b[0] and a[1]==b[1] and a[2]==b[2] and a[3]==b[3])
-        optimise_keys(keys.scale,    (1,1,1),   lambda a,b: a[0]==b[0] and a[1]==b[1] and a[2]==b[2])
+        optimise_keys(keys.position, (0,0,0),   lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]))
+        optimise_keys(keys.rotation, (1,0,0,0), lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]) and same(a[3],b[3]))
+        optimise_keys(keys.scale,    (1,1,1),   lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]))
 
     # Write xml
     anim = append_element(xml.firstChild, "animation")
@@ -344,7 +350,7 @@ def write_keyframes(keyset, name, data):
     for frame,values in data:
         key = append_element(node, "key")
         key.setAttribute("frame", str(frame))
-        key.setAttribute("value", ' '.join( str(v) for v in values ));
+        key.setAttribute("value", ' '.join( str( round(v,6) ) for v in values ));
 
 # -------------------------------------------------------------------------- #
 
@@ -383,6 +389,7 @@ def export(context, config):
                     exportList.append(arm)
 
     xml = create_document("model")
+    xml.firstChild.setAttribute("version", "2.0");
 
     # Need to not duplicate shared meshes
     exportedMeshes = []
