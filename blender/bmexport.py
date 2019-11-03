@@ -150,7 +150,7 @@ def construct_mesh(obj, config):
             loop = face.loop_indices[i]
             index = face.vertices[i]
             v = Vertex( m.vertices[index].co.to_tuple() )
-            if uv: v.tex = uv[ loop ].uv.to_tuple()
+            if uv: v.tex = (uv[ loop ].uv.x, 1-uv[ loop ].uv.y)
             if config.export_normals: v.nrm = m.loops[ loop ].normal.to_tuple()
             if uv and config.export_tangents: v.tan = m.loops[ loop ].tangent.to_tuple()
             if col: v.col = make_colour( col[loop].color, alpha[loop].color if alpha else white)
@@ -215,7 +215,7 @@ def export_mesh(obj, config, xml):
 
         if m.has_uv:
             node = append_element(mesh, "texcoords")
-            vertData = [' '.join([format_num(e) for e in v.tan]) for v in m.vertices]
+            vertData = [' '.join([format_num(e) for e in v.tex]) for v in m.vertices]
             set_text(node, '  '.join(vertData))
 
         node = append_element(mesh, "polygons")
