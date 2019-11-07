@@ -120,6 +120,7 @@ elseif(UNIX)
 	list(APPEND headers include/base/window_x11.h)
 endif()
 
+set(CMAKE_CXX_STANDARD 11)
 
 add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
 include_directories( include )

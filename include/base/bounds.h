@@ -26,8 +26,8 @@ class RangeT {
 	T    clamp(const T& v) const;					/// Clamp a value within this range
 	T    wrap(const T& v) const;					/// Wrap a value witin this range
 	T    size() const;								/// Return the size of the range
-	bool isValid() const;
-	bool isEmpty() const;
+	bool isValid() const;							/// Is min < max
+	bool isEmpty() const;							/// Is min == max
 };
 
 typedef RangeT<float> Rangef, Range;
@@ -118,6 +118,8 @@ template<typename T> void RangeT<T>::expand(const T& v)                   { min 
 template<typename T> T    RangeT<T>::clamp(const T& v)  const  { return v<min? min: v>max? max: v; }
 template<typename T> T    RangeT<T>::wrap(const T& v)  const   { return  v - floor((v-min)/(max-min))*(max-min); }
 template<typename T> T    RangeT<T>::size() const              { return  max - min; }
+template<typename T> bool RangeT<T>::isValid() const           { return  max > min; }
+template<typename T> bool RangeT<T>::isEmpty() const           { return  max == min; }
 
 
 
