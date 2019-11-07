@@ -53,6 +53,7 @@ typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
 typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
 PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
 PFNGLTEXIMAGE3DPROC glTexImage3D = 0;
+PFNGLTEXSUBIMAGE3DPROC glTexSubImage3D = 0;
 PFNGLCOMPRESSEDTEXIMAGE1DPROC glCompressedTexImage1D = 0;
 PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = 0;
 PFNGLCOMPRESSEDTEXIMAGE3DPROC glCompressedTexImage3D = 0;
@@ -65,6 +66,7 @@ int initialiseTextureExtensions() {
 	if(glActiveTexture) return 1;
 	glActiveTexture        = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
 	glTexImage3D           = (PFNGLTEXIMAGE3DPROC)wglGetProcAddress("glTexImage3D");
+	glTexSubImage3D        = (PFNGLTEXSUBIMAGE3DPROC)wglGetProcAddress("glTexSubImage3D");
 	glCompressedTexImage1D = (PFNGLCOMPRESSEDTEXIMAGE1DPROC)wglGetProcAddress("glCompressedTexImage1D");
 	glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)wglGetProcAddress("glCompressedTexImage2D");
 	glCompressedTexImage3D = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)wglGetProcAddress("glCompressedTexImage3D");
