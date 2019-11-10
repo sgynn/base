@@ -26,6 +26,9 @@ namespace base {
 		uint pumpEvents(Input* input);
 		void warpMouse(int x, int y);
 		Point queryMouse();
+
+		virtual void setCursor(unsigned c);
+		virtual int createCursor(const char* image, int w, int h, int mask, int x=0, int y=0);
 		
 		bool createWindow();
 		void destroyWindow();

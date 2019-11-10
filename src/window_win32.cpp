@@ -293,3 +293,29 @@ void Win32Window::warpMouse(int x, int y) {
 	SetCursorPos(point.x, point.y);
 }
 
+// ==================================================================================================== //
+
+void Win32Window::setCursor(unsigned c) {
+	HCURSOR cur;
+	ShowCursor( c!=CURSOR_NONE );
+	switch(c) {
+	case CURSOR_BUSY:      cur = LoadCursor(s_hInst, IDC_WAIT); break;
+	case CURSOR_HAND:      cur = LoadCursor(s_hInst, IDC_HAND); break;
+	case CURSOR_CROSSHAIR: cur = LoadCursor(s_hInst, IDC_CROSS); break;
+	case CURSOR_I:         cur = LoadCursor(s_hInst, IDC_IBEAM); break;
+	case CURSOR_NO:        cur = LoadCursor(s_hInst, IDC_NO); break;
+	case CURSOR_MOVE:      cur = LoadCursor(s_hInst, IDC_SIZEALL); break;
+	case CURSOR_NS:        cur = LoadCursor(s_hInst, IDC_NS); break;
+	case CURSOR_EW:        cur = LoadCursor(s_hInst, IDC_WE); break;
+	case CURSOR_NESW:      cur = LoadCursor(s_hInst, IDC_NESW); break;
+	case CURSOR_NWSE:      cur = LoadCursor(s_hInst, IDC_NWSE); break;
+	case CURSOR_DEFAULT:   
+	default:               cur = LoadCursor(s_hInst, IDC_ARROW); break;
+	}
+	SetCursor(cur);
+}
+
+int  Win32Window::createCursor(const char* image, int w, int h, int mask, int x, int y) {
+	//CreateCursor(s_hInst, x, y, w, h, andData, xorData);
+	return 0;
+}

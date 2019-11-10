@@ -7,6 +7,9 @@
 namespace base { 
 	class Input;
 
+	enum CursorType { CURSOR_NONE, CURSOR_DEFAULT, CURSOR_BUSY, CURSOR_HAND, CURSOR_CROSSHAIR, CURSOR_I, CURSOR_NO,
+						CURSOR_MOVE, CURSOR_NS, CURSOR_EW, CURSOR_NESW, CURSOR_NWSE };
+
 	/// Window interface. Implementations in X11Window or Win32Window
 	class Window {
 		public:
@@ -54,6 +57,9 @@ namespace base {
 		/// Mouse data comes from window. Used by Input
 		virtual Point queryMouse() { return Point(); }
 		virtual void warpMouse(int x, int y) {}
+
+		virtual void setCursor(unsigned c) = 0;
+		virtual int  createCursor(const char* image, int w, int h, int mask, int x=0, int y=0) = 0;
 
 		protected:
 		//Data

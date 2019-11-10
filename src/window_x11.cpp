@@ -6,6 +6,7 @@ int attriblist[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, None };
 #include <cstdio>
 #include <cstdlib>
 #include "base/input.h"
+#include <X11/cursorfont.h>
 
 using namespace base;
 
@@ -279,5 +280,47 @@ Point X11Window::queryMouse() {
 
 void X11Window::warpMouse(int x, int y) { 
 	XWarpPointer(getXDisplay(), 0, getXWindow(), 0, 0, 0, 0, x, y);
+}
+
+
+// ================================================================================================= //
+
+size_t createBlankCursor(Display* display) {
+	static char data[] = {0,0,0,0,0,0,0,0};
+	XColor black { 0,0,0 };
+	Pixmap empty = XCreateBitmapFromData(display, DefaultRootWindow(display), data, 8, 8);
+	Cursor cur = XCreatePixmapCursor(display, empty, empty, &black, &black, 0, 0);
+	XFreePixmap(display, empty);
+	return cur;
+}
+
+void X11Window::setCursor(unsigned c) {
+	static size_t cursors[32];
+	if(!cursors[c]) {
+		switch(c) {
+		case CURSOR_NONE:      cursors[c] = createBlankCursor(m_display);  break;
+		case CURSOR_DEFAULT:   cursors[c] = XCreateFontCursor(m_display, XC_left_ptr); break;
+		case CURSOR_BUSY:      cursors[c] = XCreateFontCursor(m_display, XC_watch); break;
+		case CURSOR_HAND:      cursors[c] = XCreateFontCursor(m_display, XC_hand1); break;
+		case CURSOR_CROSSHAIR: cursors[c] = XCreateFontCursor(m_display, XC_crosshair); break;
+		case CURSOR_I:         cursors[c] = XCreateFontCursor(m_display, XC_xterm); break;
+		case CURSOR_NO:        cursors[c] = XCreateFontCursor(m_display, XC_X_cursor); break;
+		case CURSOR_MOVE:      cursors[c] = XCreateFontCursor(m_display, XC_fleur); break;
+		case CURSOR_NS:        cursors[c] = XCreateFontCursor(m_display, XC_sb_v_double_arrow); break;
+		case CURSOR_EW:        cursors[c] = XCreateFontCursor(m_display, XC_sb_h_double_arrow); break;
+		case CURSOR_NESW:
+		case CURSOR_NWSE:      c = CURSOR_NS; break; // CursorFont doesn't seem to have these ??
+		default:               c = CURSOR_DEFAULT; break;
+		}
+	}
+	if(cursors[c]) XDefineCursor(m_display, m_window, cursors[c]);
+	else XUndefineCursor(m_display, m_window);
+}
+
+int X11Window::createCursor(const char* image, int w, int h, int mask, int x, int y) {
+	// Create cursor from pixmap ?
+	// x11 seems to only support two colour images ??
+	// Ideally I want to give this an rgb image
+	return 0;
 }
 
