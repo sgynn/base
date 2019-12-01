@@ -163,6 +163,7 @@ def construct_mesh(obj, config):
                         g = obj.vertex_groups[ group.group ]
                         index = mesh.groups.setdefault(g.name, len(mesh.groups))
                         v.wgt.append( (index, group.weight) )
+                process_weights(v, 4, True)
                 mesh.weights = max(mesh.weights, len(v.wgt))
 
             # add vertex if new
@@ -177,6 +178,16 @@ def construct_mesh(obj, config):
 
     obj.to_mesh_clear()
     return result
+
+def process_weights(v, limit, normalise):
+    if limit < len(v.wgt):
+        v.wgt = sorted(v.wgt, key=lambda w:w[1], reverse=True)[:limit]
+
+    if normalise:
+        total = 0
+        for g in v.wgt: total += g[1]
+        if total != 1.0 and total != 0:
+            for i in range(len(v.wgt)): v.wgt[i] = (v.wgt[i][0], v.wgt[i][1]/total)
 
 # -------------------------------------------------------------------------- #
 
@@ -312,6 +323,7 @@ def export_action(context, skeleton, action, xml):
         for bone, keys in data:
             rot = qrot.inverted() @ bone.rotation_quaternion @ qrot
             pos = bone.location.copy();
+
             if bone.parent: pos.negate() # Hack ?
             keys.rotation.append( (frame, rot) )
             keys.scale.append( (frame, bone.scale.copy()) )
