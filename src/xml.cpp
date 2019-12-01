@@ -236,11 +236,12 @@ const char* XML::toString() const {
 	const Element* e = &m_root;
 	unsigned child = 0;
 	int n;
+	bool lineBreak = true;
 	// Construct string
 	while(e) {
 		if(len < p + 512) expand(1024);
 		int tab = stack.size();
-		for(int i=0; i<tab; ++i) s[p++] = '\t';
+		if(lineBreak) for(int i=0; i<tab; ++i) s[p++] = '\t';
 		
 		switch(e->type()) {
 		case TAG:
@@ -252,6 +253,8 @@ const char* XML::toString() const {
 			// Children?
 			if(e->size()) { sprintf(s+p, ">\n"); p+=2; }
 			else { sprintf(s+p, "/>\n"); p+=3; }
+			if(e->size()==1 && e->child(0).type()==TEXT) --p, lineBreak = false;
+			else lineBreak = true;
 			break;
 
 		case TEXT:
@@ -259,6 +262,7 @@ const char* XML::toString() const {
 			if(len < p+n) expand(p+n-len+256);
 			sprintf(s+p, "%s", e->text());
 			p += n;
+			if(lineBreak) s[p++]='\n';
 			break;	
 
 		case HEADER:
@@ -268,6 +272,7 @@ const char* XML::toString() const {
 			n = strlen(e->text()) + 8;
 			if(len < p+n) expand(p+n-len+256);
 			sprintf(s+p, "<!--%s-->\n", e->text());
+			lineBreak = true;
 			p += n;
 			break;
 		}
@@ -289,8 +294,9 @@ const char* XML::toString() const {
 
 				// Close tag
 				int tab = stack.size();
-				for(int i=0; i<tab; ++i) s[p++] = '\t';
+				if(lineBreak) for(int i=0; i<tab; ++i) s[p++] = '\t';
 				p += sprintf(s+p, "</%s>\n", e->name());
+				lineBreak = true;
 			} 
 			// Next child element
 			if(stack.empty()) e = 0;
