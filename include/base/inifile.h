@@ -8,6 +8,8 @@ namespace base {
 class INIFile {
 	public:
 	INIFile();
+	INIFile(INIFile&&);
+	INIFile& operator=(INIFile&&);
 	~INIFile();
 
 	// usage: var = ini[section][name]; and ini[section][name]=5;
@@ -58,6 +60,11 @@ class INIFile {
 		void set(const char* s, const Value& v);     // Set value
 		bool contains(const char* s) const;          // Does a key exist
 		template<typename T> T get(const char* s, T d) const { return contains(s)? (T)get(s): d; }
+		
+		typedef base::HashMap<Value>::const_iterator iterator;
+		iterator begin() const { return m_values.begin(); }
+		iterator end() const { return m_values.end(); }
+
 		private:
 		char m_name[32];
 		base::HashMap<Value> m_values;
@@ -82,6 +89,11 @@ class INIFile {
 	Section* section(const char* name);
 	/** Does a section exist? */
 	bool containsSection(const char* name) const;
+
+	/** section iterator */
+	typedef base::HashMap<Section*>::const_iterator iterator;
+	iterator begin() const { return m_sections.begin(); }
+	iterator end() const { return m_sections.end(); }
 
 	private:
 	base::HashMap<Section*> m_sections;

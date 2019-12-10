@@ -1,6 +1,7 @@
 #include "base/inifile.h"
 #include <cstdio>
 #include <cstdlib>
+#include <utility>
 
 using namespace base;
 
@@ -11,6 +12,12 @@ INIFile::~INIFile() { }
 INIFile::Section* INIFile::section(const char* name) {
 	if(m_sections.contains(name)) return m_sections[name];
 	else return m_sections.insert(name, new Section(name));
+}
+INIFile::INIFile(INIFile&& o) {
+	m_sections = std::move(o.m_sections);
+}
+INIFile& INIFile::operator=(INIFile&& o) {
+	m_sections = std::move(o.m_sections);
 }
 
 /** Operators */
