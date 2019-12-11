@@ -2,6 +2,7 @@
 #define _BASE_INIFILE_
 
 #include "hashmap.h"
+#include <vector>
 
 /** Dos style INI file for simple configuration */
 namespace base {
@@ -47,6 +48,9 @@ class INIFile {
 		};
 	};
 
+	/** Key value pair */
+	struct KeyValue  { const char* key; Value value; };
+
 	/** INI files are divided into sections */
 	class Section {
 		friend class INIFile;
@@ -61,13 +65,14 @@ class INIFile {
 		bool contains(const char* s) const;          // Does a key exist
 		template<typename T> T get(const char* s, T d) const { return contains(s)? (T)get(s): d; }
 		
-		typedef base::HashMap<Value>::const_iterator iterator;
+		typedef std::vector<KeyValue>::const_iterator iterator;
 		iterator begin() const { return m_values.begin(); }
 		iterator end() const { return m_values.end(); }
 
 		private:
 		char m_name[32];
-		base::HashMap<Value> m_values;
+		base::HashMap<int> m_map;
+		std::vector<KeyValue> m_values;
 		static const Value nullValue;
 	};
 

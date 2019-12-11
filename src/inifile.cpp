@@ -18,6 +18,7 @@ INIFile::INIFile(INIFile&& o) {
 }
 INIFile& INIFile::operator=(INIFile&& o) {
 	m_sections = std::move(o.m_sections);
+	return *this;
 }
 
 /** Operators */
@@ -46,11 +47,11 @@ INIFile INIFile::load(const char* filename) {
 bool INIFile::save(const char* filename) {
 	FILE* fp = fopen(filename, "w");
 	if(!fp) return false;
-	for(HashMap<Section*>::iterator i=m_sections.begin(); i!=m_sections.end(); i++) {
-		fprintf(fp, "[%s]\n", i->key);
-		Section* s = i->value;
-		for(HashMap<Value>::iterator j = s->m_values.begin(); j!=s->m_values.end(); j++) {
-			fprintf(fp, "%s = %s\n", j->key, (const char*) j->value);
+	for(auto& s: m_sections) {
+		fprintf(fp, "[%s]\n", s.key);
+		for(const KeyValue& v: *s.value) {
+			if(v.key) fprintf(fp, "%s = %s\n", v.key, (const char*)v.value);
+			else fprintf(fp, "%s\n", (const char*)v.value);
 		}
 		fprintf(fp, "\n");
 	}
@@ -113,6 +114,14 @@ INIFile INIFile::parse(const char* data) {
 					}
 				} else printf("INI Warning: found '=' with no name\n");
 			}
+			else if(e>c+1) {
+				// Just some text
+				Value value;
+				value.m_source = (char*)malloc(e-c);
+				strncpy(value.m_source, c, e-c);
+				value.m_source[e-c] = 0;
+				s->m_values.push_back( KeyValue { 0, value } );
+			}
 			while(*c && !newline(c)) ++c;
 		}
 		while(whitespace(c) || newline(c)) ++c;
@@ -129,13 +138,29 @@ INIFile::Section::Section(const char* name) {
 INIFile::Section::~Section() {
 }
 
-bool INIFile::Section::contains(const char* key) const { return m_values.contains(key); }
+bool INIFile::Section::contains(const char* key) const { return m_map.contains(key); }
 const INIFile::Value& INIFile::Section::operator[](const char* c) const { return get(c); }
-INIFile::Value& INIFile::Section::operator[](const char* c) { return m_values[c]; }
-void INIFile::Section::set(const char* c, const Value& v) { m_values[c] = v; }
+void INIFile::Section::set(const char* c, const Value& v) {
+	int index = m_map.get(c, -1);
+	if(c<0) {
+		m_map.insert(c, m_values.size());
+		const char* key = m_map.find(c)->key;
+		m_values.push_back( KeyValue{key, v} );
+	}
+	else m_values[index].value = v;
+}
 const INIFile::Value& INIFile::Section::get(const char* c) const {
-	if(m_values.contains(c)) return m_values[c];
-	else return nullValue;
+	int index = m_map.get(c, -1);
+	if(index<0) return nullValue;
+	return m_values[index].value;
+}
+INIFile::Value& INIFile::Section::operator[](const char* c) {
+	int index = m_map.get(c, -1);
+	if(index<0) {
+		index = m_values.size();
+		set(c, Value());
+	}
+	return m_values[index].value;
 }
 
 //// //// Value Functions //// ////
