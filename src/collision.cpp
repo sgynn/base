@@ -93,6 +93,46 @@ int base::intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, f
 	return 1;
 }
 
+/** Intersection of a ray and capsule (page 197) */
+int base::intersectRayCapsule(const vec3& p, const vec3& d, const vec3& a, const vec3&b, float radius, float& t) {
+	// Ray Cylinder
+	vec3 l = b-a, m=p-a;
+	float md = m.dot(l);
+	float nd = d.dot(l);
+	float dd = l.dot(l);
+	// Fully outside cylinder endcaps
+	if(md<0 && md+nd < 0) return intersectRaySphere(p,d,a,radius,t); // Outside a
+	if(md>dd && md+nd > dd) return intersectRaySphere(p,d,b,radius,t); // Outside b
+	float nn = d.dot(d);
+	float mn = m.dot(d);
+	float va = dd * nn - nd * nd;
+	float vk = m.dot(m) - radius * radius;
+	float vc = dd * vk - md * md;
+	// Segment parallel to axis
+	if(fabs(va) < EPSILON) {
+		if(vc>0) return 0; // Outside cylinder
+		if(md < 0) return intersectRaySphere(p,d,a,radius,t);
+		else if(md > dd) return intersectRaySphere(p,d,b,radius,t);
+		else t = 0;
+		return 1;
+	}
+
+	float vb = dd * mn - nd * md;
+	float discr = vb*vb - va - vc;
+	if(discr < 0) return 0; // No real roots - miss
+	t = (-vb - sqrt(discr)) / va;
+	if(md + t * nd < 0) { // Outside a
+		return intersectRaySphere(p,d,a,radius,t);
+	}
+	if(md + t * nd > dd) { // Outside b
+		return intersectRaySphere(p,d,b,radius,t);
+	}
+	if(t<0) return 0;
+	return 1;
+}
+
+
+
 /** Intersection of a ray with an axis aligned bounding box */
 int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const vec3& h, vec3& out) {
 	float t;

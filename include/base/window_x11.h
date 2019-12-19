@@ -28,7 +28,7 @@ namespace base {
 		Point queryMouse();
 
 		virtual void setCursor(unsigned c);
-		virtual int createCursor(const char* image, int w, int h, int mask, int x=0, int y=0);
+		virtual void createCursor(unsigned id, const char* image, int w, int h, int x=0, int y=0);
 		
 		bool createWindow();
 		void destroyWindow();
@@ -46,6 +46,7 @@ namespace base {
 		::Window             m_window;
 		XF86VidModeModeInfo  m_deskMode;
 		int                  m_screen;
+		size_t               m_cursors[32];
 	};
 }
 

@@ -1,4 +1,5 @@
 #include "base/window_x11.h"
+#include <cstring>
 #include <GL/gl.h>
 int attriblistAA[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, GLX_SAMPLE_BUFFERS_ARB, GL_TRUE, GLX_SAMPLES_ARB, 2 , None }; 
 int attriblist[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, None };
@@ -6,14 +7,15 @@ int attriblist[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, None };
 #include <cstdio>
 #include <cstdlib>
 #include "base/input.h"
-#include <X11/cursorfont.h>
 
 using namespace base;
 
 X11Window::X11Window(int w, int h, bool fs, int bpp, int dep, int fsaa) : base::Window(w,h,fs,bpp,dep,fsaa), m_display(0) {
+	memset(m_cursors, 0, sizeof(m_cursors));
 }
 
 X11Window::~X11Window() {
+	for(int c: m_cursors) if(c) XFreeCursor(m_display, c);
 	destroyWindow();
 }
 
@@ -285,6 +287,9 @@ void X11Window::warpMouse(int x, int y) {
 
 // ================================================================================================= //
 
+#include <X11/cursorfont.h>
+#include <X11/Xcursor/Xcursor.h>
+
 size_t createBlankCursor(Display* display) {
 	static char data[] = {0,0,0,0,0,0,0,0};
 	XColor black { 0,0,0 };
@@ -295,32 +300,35 @@ size_t createBlankCursor(Display* display) {
 }
 
 void X11Window::setCursor(unsigned c) {
-	static size_t cursors[32];
-	if(!cursors[c]) {
+	if(!m_cursors[c]) {
 		switch(c) {
-		case CURSOR_NONE:      cursors[c] = createBlankCursor(m_display);  break;
-		case CURSOR_DEFAULT:   cursors[c] = XCreateFontCursor(m_display, XC_left_ptr); break;
-		case CURSOR_BUSY:      cursors[c] = XCreateFontCursor(m_display, XC_watch); break;
-		case CURSOR_HAND:      cursors[c] = XCreateFontCursor(m_display, XC_hand1); break;
-		case CURSOR_CROSSHAIR: cursors[c] = XCreateFontCursor(m_display, XC_crosshair); break;
-		case CURSOR_I:         cursors[c] = XCreateFontCursor(m_display, XC_xterm); break;
-		case CURSOR_NO:        cursors[c] = XCreateFontCursor(m_display, XC_X_cursor); break;
-		case CURSOR_MOVE:      cursors[c] = XCreateFontCursor(m_display, XC_fleur); break;
-		case CURSOR_NS:        cursors[c] = XCreateFontCursor(m_display, XC_sb_v_double_arrow); break;
-		case CURSOR_EW:        cursors[c] = XCreateFontCursor(m_display, XC_sb_h_double_arrow); break;
+		case CURSOR_NONE:      m_cursors[c] = createBlankCursor(m_display);  break;
+		case CURSOR_DEFAULT:   m_cursors[c] = XCreateFontCursor(m_display, XC_left_ptr); break;
+		case CURSOR_BUSY:      m_cursors[c] = XCreateFontCursor(m_display, XC_watch); break;
+		case CURSOR_HAND:      m_cursors[c] = XCreateFontCursor(m_display, XC_hand1); break;
+		case CURSOR_CROSSHAIR: m_cursors[c] = XCreateFontCursor(m_display, XC_crosshair); break;
+		case CURSOR_I:         m_cursors[c] = XCreateFontCursor(m_display, XC_xterm); break;
+		case CURSOR_NO:        m_cursors[c] = XCreateFontCursor(m_display, XC_X_cursor); break;
+		case CURSOR_MOVE:      m_cursors[c] = XCreateFontCursor(m_display, XC_fleur); break;
+		case CURSOR_NS:        m_cursors[c] = XCreateFontCursor(m_display, XC_sb_v_double_arrow); break;
+		case CURSOR_EW:        m_cursors[c] = XCreateFontCursor(m_display, XC_sb_h_double_arrow); break;
 		case CURSOR_NESW:
 		case CURSOR_NWSE:      c = CURSOR_NS; break; // CursorFont doesn't seem to have these ??
 		default:               c = CURSOR_DEFAULT; break;
 		}
 	}
-	if(cursors[c]) XDefineCursor(m_display, m_window, cursors[c]);
+	if(m_cursors[c]) XDefineCursor(m_display, m_window, m_cursors[c]);
 	else XUndefineCursor(m_display, m_window);
 }
 
-int X11Window::createCursor(const char* image, int w, int h, int mask, int x, int y) {
-	// Create cursor from pixmap ?
-	// x11 seems to only support two colour images ??
-	// Ideally I want to give this an rgb image
-	return 0;
+void X11Window::createCursor(unsigned id, const char* image, int w, int h, int x, int y) {
+	XcursorImage* cimg = XcursorImageCreate(w, h);
+	cimg->xhot = x;
+	cimg->yhot = y;
+	memcpy(cimg->pixels, image, w*h); // ARGB data
+	Cursor cur = XcursorImageLoadCursor(m_display, cimg);
+	XcursorImageDestroy(cimg);
+	if(m_cursors[id]) XFreeCursor(m_display, id);
+	m_cursors[id] = cur;
 }
 

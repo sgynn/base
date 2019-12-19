@@ -1,5 +1,5 @@
 #ifndef _BASE_COLLISION_
-#define _BASE_COLLISIOM_
+#define _BASE_COLLISION_
 
 #include "math.h"
 
@@ -57,6 +57,18 @@ namespace base {
 	 */
 	BASEAPI int intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, float radius, vec3& out);
 	BASEAPI int intersectRaySphere(const vec3& p, const vec3& d, const vec3& centre, float radius, float& t);
+
+
+	/** Intersection between a ray and a capsule
+	 * @param p Start of ray
+	 * @param d Normalised ray direction
+	 * @param a 
+	 * @param radius Sphere radius
+	 * @param out Intersection point
+	 * @return if intersects
+	 */
+	BASEAPI int intersectRayCapsule(const vec3& p, const vec3& d, const vec3& a, const vec3&b, float radius, vec3& out);
+	BASEAPI int intersectRayCapsule(const vec3& p, const vec3& d, const vec3& a, const vec3&b, float radius, float& t);
 
 	/** Intersection between a ray and an axis aligned bounding box
 	 * @param p Start of ray

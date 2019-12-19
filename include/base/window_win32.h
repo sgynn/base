@@ -27,7 +27,7 @@ namespace base {
 		Point queryMouse();
 
 		virtual void setCursor(unsigned c);
-		virtual void setCursor(const char* image, int w, int h, int mask, int x=0, int y=0);
+		virtual void setCursor(const char* image, int w, int h, int x=0, int y=0);
 
 		bool createWindow();
 		void destroyWindow();
@@ -39,6 +39,7 @@ namespace base {
 		HWND  m_hWnd;
 		HDC   m_hDC;
 		HGLRC m_hRC;
+		HCURSOR m_cursors[32];
 	};
 }
 

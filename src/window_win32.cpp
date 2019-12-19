@@ -56,6 +56,8 @@ Win32Window::Win32Window(int w, int h, bool fs, int bpp, int dep, int fsaa) : Wi
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = "basegame"; //wchar_t UNICODE?
 	RegisterClass(&wc);
+
+	memset(m_cursors, 0, sizeof(m_cursors));
 }
 Win32Window::~Win32Window() {
 	destroyWindow();
@@ -296,26 +298,53 @@ void Win32Window::warpMouse(int x, int y) {
 // ==================================================================================================== //
 
 void Win32Window::setCursor(unsigned c) {
-	HCURSOR cur;
 	ShowCursor( c!=CURSOR_NONE );
-	switch(c) {
-	case CURSOR_BUSY:      cur = LoadCursor(s_hInst, IDC_WAIT); break;
-	case CURSOR_HAND:      cur = LoadCursor(s_hInst, IDC_HAND); break;
-	case CURSOR_CROSSHAIR: cur = LoadCursor(s_hInst, IDC_CROSS); break;
-	case CURSOR_I:         cur = LoadCursor(s_hInst, IDC_IBEAM); break;
-	case CURSOR_NO:        cur = LoadCursor(s_hInst, IDC_NO); break;
-	case CURSOR_MOVE:      cur = LoadCursor(s_hInst, IDC_SIZEALL); break;
-	case CURSOR_NS:        cur = LoadCursor(s_hInst, IDC_NS); break;
-	case CURSOR_EW:        cur = LoadCursor(s_hInst, IDC_WE); break;
-	case CURSOR_NESW:      cur = LoadCursor(s_hInst, IDC_NESW); break;
-	case CURSOR_NWSE:      cur = LoadCursor(s_hInst, IDC_NWSE); break;
-	case CURSOR_DEFAULT:   
-	default:               cur = LoadCursor(s_hInst, IDC_ARROW); break;
+	if(c!=CURSOR_NONE && !m_cursors[c]) {
+		switch(c) {
+		case CURSOR_DEFAULT:   m_cursors[c] = LoadCursor(s_hInst, IDC_ARROW); break;
+		case CURSOR_BUSY:      m_cursors[c] = LoadCursor(s_hInst, IDC_WAIT); break;
+		case CURSOR_HAND:      m_cursors[c] = LoadCursor(s_hInst, IDC_HAND); break;
+		case CURSOR_CROSSHAIR: m_cursors[c] = LoadCursor(s_hInst, IDC_CROSS); break;
+		case CURSOR_I:         m_cursors[c] = LoadCursor(s_hInst, IDC_IBEAM); break;
+		case CURSOR_NO:        m_cursors[c] = LoadCursor(s_hInst, IDC_NO); break;
+		case CURSOR_MOVE:      m_cursors[c] = LoadCursor(s_hInst, IDC_SIZEALL); break;
+		case CURSOR_NS:        m_cursors[c] = LoadCursor(s_hInst, IDC_NS); break;
+		case CURSOR_EW:        m_cursors[c] = LoadCursor(s_hInst, IDC_WE); break;
+		case CURSOR_NESW:      m_cursors[c] = LoadCursor(s_hInst, IDC_NESW); break;
+		case CURSOR_NWSE:      m_cursors[c] = LoadCursor(s_hInst, IDC_NWSE); break;
+		default:               c = IDC_ARROW; break;
+		}
 	}
-	SetCursor(cur);
+	SetCursor(m_cursors[c]);
 }
 
-int  Win32Window::createCursor(const char* image, int w, int h, int mask, int x, int y) {
-	//CreateCursor(s_hInst, x, y, w, h, andData, xorData);
-	return 0;
+void Win32Window::createCursor(unsigned id, const unsigned char* image, int w, int h, int hotx, int hoty) {
+	// Create bitmap objects
+	HDC andDC = CreateCompatibleDC(m_hDC);
+	HDC xorDC = CreateCompatibleDC(m_hDC);
+	HBITMAP andMap = CreateCompatibleBitmap(m_hDC, w, h);
+	HBITMAP xorMap = CreateCompatibleBitmap(m_hDC, w, h);
+	HBITMAP oldAnd = SelectObject(andDC, andMap);
+	HBITMAP oldXor = SelectObject(xorDC, xorMap);
+	for(int x=0; x<w; ++x) {
+		for(int y=0; y<w; ++y) {
+			const unsigned char* pixel = image + (x + y*w) * 4;
+			if(pixel[0]<128) {
+				SetPixel(andDC, x, y, RGB(255,255,255));
+				SetPixel(xorDC, x, y, RGB(0,0,0));
+			}
+			else {
+				SetPixel(andDC, x, y, RGB(0,0,0));
+				SetPixel(xorDC, x, y, RGB(pixel[1], pixel[2], pixel[3]));
+			}
+		}
+	}
+	SelectObject(andDC, oldAnd);
+	SelectObject(xorDC, oldXor);
+	DeleteDC(andDC);
+	DeleteDC(xorDC);
+
+	ICONINFO iconInfo { FALSE, hotx, hoty, andMap, xorMap };
+	HCURSOR cur = CreateIconIndirect(&iconInfo);
+	m_cursors[id] = cur;
 }
