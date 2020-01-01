@@ -142,7 +142,7 @@ bool INIFile::Section::contains(const char* key) const { return m_map.contains(k
 const INIFile::Value& INIFile::Section::operator[](const char* c) const { return get(c); }
 void INIFile::Section::set(const char* c, const Value& v) {
 	int index = m_map.get(c, -1);
-	if(c<0) {
+	if(index<0) {
 		m_map.insert(c, m_values.size());
 		const char* key = m_map.find(c)->key;
 		m_values.push_back( KeyValue{key, v} );
