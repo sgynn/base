@@ -50,7 +50,14 @@ bool INIFile::save(const char* filename) {
 	for(auto& s: m_sections) {
 		fprintf(fp, "[%s]\n", s.key);
 		for(const KeyValue& v: *s.value) {
-			if(v.key) fprintf(fp, "%s = %s\n", v.key, (const char*)v.value);
+			if(v.key) {
+				switch(v.value.m_type) {
+				case Value::FLOAT:   fprintf(fp, "%s = %f\n", v.key, v.value.m_f); break;
+				case Value::BOOL:    fprintf(fp, "%s = %s\n", v.key, v.value.m_b? "true": "false"); break;
+				case Value::INTEGER: fprintf(fp, "%s = %d\n", v.key, v.value.m_i); break;
+				default:             fprintf(fp, "%s = %s\n", v.key, (const char*)v.value); break;
+				}
+			}
 			else fprintf(fp, "%s\n", (const char*)v.value);
 		}
 		fprintf(fp, "\n");
