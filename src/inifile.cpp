@@ -52,7 +52,7 @@ bool INIFile::save(const char* filename) {
 		for(const KeyValue& v: *s.value) {
 			if(v.key) {
 				switch(v.value.m_type) {
-				case Value::FLOAT:   fprintf(fp, "%s = %f\n", v.key, v.value.m_f); break;
+				case Value::FLOAT:   fprintf(fp, "%s = %g\n", v.key, v.value.m_f); break;
 				case Value::BOOL:    fprintf(fp, "%s = %s\n", v.key, v.value.m_b? "true": "false"); break;
 				case Value::INTEGER: fprintf(fp, "%s = %d\n", v.key, v.value.m_i); break;
 				default:             fprintf(fp, "%s = %s\n", v.key, (const char*)v.value); break;
