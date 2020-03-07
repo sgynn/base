@@ -2,6 +2,7 @@
 #define _BASE_VEC_
 
 #include <math.h>
+class vec3;
 
 /** 2d vector */
 class vec2 {
@@ -45,6 +46,8 @@ class vec2 {
 	float distance(const vec2& v) const;
 	float distance2(const vec2& v) const;
 	vec2  approach(const vec2& target, float step) const;
+	vec3  xzy(float z=0) const;	// convert to vec3
+	vec3  xyz(float z=0) const;
 }; 
 
 /** 3d vector */
@@ -149,6 +152,8 @@ inline vec2 vec2::approach(const vec2& t, float step) const {
 	else return *this + step / d * (t-*this);
 }
 
+inline vec3 vec2::xyz(float z) const { return vec3(x,y,z); }
+inline vec3 vec2::xzy(float z) const { return vec3(x,z,y); }
 
 
 
