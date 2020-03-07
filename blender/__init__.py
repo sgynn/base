@@ -94,6 +94,11 @@ class ExportBaseLib(bpy.types.Operator):
         description="Bind mesh vertices to armature bones",
         default=True)
 
+    normalise_weights: BoolProperty(
+        name="Normalise Weights",
+        description="Normalise weightmaps and limit to a maximum of 4 per vertex",
+        default=True)
+
     apply_modifiers: BoolProperty(
         name="Apply Modifiers",
         description="Apply the effects of object modifiers before export\nThis doesn't apply Armature modifier if skin is exported.",
@@ -141,6 +146,7 @@ class ExportBaseLib(bpy.types.Operator):
         mesh.prop(self, 'export_colour')
         mesh.prop(self, 'export_skins')
         mesh.separator()
+        mesh.prop(self, 'normalise_weights')
         mesh.prop(self, 'apply_modifiers')
         mesh.prop(self, 'apply_transform')
 

@@ -163,7 +163,8 @@ def construct_mesh(obj, config):
                         g = obj.vertex_groups[ group.group ]
                         index = mesh.groups.setdefault(g.name, len(mesh.groups))
                         v.wgt.append( (index, group.weight) )
-                process_weights(v, 4, True)
+                if config.normalise_weights:
+                    process_weights(v, 4, True)
                 mesh.weights = max(mesh.weights, len(v.wgt))
 
             # add vertex if new
@@ -241,6 +242,10 @@ def export_mesh(obj, config, xml):
             for g in m.groups:
                 group = append_element(node, "group")
                 group.setAttribute("name", g)
+
+            # Fix crash if a vertex has no weights in blender
+            for v in m.vertices:
+                if v.wgt is None: v.wgt = []
 
             indices = append_element(node, "indices")
             ind = [' '.join( [str(g[0]) for g in v.wgt] + ['0']*(m.weights-len(v.wgt))) for v in m.vertices]
