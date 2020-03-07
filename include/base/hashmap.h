@@ -29,7 +29,7 @@ namespace base {
 		bool validate() const;
 		/** iterator class. Works the same as stl iterators */
 		private:
-		template<class Map, class Pair>
+		template<class Map, class Pair, class PairPtr>
 		class t_iterator {
 			friend class HashMap;
 			public:
@@ -41,18 +41,18 @@ namespace base {
 			bool operator==(const t_iterator& o) const { return m_item==o.m_item; }
 			bool operator!=(const t_iterator& o) const { return m_item!=o.m_item; }
 			private:
-			bool isItem(Pair**p) const { return m_item>=m_map->m_data+m_map->m_capacity || *m_item; }
+			bool isItem(PairPtr p) const { return m_item>=m_map->m_data+m_map->m_capacity || *m_item; }
 			void next() { ++m_item; while(!isItem(m_item)) ++m_item; }
-			t_iterator(Map* map, Pair** item) : m_item(item), m_map(map) { if(!isItem(m_item)) next(); }
-			Pair** m_item;
+			t_iterator(Map* map, PairPtr item) : m_item(item), m_map(map) { if(!isItem(m_item)) next(); }
+			PairPtr m_item;
 			Map* m_map;
 		};
-		friend class t_iterator<HashMap, Pair>;
-		friend class t_iterator<const HashMap, Pair>;
+		friend class t_iterator<HashMap, Pair, Pair**>;
+		friend class t_iterator<const HashMap, const Pair, const Pair*const*>;
 		public:
 
-		typedef t_iterator<HashMap, Pair> iterator;
-		typedef t_iterator<const HashMap, Pair> const_iterator;
+		typedef t_iterator<HashMap, Pair, Pair**> iterator;
+		typedef t_iterator<const HashMap, const Pair, const Pair*const*> const_iterator;
 
 		iterator       begin()       { return iterator(this, m_data); }
 		const_iterator begin() const { return const_iterator(this, m_data); }
