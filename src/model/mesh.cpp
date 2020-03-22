@@ -417,7 +417,7 @@ int Mesh::smoothNormals(float angle) {
 						float dot = normal[j][0]*normal[k][0] + normal[j][1]*normal[k][1] + normal[j][2]*normal[k][2];
 						if(dot<threshold) {
 							// Rename group?
-							if(group[k]>0) for(int l=0; l<count; ++l) if(group[l]==group[k]) group[l]=group[j];
+							if(group[k]>0) { for(int l=0; l<count; ++l) if(group[l]==group[k]) group[l]=group[j]; }
 							else group[k] = group[j];
 						}
 					}

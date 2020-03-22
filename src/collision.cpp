@@ -8,7 +8,8 @@ using namespace base;
 vec3 base::closestPointOnLine(const vec3& point, const vec3& a, const vec3& b) {
 	vec3 d = b-a;
 	float t = d.dot(point-a) / d.dot(d);
-	if(t<0) t=0; if(t>1) t=1;
+	if(t<0) t=0;
+	if(t>1) t=1;
 	return a + d*t;
 }
 
