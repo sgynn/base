@@ -10,6 +10,7 @@ class vec2 {
 	float x,y;
 
 	vec2();
+	vec2(float v);
 	vec2(float x, float y);
 	vec2(const float*);
 	vec2& set(float x, float y);
@@ -56,6 +57,7 @@ class vec3 {
 	float x,y,z;
 
 	vec3();
+	vec3(float v);
 	vec3(float x, float y, float z);
 	vec3(const vec2&, float z);
 	vec3(const float*);
@@ -101,6 +103,7 @@ class vec3 {
 
 // Implementations
 inline vec2::vec2(): x(0), y(0) {}
+inline vec2::vec2(float v): x(v), y(v) {}
 inline vec2::vec2(float x, float y): x(x), y(y) {}
 inline vec2::vec2(const float* p): x(p[0]), y(p[1]) {}
 inline vec2::operator float*() { return &x; }
@@ -159,6 +162,7 @@ inline vec3 vec2::xzy(float z) const { return vec3(x,z,y); }
 
 
 inline vec3::vec3(): x(0), y(0), z(0) {}
+inline vec3::vec3(float v): x(v), y(v), z(v) {}
 inline vec3::vec3(float x, float y, float z): x(x), y(y), z(z) {}
 inline vec3::vec3(const vec2& p, float z): x(p.x), y(p.y), z(z) {}
 inline vec3::vec3(const float* p): x(p[0]), y(p[1]), z(p[2]) {}
