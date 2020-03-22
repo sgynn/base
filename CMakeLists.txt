@@ -11,8 +11,8 @@ set(src
 	src/framebuffer.cpp
 	src/game.cpp
 	src/glhprojection.cpp
-	src/gui.cpp
-	src/guifile.cpp
+#	src/gui.cpp
+#	src/guifile.cpp
 	src/inifile.cpp
 	src/input.cpp
 	src/joystick.cpp
@@ -82,7 +82,7 @@ set(headers
 	include/base/framebuffer.h
 	include/base/game.h
 	include/base/graph.h
-	include/base/gui.h
+#	include/base/gui.h
 	include/base/hashmap.h
 	include/base/inifile.h
 	include/base/input.h

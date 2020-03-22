@@ -212,7 +212,7 @@ unsigned Texture::getMemorySize(Format format, int w, int h, int d) {
 	case RG16F:    return w*h*d*4;
 	case RGB16F:   return w*h*d*6;
 	case RGBA16F:  return w*h*d*8;
-	case R11G11G10F: return w*h*d*4;
+	case R11G11B10F: return w*h*d*4;
 	case R5G6B5:     return w*h*d*2;
 	case D16:      return w*h*d*2;
 	case D24:      return w*h*d*3;

@@ -378,7 +378,7 @@ int XModel::readFaces(int n, XFace* faces) {
 		faces[i].ix = new int[ faces[i].n ];
 		int t = parseIntArray(m_read, faces[i].n, faces[i].ix);
 		// Delimiter
-		if(m_read[t]==',' && i<n-1) ++t += parseSpace(m_read+t);
+		if(m_read[t]==',' && i<n-1) ++t, t += parseSpace(m_read+t);
 		else if(m_read[t]==';' && i==n-1) ++t;
 		else return 0;
 		validate(t);

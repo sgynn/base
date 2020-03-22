@@ -101,7 +101,7 @@ namespace base {
 		Matrix m_combined;	//Projection matrix * modelview matrix (cached)
 
 		//Frustum planes
-		struct Plane { vec3 n; float d; } m_frustum[6];
+		struct Plane { vec3 n; float d=0; } m_frustum[6];
 
 		// calculate projection matrix
 		void updateProjectionMatrix();
@@ -118,6 +118,8 @@ namespace base {
 
 	};
 
+	enum CameraUpdateMask { CU_KEYS=1, CU_MOUSE=2, CU_WHEEL=4, CU_ALL=7 };
+
 	/** Virtual base class for automated camera classes */
 	class CameraBase : public Camera {
 		public:
@@ -127,7 +129,7 @@ namespace base {
 		/** Grab mouse */
 		virtual void grabMouse(bool g);
 		/** Update camera */
-		virtual void update() = 0;
+		virtual void update(int mask=CU_ALL) = 0;
 		/** Set camera speeds */
 		void setSpeed(float movement=1.0, float rotation=0.004);
 		/** Movement smoothing - parameters {0>x>=1} */

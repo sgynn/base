@@ -16,7 +16,7 @@ namespace base {
 			BC1, BC2, BC3, BC4, BC5,		// Block compressed formats [rgb,rgba,rgba,r,rg]
 			R32F, RG32F, RGB32F, RGBA32F,	// Float formats
 			R16F, RG16F, RGB16F, RGBA16F,	// Half float formats
-			R11G11G10F, R5G6B5,				// Other formats
+			R11G11B10F, R5G6B5,				// Other formats
 			D16, D24, D32, D24S8 			// Depth formats
 		};
 		enum Filter { NEAREST, BILINEAR, TRILINEAR, ANISOTROPIC };

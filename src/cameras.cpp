@@ -47,23 +47,25 @@ void CameraBase::grabMouse(bool g) {
 FPSCamera::FPSCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far) {
 	setUpVector( vec3(0,1,0) );
 }
-void FPSCamera::update() {
+void FPSCamera::update(int mask) {
 	Input* in = Game::input();
 
-	// Movement
-	vec3 move;
-	if(in->key(KEY_UP)    || in->key(KEY_W)) move.z = -1;
-	if(in->key(KEY_DOWN)  || in->key(KEY_S)) move.z =  1;
-	if(in->key(KEY_LEFT)  || in->key(KEY_A)) move.x = -1;
-	if(in->key(KEY_RIGHT) || in->key(KEY_D)) move.x =  1;
-	m_velocity += move * (m_moveSpeed * m_moveAcc);
-	m_position += m_rotation * m_velocity;
-	if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
-	else m_velocity = vec3();
+	// Key Movement
+	if(mask & CU_KEYS) {
+		vec3 move;
+		if(in->key(KEY_UP)    || in->key(KEY_W)) move.z = -1;
+		if(in->key(KEY_DOWN)  || in->key(KEY_S)) move.z =  1;
+		if(in->key(KEY_LEFT)  || in->key(KEY_A)) move.x = -1;
+		if(in->key(KEY_RIGHT) || in->key(KEY_D)) move.x =  1;
+		m_velocity += move * (m_moveSpeed * m_moveAcc);
+		m_position += m_rotation * m_velocity;
+		if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
+		else m_velocity = vec3();
+	}
 	
 	//Rotation
 	Point m = in->queryMouse();
-	if(m_active) {
+	if(m_active && (mask&CU_MOUSE)) {
 		float dx = m_last.x - m.x;
 		float dy = m_last.y - m.y;
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
@@ -114,12 +116,12 @@ void OrbitCamera::setPosition(float yaw, float pitch, float distance) {
 	lookat(m_target + fwd * distance, m_target, m_upVector);
 }
 
-void OrbitCamera::update() {
+void OrbitCamera::update(int mask) {
 	Input* in = Game::input();
 
 	// Zoom
 	int wheel = in->mouseWheel();
-	if(wheel) {
+	if(wheel && (mask&CU_WHEEL)) {
 		float distance = m_target.distance(m_position);
 		while(wheel<0) { distance *= 1+m_zoomFactor; wheel++; }
 		while(wheel>0) { distance *= 1-m_zoomFactor; wheel--; }
@@ -128,7 +130,7 @@ void OrbitCamera::update() {
 
 	//Rotation
 	Point m = in->queryMouse();
-	if(m_active) {
+	if(m_active && (mask&CU_MOUSE)) {
 		float dx = m.x - m_last.x;
 		float dy = m.y - m_last.y;
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);

@@ -10,7 +10,7 @@ namespace base {
 	class FPSCamera : public CameraBase {
 		public:
 		FPSCamera(float fov=90, float aspect=0, float near=1, float far=10000);
-		virtual void update();
+		virtual void update(int mask=CU_ALL);
 	};
 };
 

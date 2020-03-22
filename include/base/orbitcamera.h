@@ -11,7 +11,7 @@ namespace base {
 		public:
 		OrbitCamera(float fov=90, float aspect=0, float near=1, float far=10000);
 		/** Move camera */
-		virtual void update();
+		virtual void update(int mask=CU_ALL);
 
 		/** set target point */
 		void setTarget(const vec3& t);
