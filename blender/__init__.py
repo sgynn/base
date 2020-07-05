@@ -54,10 +54,15 @@ class ExportBaseLib(bpy.types.Operator):
 
     # Export options
 
-    selected_only: BoolProperty(
-        name="Export Selected Objects Only",
-        description="Export only selected objects",
-        default=True)
+    export_group: EnumProperty(
+        name="Export objects",
+        description="Which objects get exported",
+        items = [("ALL", "All", "Export all objects"),
+                 ("SELECTED", "Selected", "Only export selected object"),
+                 ("HEIRACHY", "Heirachy", "Expoer selected objects and their children"),
+                 ("VISIBLE", "Visible", "Export all visible objects"),
+                 ("GROUP", "Group", "Export all objects in groups of which objects are selected")],
+        default="SELECTED")
 
     export_meshes: BoolProperty(
         name="Export Meshes",
@@ -72,7 +77,7 @@ class ExportBaseLib(bpy.types.Operator):
     export_tangents: BoolProperty(
         name="Export Tangents",
         description="Export mesh tangents",
-        default=False)
+        default=True)
 
     export_uv: BoolProperty(
         name="Export UV Coordinates",
@@ -114,15 +119,15 @@ class ExportBaseLib(bpy.types.Operator):
         description="Export armature bones",
         default=True)
 
-    export_animations: BoolProperty(
-        name="Export active Animations",
-        description="Export active actions of the selection",
-        default=True)
+    export_animations: EnumProperty(
+        name="Animations",
+        description="Which animations to export",
+        items = [('NONE', "None", "Don't export animation"),
+                 ("ACTIVE", "Active", "Export only active action"),
+                 ("LINKED", "Linked", "Export actions linked to object (in NLA editor)"),
+                 ("ALL", "All", "Export all animations")],
+        default="NONE")
 
-    export_all_animations: BoolProperty(
-        name="Export all animations",
-        description="Export all actions in the scene",
-        default=False)
 
     export_layout: BoolProperty(
         name="Export Layout",
@@ -133,7 +138,7 @@ class ExportBaseLib(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         sel = layout.box()
-        sel.prop(self, 'selected_only')
+        sel.prop(self, 'export_group')
 
         mesh = layout.box()
         mesh.enabled = self.hasMesh(context)
@@ -161,26 +166,38 @@ class ExportBaseLib(bpy.types.Operator):
         skel = skel.column()
         skel.enabled = self.hasAnimation(context)
         skel.prop(self, 'export_animations')
-        skel.prop(self, 'export_all_animations')
 
         lay = layout.box()
         lay.prop(self, 'export_layout')
 
+    def getHeirachy(obj, out):
+        out.add(obj)
+        for o in obj.children: getHeirachy(o, out)
+
+    def getObjects(self, context):
+        if self.export_group == "ALL": return context.view_layer.objects
+        elif self.export_group == "SELECTED": return context.selected_objects
+        elif self.export_group == "HEIRACHY": 
+            items = set();
+            for o in context.selected_objects: self.getHeirachy(o, items)
+            return items
+        else: return None
+
     def hasMesh(self, context):
-        things = context.selected_objects if self.selected_only else context.view_layer.objects
+        things = self.getObjects(context);
         for obj in things:
             if obj.type == 'MESH': return True
         return False
 
     def hasSkeleton(self, context):
-        things = context.selected_objects if self.selected_only else context.view_layer.objects
+        things = self.getObjects(context);
         for obj in things:
             if obj.type == 'ARMATURE': return True
             elif obj.type == 'MESH' and obj.find_armature(): return True
         return False
 
     def hasAnimation(self, context):
-        things = context.selected_objects if self.selected_only else context.view_layer.objects
+        things = self.getObjects(context);
         for obj in things:
             if obj.type == 'ARMATURE' and obj.animation_data: return True
             elif obj.type == 'MESH' and obj.find_armature():

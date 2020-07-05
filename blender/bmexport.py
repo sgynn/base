@@ -292,7 +292,7 @@ def export_animations(context, config, skeleton, xml):
         if skeleton.animation_data.action:
             actions.append( skeleton.animation_data.action )
 
-        if skeleton.animation_data.nla_tracks and config.export_all_animations:
+        if skeleton.animation_data.nla_tracks and config.export_animations == "LINKED":
             for track in skeleton.animation_data.nla_tracks.values():
                 track.mute = True
                 track.is_solo = False
@@ -309,10 +309,12 @@ def export_animations(context, config, skeleton, xml):
 def same(a,b): return abs(a-b)<0.00001
 
 def export_action(context, skeleton, action, xml):
+    skeleton.animation_data.action = None
+    bpy.ops.pose.user_transforms_clear(False)
     skeleton.animation_data.action = action
 
-    rot = Matrix.Rotation(radians(-90), 4, 'X') # Up axis fix
-    qrot = rot.to_quaternion()
+    mrot = Matrix.Rotation(radians(-90), 4, 'X') # Up axis fix
+    qrot = mrot.to_quaternion()
     print(action.name)
 
     data = []
@@ -329,7 +331,7 @@ def export_action(context, skeleton, action, xml):
             rot = qrot.inverted() @ bone.rotation_quaternion @ qrot
             pos = bone.location.copy();
 
-            if bone.parent: pos.negate() # Hack ?
+            if bone.parent: pos = pos @ mrot # Hack ?
             keys.rotation.append( (frame, rot) )
             keys.scale.append( (frame, bone.scale.copy()) )
             keys.position.append( (frame, pos) )
@@ -391,13 +393,22 @@ def export_scene(objects, config, xml):
 
 # -------------------------------------------------------------------------- #
 
+def add_heirachy(obj, out):
+    out.add(obj)
+    for o in obj.children: 
+        add_heirachy(o, out)
+
 def export(context, config):
     # What to export
-    if config.selected_only: exportList = list(context.selected_objects)
-    else: exportList = list(context.view_layer.objects)
+    if config.export_group == "SELECTED": exportList = list(context.selected_objects)
+    elif config.export_group == "HEIRACHY":
+        exportList = set()
+        for obj in context.selected_objects:
+            add_heirachy(obj, exportList)
+    elif config.export_group == "ALL": exportList = list(context.view_layer.objects)
 
     # Linked skeleton
-    exportAnimation = config.export_animations or config.export_all_animations
+    exportAnimation = config.export_animations != "NONE"
     if config.export_skeletons or exportAnimation:
         for obj in exportList:
             if obj.type == 'MESH':
