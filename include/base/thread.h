@@ -242,6 +242,48 @@ namespace base {
 		bool m_locked;
 	};
 
+
+	/** Thread Barrier - See OgreBarrier.h */
+	#ifdef WINTHREAD
+	class Barrier {
+		public:
+		Barrier() { m_semaphores[0] = m_semaphores[1] = NULL; }
+		void initialise(int threads) : m_count(threads) {
+			m_semaphores[0] = CreateSemaphore(NULL, 0, threads, NULL);
+			m_semaphores[1] = CreateSemaphore(NULL, 0, threads, NULL);
+		}
+		~Barrier() {
+			CloseHandle(m_semaphores[0]);
+			CloseHandle(m_semaphores[1]);
+		}
+		void sync() {
+			volatile size_t index = m_index;
+			MemoryBarrier();
+			LONG old = _InterlockedExchangeAdd(&m_lockCount, 1);
+			if(old != m_count-1) WaitForSingleObject(m_semaphores[idx], INFINITE);
+			else {
+				m_index = !idx;
+				m_lockCount = 0;
+				if(m_count>1) ReleaseSemaphore(m_semaphores[idx], m_count-1, NULL);
+			}
+		}
+		private:
+		size_t m_count;
+		size_t m_index;
+		HANDLE m_semaphores[2];
+		volatile LONG m_lockCount;
+	};
+	#else
+	class Barrier {
+		public:
+		void initialise(int threads) { pthread_barrier_init(&m_barrier, 0, threads); }
+		~Barrier() { pthread_barrier_destroy(&m_barrier); }
+		void sync() { pthread_barrier_wait(&m_barrier); }
+		private:
+		pthread_barrier_t m_barrier;
+	};
+	#endif
+
 };
 
 #endif
