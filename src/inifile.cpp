@@ -124,7 +124,7 @@ INIFile INIFile::parse(const char* data) {
 			else if(e>c+1) {
 				// Just some text
 				Value value;
-				value.m_source = (char*)malloc(e-c);
+				value.m_source = (char*)malloc(e-c+1);
 				strncpy(value.m_source, c, e-c);
 				value.m_source[e-c] = 0;
 				s->m_values.push_back( KeyValue { 0, value } );
