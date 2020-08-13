@@ -302,6 +302,7 @@ def export_animations(context, config, skeleton, xml):
 
         # Export actions
         last = skeleton.animation_data.action
+        context.view_layer.objects.active = skeleton
         for action in actions:
             export_action(context, skeleton, action, xml)
         skeleton.animation_data.action = last
@@ -309,6 +310,7 @@ def export_animations(context, config, skeleton, xml):
 def same(a,b): return abs(a-b)<0.00001
 
 def export_action(context, skeleton, action, xml):
+    print("Context", context.mode, context.active_object.name);
     skeleton.animation_data.action = None
     bpy.ops.pose.user_transforms_clear(False)
     skeleton.animation_data.action = action
@@ -386,15 +388,11 @@ def export_scene(objects, config, xml):
                 break
             p = p.parent
 
-    print(children)
-
     # Write xml
     scene = append_element(xml.firstChild, "layout")
     stack = [(None,0, scene)]
     kill = 0
     while len(stack)>0:
-        print("--------------------------------------------");
-        print(stack)
         a = stack[-1]
         items = children[a[0]]
         obj = items[a[1]]
