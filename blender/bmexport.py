@@ -410,7 +410,10 @@ def export_scene(objects, config, xml):
 
 
 def write_object(node, obj, config):
-    r = obj.rotation_quaternion
+    if obj.rotation_mode == 'QUATERNION': r = obj.rotation_quaternion
+    elif obj.rotation_mode == 'AXIS_ANGLE': r = Quaternion(obj.rotation_axis_angle[1:4], obj.rotation_axis_angle[0])
+    else: r = obj.rotation_euler.to_quaternion()
+
     rot = (r.w, r.x, r.z, -r.y)
     pos = (obj.location.x, obj.location.z, -obj.location.y)
     scl = obj.scale.xzy.to_tuple()
