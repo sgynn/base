@@ -374,20 +374,55 @@ def write_keyframes(keyset, name, data):
 # -------------------------------------------------------------------------- #
 
 def export_scene(objects, config, xml):
-    scene = append_element(xml.firstChild, "layout")
-    for obj in objects:
-        r = obj.rotation_quaternion
-        rot = (r.w, r.x, r.z, -r.y)
-        pos = (obj.location.x, obj.location.z, -obj.location.y)
-        scl = obj.scale.xzy.to_tuple()
 
-        node = append_element(scene, "object")
-        node.setAttribute("name", obj.name)
-        if pos != (0,0,0):   node.setAttribute("position", ' '.join( format_num(v) for v in pos ))
-        if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
-        if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
-        if 'tag' in obj: node.setAttribute("tag", str(o['tag']))
-        if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
+    # Figure out heirachy
+    children = { None:[] }
+    for obj in objects: children[obj] = []
+    for obj in objects:
+        p = obj.parent
+        while(True):
+            if p in children:
+                children[p].append(obj)
+                break
+            p = p.parent
+
+    print(children)
+
+    # Write xml
+    scene = append_element(xml.firstChild, "layout")
+    stack = [(None,0, scene)]
+    kill = 0
+    while len(stack)>0:
+        print("--------------------------------------------");
+        print(stack)
+        a = stack[-1]
+        items = children[a[0]]
+        obj = items[a[1]]
+        node = write_object(a[2], obj, config)
+        if a[1] + 1 >= len(items): stack.pop()
+        else: stack[-1] = (a[0], a[1]+1, a[2])
+
+        if children[obj]:
+            stack.append( (obj, 0, node) )
+
+        kill += 1
+        if kill > 5: break
+
+
+def write_object(node, obj, config):
+    r = obj.rotation_quaternion
+    rot = (r.w, r.x, r.z, -r.y)
+    pos = (obj.location.x, obj.location.z, -obj.location.y)
+    scl = obj.scale.xzy.to_tuple()
+
+    node = append_element(node, "object")
+    node.setAttribute("name", obj.name)
+    if pos != (0,0,0):   node.setAttribute("position", ' '.join( format_num(v) for v in pos ))
+    if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
+    if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
+    if 'tag' in obj: node.setAttribute("tag", str(o['tag']))
+    if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
+    return node
 
 
 
