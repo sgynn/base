@@ -388,11 +388,13 @@ def export_scene(objects, config, xml):
                 break
             p = p.parent
 
+    print(children);
+
     # Write xml
     scene = append_element(xml.firstChild, "layout")
     stack = [(None,0, scene)]
-    kill = 0
     while len(stack)>0:
+        print(stack)
         a = stack[-1]
         items = children[a[0]]
         obj = items[a[1]]
@@ -403,11 +405,10 @@ def export_scene(objects, config, xml):
         if children[obj]:
             stack.append( (obj, 0, node) )
 
-        kill += 1
-        if kill > 5: break
-
 
 def write_object(node, obj, config):
+    print("object", obj.name)
+
     if obj.rotation_mode == 'QUATERNION': r = obj.rotation_quaternion
     elif obj.rotation_mode == 'AXIS_ANGLE': r = Quaternion(obj.rotation_axis_angle[1:4], obj.rotation_axis_angle[0])
     else: r = obj.rotation_euler.to_quaternion()
