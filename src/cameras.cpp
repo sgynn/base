@@ -111,9 +111,12 @@ void OrbitCamera::setTarget(const vec3& t) {
 	m_target = t;
 }
 void OrbitCamera::setPosition(float yaw, float pitch, float distance) {
-	vec3 fwd = vec3( sin(yaw), 0, cos(yaw) ) * cos(pitch);
-	fwd.y = sin(pitch);
-	lookat(m_target + fwd * distance, m_target, m_upVector);
+	pitch = m_constraint.clamp(pitch);
+	float d = (pitch + PI) / TWOPI;
+	d -= floor(d);
+	float inv = d<0.25 || d>0.75? -1: 1;
+	vec3 dir( cos(pitch) * sin(yaw), sin(pitch), cos(pitch) * cos(yaw) );
+	lookat( m_target + dir * distance, m_target, m_upVector * inv );
 }
 
 void OrbitCamera::update(int mask) {

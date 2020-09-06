@@ -118,7 +118,8 @@ inline vec3 Quaternion::getAxis() const {
 
 inline float Quaternion::getAngle(const Quaternion& q) const {
 	float s = sqrt(length2() * q.length2());
-	return acos(dot(q)/s);
+	float c = dot(q) / s;
+	return c<=-1? PI: c>1? 0: acos(c); // Bounds fix for floating point error
 }
 
 inline Quaternion Quaternion::arc(const vec3& a, const vec3& b) {

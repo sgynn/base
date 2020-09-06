@@ -101,6 +101,16 @@ class vec3 {
 }; 
 
 
+// Ray class.
+class Ray {
+	public:
+	vec3 start;
+	vec3 direction;
+	Ray(const vec3& p, const vec3& d);
+	vec3 point(float t) const;
+};
+
+
 // Implementations
 inline vec2::vec2(): x(0), y(0) {}
 inline vec2::vec2(float v): x(v), y(v) {}
@@ -216,6 +226,10 @@ inline vec3 vec3::approach(const vec3& t, float step) const {
 	else return *this + step / d * (t-*this);
 }
 
+
+
+inline Ray::Ray(const vec3& p, const vec3& d) : start(p), direction(d.normalised()) {}
+inline vec3 Ray::point(float t) const { return start + direction * t; }
 
 
 #endif

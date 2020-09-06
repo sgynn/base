@@ -353,3 +353,8 @@ vec3 Camera::unproject(const vec3& screen, const Point& size) const {
 	return out;
 }
 
+Ray Camera::getMouseRay(const Point& mouse, const Point& size) const {
+	vec3 end = unproject( vec3(mouse.x, mouse.y, 1), size );
+	return Ray(m_position, end - m_position);
+}
+

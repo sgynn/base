@@ -83,6 +83,8 @@ namespace base {
 		vec3 project(const vec3& world, const Point& size) const;
 		/** Unproject a point on the screen to world coordinates */
 		vec3 unproject(const vec3& screen, const Point& size) const;
+		/** Get mouse ray in 3d space */
+		Ray getMouseRay(const Point& mouse, const Point& viewport) const;
 
 		/** Virtual update function for overriding */
 		virtual void update() {}
