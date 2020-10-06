@@ -1,6 +1,8 @@
 #ifndef _BASE_COLOUR_
 #define _BASE_COLOUR_
 
+#include <cmath>
+
 class HSV;
 
 /** Colours */

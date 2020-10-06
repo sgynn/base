@@ -27,7 +27,7 @@ namespace base {
 		Point queryMouse();
 
 		virtual void setCursor(unsigned c);
-		virtual void setCursor(const char* image, int w, int h, int x=0, int y=0);
+		virtual void createCursor(unsigned c, const char* image, int w, int h, int x=0, int y=0);
 
 		bool createWindow();
 		void destroyWindow();

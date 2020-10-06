@@ -86,9 +86,6 @@ namespace base {
 		/** Get mouse ray in 3d space */
 		Ray getMouseRay(const Point& mouse, const Point& viewport) const;
 
-		/** Virtual update function for overriding */
-		virtual void update() {}
-
 		protected:
 		int m_mode;	//0=screen, 1=perspective, 2=frustum
 		float m_fov, m_aspect;
