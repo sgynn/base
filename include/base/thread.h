@@ -248,7 +248,8 @@ namespace base {
 	class Barrier {
 		public:
 		Barrier() { m_semaphores[0] = m_semaphores[1] = NULL; }
-		void initialise(int threads) : m_count(threads) {
+		void initialise(int threads) {
+			m_count = threads;
 			m_semaphores[0] = CreateSemaphore(NULL, 0, threads, NULL);
 			m_semaphores[1] = CreateSemaphore(NULL, 0, threads, NULL);
 		}
@@ -260,11 +261,11 @@ namespace base {
 			volatile size_t index = m_index;
 			MemoryBarrier();
 			LONG old = _InterlockedExchangeAdd(&m_lockCount, 1);
-			if(old != m_count-1) WaitForSingleObject(m_semaphores[idx], INFINITE);
+			if(old != m_count-1) WaitForSingleObject(m_semaphores[index], INFINITE);
 			else {
-				m_index = !idx;
+				m_index = !index;
 				m_lockCount = 0;
-				if(m_count>1) ReleaseSemaphore(m_semaphores[idx], m_count-1, NULL);
+				if(m_count>1) ReleaseSemaphore(m_semaphores[index], m_count-1, NULL);
 			}
 		}
 		private:
