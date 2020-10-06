@@ -301,6 +301,7 @@ void Win32Window::setCursor(unsigned c) {
 	ShowCursor( c!=CURSOR_NONE );
 	if(c!=CURSOR_NONE && !m_cursors[c]) {
 		switch(c) {
+		default:
 		case CURSOR_DEFAULT:   m_cursors[c] = LoadCursor(s_hInst, IDC_ARROW); break;
 		case CURSOR_BUSY:      m_cursors[c] = LoadCursor(s_hInst, IDC_WAIT); break;
 		case CURSOR_HAND:      m_cursors[c] = LoadCursor(s_hInst, IDC_HAND); break;
@@ -308,28 +309,27 @@ void Win32Window::setCursor(unsigned c) {
 		case CURSOR_I:         m_cursors[c] = LoadCursor(s_hInst, IDC_IBEAM); break;
 		case CURSOR_NO:        m_cursors[c] = LoadCursor(s_hInst, IDC_NO); break;
 		case CURSOR_MOVE:      m_cursors[c] = LoadCursor(s_hInst, IDC_SIZEALL); break;
-		case CURSOR_NS:        m_cursors[c] = LoadCursor(s_hInst, IDC_NS); break;
-		case CURSOR_EW:        m_cursors[c] = LoadCursor(s_hInst, IDC_WE); break;
-		case CURSOR_NESW:      m_cursors[c] = LoadCursor(s_hInst, IDC_NESW); break;
-		case CURSOR_NWSE:      m_cursors[c] = LoadCursor(s_hInst, IDC_NWSE); break;
-		default:               c = IDC_ARROW; break;
+		case CURSOR_NS:        m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENS); break;
+		case CURSOR_EW:        m_cursors[c] = LoadCursor(s_hInst, IDC_SIZEWE); break;
+		case CURSOR_NESW:      m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENESW); break;
+		case CURSOR_NWSE:      m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENWSE); break;
 		}
 	}
 	SetCursor(m_cursors[c]);
 }
 
-void Win32Window::createCursor(unsigned id, const unsigned char* image, int w, int h, int hotx, int hoty) {
+void Win32Window::createCursor(unsigned id, const char* image, int w, int h, int hotx, int hoty) {
 	// Create bitmap objects
 	HDC andDC = CreateCompatibleDC(m_hDC);
 	HDC xorDC = CreateCompatibleDC(m_hDC);
 	HBITMAP andMap = CreateCompatibleBitmap(m_hDC, w, h);
 	HBITMAP xorMap = CreateCompatibleBitmap(m_hDC, w, h);
-	HBITMAP oldAnd = SelectObject(andDC, andMap);
-	HBITMAP oldXor = SelectObject(xorDC, xorMap);
+	HGDIOBJ oldAnd = SelectObject(andDC, andMap);
+	HGDIOBJ oldXor = SelectObject(xorDC, xorMap);
 	for(int x=0; x<w; ++x) {
 		for(int y=0; y<w; ++y) {
-			const unsigned char* pixel = image + (x + y*w) * 4;
-			if(pixel[0]<128) {
+			const char* pixel = image + (x + y*w) * 4;
+			if(pixel[0]>=0) {
 				SetPixel(andDC, x, y, RGB(255,255,255));
 				SetPixel(xorDC, x, y, RGB(0,0,0));
 			}
@@ -344,7 +344,7 @@ void Win32Window::createCursor(unsigned id, const unsigned char* image, int w, i
 	DeleteDC(andDC);
 	DeleteDC(xorDC);
 
-	ICONINFO iconInfo { FALSE, hotx, hoty, andMap, xorMap };
+	ICONINFO iconInfo { FALSE, (uint)hotx, (uint)hoty, andMap, xorMap };
 	HCURSOR cur = CreateIconIndirect(&iconInfo);
 	m_cursors[id] = cur;
 }
