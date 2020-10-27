@@ -208,7 +208,16 @@ void Win32Window::setPosition(int x,int y) {
 void Win32Window::setSize(int w, int h) {
 	if(!created() || !m_fullScreen) {
 		m_size.set(w,h);
-		MoveWindow(m_hWnd, m_position.x, m_position.y, m_size.x, m_size.y, false);
+
+		RECT rect;
+		rect.top = m_position.y;
+		rect.left = m_position.x;
+		rect.right = rect.left + m_size.x;
+		rect.bottom = rect.top + m_size.y;
+		
+		//adjust the window rect so the client size is correct
+		if (!m_fullScreen) AdjustWindowRect(&rect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
+		MoveWindow(m_hWnd, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top, false);
 	}
 }
 
