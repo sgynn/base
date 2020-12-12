@@ -168,6 +168,12 @@ PNG PNG::load(const char* filename) {
 	return PNG();
 	break;
 	}
+
+	// 16bpp format
+	if(bit_depth==16) {
+		iFormat *= 2;
+		mcdepth *= 2;
+	}
 	
 	/* we can now allocate memory for storing pixel data */
 	mdata = (char*)malloc (sizeof(unsigned char) * mwidth * mheight * iFormat);
