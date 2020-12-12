@@ -16,6 +16,7 @@ namespace base {
 		void setIcon();
 		void setPosition(int x, int y);
 		void setSize(int w, int h);
+		bool setFullScreen(bool f);
 
 		bool created() const { return m_display; }
 		static const Point& getScreenResolution();

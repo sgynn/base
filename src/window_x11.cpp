@@ -146,6 +146,9 @@ void X11Window::destroyWindow() {
 	glXDestroyContext(m_display, m_context);
 	XDestroyWindow(m_display,m_window);
 	XCloseDisplay(m_display);
+	m_context = 0;
+	m_display = 0;
+	m_window = 0;
 }
 
 // =================================================================================================== //
@@ -197,7 +200,38 @@ void X11Window::setPosition(int x,int y) {
 }
 void X11Window::setSize(int w,int h) {
 	m_size.set(w, h);
-	if(created()) XResizeWindow(m_display, m_window, w, h);
+	if(created()) {
+		XResizeWindow(m_display, m_window, w, h);
+		// Get actual buffer size
+		unsigned int sw, sh;
+		GLXDrawable drawable = glXGetCurrentDrawable();
+		glXQueryDrawable(m_display, drawable, GLX_WIDTH, &sw);
+		glXQueryDrawable(m_display, drawable, GLX_HEIGHT, &sh);
+		m_size.set(sw, sh);
+	}
+}
+
+bool X11Window::setFullScreen(bool full) {
+	if(full==m_fullScreen) return true;
+	m_fullScreen = full;
+	if(!created()) return false;
+
+	// Try sending window manager a message
+	XEvent e;
+	memset(&e, 0, sizeof(XEvent));
+	e.xany.type = ClientMessage;
+	e.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE", false);
+	e.xclient.format = 32;
+	e.xclient.window = m_window;
+	e.xclient.data.l[0] = XInternAtom(m_display, full? "_NET_WM_STATE_ADD": "_NET_WM_STATE_REMOVE", false);
+	e.xclient.data.l[1] = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", false);
+	e.xclient.data.l[3] = 0l;
+	XSendEvent(m_display, RootWindow(m_display, m_screen), 0, SubstructureNotifyMask | SubstructureRedirectMask, &e);
+	XFlush(m_display);
+	printf("Fullscreen message sent %d\n", full);
+
+
+	return true;
 }
 
 bool X11Window::makeCurrent() {

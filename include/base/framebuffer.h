@@ -41,6 +41,7 @@ class FrameBuffer {
 
 	/** Null framebuffer - used for unbinding */
 	static const FrameBuffer Screen;
+	static const FrameBuffer& current() { return *s_bound; }
 
 	private:
 	int m_width, m_height;

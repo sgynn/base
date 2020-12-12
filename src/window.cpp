@@ -14,8 +14,8 @@ bool base::Window::setFullScreen(bool fs) {
 	bool r = true;
 	if(!created()) m_fullScreen = fs;
 	else if(fs!=m_fullScreen) {
-		m_fullScreen = fs;
 		destroyWindow();
+		m_fullScreen = fs;
 		r = createWindow();
 		if(r) makeCurrent();
 	}
