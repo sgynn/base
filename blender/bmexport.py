@@ -303,6 +303,7 @@ def export_animations(context, config, skeleton, xml):
         # Export actions
         last = skeleton.animation_data.action
         context.view_layer.objects.active = skeleton
+        bpy.ops.object.mode_set(mode='POSE')
         for action in actions:
             export_action(context, skeleton, action, xml)
         skeleton.animation_data.action = last
@@ -422,8 +423,15 @@ def write_object(node, obj, config):
     if pos != (0,0,0):   node.setAttribute("position", ' '.join( format_num(v) for v in pos ))
     if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
     if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
-    if 'tag' in obj: node.setAttribute("tag", str(o['tag']))
     if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
+    
+    # Custom properties
+    if len(obj.keys()) > 1:
+        for key in obj.keys():
+            if key not in '_RNA_UI':
+                node.setAttribute(key, str(obj[key]))
+
+
     return node
 
 
