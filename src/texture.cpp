@@ -153,7 +153,7 @@ void Texture::destroy() {
 /** Convert format enum to opengl value */
 unsigned Texture::getInternalFormat(Format f) {
 	static unsigned formats[] = {
-		0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
+		0, GL_RED, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
 		GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // BC1,2,3
 		GL_COMPRESSED_RED_RGTC1, GL_COMPRESSED_RG_RGTC2,	// BC4, BC5
 		GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F,
@@ -165,10 +165,10 @@ unsigned Texture::getInternalFormat(Format f) {
 }
 unsigned Texture::getDataFormat(Format f) {
 	static unsigned formats[] = { 
-		0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
+		0, GL_RED, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
 		0,0,0,0,0, // not applicable for compressed formats
-		GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
-		GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA,
+		GL_RED, GL_RG, GL_RGB, GL_RGBA,
+		GL_RED, GL_RG, GL_RGB, GL_RGBA,
 		GL_RGB, GL_RGB,
 		GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_STENCIL
 	};

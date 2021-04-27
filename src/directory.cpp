@@ -104,17 +104,25 @@ int Directory::getFullPath(const char* in, char* out, int lim) {
 	return clean(in, out, lim);
 }
 
+const char* Directory::getWorkingPath() {
+	static char path[PATH_MAX];
+	#ifdef WIN32
+	if(!_getcwd(path, PATH_MAX)) return 0;
+	#else
+	if(!getcwd(path, PATH_MAX)) return 0;
+	#endif
+	return path;
+}
+
 int Directory::getRelativePath(const char* in, char* out, int lim) {
+	return getRelativePath(in, getWorkingPath(), out, lim);
+}
+
+int Directory::getRelativePath(const char* in, const char* root, char* out, int lim) {
 	if(lim<=0) lim = PATH_MAX;
 	if(!isRelative(in)) {
-		// Get working directory
 		char buffer[PATH_MAX];
-		#ifdef WIN32
-		if(!_getcwd(buffer, PATH_MAX)) return 0;
-		//if(buffer[0] != in[0]) return clean(in, out, lim);	// Impossible
-		#else
-		if(!getcwd(buffer, PATH_MAX)) return 0;
-		#endif
+		strncpy(buffer, root, PATH_MAX);
 		// match ...
 		int m=0, up=0;
 		while(buffer[m] == in[m]) ++m;

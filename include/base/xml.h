@@ -80,6 +80,7 @@ class XMLElement {
 	/** String comparitor */
 	bool operator==(const char* s) const;
 	bool operator!=(const char* s) const;
+	operator bool() const; // false if null element or empty text element
 	private:
 	int m_type; // XML::TagType
 	RefString m_name;

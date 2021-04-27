@@ -58,7 +58,7 @@ void base::Window::clear() {
 
 	int glerr;
 	if ((glerr = glGetError()) != 0) {
-		printf("An OpenGL error occured: %d\n", glerr); 
+		printf("An OpenGL error occured: %#x\n", glerr); 
 	}
 	swapBuffers();
 }

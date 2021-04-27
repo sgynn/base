@@ -15,6 +15,10 @@ struct Point {
 	Point operator- (const Point& b) const { return Point(x-b.x,y-b.y); }
 	Point& operator+=(const Point& p)      { x+=p.x; y+=p.y; return *this; }
 	Point& operator-=(const Point& p)      { x-=p.x; y-=p.y; return *this; }
+	Point& operator+=(int v)      { x+=v; y+=v; return *this; }
+	Point& operator-=(int v)      { x-=v; y-=v; return *this; }
+	Point operator+(int v)  const { return Point(x+v, y+v); }
+	Point operator-(int v)  const { return Point(x-v, y-v); }
 	operator const int*() const { return &x; }
 	operator int*() { return &x; }
 };
@@ -33,6 +37,10 @@ struct Point3 {
 	Point3 operator- (const Point3& b) const { return Point3(x-b.x,y-b.y,z-b.z); }
 	Point3& operator+=(const Point3& p)      { x+=p.x; y+=p.y; z+=p.z; return *this; }
 	Point3& operator-=(const Point3& p)      { x-=p.x; y-=p.y; z-=p.z; return *this; }
+	Point3& operator+=(int v)      { x+=v; y+=v; z+=v; return *this; }
+	Point3& operator-=(int v)      { x-=v; y-=v; z-=v; return *this; }
+	Point3 operator+(int v)  const { return Point3(x+v, y+v, z+v); }
+	Point3 operator-(int v)  const { return Point3(x-v, y-v, z-v); }
 	operator const int*() const { return &x; }
 	operator int*() { return &x; }
 };

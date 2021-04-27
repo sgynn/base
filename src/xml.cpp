@@ -111,6 +111,10 @@ const char* XMLElement::name() const {
 	return m_type==XML::TAG? m_name: 0;
 }
 
+XMLElement::operator bool() const {
+	return m_name || m_type==XML::HEADER;
+}
+
 //// Setting data ////
 
 void XMLElement::setAttribute(const char* name, const char* value) {

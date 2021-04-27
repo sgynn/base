@@ -301,6 +301,7 @@ def export_animations(context, config, skeleton, xml):
                         actions.append(strip.action)
 
         # Export actions
+        context.scene.tool_settings.use_keyframe_insert_auto = False # this really messes things up if left on
         last = skeleton.animation_data.action
         context.view_layer.objects.active = skeleton
         bpy.ops.object.mode_set(mode='POSE')
@@ -319,6 +320,9 @@ def export_action(context, skeleton, action, xml):
     mrot = Matrix.Rotation(radians(-90), 4, 'X') # Up axis fix
     qrot = mrot.to_quaternion()
     print(action.name)
+
+    bpy.ops.pose.select_all(action='SELECT')
+    bpy.ops.pose.transforms_clear()
 
     data = []
     for bone in skeleton.pose.bones:

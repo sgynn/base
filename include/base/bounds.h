@@ -28,6 +28,9 @@ class RangeT {
 	T    size() const;								/// Return the size of the range
 	bool isValid() const;							/// Is min < max
 	bool isEmpty() const;							/// Is min == max
+
+	T map(float t) const;							/// Map a 0-1 value to this range
+	float unmap(const T& t) const;					/// Map a value to a 0-1 range wrt this 
 };
 
 typedef RangeT<float> Rangef, Range;
@@ -66,7 +69,8 @@ class BoundingBox {
 	bool isValid() const;							/// Is the box valid? min < max
 	bool isEmpty() const;							/// Is the box empty? min = max
 	vec3 clamp(const vec3&) const;					/// Clamp a vector inside box
-	
+
+	vec3 getCorner(int) const;						/// Get box corner
 };
 
 
@@ -104,6 +108,30 @@ class BoundingBox2D {
 	vec2 clamp(const vec2&) const;					/// Clamp a point inside the box
 };
 
+
+// Test
+template<class T> class AabbT {
+	public:
+	T centre, extent;
+	AabbT() : extent(-1) {}
+	AabbT(const T& centre, const T& extent) : centre(centre), extent(extent) {}
+	AabbT& setInvalid();
+	AabbT& set(const T& centre, const T& extent);
+	AabbT& setRange(const T& min, const T& max);
+
+	T size() const;
+	bool valid() const;
+	bool empty() const;
+	AabbT& include(const T&);
+	AabbT& include(const AabbT&);
+	void expand(const T&);
+	bool contains(const T& point) const;
+	bool contains(const AabbT& point) const;
+	bool intersects(const AabbT& point) const;
+	T clamp(const T&) const;
+};
+
+
 // Range implementation
 template<typename T> RangeT<T>::RangeT(T v):        min(v), max(v) {}
 template<typename T> RangeT<T>::RangeT(T a, T b):   min(a), max(b) {}
@@ -120,6 +148,8 @@ template<typename T> T    RangeT<T>::wrap(const T& v)  const   { return  v - flo
 template<typename T> T    RangeT<T>::size() const              { return  max - min; }
 template<typename T> bool RangeT<T>::isValid() const           { return  max > min; }
 template<typename T> bool RangeT<T>::isEmpty() const           { return  max == min; }
+template<typename T> T    RangeT<T>::map(float t) const        { return  min + t * (max - min); }
+template<typename T> float RangeT<T>::unmap(const T& t) const  { return  (t - min) / (max - min); }
 
 
 
@@ -171,6 +201,10 @@ inline vec3 BoundingBox::clamp(const vec3& p) const {
 	return r;
 }
 
+inline vec3 BoundingBox::getCorner(int i) const {
+	const vec3* v = &min;
+	return vec3(v[i&1].x, v[i>>1&1].y, v[i>>2&1].z);
+}
 
 
 // 2D version
@@ -214,6 +248,32 @@ inline vec2 BoundingBox2D::clamp(const vec2& p) const {
 	else if(r.y > max.y) r.y = max.y;
 	return r;
 }
+
+
+
+template<class T> AabbT<T>& AabbT<T>::setInvalid() { extent = T(-1); return *this; }
+template<class T> AabbT<T>& AabbT<T>::set(const T& ctr, const T& ext) { centre=ctr; extent=ext; return *this; }
+template<class T> AabbT<T>& AabbT<T>::setRange(const T& min, const T& max) { centre = (max+min)/2; extent = (max-min)/2; return *this; }
+template<class T> T AabbT<T>::size() const { return extent * 2; }
+template<class T> void AabbT<T>::expand(const T& s) { extent += s/2; }
+
+/*
+template<class T> bool AabbT<T>::valid() const { return extent.x>=0 && extent.y>=0; }
+template<class T> bool AabbT<T>::empty() const { return extent.x==0 || extent.y==0; }
+template<class T> AabbT<T>& AabbT<T>::include(const T& p) { return *this; }
+template<class T> AabbT<T>& AabbT<T>::include(const AabbT&) { return *this; }
+template<class T> bool AabbT<T>::contains(const T& point) const {}
+template<class T> bool AabbT<T>::contains(const AabbT& point) const {}
+template<class T> bool AabbT<T>::intersects(const AabbT& point) const {}
+template<class T> T AabbT<T>::clamp(const T&) const {}
+*/
+template<> inline bool AabbT<vec2>::valid() const { return extent.x>=0 && extent.y>=0; }
+template<> inline bool AabbT<vec2>::empty() const { return extent.x==0 || extent.y==0; }
+template<> inline bool AabbT<vec3>::valid() const { return extent.x>=0 && extent.y>=0 && extent.z>=0; }
+template<> inline bool AabbT<vec3>::empty() const { return extent.x==0 || extent.y==0 || extent.z==0; }
+template<> inline bool AabbT<vec2>::contains(const vec2& point) const { return fabs(centre.x-point.x)<=extent.x && fabs(centre.y-point.y)<extent.y; }
+
+
 
 #endif
 
