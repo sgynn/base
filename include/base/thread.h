@@ -80,6 +80,14 @@ namespace base {
 			return _beginThread(data);
 		}
 
+		/** Lambda version? */
+		template<class T, class A>
+		bool begin(const T& lambda, const A& arg) {
+			if(m_running) return false;
+			ThreadDataLambda<T,A>* data = new ThreadDataLambda<T,A>(lambda, arg);
+			return _beginThread(data);
+		}
+
 
 		// Other functions
 		
@@ -144,6 +152,12 @@ namespace base {
 			A  arg;
 			void(T::*func)(A);
 			void run() { (cls->*func)(arg); };
+		};
+		template<typename F, typename A> struct ThreadDataLambda : public ThreadData {
+			ThreadDataLambda(const F& func, A arg) : func(func), arg(arg) {}
+			void run() { func(arg); };
+			F func;
+			A  arg;
 		};
 
 		bool _beginThread(ThreadData* data) {

@@ -212,7 +212,6 @@ void X11Window::setSize(int w,int h) {
 		GLXDrawable drawable = glXGetCurrentDrawable();
 		glXQueryDrawable(m_display, drawable, GLX_WIDTH, &sw);
 		glXQueryDrawable(m_display, drawable, GLX_HEIGHT, &sh);
-		m_size.set(sw, sh);
 	}
 }
 
