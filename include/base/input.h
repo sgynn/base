@@ -202,7 +202,7 @@ namespace base {
 		/** Get the position of the last click */
 		int  mouseClick(int& x, int& y) const{ x = m_mouseClickPoint.x; y = m_mouseClickPoint.y; return m_mouseClick; } 
 		/** Get the mouse wheel delta of this frame */
-		int  mouseWheel() const { return m_mouseWheel; }
+		float mouseWheel() const { return m_mouseWheel; }
 		/** Warp the mouse pointer to a location. Origin botom left of the window */
 		void warpMouse(int x, int y);
 		/** Directly query the mouse location */
@@ -230,7 +230,7 @@ namespace base {
 		Point m_mousePosition;
 		int   m_mouseClick;
 		Point m_mouseClickPoint;
-		int   m_mouseWheel;
+		float m_mouseWheel;
 
 		// Joysticks
 		std::vector<Joystick*> m_joysticks;
