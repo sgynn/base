@@ -65,7 +65,7 @@ class Game {
 	static int Mouse(int& x, int&y);	// Mouse button and position
 	static int MouseClick();			// Were mouse buttons pressed last frame
 	static void WarpMouse(int x, int y);// Move the cursor
-	static int MouseWheel();			// Get the mouse wheel delta since last frame
+	static float MouseWheel();			// Get the mouse wheel delta since last frame
 
 	// Get input class
 	static Input* input() { return s_input; }

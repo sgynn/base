@@ -255,7 +255,7 @@ int  Game::Mouse()			{ return s_input->mouse(); }
 int  Game::Mouse(int& x, int&y) { return s_input->mouse(x, y); } 
 int  Game::MouseClick()		{ return s_input->mouseClick(); }
 void Game::WarpMouse(int x, int y) { s_input->warpMouse(x, y); }
-int  Game::MouseWheel() 	{ return s_input->mouseWheel(); }
+float Game::MouseWheel() 	{ return s_input->mouseWheel(); }
 
 uint Game::LastKey()	{ return s_input->lastKey();  }
 uint16 Game::LastChar()	{ return s_input->lastChar(); }
