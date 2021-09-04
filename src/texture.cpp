@@ -228,7 +228,7 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 	// Create texture object
 	unsigned fmt = getInternalFormat(format);
 	if(fmt == 0) {
-		printf("Invalid texture format\n");
+		printf("Error: Invalid texture format %d\n", (int)format);
 		return Texture();
 	}
 	
@@ -257,7 +257,9 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 			const void* src = data? data[mip]: 0;
 			size_t size = getMemorySize(format, width, height, depth);
 			switch(type) {
+			#ifndef EMSCRIPTEN
 			case TEX1D: glCompressedTexImage1D(target, mip, fmt, width, 0, size, src); break;
+			#endif
 			case ARRAY1D:
 			case TEX2D: glCompressedTexImage2D(target, mip, fmt, width, height, 0, size, src); break;
 			case ARRAY2D:
@@ -279,7 +281,9 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 		for(int mip=0; mip<mipmaps; ++mip) {
 			const void* src = data? data[mip]: 0;
 			switch(type) {
+			#ifndef EMSCRIPTEN
 			case TEX1D: glTexImage1D(target, mip, fmt, width, 0, dfmt, ftype, src); break;
+			#endif
 			case ARRAY1D:
 			case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, dfmt, ftype, src); break;
 			case ARRAY2D:
@@ -288,6 +292,7 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 				for(int face=0; face<6; ++face)
 					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, mip, fmt, width, height, 0, dfmt, ftype, data? data[face+6*mip]: 0);
 				break;
+			default: break;
 			}
 
 			GL_CHECK_ERROR;
@@ -333,7 +338,9 @@ int Texture::setPixels(int width, int height, Format format, const void* src, in
 	if(isCompressedFormat(format)) {
 		size_t size = getMemorySize(format, width, height, depth);
 		switch(m_type) {
+		#ifndef EMSCRIPTEN
 		case TEX1D: glCompressedTexImage1D(target, mip, fmt, width, 0, size, src); break;
+		#endif
 		case ARRAY1D:
 		case TEX2D: glCompressedTexImage2D(target, mip, fmt, width, height, 0, size, src); break;
 		case ARRAY2D:
@@ -348,12 +355,15 @@ int Texture::setPixels(int width, int height, Format format, const void* src, in
 		unsigned dtype = getDataType(format);
 
 		switch(m_type) {
+		#ifndef EMSCRIPTEN
 		case TEX1D: glTexImage1D(target, mip, fmt, width, 0, dfmt, dtype, src); break;
+		#endif
 		case ARRAY1D:
 		case TEX2D: glTexImage2D(target, mip, fmt, width, height, 0, dfmt, dtype, src); break;
 		case ARRAY2D:
 		case TEX3D: glTexImage3D(target, mip, fmt, width, height, depth, 0, dfmt, dtype, src); break;
 		case CUBE: break;
+		default: break;
 		}
 	}
 	GL_CHECK_ERROR;

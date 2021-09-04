@@ -112,7 +112,7 @@ namespace base {
 		void setName(const char* name) {
 			if(!m_running) return;
 			#ifdef PTHREAD
-			pthread_setname_np(m_thread, name);
+		//	pthread_setname_np(m_thread, name);
 			#endif
 		}
 

@@ -281,8 +281,8 @@ uint X11Window::pumpEvents(Input* input) {
 			//mouse input  -  butons 4 and 5 are the mouse wheel
 			case ButtonPress:
 				buttonevent = (XButtonEvent*)&event;
-				if(buttonevent->button==4) input->m_mouseWheel ++;
-				else if(buttonevent->button==5) input->m_mouseWheel --; 
+				if(buttonevent->button==4) input->m_mouseState.wheel ++;
+				else if(buttonevent->button==5) input->m_mouseState.wheel --; 
 				input->setButton( buttonevent->button, 1, Point(buttonevent->x, buttonevent->y));
 				break;
 

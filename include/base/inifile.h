@@ -17,24 +17,27 @@ class INIFile {
 	// also INIFile::Section s = ini[section];  var=s[name];
 	class Value {
 		friend class INIFile;
-		enum ValueType { SOURCE=0, STRING, FLOAT, BOOL, INTEGER };
+		enum ValueType { SOURCE=0, STRING, FLOAT, BOOL, INTEGER, UNSIGNED };
 		public:
 		Value():              m_type(SOURCE), m_source(0) {}
 		Value(const char* c): m_type(STRING), m_source(0), m_c(c) {}
 		Value(float f):       m_type(FLOAT),  m_source(0), m_f(f) {}
 		Value(bool b):        m_type(BOOL),   m_source(0), m_b(b) {}
 		Value(int i):         m_type(INTEGER),m_source(0), m_i(i) {}
+		Value(unsigned u):    m_type(UNSIGNED),m_source(0), m_u(u) {}
 		const Value& operator=(const char* c) { setType(STRING);  m_c=c; return *this; }
 		const Value& operator=(double f)      { setType(FLOAT);   m_f=f; return *this; }
 		const Value& operator=(float f)       { setType(FLOAT);   m_f=f; return *this; }
 		const Value& operator=(bool b)        { setType(BOOL);    m_b=b; return *this; }
 		const Value& operator=(int i)         { setType(INTEGER); m_i=i; return *this; }
+		const Value& operator=(unsigned u)    { setType(UNSIGNED);m_u=u; return *this; }
 		operator const char*();
 		operator const char*() const;
 		operator double() const;
 		operator float() const;
 		operator bool() const;
 		operator int() const;
+		operator unsigned() const;
 		private:
 		void setType(int t);
 		void setString();
@@ -45,6 +48,7 @@ class INIFile {
 			float m_f;
 			bool  m_b;
 			int   m_i;
+			unsigned m_u;
 		};
 	};
 
@@ -58,11 +62,12 @@ class INIFile {
 		Section(const char* name);                   // Constructor
 		~Section();                                  // Destructor
 		const char* name() const { return m_name; }  // Get section name
-		const Value& operator[](const char*) const;  // Get value
-		Value& operator[](const char*);              // Get value
-		const Value& get(const char* s) const;       // Get value
-		void set(const char* s, const Value& v);     // Set value
-		bool contains(const char* s) const;          // Does a key exist
+		const Value& operator[](const char*) const;  // Get value by key
+		Value& operator[](const char*);              // Get value by key
+		const Value& get(const char* key) const;     // Get value by key
+		void set(const char* key, const Value& v);   // Set value. Replaces any existing value of key
+		void add(const char* key, const Value& v);   // Add a value. key can be a duplicate
+		bool contains(const char* key) const;        // Does a key exist
 		template<typename T> T get(const char* s, T d) const { return contains(s)? (T)get(s): d; }
 		
 		typedef std::vector<KeyValue>::const_iterator iterator;

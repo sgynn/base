@@ -35,7 +35,7 @@ def format_num(value):
     return str( round(value,6) )
 
 def modified(obj, config):
-    return config.apply_modifiers and obj.type=='MESH' and len(obj.modifiers)
+    return config.apply_modifiers and obj.type=='MESH' and len(obj.modifiers) and obj.data.users > 1
 
 # -------------------------------------------------------------------------- #
 
@@ -98,8 +98,15 @@ def construct_mesh(obj, config):
     if trans.determinant() < 0.0:
         m.flip_normals()
 
+    needTriangulating = False
+    for f in m.polygons:
+        if len(f.vertices) > 3:
+            needTriangulating = True
+            break
+
     # Triangulate
-    triangulate(m);
+    if needTriangulating:
+        triangulate(m);
 
     # Additional per-vertex data
     uv  = m.uv_layers.active.data[:] if config.export_uv and len(m.uv_layers) > 0 else None
@@ -201,6 +208,8 @@ def export_mesh(obj, config, xml):
         mesh = append_element(xml.firstChild, "mesh")
         mesh.setAttribute("name", name)                 #NOTE: duplicate name if mesh is split by material
         mesh.setAttribute("size", str(len(m.vertices)))
+
+        export_custom_properties(mesh, obj.data, "properties")
 
         if m.material:
             mat = append_element(mesh, "material")
@@ -411,6 +420,7 @@ def export_scene(objects, config, xml):
             stack.append( (obj, 0, node) )
 
 
+
 def write_object(node, obj, config):
     print("object", obj.name)
 
@@ -428,16 +438,30 @@ def write_object(node, obj, config):
     if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
     if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
     if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
+    if obj.parent_bone: node.setAttribute("bone", obj.parent_bone)
     
+    export_custom_properties(node, obj)
+
     # Custom properties
-    if len(obj.keys()) > 1:
-        for key in obj.keys():
-            if key not in '_RNA_UI':
-                node.setAttribute(key, str(obj[key]))
+    #if len(obj.keys()) > 1:
+    #    for key in obj.keys():
+    #        if key not in '_RNA_UI':
+    #            node.setAttribute(key, str(obj[key]))
 
 
     return node
 
+
+def export_custom_properties(node, obj, name=None):
+    if len(obj.keys()) > 1:
+        custom = []
+        for key in obj.keys():
+            if key not in '_RNA_UI':
+                custom.append( (key, str(obj[key])) )
+
+        if custom:
+            if name: node = append_element(node, name)
+            for p in custom: node.setAttribute(p[0], p[1]);
 
 
 # -------------------------------------------------------------------------- #

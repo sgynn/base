@@ -24,8 +24,8 @@ namespace base { struct SortFiles {
 		if(a.type!=b.type) return a.type>b.type; // List folders at the top?
 
 		// Case insensitive matching
-		register unsigned char* s0 = (unsigned char*) a.name;
-		register unsigned char* s1 = (unsigned char*) b.name;
+		unsigned char* s0 = (unsigned char*) a.name;
+		unsigned char* s1 = (unsigned char*) b.name;
 		unsigned char c0, c1;
 		const unsigned char u = 'a'-'A';
 		do {

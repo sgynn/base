@@ -7,6 +7,9 @@
 #ifdef LINUX
 #include "base/window_x11.h"
 #endif
+#ifdef EMSCRIPTEN
+#include "base/window_em.h"
+#endif
 
 #include "base/game.h"
 #include "base/state.h"
@@ -47,10 +50,15 @@ Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_stat
 	#ifdef LINUX
 	s_window = new X11Window(width, height, fullscreen, bpp, 24, fsaa);
 	#endif
+	#ifdef EMSCRIPTEN
+	s_window = new EMWindow(width, height);
+	#endif
+
 	s_window->centreScreen();
 	s_window->createWindow();
 	s_window->makeCurrent();
 	s_window->clear();
+
 
 	m_state = new StateManager();
 
@@ -129,9 +137,27 @@ uint64 Game::getTickFrequency() {
 	QueryPerformanceFrequency(&tks);
 	return (((uint64)tks.HighPart << 32) + (uint64)tks.LowPart);	
 	#endif
+	return 1;
 }
 
+#ifdef EMSCRIPTEN
+EM_BOOL emscriptenUpdate(double totalTime, void* data) {
+	StateManager* state = (StateManager*)data;
+	state->update();
+	state->draw();
+	Game::input()->update();
+	return state->running();
+}
+#endif
+
+
 void Game::run() {
+	#ifdef EMSCRIPTEN
+	m_state->update();
+	emscripten_request_animation_frame_loop(&emscriptenUpdate, m_state);
+	
+	#else
+
 	//Set up dome OpenGL stuff
 	glMatrixMode(GL_PROJECTION);
 	glOrtho(0, s_window->getSize().x, 0, s_window->getSize().y, -1, 1);
@@ -143,7 +169,7 @@ void Game::run() {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-	
+
 	if(m_targetFPS==0) {
 	
 		uint64 frequency = getTickFrequency();
@@ -239,6 +265,7 @@ void Game::run() {
 
 		}
 	}
+	#endif
 }
 
 void Game::debugTime(uint& game, uint& system, uint& update, uint& render) {
@@ -248,14 +275,14 @@ void Game::debugTime(uint& game, uint& system, uint& update, uint& render) {
 	render	= s_inst->m_renderTime;
 }
 
-//Input functions *depricated* (These were links to SDL)
-bool Game::Key(int k)		{ return s_input->key(k); }
-bool Game::Pressed(int k)	{ return s_input->pressed(k); }
-int  Game::Mouse()			{ return s_input->mouse(); } 
-int  Game::Mouse(int& x, int&y) { return s_input->mouse(x, y); } 
-int  Game::MouseClick()		{ return s_input->mouseClick(); }
+// Deprecated input functions Input functions
+bool Game::Key(int k)              { return s_input->key(k); }
+bool Game::Pressed(int k)          { return s_input->keyPressed(k); }
+int  Game::Mouse()                 { return s_input->mouse.button; } 
+int  Game::Mouse(int& x, int&y)    { x = s_input->mouse.x; y = s_input->mouse.y; return Mouse(); } 
+int  Game::MouseClick()            { return s_input->mouse.pressed; }
 void Game::WarpMouse(int x, int y) { s_input->warpMouse(x, y); }
-float Game::MouseWheel() 	{ return s_input->mouseWheel(); }
+float Game::MouseWheel()           { return s_input->mouse.wheel; }
 
 uint Game::LastKey()	{ return s_input->lastKey();  }
 uint16 Game::LastChar()	{ return s_input->lastChar(); }

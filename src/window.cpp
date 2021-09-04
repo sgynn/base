@@ -1,5 +1,5 @@
 #include "base/window.h"
-#include <GL/gl.h>
+#include "base/opengl.h"
 #include <cstdio>
 
 base::Window::Window(int width, int height, bool fullscreen, int bpp, int depth, int fsaa) 
@@ -55,11 +55,7 @@ void base::Window::clear() {
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);      // Really nice perspective calculations
 	glEnable(GL_BLEND);						// Enable alpha blending of textures
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-
-	int glerr;
-	if ((glerr = glGetError()) != 0) {
-		printf("An OpenGL error occured: %#x\n", glerr); 
-	}
+	GL_CHECK_ERROR;
 	swapBuffers();
 }
 
@@ -79,6 +75,9 @@ const Point& base::Window::getScreenResolution() {
 	#ifdef LINUX
 	return X11Window::getScreenResolution();
 	#endif
+
+	static Point nope;
+	return nope;
 }
 const base::Window::PointList& base::Window::getValidResolutions() {
 	#ifdef WIN32
@@ -87,6 +86,9 @@ const base::Window::PointList& base::Window::getValidResolutions() {
 	#ifdef LINUX
 	return X11Window::getValidResolutions();
 	#endif
+
+	static PointList nope;
+	return nope;
 }
 
 

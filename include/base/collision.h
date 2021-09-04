@@ -32,9 +32,10 @@ namespace base {
 	/** Get the closest point on a triangle to a point
 	 * @param Point
 	 * @param a,b,c The triangle
-	 * @return Closest point on triangle
+	 * @param out Closest point on triangle
+	 * @return Which sector, 0:Internal; 1,2,3:Vertex; 4,5,6:Edge
 	 */
-	BASEAPI vec3 closestPointOnTriangle(const vec3& point, const vec3& a, const vec3& b, const vec3& c);
+	BASEAPI int closestPointOnTriangle(const vec3& point, const vec3& a, const vec3& b, const vec3& c, vec3& out);
 
 	/** Intersection point between a ray and a plane
 	 * @param p Start of ray
@@ -94,6 +95,8 @@ namespace base {
 	BASEAPI int intersectLineTriangle(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float& t);
 	/** Same as intersectLineTriangle but gets barycentric coordinates */
 	BASEAPI int intersectLineTriangleb(const vec3& p, const vec3& q, const vec3& a, const vec3& b, const vec3& c, float* barycentric);
+
+	BASEAPI int intersectRayTriangle(const vec3& p, const vec3& d, const vec3& a, const vec3& b, const vec3& c, float& t);
 
 	/** Get the intersection point of two 2D lines
 	 * @param p0 Start of first line

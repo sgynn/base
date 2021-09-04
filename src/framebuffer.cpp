@@ -93,8 +93,8 @@ FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffe
 	if(f) {
 		if(f&COLOUR) attachColour(TEXTURE, Texture::RGBA8);
 		else {
-			glDrawBuffer(GL_NONE);
-			glReadBuffer(GL_NONE);
+			//glDrawBuffer(GL_NONE);
+			//glReadBuffer(GL_NONE);
 		}
 		if(f&DEPTH)  attachDepth(TEXTURE, Texture::D24S8);
 	}
@@ -105,8 +105,8 @@ FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffe
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	if(isDepthOnly()) {
-		glDrawBuffer(GL_BACK);
-		glReadBuffer(GL_BACK);
+		//glDrawBuffer(GL_BACK);
+		//glReadBuffer(GL_BACK);
 	}
 	s_bound = last;
 }
@@ -190,8 +190,8 @@ bool FrameBuffer::bind(const Rect& r) const {
 		glViewport(r.x,r.y,r.width, r.height);
 		// Disable colour drawing if depth only
 		if( isDepthOnly() ) {
-			glDrawBuffer(GL_NONE);
-			glReadBuffer(GL_NONE);
+			glDrawBuffers(0, GL_NONE);
+			//glReadBuffer(GL_NONE);
 		}
 		else {
 			static GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
@@ -202,8 +202,9 @@ bool FrameBuffer::bind(const Rect& r) const {
 	else {
 		glViewport(r.x,r.y,r.width, r.height);
 		if(s_bound->isDepthOnly()) {
-			glDrawBuffer(GL_BACK);
-			glReadBuffer(GL_BACK);
+			static GLenum buffers[] = { GL_BACK };
+			glDrawBuffers(1, buffers);
+			//glReadBuffer(GL_BACK);
 		}
 	}
 	s_bound = this;

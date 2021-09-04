@@ -123,7 +123,7 @@ void OrbitCamera::update(int mask) {
 	Input* in = Game::input();
 
 	// Zoom
-	int wheel = in->mouseWheel();
+	int wheel = in->mouse.wheel;
 	if(wheel && (mask&CU_WHEEL)) {
 		float distance = m_target.distance(m_position);
 		while(wheel<0) { distance *= 1+m_zoomFactor; wheel++; }
@@ -132,7 +132,7 @@ void OrbitCamera::update(int mask) {
 	}
 
 	//Rotation
-	Point m = in->queryMouse();
+	Point m = in->mouse;
 	if(m_active && (mask&CU_MOUSE)) {
 		float dx = m.x - m_last.x;
 		float dy = m.y - m_last.y;

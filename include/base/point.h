@@ -63,6 +63,7 @@ struct Rect {
 	void include(const Rect& r);
 	void include(const Point& p) { include(p.x, p.y); }
 	void intersect(const Rect& r);
+	Rect intersection(const Rect& r) const;
 
 	Point& position() { return *reinterpret_cast<Point*>(&x); }
 	Point& size()     { return *reinterpret_cast<Point*>(&width); }
@@ -101,6 +102,11 @@ inline void Rect::intersect(const Rect& r) {
 	if(y<r.y) y = r.y;
 	width = x2 - x;
 	height = y2 - y;
+}
+inline Rect Rect::intersection(const Rect& r) const {
+	Rect result = r;
+	result.intersect(*this);
+	return result; 
 }
 
 #endif

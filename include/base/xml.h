@@ -22,6 +22,18 @@ class RefString {
 	RefString& append(const char* s);
 };
 
+/** XML Attribute get helper */
+class XMLAttribute {
+	public:
+	XMLAttribute(const char* = 0);
+	operator const char*() const { return m_value; }
+	const char* asString() { return m_value; }
+	float asFloat() const;
+	unsigned asUint() const;
+	int asInt() const;
+	private:
+	RefString m_value;
+};
 
 /** XML Element class */
 class XMLElement {
@@ -53,8 +65,7 @@ class XMLElement {
 	void setAttribute(const char* name, float value);
 	void setAttribute(const char* name, int value, bool hex=false);
 	/** Attribute iteration */
-	base::HashMap<RefString>::const_iterator attributesBegin() const { return m_attributes.begin(); }
-	base::HashMap<RefString>::const_iterator attributesEnd() const { return m_attributes.end(); }
+	const base::HashMap<XMLAttribute>& attributes() const { return m_attributes; }
 	/** Add a child element */
 	XMLElement& add(const XMLElement& child);
 	/** Add child element */
@@ -85,7 +96,7 @@ class XMLElement {
 	int m_type; // XML::TagType
 	RefString m_name;
 	std::vector<XMLElement>  m_children;	// Child nodes
-	base::HashMap<RefString> m_attributes;	// Attribute map
+	base::HashMap<XMLAttribute> m_attributes;	// Attribute map
 };
 
 

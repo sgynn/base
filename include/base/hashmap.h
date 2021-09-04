@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <assert.h>
 
 #define THRESHOLD 1.5f
 
@@ -201,7 +202,7 @@ template<typename T> void base::HashMap<T>::resize(unsigned int newSize) {
 
 template<typename T> bool base::HashMap<T>::validate() const {
 	for(unsigned i=0; i<m_capacity; ++i) {
-		if(m_data[i] && index(m_data[i]->key, m_capacity)!=i) { asm("int $3"); return false; }
+		if(m_data[i] && index(m_data[i]->key, m_capacity)!=i) { assert(false); return false; }
 	}
 	return true;
 }

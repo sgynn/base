@@ -1,6 +1,11 @@
 #include <base/input.h>
 #include <cstdio>
 
+#ifndef __EMSCRIPTEN_PTHREADS__
+#error AAAAAAAAA
+#endif
+
+
 using namespace base;
 
 
@@ -58,7 +63,7 @@ void Joystick::setCalibration(uint n, const int* data) {
 void Input::updateJoysticks() {
 	for(size_t i=0; i<m_joysticks.size(); ++i) m_joysticks[i]->update();
 }
-Joystick& Input::joystick(uint i) {
+Joystick& Input::joystick(uint i) const {
 	if(i<m_joysticks.size()) return *m_joysticks[i];
 	static Joystick dummy(0,0);
 	return dummy;
@@ -236,6 +241,11 @@ bool Joystick::update() {
 	return true;
 }
 
+#endif
+
+#ifdef EMSCRIPTEN
+int Input::initialiseJoysticks() { return 0; }
+bool Joystick::update() { return true; }
 #endif
 
 

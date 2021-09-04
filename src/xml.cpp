@@ -8,11 +8,14 @@
 using namespace base;
 
 //// Reference counted string functions ////
-inline RefString::RefString(const char* str): s(0), ref(0) { 
+RefString::RefString(const char* str): s(0), ref(0) { 
 	if(str) { s=strdup(str); ref=new int(1); }
 }
-inline RefString::RefString(const RefString& r): s(r.s), ref(r.ref) {
+RefString::RefString(const RefString& r): s(r.s), ref(r.ref) {
 	if(ref) ++*ref;
+}
+RefString::~RefString() {
+	drop();
 }
 const RefString& RefString::operator=(const RefString& r) { 
 	drop();
@@ -30,7 +33,6 @@ inline void RefString::drop() {
 	if(s && *ref==0) printf("Error: Invalid reference %p\n", s);
 	if(s && --*ref==0) { free(s); delete ref; s=0; ref=0; } 
 }
-inline RefString::~RefString() { drop(); }
 
 inline RefString RefString::substr(size_t start, size_t len) {
 	size_t slen = s? strlen(s): 0;
@@ -72,6 +74,11 @@ inline unsigned parseUint(const char* c) {
 	if(c[0] == '#') return strtoul(c+1, &end, 16);
 	return strtoul(c, &end, 0);
 }
+
+XMLAttribute::XMLAttribute(const char* str) : m_value(str) {}
+float XMLAttribute::asFloat() const { return atof(m_value); }
+unsigned XMLAttribute::asUint() const { return parseUint(m_value); }
+int XMLAttribute::asInt() const { return parseInt(m_value); }
 
 
 XMLElement::XMLElement(int type): m_type(type) { }
@@ -119,7 +126,7 @@ XMLElement::operator bool() const {
 
 void XMLElement::setAttribute(const char* name, const char* value) {
 	assert(m_type == XML::TAG);
-	m_attributes[name] = value;
+	m_attributes[name] = XMLAttribute(value);
 }
 void XMLElement::setAttribute(const char* name, double v) {
 	assert(m_type == XML::TAG);
@@ -251,8 +258,8 @@ const char* XML::toString() const {
 		case TAG:
 			p += sprintf(s+p, "<%s", e->name());
 			// Attributes
-			for(HashMap<RefString>::const_iterator i=e->m_attributes.begin(); i!=e->m_attributes.end(); ++i) {
-				p += sprintf(s+p, " %s=\"%s\"", i->key, (const char*)i->value);
+			for(const auto& i: e->m_attributes) {
+				p += sprintf(s+p, " %s=\"%s\"", i.key, (const char*)i.value);
 			}
 			// Children?
 			if(e->size()) { sprintf(s+p, ">\n"); p+=2; }

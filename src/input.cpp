@@ -3,6 +3,7 @@
 
 #include "base/game.h" //Game included to get window position for mouse data
 #include "base/window.h"
+#include "base/inifile.h"
 
 #include <cstdio>
 
@@ -11,7 +12,7 @@ using namespace base;
 int   Input::s_map[256];
 char Input::s_ascii[2][128]; 
 
-Input::Input() {
+Input::Input() : mouse(m_mouseState) {
 	clear();
 	createMap();
 }
@@ -21,13 +22,17 @@ Input::~Input() {
 
 void Input::update() {
 	//clear frame data
-	memset(m_pressed, 0, 128);
-	m_mouseClick = 0;
-	m_mouseWheel = 0;
+	memset(m_keyChange, 0, 128);
 	m_lastKey = 0;
 	m_lastChar = 0;
-	//Cache mouse position
-	m_mousePosition = queryMouse();
+	// Mouse
+	Point mousePos = queryMouse();
+	m_mouseState.moved = mousePos - m_mouseState;
+	m_mouseState.x = mousePos.x;
+	m_mouseState.y = mousePos.y;
+	m_mouseState.pressed = 0;
+	m_mouseState.released = 0;
+	m_mouseState.wheel = 0;
 	// Joysticks
 	updateJoysticks();
 }
@@ -38,30 +43,41 @@ Point Input::queryMouse() {
 	return p;
 }
 void Input::warpMouse(int x, int y) {
-	m_mousePosition.set(x, y);
+	m_mouseState.x = x;
+	m_mouseState.y = y;
 	Game::window()->warpMouse(x, Game::window()->getSize().y - y);
 }
 
 void Input::setButton(int code, bool down, const Point& pt) {
-	int mask = 1<<(code-1);
-	if(down) m_mouseButton |= mask;
-	else m_mouseButton &= ~mask;
-	//Click
+	int mask = 1 << (code - 1);
 	if(down) {
-		m_mouseClick = mask; 
-		m_mouseClickPoint.x = pt.x;
-		m_mouseClickPoint.y = Game::window()->getSize().y - pt.y;
+		m_mouseState.pressed |= mask;
+		m_mouseState.button |= mask;
+	}
+	else {
+		m_mouseState.released |= mask;
+		m_mouseState.button &= ~mask;
 	}
 }
 
 //extern void setTestKey(int code);
 void Input::setKey(int code, bool down) {
-	m_key[s_map[code]] = down; 
+	int key = s_map[code];
+	m_key[key] = down; 
+	m_keyChange[key] |= down? 1: 2;
+	
+	int maskKey = 0;
+	if(key == KEY_LCONTROL || key==KEY_RCONTROL) maskKey = MODIFIER_CTRL;
+	else if(key == KEY_LSHIFT || key==KEY_RSHIFT) maskKey = MODIFIER_SHIFT;
+	else if(key == KEY_ALT) maskKey = MODIFIER_ALT;
+	else if(key == KEY_LMETA || key == KEY_RMETA) maskKey = MODIFIER_META;
+
 	if(down) {
-		m_pressed[s_map[code]] = down;
-		m_lastKey = s_map[code]; 
-		m_lastChar = s_ascii[ key(KEY_LSHIFT) || key(KEY_RSHIFT)? 1:0 ][ m_lastKey ];
+		m_keyMask |= maskKey;
+		m_lastKey = key;
+		m_lastChar = s_ascii[ m_keyMask & MODIFIER_SHIFT? 1: 0 ][ m_lastKey ];
 	}
+	else m_keyMask &= ~maskKey;
 }
 
 
@@ -110,9 +126,9 @@ void Input::createMap() {
 /*0xf0*/	0,	0,	0,	0,	0,	0,	0,	0,	
 /*0xf8*/	0,	0,	0,	0,	0,	0,	0,	0,
 	};
-	memcpy(s_map, map, 256 * sizeof(int));
+	#endif
 
-	#else
+	#ifdef LINUX
 	int map[256] = {
 /*0x00*/	0,	0,	0,	0,	0,	0,	0,	0,	
 /*0x08*/	0,	KEY_ESC,	KEY_1,	KEY_2,	KEY_3,	KEY_4,	KEY_5,	KEY_6,
@@ -152,17 +168,159 @@ void Input::createMap() {
 /*0xf0*/	0,	0,	0,	0,	0,	0,	0,	0,
 /*0xf8*/	0,	0,	0,	0,	0,	0,	0,	0,
 	};
-	memcpy(s_map, map, 256 * sizeof(int));
 	#endif
+	
+	#ifdef EMSCRIPTEN
+	int map[256] = {
+/*0x00*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0x08*/	KEY_BACKSPACE,	KEY_TAB,	0,	0,	0,	KEY_RETURN,	0,	0,
+/*0x10*/	KEY_LSHIFT,	KEY_LCONTROL,	KEY_ALT,	KEY_PAUSE,	KEY_CAPSLOCK,	0,	0,	0,
+/*0x18*/	0,	0,	0,	KEY_ESC,	0,	0,	0,	0,
+/*0x20*/	KEY_SPACE,	KEY_PGUP,	KEY_PGDN,	KEY_END,	KEY_HOME,	KEY_LEFT,	KEY_UP,	KEY_RIGHT,
+/*0x28*/	KEY_DOWN,	0,	0,	0,	0,	KEY_INSERT,	KEY_DEL,	0,
+/*0x30*/	KEY_0,	KEY_1,	KEY_2,	KEY_3,	KEY_4,	KEY_5,	KEY_6,	KEY_7,
+/*0x38*/	KEY_8,	KEY_9,	0,	KEY_COLON,	0,	KEY_EQUALS,	0,	0,
+/*0x40*/	0,	KEY_A,	KEY_B,	KEY_C,	KEY_D,	KEY_E,	KEY_F,	KEY_G,
+/*0x48*/	KEY_H,	KEY_I,	KEY_J,	KEY_K,	KEY_L,	KEY_M,	KEY_N,	KEY_O,
+/*0x50*/	KEY_P,	KEY_Q,	KEY_R,	KEY_S,	KEY_T,	KEY_U,	KEY_V,	KEY_W,
+/*0x58*/	KEY_X,	KEY_Y,	KEY_Z,	KEY_LMETA,	0,	0,	0,	0,
+/*0x60*/	KEY_0_PAD,	KEY_1_PAD,	KEY_2_PAD,	KEY_3_PAD,	KEY_4_PAD,	KEY_5_PAD,	KEY_6_PAD,	KEY_7_PAD,
+/*0x68*/	KEY_8_PAD,	KEY_9_PAD,	KEY_ASTERISK,	KEY_PLUS_PAD,	0,	KEY_MINUS_PAD,	KEY_DEL_PAD,	KEY_SLASH_PAD,
+/*0x70*/	KEY_F1,	KEY_F2,	KEY_F3,	KEY_F4,	KEY_F5,	KEY_F6,	KEY_F7,	KEY_F8,
+/*0x78*/	KEY_F9,	KEY_F10,KEY_F11,KEY_F12,0,	0,	0,	0,
+/*0x80*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0x88*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0x90*/	KEY_NUMLOCK,	KEY_SCRLOCK,	0,	0,	0,	0,	0,	0,
+/*0x98*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0xa0*/	0,	0,	0,	KEY_HASH,	0,	0,	0,	0,
+/*0xa8*/	0,	0,	0,	0,	0,	KEY_MINUS,	0,	0,
+/*0xb0*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0xb8*/	0,	0,	0,	0,	KEY_COMMA,	0,	KEY_STOP,	KEY_SLASH,
+/*0xc0*/	KEY_TICK,	0,	0,	0,	0,	0,	0,	0,
+/*0xc8*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0xd0*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0xd8*/	0,	0,	0,	KEY_OPENBRACE,	KEY_BACKSLASH,	KEY_CLOSEBRACE,	KEY_QUOTE,	0,
+/*0xe0*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0xe8*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0xf0*/	0,	0,	0,	0,	0,	0,	0,	0,
+/*0xf8*/	0,	0,	0,	0,	0,	0,	0,	0,
+	};
+	#endif
+
+	memcpy(s_map, map, 256 * sizeof(int));
 }
 
 void Input::clear() {
 	memset(m_key,	  0, 128 * sizeof(bool));
-	memset(m_pressed, 0, 128 * sizeof(bool));
+	memset(m_keyChange, 0, 128);
+	memset(&m_mouseState, 0, sizeof(Mouse));
 	m_lastKey = 0;
 	m_lastChar = 0;
-	m_mouseClick = 0;
-	m_mouseButton = 0;
-	m_mousePosition.x = m_mousePosition.y = 0;
 }
+
+
+// ====================================================== //
+
+uint Input::getAction(const char* name) {
+	uint key = m_names.get(name, m_names.size());
+	if(key==m_names.size()) m_names[name] = key;
+	return key;
+}
+
+uint Input::setAction(const char* name, uint key) {
+	if(m_names.contains(name)) printf("Warning: setAction %s already exists as %s\n", name, getActionName(key));
+	m_names[name] = key;
+	return key;
+}
+
+void Input::bind(uint action, uint keycode, uint mask) {
+	while(m_binding.size() < action) m_binding.push_back(std::vector<Binding>());
+	m_binding[action].push_back(Binding{keycode, 0, mask});
+}
+
+void Input::bindMouse(uint action, uint button) {
+	while(m_binding.size() < action) m_binding.push_back(std::vector<Binding>());
+	m_binding[action].push_back(Binding{button, 1, 0});
+}
+
+void Input::bindJoystick(uint action, uint js, uint button) {
+	while(m_binding.size() < action) m_binding.push_back(std::vector<Binding>());
+	m_binding[action].push_back(Binding{button, 2, js});
+}
+
+void Input::unbind(uint action) {
+	if(action < m_binding.size()) m_binding[action].clear();
+}
+
+void Input::unbindAll() {
+	for(auto& action: m_binding) action.clear();
+}
+
+bool Input::check(uint action) const {
+	if(action >= m_binding.size()) return false;
+	for(Binding b: m_binding[action]) {
+		switch(b.type) {
+		case 0: if(key(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask))) return true; break;
+		case 1: if(mouse.button & 1<<b.button) return true; break;
+		case 2: if(joystick(b.mask).button(b.button)) return true; break;
+		}
+	}
+	return false;
+}
+
+bool Input::pressed(uint action) const {
+	if(action >= m_binding.size()) return false;
+	for(Binding b: m_binding[action]) {
+		switch(b.type) {
+		case 0: if(keyPressed(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask))) return true; break;
+		case 1: if(mouse.pressed & 1<<b.button) return true; break;
+		case 2: if(joystick(b.mask).pressed(b.button)) return true; break;
+		}
+	}
+	return false;
+}
+
+bool Input::released(uint action) const {
+	if(action >= m_binding.size()) return false;
+	for(Binding b: m_binding[action]) {
+		switch(b.type) {
+		case 0: if(keyReleased(b.button)) return true; break;
+		case 1: if(mouse.released & 1<<b.button) return true; break;
+		case 2: if(joystick(b.mask).pressed(b.button)) return true; break;
+		}
+	}
+	return false;
+}
+
+const char* Input::getActionName(uint action) const {
+	for(auto& i: m_names) if(i.value == action) return i.key;
+	return nullptr;
+}
+
+void Input::loadActions(const INIFile& file) {
+	union { Binding binding; uint value; } key;
+	for(const auto& i: file["input"]) {
+		uint action = getAction(i.key);
+		key.value = i.value;
+		m_binding[action].push_back(key.binding);
+	}
+}
+
+void Input::saveActions(INIFile& file) const {
+	union { Binding binding; uint value; } key;
+	INIFile::Section section = file["input"];
+	for(size_t action=0; action<m_binding.size(); ++action) {
+		if(!m_binding[action].empty()) {
+			const char* name = getActionName(action);
+			for(const Binding& binding: m_binding[action]) {
+				key.binding = binding;
+				section.add(name, key.value);
+			}
+		}
+	}
+}
+
+
+
+
 

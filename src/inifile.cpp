@@ -156,6 +156,14 @@ void INIFile::Section::set(const char* c, const Value& v) {
 	}
 	else m_values[index].value = v;
 }
+void INIFile::Section::add(const char* key, const Value& value) {
+	auto item = m_map.find(key);
+	if(item == m_map.end()) {
+		m_map.insert(key, m_values.size());
+		key = m_map.find(key)->key;
+	}
+	m_values.push_back(KeyValue{item->key, value});
+}
 const INIFile::Value& INIFile::Section::get(const char* c) const {
 	int index = m_map.get(c, -1);
 	if(index<0) return nullValue;
@@ -195,6 +203,7 @@ INIFile::Value::operator float() const {
 	case FLOAT:  return m_f;
 	case BOOL:   return m_b? 1.0f: 0;
 	case INTEGER:return m_i;
+	case UNSIGNED: return m_u;
 	default: return 0;
 	}
 }
@@ -204,6 +213,7 @@ INIFile::Value::operator bool() const {
 	case STRING: return strcmp(m_source, "1")==0 || strcmp(m_source, "true")==0 || strcmp(m_source, "yes")==0;
 	case FLOAT:  return m_f!=0;
 	case BOOL:   return m_b;
+	case UNSIGNED:
 	case INTEGER:return m_i;
 	default: return 0;
 	}
@@ -215,9 +225,22 @@ INIFile::Value::operator int() const {
 	case FLOAT:  return m_f;
 	case BOOL:   return m_b? 1: 0;
 	case INTEGER:return m_i;
+	case UNSIGNED: return m_i;
 	default: return 0;
 	}
 }
+INIFile::Value::operator unsigned() const {
+	switch(m_type) {
+	case SOURCE: return m_source? atoi(m_source): 0;
+	case STRING: return atoi(m_c);
+	case FLOAT:  return m_f;
+	case BOOL:   return m_b? 1: 0;
+	case INTEGER:return m_i;
+	case UNSIGNED: return m_u;
+	default: return 0;
+	}
+}
+
 void INIFile::Value::setType(int t) {
 	m_type = t;
 	if(m_source) free(m_source);
@@ -229,6 +252,7 @@ void INIFile::Value::setString() {
 	case FLOAT:   sprintf(m_source, "%f", m_f); break;
 	case BOOL:    strcpy(m_source, m_b? "true": "false"); break;
 	case INTEGER: sprintf(m_source, "%d", m_i); break;
+	case UNSIGNED: sprintf(m_source, "%u", m_u); break;
 	default: break;
 	}
 }

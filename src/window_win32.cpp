@@ -275,7 +275,7 @@ uint Win32Window::pumpEvents(Input* input) {
 		case WM_RBUTTONDOWN:	input->setButton(3, 1, MPOS(msg)); break;
 		case WM_RBUTTONUP:		input->setButton(3, 0, MPOS(msg)); break;
 		case WM_MOUSEWHEEL:
-			input->m_mouseWheel += (float)GET_WHEEL_DELTA_WPARAM(msg.wParam) / WHEEL_DELTA; 
+			input->m_mouseState.wheel += (float)GET_WHEEL_DELTA_WPARAM(msg.wParam) / WHEEL_DELTA; 
 			break;
 		
 		case WM_MOUSEMOVE: //mouse moved, if not polling need some way of getting this? is it nessesary?

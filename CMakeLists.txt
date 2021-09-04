@@ -112,7 +112,15 @@ set(headers
 	include/base/vec.h
 )
 
-if(MINGW)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+	set(WEB 1)
+endif()
+
+
+if(WEB)
+	list(APPEND src src/window_em.cpp)
+	list(APPEND headers include/base/window_em.h)
+elseif(MINGW)
 	list(APPEND src src/window_win32.cpp)
 	list(APPEND headers include/base/window_win32.h)
 elseif(UNIX)
@@ -127,7 +135,10 @@ include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 
 
-if(MINGW)
+if(WEB)
+	set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -pthread -s USE_PTHREADS=1")
+	install(TARGETS base DESTINATION lib)
+elseif(MINGW)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
 	install(TARGETS base DESTINATION lib)
 elseif(UNIX)

@@ -1,8 +1,9 @@
 //state manager implementation
 
 #include "base/state.h"
-
 #include "base/game.h"
+#include <cstdio>
+
 #define time Game::frameTime()
 
 using namespace base;

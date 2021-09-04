@@ -26,7 +26,7 @@ class RangeT {
 	T    clamp(const T& v) const;					/// Clamp a value within this range
 	T    wrap(const T& v) const;					/// Wrap a value witin this range
 	T    size() const;								/// Return the size of the range
-	bool isValid() const;							/// Is min < max
+	bool isValid() const;							/// Is min <= max
 	bool isEmpty() const;							/// Is min == max
 
 	T map(float t) const;							/// Map a 0-1 value to this range
@@ -66,7 +66,7 @@ class BoundingBox {
 	bool contains  (const vec3& p) const;			/// Is a point within the bounding box */
 	bool contains  (const BoundingBox& b) const;	/// Is a box entirely within this bounding box */
 	bool intersects(const BoundingBox& b) const;	/// Does a box intersect with this box */
-	bool isValid() const;							/// Is the box valid? min < max
+	bool isValid() const;							/// Is the box valid? min <= max
 	bool isEmpty() const;							/// Is the box empty? min = max
 	vec3 clamp(const vec3&) const;					/// Clamp a vector inside box
 
@@ -103,7 +103,7 @@ class BoundingBox2D {
 	bool contains  (const vec2& p) const;			/// Is a point within the bounding box */
 	bool contains  (const BoundingBox2D& b) const;	/// Is a box entirely within this bounding box */
 	bool intersects(const BoundingBox2D& b) const;	/// Does a box intersect with this box */
-	bool isValid() const;							/// Is the box valid? min < max
+	bool isValid() const;							/// Is the box valid? min <= max
 	bool isEmpty() const;							/// Is the box empty? min = max
 	vec2 clamp(const vec2&) const;					/// Clamp a point inside the box
 };
@@ -146,7 +146,7 @@ template<typename T> void RangeT<T>::expand(const T& v)                   { min 
 template<typename T> T    RangeT<T>::clamp(const T& v)  const  { return v<min? min: v>max? max: v; }
 template<typename T> T    RangeT<T>::wrap(const T& v)  const   { return  v - floor((v-min)/(max-min))*(max-min); }
 template<typename T> T    RangeT<T>::size() const              { return  max - min; }
-template<typename T> bool RangeT<T>::isValid() const           { return  max > min; }
+template<typename T> bool RangeT<T>::isValid() const           { return  max >= min; }
 template<typename T> bool RangeT<T>::isEmpty() const           { return  max == min; }
 template<typename T> T    RangeT<T>::map(float t) const        { return  min + t * (max - min); }
 template<typename T> float RangeT<T>::unmap(const T& t) const  { return  (t - min) / (max - min); }
@@ -159,7 +159,7 @@ inline BoundingBox& BoundingBox::setInvalid()	{ min.x=min.y=min.z=1e37f; max.x=m
 inline BoundingBox& BoundingBox::set(const vec3& vmin, const vec3& vmax) { min=vmin; max=vmax; return *this; }
 inline BoundingBox& BoundingBox::set(float a, float b, float c, float d, float e, float f) { min.x=a; min.y=b, min.z=c; max.x=d; max.y=e; max.z=f; return *this; }
 
-inline bool BoundingBox::isValid() const { return max.x>min.x && max.y>min.y && max.z>min.z; }
+inline bool BoundingBox::isValid() const { return max.x>=min.x && max.y>=min.y && max.z>=min.z; }
 inline bool BoundingBox::isEmpty() const { return max.x==min.x && max.y==min.y && max.z==min.z; }
 inline vec3 BoundingBox::size()   const { return max-min; }
 inline vec3 BoundingBox::centre() const { return (min+max)*0.5; }
@@ -212,7 +212,7 @@ inline BoundingBox2D& BoundingBox2D::setInvalid()	{ min.x=min.y=1e37f; max.x=max
 inline BoundingBox2D& BoundingBox2D::set(const vec2& vmin, const vec2& vmax) { min=vmin; max=vmax; return *this; }
 inline BoundingBox2D& BoundingBox2D::set(float a, float b, float c, float d) { min.x=a; min.y=b; max.x=c; max.y=d; return *this; }
 
-inline bool BoundingBox2D::isValid() const { return max.x>min.x && max.y>min.y; }
+inline bool BoundingBox2D::isValid() const { return max.x>=min.x && max.y>=min.y; }
 inline bool BoundingBox2D::isEmpty() const { return max.x==min.x && max.y==min.y; }
 inline vec2 BoundingBox2D::size()   const { return max-min; }
 inline vec2 BoundingBox2D::centre() const { return (min+max)*0.5; }

@@ -2,6 +2,7 @@
 #define _BASE_INPUT_
 
 #include "math.h"
+#include "hashmap.h"
 #include <vector>
 
 namespace base {
@@ -131,12 +132,40 @@ namespace base {
 		KEY_RCTRL	= 118,
 		KEY_ALT		= 119,
 		KEY_ALTGR	= 120,
-		KEY_LWIN	= 121,
-		KEY_RWIN	= 122,
+		KEY_LMETA	= 121,
+		KEY_RMETA	= 122,
 		KEY_MENU      	= 123,
 		KEY_SCRLOCK	= 124,
 		KEY_NUMLOCK	= 125,
 		KEY_CAPSLOCK	= 126,
+	};
+
+	enum KeyModifiers {
+		MODIFIER_NONE=0,
+		MODIFIER_CTRL=1,
+		MODIFIER_SHIFT=2,
+		MODIFIER_ALT=4,
+		MODIFIER_META=8,
+		MODIFIER_ANY=16,
+	};
+
+	enum MouseButton {
+		MOUSE_LEFT = 1,
+		MOUSE_MIDDLE = 2,
+		MOUSE_RIGHT = 4,
+		MOUSE_SIDE1 = 8,
+		MOUSE_SIDE2 = 16
+	};
+
+	/// Mouse class -----------------------------------------------------------------
+	struct Mouse {
+		int x, y;		// Position - origin top-left
+		int button;		// Currently held buttons
+		int pressed;	// button mask presse last frame
+		int released;	// button mask released last frame
+		float wheel;	// Wheel delta since last frame
+		Point moved;	// Movement since last frame
+		operator Point() const { return Point(x,y); }
 	};
 
 	/// Joystick class --------------------------------------------------------------
@@ -174,10 +203,11 @@ namespace base {
 		uint8* m_absMap;
 		bool   m_created;
 	};
-	
+
 	// Global input class -------------------------------------------------------------
 	class Input {
 		friend class Window;
+		friend class EMWindow;
 		friend class X11Window;
 		friend class Win32Window;
 		public:
@@ -187,38 +217,52 @@ namespace base {
 		/** Get the state of a key */
  		bool key(int k) const { return m_key[k]; }
 		/** Was a key pressed in this frame */
-		bool pressed(int k) const { return m_pressed[k]; }
+		bool keyPressed(int k) const { return m_keyChange[k]&1; }
+		/** Was a key released in this frame */
+		bool keyReleased(int k) const { return m_keyChange[k]&2; }
 		/** The code of the last key pressed */
 		int lastKey() const { return m_lastKey; }
 		/** The ascii character of the last key pressed. */
 		char lastChar() const { return m_lastChar; }
+		/** Get key shift mask */
+		int getKeyModifier() const { return m_keyMask; }
 		
-		/** Get the mouse buttons that are pressed (bit1:left, bit2:middle, bit3:right etc) */
-		int  mouse() const { return m_mouseButton; }
-		/** Get the mouse position from bottom left of the screen. @returns mouse button state */
-		int  mouse(int&x, int& y) const { x = m_mousePosition.x; y=m_mousePosition.y; return m_mouseButton; }
-		/** Get the buttons that were pressed in this frame */
-		int  mouseClick() const { return m_mouseClick; }
-		/** Get the position of the last click */
-		int  mouseClick(int& x, int& y) const{ x = m_mouseClickPoint.x; y = m_mouseClickPoint.y; return m_mouseClick; } 
-		/** Get the mouse wheel delta of this frame */
-		float mouseWheel() const { return m_mouseWheel; }
 		/** Warp the mouse pointer to a location. Origin botom left of the window */
 		void warpMouse(int x, int y);
 		/** Directly query the mouse location */
 		Point queryMouse();
+
+		// Mouse state
+		const Mouse& mouse;
 		
 		/** Get a joystick state */
-		Joystick& joystick(uint id=0); 
+		Joystick& joystick(uint id=0) const;
 		/** Initialise joysticks - returns number found */
 		int initialiseJoysticks();
+
+		/// Binding
+		uint getAction(const char* name);	// Will create it if it does not exist
+		uint setAction(const char* name, uint action); // Use to force actions to an enum or something
+		const char* getActionName(uint action) const;
+		void bind(uint action, uint keycode, uint modifiers=MODIFIER_ANY);
+		void bindMouse(uint action, uint button);
+		void bindJoystick(uint action, uint joystick, uint button);
+		void bindJoystick(uint action, uint joystick, uint axis, float threshold);
+		void unbind(uint action);
+		void unbindAll();
+		bool check(uint action) const;
+		bool pressed(uint action) const;
+		bool released(uint action) const;
+		void loadActions(const class INIFile&);
+		void saveActions(class INIFile&) const;
 		
 		/** Update must be called once per frame BEFORE window events are processed */
 		void update();
 		private:
 		
-		bool m_key[128];		//keys that are currently pressed
-		bool m_pressed[128];	//keys that were pressed duting tha last frame
+		bool m_key[128];		// state, pressed, released
+		char m_keyChange[128];	// keys that were pressed or released during the last frame
+		int  m_keyMask;			// current key mask state
 		int  m_lastKey;			//the last key that was pressed
 		char m_lastChar;		//Ascii character of last key
 		
@@ -226,11 +270,7 @@ namespace base {
 		static char s_ascii[2][128];	//library keycode to ascii map
 		
 		//Mouse stuff 
-		int   m_mouseButton;
-		Point m_mousePosition;
-		int   m_mouseClick;
-		Point m_mouseClickPoint;
-		float m_mouseWheel;
+		Mouse m_mouseState;
 
 		// Joysticks
 		std::vector<Joystick*> m_joysticks;
@@ -241,6 +281,11 @@ namespace base {
 		void setKey(int code, bool down);	//Set a key state (used by system)
 		void setButton(int code, bool down, const Point&); //Set mouse button state (used by system)
 		void clear();	//set all keys to 0
+
+		// Input binding
+		HashMap<uint> m_names;
+		struct Binding { uint button:8; uint type:2; uint mask:6; }; // 16 bits
+		std::vector< std::vector<Binding> > m_binding;
 	};
 };
 
