@@ -234,17 +234,17 @@ uint Input::setAction(const char* name, uint key) {
 }
 
 void Input::bind(uint action, uint keycode, uint mask) {
-	while(m_binding.size() < action) m_binding.push_back(std::vector<Binding>());
+	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
 	m_binding[action].push_back(Binding{keycode, 0, mask});
 }
 
 void Input::bindMouse(uint action, uint button) {
-	while(m_binding.size() < action) m_binding.push_back(std::vector<Binding>());
+	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
 	m_binding[action].push_back(Binding{button, 1, 0});
 }
 
 void Input::bindJoystick(uint action, uint js, uint button) {
-	while(m_binding.size() < action) m_binding.push_back(std::vector<Binding>());
+	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
 	m_binding[action].push_back(Binding{button, 2, js});
 }
 

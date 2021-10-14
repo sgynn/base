@@ -8,8 +8,32 @@
 
 using namespace base;
 
-GameState::GameState(float in, float out, StateFlags flags) : m_state(T_IN), m_transition(0), m_stateManager(0), m_in(in), m_out(out), m_flags(flags) {}
-GameState::~GameState() {}
+GameState::GameState(float in, float out, StateFlags flags) : m_state(T_IN), m_transition(0), m_stateManager(0), m_in(in), m_out(out), m_flags(flags) {
+	addComponent(this);
+}
+GameState::~GameState() {
+	for(GameStateComponent* c: m_updateComponents) {
+		if(--c->m_references==0) delete c;
+	}
+}
+
+template<class T> inline void addToList(std::vector<GameStateComponent*>& list, GameStateComponent* c, const T& less) {
+	for(auto i=list.begin(); i!=list.end(); ++i) {
+		if(less(c, *i)) {
+			list.insert(i, c);
+			return;
+		}
+	}
+	list.push_back(c);
+}
+
+
+void GameState::addComponent(GameStateComponent* c) {
+	++c->m_references;
+	addToList(m_updateComponents, c, [](GameStateComponent* a, GameStateComponent* b) { return a->m_updateOrder < b->m_updateOrder; });
+	addToList(m_drawComponents, c, [](GameStateComponent* a, GameStateComponent* b) { return a->m_drawOrder < b->m_drawOrder; });
+}
+
 int GameState::updateState() {
 	//update transition
 	if(m_state==T_IN) {
@@ -25,17 +49,27 @@ int GameState::updateState() {
 		if(m_transition<=0.0f) return 0;
 	}
 	
-	//call virtual update function
-	update();
-	
+	m_componentFlags = 0;
+	for(GameStateComponent* c: m_updateComponents) c->update();
+
 	return 1;
 }
+
+void GameState::drawState() {
+	for(GameStateComponent* c: m_drawComponents) c->draw();
+}
+
 void GameState::changeState(GameState* state) {
 	m_stateManager->change(state);
 }
+
 GameState* GameState::lastState() const {
 	return m_stateManager->prevState;
 }
+
+
+// ------------------------------------------------------------------------------------------- //
+
 
 StateManager::StateManager() : currentState(0), nextState(0), prevState(0), m_running(true) {}
 StateManager::~StateManager() {}
@@ -60,8 +94,8 @@ void StateManager::update() {
 }
 
 void StateManager::draw() {
-	if(nextState && (nextState->m_flags&OVERLAP)) nextState->draw(); //Draw the other state if set to overlap
-	if(currentState) currentState->draw();
+	if(nextState && (nextState->m_flags&OVERLAP)) nextState->drawState(); //Draw the other state if set to overlap
+	if(currentState) currentState->drawState();
 }
 
 /** Change the game state */
@@ -80,3 +114,4 @@ bool StateManager::change(GameState* next) {
 void StateManager::quit() {
 	m_running = false;
 }
+

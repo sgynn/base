@@ -1,11 +1,6 @@
 #include <base/input.h>
 #include <cstdio>
 
-#ifndef __EMSCRIPTEN_PTHREADS__
-#error AAAAAAAAA
-#endif
-
-
 using namespace base;
 
 
