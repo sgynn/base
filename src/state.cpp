@@ -13,7 +13,7 @@ GameState::GameState(float in, float out, StateFlags flags) : m_state(T_IN), m_t
 }
 GameState::~GameState() {
 	for(GameStateComponent* c: m_updateComponents) {
-		if(--c->m_references==0) delete c;
+		if(--c->m_references==0 && c!=this) delete c;
 	}
 }
 
