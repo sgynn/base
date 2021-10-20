@@ -43,8 +43,8 @@ class GameState : public GameStateComponent {
 		virtual void begin() {}
 		virtual void end() {}
 
-		virtual void update() = 0;
-		virtual void draw() = 0;
+		void update() {}
+		void draw() {}
 
 		void addComponent(GameStateComponent*);
 		unsigned getComponentFlags() const { return m_componentFlags; }

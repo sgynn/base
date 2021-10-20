@@ -31,6 +31,9 @@ class RangeT {
 
 	T map(float t) const;							/// Map a 0-1 value to this range
 	float unmap(const T& t) const;					/// Map a value to a 0-1 range wrt this 
+
+	bool operator==(const RangeT<T>& r) const;
+	bool operator!=(const RangeT<T>& r) const;
 };
 
 typedef RangeT<float> Rangef, Range;
@@ -57,6 +60,9 @@ class BoundingBox {
 	BoundingBox  operator- (const vec3& v) const { return BoundingBox(min-v, max-v); }
 	BoundingBox& operator+=(const vec3& v) { min+=v, max+=v; return *this;  }
 	BoundingBox& operator-=(const vec3& v) { min-=v, max-=v; return *this;  }
+
+	bool operator==(const BoundingBox& b) const;
+	bool operator!=(const BoundingBox& b) const;
 	
 	vec3 size      () const;						/// Get the size of the box
 	vec3 centre    () const;						/// Get the box centre point
@@ -94,6 +100,9 @@ class BoundingBox2D {
 	BoundingBox2D  operator- (const vec2& v) const { return BoundingBox2D(min-v, max-v); }
 	BoundingBox2D& operator+=(const vec2& v) { min+=v, max+=v; return *this;  }
 	BoundingBox2D& operator-=(const vec2& v) { min-=v, max-=v; return *this;  }
+
+	bool operator==(const BoundingBox2D& b) const;
+	bool operator!=(const BoundingBox2D& b) const;
 	
 	vec2 size      () const;						/// Get the size of the box
 	vec2 centre    () const;						/// Get the box centre point
@@ -118,6 +127,9 @@ template<class T> class AabbT {
 	AabbT& setInvalid();
 	AabbT& set(const T& centre, const T& extent);
 	AabbT& setRange(const T& min, const T& max);
+
+	bool operator==(const AabbT& b) const;
+	bool operator!=(const AabbT& b) const;
 
 	T size() const;
 	bool valid() const;
@@ -150,6 +162,8 @@ template<typename T> bool RangeT<T>::isValid() const           { return  max >= 
 template<typename T> bool RangeT<T>::isEmpty() const           { return  max == min; }
 template<typename T> T    RangeT<T>::map(float t) const        { return  min + t * (max - min); }
 template<typename T> float RangeT<T>::unmap(const T& t) const  { return  (t - min) / (max - min); }
+template<typename T> bool  RangeT<T>::operator==(const RangeT<T>& o) const  { return  min==o.min && max==o.max; }
+template<typename T> bool  RangeT<T>::operator!=(const RangeT<T>& o) const  { return  min!=o.min || max!=o.max; }
 
 
 
@@ -158,6 +172,9 @@ template<typename T> float RangeT<T>::unmap(const T& t) const  { return  (t - mi
 inline BoundingBox& BoundingBox::setInvalid()	{ min.x=min.y=min.z=1e37f; max.x=max.y=max.z=-1e37f; return *this; }
 inline BoundingBox& BoundingBox::set(const vec3& vmin, const vec3& vmax) { min=vmin; max=vmax; return *this; }
 inline BoundingBox& BoundingBox::set(float a, float b, float c, float d, float e, float f) { min.x=a; min.y=b, min.z=c; max.x=d; max.y=e; max.z=f; return *this; }
+
+bool BoundingBox::operator==(const BoundingBox& o) const  { return  min==o.min && max==o.max; }
+bool BoundingBox::operator!=(const BoundingBox& o) const  { return  min!=o.min || max!=o.max; }
 
 inline bool BoundingBox::isValid() const { return max.x>=min.x && max.y>=min.y && max.z>=min.z; }
 inline bool BoundingBox::isEmpty() const { return max.x==min.x && max.y==min.y && max.z==min.z; }
@@ -211,6 +228,9 @@ inline vec3 BoundingBox::getCorner(int i) const {
 inline BoundingBox2D& BoundingBox2D::setInvalid()	{ min.x=min.y=1e37f; max.x=max.y=-1e37f; return *this; }
 inline BoundingBox2D& BoundingBox2D::set(const vec2& vmin, const vec2& vmax) { min=vmin; max=vmax; return *this; }
 inline BoundingBox2D& BoundingBox2D::set(float a, float b, float c, float d) { min.x=a; min.y=b; max.x=c; max.y=d; return *this; }
+
+bool BoundingBox2D::operator==(const BoundingBox2D& o) const  { return  min==o.min && max==o.max; }
+bool BoundingBox2D::operator!=(const BoundingBox2D& o) const  { return  min!=o.min || max!=o.max; }
 
 inline bool BoundingBox2D::isValid() const { return max.x>=min.x && max.y>=min.y; }
 inline bool BoundingBox2D::isEmpty() const { return max.x==min.x && max.y==min.y; }
@@ -273,6 +293,8 @@ template<> inline bool AabbT<vec3>::valid() const { return extent.x>=0 && extent
 template<> inline bool AabbT<vec3>::empty() const { return extent.x==0 || extent.y==0 || extent.z==0; }
 template<> inline bool AabbT<vec2>::contains(const vec2& point) const { return fabs(centre.x-point.x)<=extent.x && fabs(centre.y-point.y)<extent.y; }
 
+template<typename T> bool AabbT<T>::operator==(const AabbT<T>& o) const  { return centre==o.centre && extent==o.extent; }
+template<typename T> bool AabbT<T>::operator!=(const AabbT<T>& o) const  { return centre!=o.centre || extent!=o.extent; }
 
 
 #endif
