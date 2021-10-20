@@ -173,8 +173,8 @@ inline BoundingBox& BoundingBox::setInvalid()	{ min.x=min.y=min.z=1e37f; max.x=m
 inline BoundingBox& BoundingBox::set(const vec3& vmin, const vec3& vmax) { min=vmin; max=vmax; return *this; }
 inline BoundingBox& BoundingBox::set(float a, float b, float c, float d, float e, float f) { min.x=a; min.y=b, min.z=c; max.x=d; max.y=e; max.z=f; return *this; }
 
-bool BoundingBox::operator==(const BoundingBox& o) const  { return  min==o.min && max==o.max; }
-bool BoundingBox::operator!=(const BoundingBox& o) const  { return  min!=o.min || max!=o.max; }
+inline bool BoundingBox::operator==(const BoundingBox& o) const  { return  min==o.min && max==o.max; }
+inline bool BoundingBox::operator!=(const BoundingBox& o) const  { return  min!=o.min || max!=o.max; }
 
 inline bool BoundingBox::isValid() const { return max.x>=min.x && max.y>=min.y && max.z>=min.z; }
 inline bool BoundingBox::isEmpty() const { return max.x==min.x && max.y==min.y && max.z==min.z; }
@@ -229,8 +229,8 @@ inline BoundingBox2D& BoundingBox2D::setInvalid()	{ min.x=min.y=1e37f; max.x=max
 inline BoundingBox2D& BoundingBox2D::set(const vec2& vmin, const vec2& vmax) { min=vmin; max=vmax; return *this; }
 inline BoundingBox2D& BoundingBox2D::set(float a, float b, float c, float d) { min.x=a; min.y=b; max.x=c; max.y=d; return *this; }
 
-bool BoundingBox2D::operator==(const BoundingBox2D& o) const  { return  min==o.min && max==o.max; }
-bool BoundingBox2D::operator!=(const BoundingBox2D& o) const  { return  min!=o.min || max!=o.max; }
+inline bool BoundingBox2D::operator==(const BoundingBox2D& o) const  { return  min==o.min && max==o.max; }
+inline bool BoundingBox2D::operator!=(const BoundingBox2D& o) const  { return  min!=o.min || max!=o.max; }
 
 inline bool BoundingBox2D::isValid() const { return max.x>=min.x && max.y>=min.y; }
 inline bool BoundingBox2D::isEmpty() const { return max.x==min.x && max.y==min.y; }
