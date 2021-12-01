@@ -61,43 +61,43 @@ typedef void (APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC) (GLuint index, GLint size,
 #endif
 
 #ifdef WIN32
-PFNGLCREATESHADERPROC	glCreateShader		= 0;
-PFNGLSHADERSOURCEPROC	glShaderSource		= 0;
-PFNGLCOMPILESHADERPROC	glCompileShader		= 0;
-PFNGLCREATEPROGRAMPROC	glCreateProgram		= 0;
-PFNGLATTACHSHADERPROC	glAttachShader		= 0;
-PFNGLLINKPROGRAMPROC	glLinkProgram		= 0;
-PFNGLDELETESHADERPROC	glDeleteShader		= 0;
-PFNGLDELETEPROGRAMPROC	glDeleteProgram		= 0;
-PFNGLUSEPROGRAMPROC	glUseProgram		= 0;
-PFNGLGETPROGRAMIVPROC	glGetProgramiv		= 0;
-PFNGLGETSHADERIVPROC	glGetShaderiv		= 0;
-PFNGLISPROGRAMPROC	glIsProgram		= 0;
-PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog	= 0;
-PFNGLGETSHADERINFOLOGPROC  glGetShaderInfoLog	= 0;
-PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation= 0;
-PFNGLGETATTRIBLOCATIONPROC  glGetAttribLocation = 0;
+static PFNGLCREATESHADERPROC	glCreateShader		= 0;
+static PFNGLSHADERSOURCEPROC	glShaderSource		= 0;
+static PFNGLCOMPILESHADERPROC	glCompileShader		= 0;
+static PFNGLCREATEPROGRAMPROC	glCreateProgram		= 0;
+static PFNGLATTACHSHADERPROC	glAttachShader		= 0;
+static PFNGLLINKPROGRAMPROC	glLinkProgram		= 0;
+static PFNGLDELETESHADERPROC	glDeleteShader		= 0;
+static PFNGLDELETEPROGRAMPROC	glDeleteProgram		= 0;
+static PFNGLUSEPROGRAMPROC	glUseProgram		= 0;
+static PFNGLGETPROGRAMIVPROC	glGetProgramiv		= 0;
+static PFNGLGETSHADERIVPROC	glGetShaderiv		= 0;
+static PFNGLISPROGRAMPROC	glIsProgram		= 0;
+static PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog	= 0;
+static PFNGLGETSHADERINFOLOGPROC  glGetShaderInfoLog	= 0;
+static PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation= 0;
+static PFNGLGETATTRIBLOCATIONPROC  glGetAttribLocation = 0;
 
-PFNGLUNIFORM1IVPROC glUniform1iv = 0;
-PFNGLUNIFORM1IPROC  glUniform1i  = 0;
-PFNGLUNIFORM2IPROC  glUniform2i  = 0;
-PFNGLUNIFORM3IPROC  glUniform3i  = 0;
-PFNGLUNIFORM4IPROC  glUniform4i  = 0;
-PFNGLUNIFORM1FVPROC glUniform1fv = 0;
-PFNGLUNIFORM1FPROC  glUniform1f  = 0;
-PFNGLUNIFORM2FPROC  glUniform2f  = 0;
-PFNGLUNIFORM3FPROC  glUniform3f  = 0;
-PFNGLUNIFORM4FPROC  glUniform4f  = 0;
+static PFNGLUNIFORM1IVPROC glUniform1iv = 0;
+static PFNGLUNIFORM1IPROC  glUniform1i  = 0;
+static PFNGLUNIFORM2IPROC  glUniform2i  = 0;
+static PFNGLUNIFORM3IPROC  glUniform3i  = 0;
+static PFNGLUNIFORM4IPROC  glUniform4i  = 0;
+static PFNGLUNIFORM1FVPROC glUniform1fv = 0;
+static PFNGLUNIFORM1FPROC  glUniform1f  = 0;
+static PFNGLUNIFORM2FPROC  glUniform2f  = 0;
+static PFNGLUNIFORM3FPROC  glUniform3f  = 0;
+static PFNGLUNIFORM4FPROC  glUniform4f  = 0;
 
-PFNGLVERTEXATTRIB1FVPROC glVertexAttrib1fv= 0;
-PFNGLVERTEXATTRIB1FPROC	 glVertexAttrib1f = 0;
-PFNGLVERTEXATTRIB2FPROC	 glVertexAttrib2f = 0;
-PFNGLVERTEXATTRIB3FPROC	 glVertexAttrib3f = 0;
-PFNGLVERTEXATTRIB4FPROC	 glVertexAttrib4f = 0;
+static PFNGLVERTEXATTRIB1FVPROC glVertexAttrib1fv= 0;
+static PFNGLVERTEXATTRIB1FPROC	 glVertexAttrib1f = 0;
+static PFNGLVERTEXATTRIB2FPROC	 glVertexAttrib2f = 0;
+static PFNGLVERTEXATTRIB3FPROC	 glVertexAttrib3f = 0;
+static PFNGLVERTEXATTRIB4FPROC	 glVertexAttrib4f = 0;
 
-PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray  = 0;
-PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray = 0;
-PFNGLVERTEXATTRIBPOINTERPROC	  glVertexAttribPointer	     = 0;
+static PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray  = 0;
+static PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray = 0;
+static PFNGLVERTEXATTRIBPOINTERPROC	  glVertexAttribPointer	     = 0;
 int initialiseShaderExtensions() {
 	if(glCreateShader) return 1;
 	glCreateShader		= (PFNGLCREATESHADERPROC)	wglGetProcAddress("glCreateShader");

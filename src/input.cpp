@@ -120,7 +120,7 @@ void Input::createMap() {
 /*0xc0*/	0,	0,	0,	0,	0,	KEY_NUMLOCK,	0,	KEY_HOME,	
 /*0xc8*/	KEY_UP,	KEY_PGUP,	0,	KEY_LEFT,	0,	KEY_RIGHT,	0,	KEY_END,	
 /*0xd0*/	KEY_DOWN,	KEY_PGDN,	KEY_INSERT,	KEY_DEL,	0,	0,	0,	0,	
-/*0xd8*/	0,	0,	0,	KEY_LWIN,	KEY_RWIN,	KEY_MENU,	0,	0,	
+/*0xd8*/	0,	0,	0,	KEY_LMETA,	KEY_RMETA,	KEY_MENU,	0,	0,	
 /*0xe0*/	0,	0,	0,	0,	0,	0,	0,	0,	
 /*0xe8*/	0,	0,	0,	0,	0,	0,	0,	0,	
 /*0xf0*/	0,	0,	0,	0,	0,	0,	0,	0,	
