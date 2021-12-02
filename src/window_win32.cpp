@@ -1,7 +1,8 @@
 #include "base/window_win32.h"
-#include <GL/gl.h>
+#include "base/opengl.h"
 
 typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats); 
+typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hdc, HGLRC hshareContext, const int *attribList);
 
 #define WGL_DRAW_TO_WINDOW_ARB         0x2001
 #define WGL_ACCELERATION_ARB           0x2003
@@ -14,6 +15,13 @@ typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAt
 #define WGL_DOUBLE_BUFFER_ARB          0x2011
 #define WGL_SAMPLE_BUFFERS_ARB         0x2041
 #define WGL_SAMPLES_ARB                0x2042
+#define WGL_CONTEXT_MAJOR_VERSION_ARB  0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB  0x2092
+#define WGL_CONTEXT_FLAGS_ARB          0x2094
+#define WGL_CONTEXT_PROFILE_MASK_ARB   0x9126
+
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB          0x0001
+#define WGL_CONTEXT_COMPATABILITY_PROFILE_BIT_ARB 0x0002
 
 //Application instance handle
 HINSTANCE s_hInst;
@@ -117,9 +125,16 @@ bool Win32Window::createWindow() {
 	pfd.cDepthBits = m_depthBuffer;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 	
+	// Need a ridiculous temporary context to get the function to create a context
+	SetPixelFormat(m_hDC, ChoosePixelFormat(m_hDC, &pfd), &pfd);
+	m_hRC = wglCreateContext(m_hDC);
+	wglMakeCurrent(m_hDC, m_hRC);
+	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
+	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+	wglDeleteContext(m_hRC);
+
 	//set multisampling
 	int pixelFormat = 0;
-	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
 	if(wglChoosePixelFormatARB!=0) {
 		// These Attributes Are The Bits We Want To Test For In Our Sample
 		// Everything Is Pretty Standard, The Only One We Want To 
@@ -147,10 +162,24 @@ bool Win32Window::createWindow() {
 		}
 	}
 	else printf("No Multisampling\n");
+
+	int contextAttribs[] = {
+		WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+		WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+		0
+	};
+
 	
 	if(pixelFormat) SetPixelFormat(m_hDC, pixelFormat, &pfd);
 	else SetPixelFormat(m_hDC, ChoosePixelFormat(m_hDC, &pfd), &pfd);
-	m_hRC = wglCreateContext(m_hDC);
+
+	if(wglCreateContextAttribsARB!=0) {
+		m_hRC = wglCreateContextAttribsARB(m_hDC, 0, contextAttribs);
+	}
+	else {
+		printf("Legacy context created\n");
+		m_hRC = wglCreateContext(m_hDC);
+	}
 	return true;
 }
 void base::Win32Window::destroyWindow() {

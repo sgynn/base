@@ -159,9 +159,9 @@ void Game::run() {
 	#else
 
 	//Set up dome OpenGL stuff
-	glMatrixMode(GL_PROJECTION);
-	glOrtho(0, s_window->getSize().x, 0, s_window->getSize().y, -1, 1);
-	glMatrixMode(GL_MODELVIEW);
+	//glMatrixMode(GL_PROJECTION);
+	//glOrtho(0, s_window->getSize().x, 0, s_window->getSize().y, -1, 1);
+	//glMatrixMode(GL_MODELVIEW);
 	
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);

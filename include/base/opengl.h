@@ -13,7 +13,7 @@
 
 
 #ifndef EMSCRIPTEN
-#define GL_CHECK_ERROR  { int e=glGetError(); if(e) printf("OpenGL Error 0x%x: %s:%d\n", e, __FILE__, __LINE__); fflush(stdout); }
+#define GL_CHECK_ERROR  { for(int e=glGetError(); e; e=glGetError()) printf("OpenGL Error 0x%x: %s:%d\n", e, __FILE__, __LINE__); fflush(stdout); }
 #else
 #define GL_CHECK_ERROR
 #endif
