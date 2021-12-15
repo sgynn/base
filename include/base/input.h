@@ -171,7 +171,7 @@ namespace base {
 	/// Joystick class --------------------------------------------------------------
 	class Joystick { 
 		friend class Input;
-		Joystick(int b, int a);
+		Joystick(int axes, int buttons);
 		public:
 		~Joystick();
 		bool  button(uint) const;					/// Get state of a button
@@ -181,8 +181,8 @@ namespace base {
 		int   axisRaw(uint) const;					/// Get raw axis value
 		const Point& hat() const;					/// Get POV hat state
 		void  setDeadzone(float);					/// Set axis deadzone
-		void  getCalibration(uint, int*) const;	/// Get axis calibration
-		void  setCalibration(uint, const int*);			/// Set axis calibration
+		void  getCalibration(uint, int*) const;		/// Get axis calibration
+		void  setCalibration(uint, const int*);		/// Set axis calibration
 		private:
 		bool update();
 		private:

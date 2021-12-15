@@ -32,6 +32,7 @@ void GameState::addComponent(GameStateComponent* c) {
 	++c->m_references;
 	addToList(m_updateComponents, c, [](GameStateComponent* a, GameStateComponent* b) { return a->m_updateOrder < b->m_updateOrder; });
 	addToList(m_drawComponents, c, [](GameStateComponent* a, GameStateComponent* b) { return a->m_drawOrder < b->m_drawOrder; });
+	c->m_gameState = this;
 }
 
 int GameState::updateState() {
