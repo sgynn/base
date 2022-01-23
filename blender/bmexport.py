@@ -45,7 +45,7 @@ class Vertex(object):
         self.nrm = (0,0,0)
         self.tex = (0,0)
         self.col = (1,1,1,1)
-        self.tan = (0,0,0)
+        self.tan = (0,0,0,1)
         self.wgt = None
     def __hash__(self):
         return hash( (self.pos, self.nrm, self.tex, self.col, self.tan) )
@@ -120,8 +120,13 @@ def construct_mesh(obj, config):
 
 
     # Update normals and tangents
+    signedtangents = False
     if uv and config.export_tangents:
         m.calc_tangents()
+        for loop in m.loops:
+            if loop.bitangent_sign < 0:
+                signedtangents = True
+                break
     elif config.export_normals:
         m.calc_normals_split()
 
@@ -159,7 +164,9 @@ def construct_mesh(obj, config):
             v = Vertex( m.vertices[index].co.to_tuple() )
             if uv: v.tex = (uv[ loop ].uv.x, 1-uv[ loop ].uv.y)
             if config.export_normals: v.nrm = m.loops[ loop ].normal.to_tuple()
-            if uv and config.export_tangents: v.tan = m.loops[ loop ].tangent.to_tuple()
+            if uv and config.export_tangents:
+                v.tan = m.loops[loop].tangent.to_tuple()
+                if signedtangents: v.tan += (m.loops[loop].bitangent_sign,)
             if col: v.col = make_colour( col[loop].color, alpha[loop].color if alpha else white)
 
             # vertex groups
@@ -226,6 +233,7 @@ def export_mesh(obj, config, xml):
 
         if m.has_tangent:
             node = append_element(mesh, "tangents")
+            if len(m.vertices[0].tan)==4: node.setAttribute("elements", "4");
             vertData = [' '.join([format_num(e) for e in v.tan]) for v in m.vertices]
             set_text(node, '  '.join(vertData))
 
@@ -301,8 +309,10 @@ def export_animations(context, config, skeleton, xml):
         if skeleton.animation_data.action:
             actions.append( skeleton.animation_data.action )
 
+        restore = {}
         if skeleton.animation_data.nla_tracks and config.export_animations == "LINKED":
             for track in skeleton.animation_data.nla_tracks.values():
+                restore[track] = (track.mute, track.solo)
                 track.mute = True
                 track.is_solo = False
                 for strip in track.strips.values():
@@ -316,7 +326,12 @@ def export_animations(context, config, skeleton, xml):
         bpy.ops.object.mode_set(mode='POSE')
         for action in actions:
             export_action(context, skeleton, action, xml)
+
+        # Restore
         skeleton.animation_data.action = last
+        for track, data in restore.items():
+            track.mute = data[0]
+            track.is_solo = data[1]
 
 def same(a,b): return abs(a-b)<0.00001
 
@@ -427,9 +442,28 @@ def write_object(node, obj, config):
     if obj.rotation_mode == 'QUATERNION': r = obj.rotation_quaternion
     elif obj.rotation_mode == 'AXIS_ANGLE': r = Quaternion(obj.rotation_axis_angle[1:4], obj.rotation_axis_angle[0])
     else: r = obj.rotation_euler.to_quaternion()
+    pos = obj.location
+
+    # Parent bone stuff
+    bone = None
+    inverse = obj.matrix_parent_inverse if obj.parent else None
+    if obj.parent_bone: bone = obj.parent_bone
+    else:
+        for c in obj.constraints:
+            if c.type == 'CHILD_OF' and c.is_valid:
+                bone = c.subtarget;
+                inverse = c.inverse_matrix
+                break
+
+    if inverse:
+        pos = inverse @ pos
+        r = inverse.to_quaternion() @ r
+        pos = pos.yxz
+        r = r @ mathutils.Quaternion((0,0,1,0))
+
 
     rot = (r.w, r.x, r.z, -r.y)
-    pos = (obj.location.x, obj.location.z, -obj.location.y)
+    pos = (pos.x, pos.z, -pos.y)
     scl = obj.scale.xzy.to_tuple()
 
     node = append_element(node, "object")
@@ -438,16 +472,9 @@ def write_object(node, obj, config):
     if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
     if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
     if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
-    if obj.parent_bone: node.setAttribute("bone", obj.parent_bone)
+    if bone: node.setAttribute("bone", bone)
     
     export_custom_properties(node, obj)
-
-    # Custom properties
-    #if len(obj.keys()) > 1:
-    #    for key in obj.keys():
-    #        if key not in '_RNA_UI':
-    #            node.setAttribute(key, str(obj[key]))
-
 
     return node
 
@@ -486,6 +513,10 @@ def export(context, config):
         for obj in exportList:
             if obj.type == 'MESH':
                 arm = obj.find_armature()
+                if not arm and obj.parent and obj.parent.type == 'ARMATURE': arm = obj.parent
+                if not arm:
+                    for c in obj.constraints:
+                        if c.type == 'CHILD_OF' and c.target and c.target.type == 'ARMATURE': arm = c.target
                 if arm and arm not in exportList:
                     exportList.append(arm)
 

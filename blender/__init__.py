@@ -59,7 +59,7 @@ class ExportBaseLib(bpy.types.Operator):
         description="Which objects get exported",
         items = [("ALL", "All", "Export all objects"),
                  ("SELECTED", "Selected", "Only export selected object"),
-                 ("HEIRACHY", "Heirachy", "Expoer selected objects and their children"),
+                 ("HEIRACHY", "Heirachy", "Export selected objects and their children"),
                  ("VISIBLE", "Visible", "Export all visible objects"),
                  ("GROUP", "Group", "Export all objects in groups of which objects are selected")],
         default="SELECTED")
@@ -160,7 +160,7 @@ class ExportBaseLib(bpy.types.Operator):
         mat.prop(self, 'export_materials')
 
         skel = layout.box()
-        skel.enabled = self.hasSkeleton(context)
+        skel.enabled = self.getSkeleton(context) is not None
         skel.prop(self, 'export_skeletons')
 
         skel = skel.column()
@@ -189,21 +189,21 @@ class ExportBaseLib(bpy.types.Operator):
             if obj.type == 'MESH': return True
         return False
 
-    def hasSkeleton(self, context):
+    def getSkeleton(self, context):
         things = self.getObjects(context);
         for obj in things:
-            if obj.type == 'ARMATURE': return True
-            elif obj.type == 'MESH' and obj.find_armature(): return True
-        return False
+            if obj.type == 'ARMATURE': return obj
+            elif obj.type == 'MESH':
+                if obj.find_armature(): return obj.find_armature()
+                if obj.parent is not None and obj.parent.type == 'ARMATURE': return obj.parent
+                for c in obj.constraints:
+                    if c.type == 'CHILD_OF' and c.is_valid and c.subtarget: return c.target
+
+        return None
 
     def hasAnimation(self, context):
-        things = self.getObjects(context);
-        for obj in things:
-            if obj.type == 'ARMATURE' and obj.animation_data: return True
-            elif obj.type == 'MESH' and obj.find_armature():
-                if obj.find_armature().animation_data: return True;
-        return False
-
+        skeleton = self.getSkeleton(context)
+        return True if skeleton and skeleton.animation_data else False
 
     def execute(self, context):
         from . import bmexport
