@@ -312,7 +312,7 @@ def export_animations(context, config, skeleton, xml):
         restore = {}
         if skeleton.animation_data.nla_tracks and config.export_animations == "LINKED":
             for track in skeleton.animation_data.nla_tracks.values():
-                restore[track] = (track.mute, track.solo)
+                restore[track] = (track.mute, track.is_solo)
                 track.mute = True
                 track.is_solo = False
                 for strip in track.strips.values():
