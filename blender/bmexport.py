@@ -472,7 +472,9 @@ def write_object(node, obj, config):
     if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
     if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
     if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
+    if obj.instance_type == 'COLLECTION' and obj.instance_collection: node.setAttribute("instance", obj.instance_collection.name)
     if bone: node.setAttribute("bone", bone)
+
     
     export_custom_properties(node, obj)
 
