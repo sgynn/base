@@ -216,6 +216,7 @@ void Input::clear() {
 	memset(&m_mouseState, 0, sizeof(Mouse));
 	m_lastKey = 0;
 	m_lastChar = 0;
+	m_keyMask = 0;
 }
 
 
