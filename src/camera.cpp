@@ -298,8 +298,8 @@ Matrix Camera::orthographic(float left, float right, float bottom, float top, fl
 	m[0] = 2/dx;
 	m[5] = 2/dy;
 	m[10] = -2/dz;
-	m[12] = (right+left)/dx;
-	m[13] = (top+bottom)/dy;
+	m[12] = -(right+left)/dx;
+	m[13] = -(top+bottom)/dy;
 	m[14] = (near+far)/dz;
 	return m;
 }
