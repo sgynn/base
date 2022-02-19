@@ -238,7 +238,7 @@ void ItemList::initialise(const PropertyMap& p) {
 
 
 
-Listbox::Listbox(const Rect& r, Skin* s) : Widget(r, s), m_scrollbar(0), m_multiSelect(false), m_over(0), m_itemHeight(20) {
+Listbox::Listbox(const Rect& r, Skin* s) : Widget(r, s), m_scrollbar(0), m_multiSelect(false), m_itemHeight(20) {
 }
 void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	// sub widgets

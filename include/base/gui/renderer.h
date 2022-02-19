@@ -60,7 +60,7 @@ class Renderer {
 	virtual Point drawText(const Point&, const char* text, const Font*, int size, unsigned colour=0xffffffff);
 	virtual Point drawText(const Point& p, const char* text, const Skin* skin, int state);
 	virtual Point drawText(const Rect& r, const char* text, const Skin* skin, int state);
-	virtual void  drawRect(const Rect&, unsigned colour);
+	virtual void  drawRect(const Rect&, unsigned colour=0xffffffff);
 	virtual void  drawIcon(IconList* list, int index, const Rect& dest, float angle=0, unsigned colour=-1);
 	virtual void  drawImage(int image, const Rect& rect, float angle=0, unsigned colour=0xffffff, float alpha=1.0);
 	virtual void  drawLineStrip(int count, const Point* line, float width, const Point& offset, unsigned colour=-1);

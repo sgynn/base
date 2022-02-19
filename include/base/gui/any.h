@@ -116,8 +116,8 @@ template<typename T> bool operator==(const T& v, const Any& a) { return a == v; 
 template<typename T> bool operator!=(const T& v, const Any& a) { return a != v; }
 template<> inline bool Any::operator==(const Any& v) const { return m_value->compare(v); }
 template<> inline bool Any::operator!=(const Any& v) const { return !m_value->compare(v); }
-template<> inline bool operator==(const Any& v, const Any& a) { return a.operator==(v); }
-template<> inline bool operator!=(const Any& v, const Any& a) { return a.operator!=(v); }
+inline bool operator==(const Any& v, const Any& a) { return a.operator==(v); }
+inline bool operator!=(const Any& v, const Any& a) { return a.operator!=(v); }
 
 }
 

@@ -93,7 +93,6 @@ class Listbox : public Widget, public ItemList {
 	int getItemState(uint, const Rect&) const;
 	Scrollbar* m_scrollbar;
 	bool m_multiSelect;
-	int m_over;
 	int m_itemHeight;
 	Widget* m_text;
 	Widget* m_check;

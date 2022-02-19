@@ -136,7 +136,9 @@ set(headers
 	include/base/wavefront.h
 	include/base/window.h
 	include/base/xml.h
+)
 
+set(guiheaders
 	include/base/gui/any.h
 	include/base/gui/delegate.h
 	include/base/gui/font.h
@@ -170,6 +172,7 @@ set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate cla
 add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
+install(FILES ${guiheaders} DESTINATION include/base/gui)
 
 
 if(WEB)

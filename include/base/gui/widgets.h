@@ -405,10 +405,10 @@ class SplitPane : public Widget {
 	Orientation getOrientation() const;
 	using Widget::setSize;
 	protected:
-	void updateAutosize() override {};
+	void updateAutosize() override {}
 	void setupSash(Widget*);
 	void validateLayout();
-	void refreshLayout();
+	void refreshLayout() override;
 	void pressSash(Widget*, const Point&, int);
 	void moveSash(Widget*, const Point&, int);
 	using Widget::getWidget;
