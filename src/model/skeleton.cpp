@@ -1,12 +1,17 @@
-#include "base/model.h"
+#include <base/skeleton.h>
+#include <base/animation.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 
 using namespace base;
-using namespace model;
-
 
 Bone::Bone() : 
 	m_skeleton(0), m_index(0), m_parent(0),
-	m_name(""), m_length(1), m_mode(DEFAULT), m_state(0) {
+	m_name(""), m_length(1), m_mode(DEFAULT), m_state(0), m_scale(1,1,1) {
+}
+Bone::~Bone() {
+	if(m_name[0]) free((char*)m_name);
 }
 
 void Bone::setPosition(const vec3& p) {
@@ -39,6 +44,15 @@ void Bone::setAbsoluteTransformation(const Matrix& m) {
 	m_state = 4;
 }
 
+void Bone::move(const vec3& m) {
+	m_position += m;
+	m_state = 1;
+}
+void Bone::rotate(const Quaternion& q) {
+	m_angle *= q;
+	m_state = 1;
+}
+
 const vec3 Bone::getEuler() const {
 	return m_angle.getEuler();
 }
@@ -47,11 +61,20 @@ void Bone::updateLocal() {
 	// Note: when absoluteMatrix is being set, local values mean nothing.
 	switch(m_state&7) {
 	case 1: // parts to matrix
-		m_angle.toMatrix(m_local);
-		memcpy(&m_local[12], m_position, sizeof(vec3));
-		m_local[0] *= m_scale.x;
-		m_local[5] *= m_scale.y;
-		m_local[10] *= m_scale.z;
+		{
+		const Matrix& rest = m_skeleton->getRestPose(m_index);
+		Quaternion rot( rest );
+		rot *= m_angle;
+		rot.toMatrix(m_local);
+		m_local[12] = m_position.x + rest[12];
+		m_local[13] = m_position.y + rest[13];
+		m_local[14] = m_position.z + rest[14];
+		}
+//		for(int i=0; i<3; ++i) {
+//			m_local[i  ] *= m_scale.x;
+//			m_local[i+4] *= m_scale.y;
+//			m_local[i+8] *= m_scale.z;
+//		}
 		m_state=3;
 		break;
 	case 2: // Matrix to parts
@@ -60,6 +83,12 @@ void Bone::updateLocal() {
 		m_scale.x = vec3(&m_local[0]).length();
 		m_scale.y = vec3(&m_local[4]).length();
 		m_scale.z = vec3(&m_local[8]).length();
+		{
+		const Matrix& rest = m_skeleton->getRestPose(m_index);
+		m_position.x -= rest[12];
+		m_position.y -= rest[13];
+		m_position.z -= rest[14];
+		}
 		m_state=3;
 		break;
 	}
@@ -68,37 +97,83 @@ void Bone::updateLocal() {
 
 
 
+// ================================================================================================ //
 
 
 
-//// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
 
-Skeleton::Skeleton(): m_bones(0), m_count(0), m_last(0), m_hints(0), m_flags(0) {
+Skeleton::Skeleton(): m_bones(0), m_count(0), m_last(0), m_hints(0), m_flags(0), m_matrices(0), m_rest(0) {
 }
-Skeleton::Skeleton(const Skeleton& s) : m_count(s.m_count), m_last(0) {
+Skeleton::Skeleton(const Skeleton& s) : m_count(s.m_count), m_last(0), m_matrices(0) {
 	m_bones = new Bone*[ m_count ];
 	m_hints = new uint16[ 3 * m_count ];
 	m_flags = new ubyte[ m_count ];
+	m_matrices = new Matrix[ m_count ];
 	for(int i=0; i<m_count; ++i) {
 		m_bones[i] = new Bone(*s.m_bones[i]);
 		m_bones[i]->m_skeleton = this;
+		if(m_bones[i]->m_name[0]) m_bones[i]->m_name = strdup( m_bones[i]->m_name );
 	}
 	memset(m_hints, 0, 3 * m_count * sizeof(uint16));
+	if(s.m_matrices) memcpy(m_matrices, s.m_matrices, m_count*sizeof(Matrix));
+	m_rest = s.m_rest;
+	++m_rest->ref;
 }
 Skeleton::~Skeleton() {
+	// Destroy bones
 	if(m_count) {
 		for(int i=0; i<m_count; ++i) delete m_bones[i];
 		delete [] m_bones;
 		delete [] m_hints;
 		delete [] m_flags;
+		delete [] m_matrices;
+	}
+	// Destroy rest pose data
+	dropRestPose();
+}
+
+void Skeleton::setRestPose() {
+	dropRestPose();
+	m_rest = new RestPose();
+	m_rest->ref = 1;
+	m_rest->size = m_count;
+	m_rest->local = new Matrix[m_count];
+	m_rest->skin = new Matrix[m_count];
+	m_rest->rot = new Quaternion[m_count];
+	m_rest->scale = new vec3[m_count];
+	// Copy pose matrices
+	for(int i=0; i<m_count; ++i) {
+		m_rest->scale[i] = m_bones[i]->getScale();
+		m_rest->rot[i] = m_bones[i]->getAngle();
+		memcpy(m_rest->local[i], m_bones[i]->getTransformation(), sizeof(Matrix));
+		Matrix::inverseAffine(m_rest->skin[i], m_bones[i]->getAbsoluteTransformation());
 	}
 }
 
+void Skeleton::dropRestPose() {
+	if(m_rest && --m_rest->ref==0) {
+		delete [] m_rest->local;
+		delete [] m_rest->skin;
+		delete [] m_rest->rot;
+		delete [] m_rest->scale;
+		delete m_rest;
+		m_rest = 0;
+	}
+}
 
-Bone* Skeleton::addBone(const Bone* p, const char* name, const float* local) {
+unsigned Skeleton::getMapID() const {
+	size_t r = (size_t)m_rest;
+	if(!r) return getBoneCount();
+	return (unsigned) r;
+}
+
+Bone* Skeleton::addBone(const Bone* p, const char* name, const float* local, float length) {
 	// Check parent is valid
-	if(p && p->m_skeleton!=this) p = 0;
+	if(p && p->m_skeleton!=this) {
+		printf("Warning: Parent '%s' for bone '%s' is invalid\n", p->getName(), name);
+		p = 0;
+	}
 	// Resize array
 	Bone** tmp = m_bones;
 	m_bones = new Bone*[ m_count+1 ];
@@ -118,19 +193,28 @@ Bone* Skeleton::addBone(const Bone* p, const char* name, const float* local) {
 	bone->m_skeleton = this;
 	bone->m_index = m_count;
 	bone->m_parent = p? p->getIndex(): -1;
-	if(name)  bone->m_name = name;
+	bone->m_length = length;
+	if(name && name[0]) bone->m_name = strdup(name);
 	// Initial Transforms
 	if(local) memcpy(bone->m_local, local, sizeof(Matrix));
 	bone->m_combined = p? p->m_combined * bone->m_local: bone->m_local;
+	// rest pose is probably invalid
+	dropRestPose();
 	++m_count;
 	return bone;
 }
 
-Bone* Skeleton::getBone(const char* name) {
+int Skeleton::getBoneIndex(const char* name) const {
+	if(!name || !name[0]) return  -1;
 	for(int i=0; i<m_count; ++i) {
-		if(strcmp(name, m_bones[i]->m_name)==0) return m_bones[i];
+		if(strcmp(name, m_bones[i]->m_name)==0) return i;
 	}
-	return 0;
+	return -1;
+}
+
+Bone* Skeleton::getBone(const char* name) const {
+	int index = getBoneIndex(name);
+	return index<0? 0: m_bones[index];
 }
 
 void Skeleton::setMode(Bone::Mode m) {
@@ -138,32 +222,50 @@ void Skeleton::setMode(Bone::Mode m) {
 }
 
 
-//// Animate functions ////
+// ============================ Pose functions ============================= //
 
-void Skeleton::animate(const Animation* anim, float frame, const Bone* root, float weight) {
-	m_last = anim;
-	int start = root? root->getIndex(): 0;
-	int pFlag;
-	memset(m_flags, 0, m_count);
+void Skeleton::resetPose() {
+	for(int i=0; i<m_count; ++i) resetPose(i);
+}
+void Skeleton::resetPose(int boneIndex) {
+	Bone* bone = m_bones[boneIndex];
+	if(bone->getMode() != Bone::FIXED && bone->getMode() != Bone::USER) {
+		bone->m_local = m_rest->local[boneIndex];
+		bone->m_scale = m_rest->scale[boneIndex];
+		bone->m_angle = m_rest->rot[boneIndex];
+		bone->m_position.set(0,0,0);
+		bone->m_state = 3;
+	}
+}
+
+int Skeleton::applyPose(const Animation* anim, float frame, int root, int blend, float weight, const char* map) {
+	// Trivial null cases
+	if(weight==0 && blend > 0) return 0;
+
+	int modified = 0;
+	int start = root<0? 0: root;
+	if(!map) map = anim->getMap(this);
 	// Loop through remaining bones
 	for(int i=start; i<m_count; ++i) {
 		// Determine what to do based on parent flag and bone mode
-		if(i==start || (!root && !m_bones[i]->getParent())) pFlag = 1;
-		else pFlag = m_flags[ m_bones[i]->getParent()->getIndex()];
-		m_flags[i] = pFlag;
+		Bone* bone = m_bones[i];
+		m_flags[i] = i==root || root<0? 1: 0;
+		if(bone->getParent()) m_flags[i] |= m_flags[ bone->getParent()->getIndex() ];
+
 		bool set = false;
 		switch( m_bones[i]->getMode() ) {
-		case Bone::DEFAULT:  set = pFlag==1; break;
-		case Bone::ANIMATED: set = pFlag>0;  break;
-		case Bone::TRUNCATE: m_flags[i]=2;   break;
-		case Bone::USER:     break;
-		case Bone::FIXED:    break;
+		case Bone::DEFAULT:  set = m_flags[i] == 1; break;	// stops at truncate flag
+		case Bone::ANIMATED: set = m_flags[i] > 0;  break;	// overrides truncate flag
+		case Bone::TRUNCATE: if(i==root) set=true; else m_flags[i]=2; break;	// truncate animation unless starting from here
+		case Bone::USER:     break;	// user overridden
+		case Bone::FIXED:    break;	// user overridden
 		}
 		// Set bone values from animation
-		if(set) animateBone(m_bones[i], anim, frame, weight);
+		if(set && map[i]>=0 && applyBonePose(m_bones[i], anim, map[i], frame, blend, weight)) ++modified;
 	}
+	return modified;
 }
-bool Skeleton::animateBone(Bone* b, const Animation* anim, float frame, float weight) {
+bool Skeleton::applyBonePose(Bone* b, const Animation* anim, int keyset, float frame, int blend, float weight) {
 	static SlerpFunc slerp;
 	static LerpFunc lerp;
 	if(b->m_mode==Bone::DEFAULT || b->m_mode==Bone::ANIMATED) {
@@ -171,16 +273,29 @@ bool Skeleton::animateBone(Bone* b, const Animation* anim, float frame, float we
 		Quaternion rot;
 		// Get values from animation
 		int index = b->getIndex();
-		anim->getRotation(index, frame, m_hints[index*3],   rot);
-		anim->getPosition(index, frame, m_hints[index*3+1], pos);
-		anim->getScale   (index, frame, m_hints[index*3+2], scl);
-		// Blended?
+		anim->getRotation(keyset, frame, m_hints[index*3],   rot);
+		anim->getPosition(keyset, frame, m_hints[index*3+1], pos);
+		anim->getScale   (keyset, frame, m_hints[index*3+2], scl);
+		// Blending
 		if(weight != 1) {
-			if(b->m_state==2) b->updateLocal();
-			slerp(rot, b->m_angle, rot, weight);
-			lerp(pos, b->m_position, pos, weight);
-			lerp(scl, b->m_scale, scl, weight);
+			if(blend==1) {	// MIX - interpolate between current and new values
+				if(b->m_state==2) b->updateLocal();
+				slerp(rot, b->m_angle, rot, weight);
+				lerp(pos, b->m_position, pos, weight);
+				lerp(scl, b->m_scale, scl, weight);
+			} else {	// SET - scale new values
+				slerp(rot, m_rest->rot[index], rot, weight);
+				lerp(scl, m_rest->scale[index], scl, weight);
+				pos *= weight;
+			}
 		}
+		if(blend==2) {	// ADD - add new values
+			if(b->m_state==2) b->updateLocal();
+			rot = b->m_angle * rot;
+			pos += b->m_position;
+			scl *= b->m_scale;
+		}
+		// Set new values
 		memcpy(&b->m_angle,    &rot, sizeof(Quaternion));
 		memcpy(&b->m_position, &pos, sizeof(vec3));
 		memcpy(&b->m_scale,    &scl, sizeof(vec3));
@@ -194,6 +309,7 @@ bool Skeleton::update() {
 	// Build combined matrices - may be able to skip some
 	bool changed = false;
 	memset(m_flags, 0, m_count);
+	if(!m_matrices) m_matrices = new Matrix[ m_count ];
 	for(int i=0; i<m_count; ++i) {
 		Bone* bone = m_bones[i];
 		if(bone->getMode() != Bone::FIXED) { // Use local transformation
@@ -201,12 +317,26 @@ bool Skeleton::update() {
 				m_flags[i] = 1;
 				if(bone->m_state==1) bone->updateLocal();
 				Bone* parent = bone->getParent();
-				bone->m_combined = parent? parent->m_combined * bone->m_local: bone->m_local;
+				vec3 parentScale = parent? parent->m_combinedScale: vec3(1,1,1);
+				Matrix local = bone->m_local;
+				local[12] *= parentScale.x;
+				local[13] *= parentScale.y;
+				local[14] *= parentScale.z;
+				bone->m_combinedScale = parentScale * bone->m_scale;
+				bone->m_combined = parent? parent->m_combined * local: local;
+
+				m_matrices[i] = bone->m_combined;
+				m_matrices[i].scale(bone->m_combinedScale);
+				m_matrices[i] *= m_rest->skin[i];
+
 				changed = true;
 			}
 		} else if(bone->m_state==4) {	  // FIXED uses absolute transformation
 			changed = true;
 			m_flags[i] = 1;
+			m_matrices[i] = bone->m_local;
+			m_matrices[i].scale(bone->m_scale);
+			m_matrices[i] *= m_rest->skin[i];
 		}
 		bone->m_state |= 8;
 	}

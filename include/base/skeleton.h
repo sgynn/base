@@ -1,11 +1,8 @@
-#ifndef _BASE_SKELETON_
-#define _BASE_SKELETON_
+#pragma once
 
-#include "math.h"
+#include <base/math.h>
 
 namespace base {
-namespace model {
-
 	class Skeleton;
 	class Animation;
 	
@@ -37,14 +34,17 @@ namespace model {
 		const Quaternion& getAngle() const;		/**< Get the relative rotation as a quaternion */
 		const Matrix&     getTransformation() const;			/**< Get the local transformation of the bone */
 		const Matrix&     getAbsoluteTransformation() const;	/**< Get absolute transformation */
+		const Matrix&     getSkinningMatrix() const;			/**< Get matrix for skin transformation */
 
-		void setPosition(const vec3& pos);		/**< Set the relative posiiton */
+		void setPosition(const vec3& pos);		/**< Set the relative position */
 		void setScale(float scale);				/**< Set the relative scale */
 		void setScale(const vec3& scale);		/**< Set the relative scale */
 		void setEuler(const vec3& pyr);			/**< Set the relative angle from pitch,yaw,roll */
 		void setAngle(const Quaternion& q);		/**< Set the relative angle quaternion */
 		void setTransformation(const Matrix&);	/**< Set the local transformation */
 		void setAbsoluteTransformation(const Matrix&);	/**< Set the absolute transformation */
+		void move(const vec3&);					/**< Move bone relative to its parent */
+		void rotate(const Quaternion&);			/**< roatte bone relative to its parent */
 		void updateLocal();						/**< Calculate outdated local variables */
 
 		private:
@@ -58,14 +58,17 @@ namespace model {
 		Mode        m_mode;		// Update behavious mode
 		int         m_state;	// Which parts have been changed so need updating
 
-		Matrix      m_local;	// Local matrix (cached)
-		Matrix      m_combined; // Absolute matrix
-		vec3        m_position;
-		vec3        m_scale;
-		Quaternion  m_angle;
+		Matrix      m_local;	// Local matrix (cached from pos/scale/rot)
+		Matrix      m_combined; // Derived matrix
+		vec3        m_position;	// Bone local position
+		vec3        m_scale;	// Bone local scale
+		vec3        m_combinedScale; // Derived scale vector
+		Quaternion  m_angle;	// Bone local orientation
 
 		Bone();						/**< Private constructor - create from Skeleton */
+		~Bone();
 	};
+
 
 	/** Skeleton class 
 	 * The skeleton will always contain a root bone at 0
@@ -77,19 +80,29 @@ namespace model {
 		Skeleton(const Skeleton&);			/**< Copy constructor */
 		~Skeleton();						/**< Destructor */
 
-		Bone*       addBone(const Bone* parent, const char* name=0, const float* local=0);	/**< Add a new bone to the skeleton */
-		Bone*       getBone(int index);				/**< Get bone by index */
-		const Bone* getBone(int index) const;		/**< Get bone by index */
-		Bone*       getBone(const char *name);		/**< Get bone by name */
-		int         getBoneCount() const;			/**< Get number of bones in skeleton */
-		void        setMode(Bone::Mode m);			/**< Set all bone update modes */
+		Bone*       addBone(const Bone* parent, const char* name=0, const float* localMatrix=0, float length=1);	/**< Add a new bone to the skeleton */
+		Bone*       getBone(int index);						/// Get bone by index
+		const Bone* getBone(int index) const;				/// Get bone by index
+		Bone*       getBone(const char *name) const;		///  Get bone by name
+		int         getBoneIndex(const char* name) const;	/// Get index of named bone
+		int         getBoneCount() const;					/// Get number of bones in skeleton
+		void        setMode(Bone::Mode m);					/// Set all bone update modes
+		void		setRestPose();							/// Set the rest pose as the current pose
+		unsigned    getMapID() const;						/// Get skeleton ID for animation maps
+
+		const Matrix& getRestPose(int bone) const;
+		const Matrix& getSkinMatrix(int bone) const;
+		const Quaternion& getRestAngle(int bone) const;
 
 		bool update();								/**< Calculate bone matrices. Returns true if changed */
 
-		void animate(const Animation* anim, float frame, const Bone* root=0, float weight=1);
-		void animate(float frame, const Bone* root=0, float weight=1);
-		bool animateBone(Bone* bone, const Animation* anim, float frame, float weight=1);
-		bool animateBone(Bone* bone, float frame, float weight=1);
+		void resetPose();
+		void resetPose(int boneIndex);
+		int  applyPose(const Animation*, float frame=0, int fromBone=-1, int mode=1, float weight=1, const char* keyMap=0);
+		bool applyBonePose(Bone* bone, const Animation* anim, int set, float frame, int blend=1, float weight=1);
+
+		const Matrix* getMatrixPtr() const;		/// Null if update not yet called
+
 
 		private:
 		Bone**           m_bones;	// Array of bones
@@ -97,6 +110,19 @@ namespace model {
 		const Animation* m_last;	// Last animation used
 		uint16*          m_hints;	// Animation hints
 		ubyte*           m_flags;	// Flag array to save reallocation
+		Matrix*          m_matrices;	// Final transform matrices for all bones (bone.combined * rest.skin)
+
+		/* Skeleton rest data - can be shared */
+		struct RestPose {
+			int         ref;	// Reference count
+			int         size;	// Number of bones
+			Matrix*     local;	// Local bone matrixes for rest position
+			Quaternion* rot;	// Local rest orientation
+			vec3*       scale;	// Local rest scale
+			Matrix*     skin;	// Skin matrices - inverse modelspace rest matrixes
+		};
+		RestPose* m_rest;
+		void dropRestPose();
 	};
 
 
@@ -119,13 +145,12 @@ namespace model {
 	inline Bone*       Skeleton::getBone(int index)                        { return m_bones[index]; }
 	inline const Bone* Skeleton::getBone(int index) const                  { return m_bones[index]; }
 	inline int         Skeleton::getBoneCount() const                      { return m_count; }
-	inline void        Skeleton::animate(float f, const Bone* r, float w)  { animate(m_last,f,r,w); }
-	inline bool        Skeleton::animateBone(Bone* b, float f, float w)    { return animateBone(b,m_last,f,w); }
 
+	inline const Matrix& Skeleton::getRestPose(int i) const { return m_rest->local[i]; }
+	inline const Matrix& Skeleton::getSkinMatrix(int i) const { return m_rest->skin[i]; }
+	inline const Quaternion& Skeleton::getRestAngle(int i) const { return m_rest->rot[i]; }
 
-};
-};
+	inline const Matrix* Skeleton::getMatrixPtr() const { return m_matrices; }
 
-
-#endif
+}
 

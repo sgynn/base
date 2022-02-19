@@ -1,6 +1,6 @@
 //state manager implementation
 
-#include "base/state.h"
+#include "base/gamestate.h"
 #include "base/game.h"
 #include <cstdio>
 

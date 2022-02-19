@@ -1,334 +1,248 @@
-#include "base/model.h"
+#include <base/model.h>
+#include <base/hardwarebuffer.h>
+#include <cstring>
+#include <cstdio>
 
 using namespace base;
-using namespace model;
 
-
-Model::Model(): m_skeleton(0) {
-	m_maps = new Maps;
-	m_maps->ref = 1;
-}
-
-Model::Model(const Model& m) {
-	// Copy skeleton
-	if(m.m_skeleton) m_skeleton = new Skeleton(*m.m_skeleton);
-	else m_skeleton = 0;
-
-	// Reference index maps
-	m_maps = m.m_maps;
-	++m_maps->ref;
-
-	// Copy meshes
-	for(uint i=0; i<m.m_meshes.size(); ++i) {
-		if(m.m_meshes[i].skinned) addSkin(m.m_meshes[i].source);
-		else {
-			Bone* b = 0;
-			if(m_skeleton && m.m_meshes[i].bone) b = m_skeleton->getBone( m.m_meshes[i].bone->getIndex() );
-			addMesh(m.m_meshes[i].source, 0, b);
-		}
-	}
-
-	// Copy animation state
-	m_animations = m.m_animations;
-	for(uint i=0; i<m_animations.size(); ++i) {
-		const Bone* b = m_animations[i].bone;
-		if(b) m_meshes[i].bone = m_skeleton->getBone( b->getIndex() );
-	}
-
-	// Copy morph state
-	m_morphs = m.m_morphs;
-	for(uint i=0; i<m_morphs.size(); ++i) {
-		m_morphs[i].morph->grab();
-		if(m_morphs[i].value != 0) m_meshes[ m_morphs[i].mesh ].morphChanged = true;
-	}
-
-	// Build any meshes
-	update(0);
+Model::Model() : m_skeleton(0), m_animationState(0) {
 }
 
 Model::~Model() {
-	if(m_skeleton) delete m_skeleton;
-	// Delete meshes
-	for(uint i=0; i<m_meshes.size(); ++i) {
-		m_meshes[i].source->drop();
-		if(m_meshes[i].morphed) m_meshes[i].morphed->drop();
-		if(m_meshes[i].skinned) m_meshes[i].skinned->drop();
+	// memory leak
+	// need to delete meshes, skeletons, animations, morphs.
+	// everything should be reference counted
+}
+
+// --------------------------------------------------------------------------------------- //
+
+int Model::getMeshCount() const {
+	return m_meshes.size();
+}
+
+int Model::getMeshIndex(const char* name) const {
+	if(name) for(size_t i=0; i<m_meshes.size(); ++i) {
+		if(strcmp(name, m_meshes[i].name)==0) return i;
 	}
-	// Delete maps
-	if(--m_maps->ref==0) {
-		for(HashMap<Animation*>::iterator i=m_maps->animations.begin(); i!=m_maps->animations.end(); ++i) {
-			i->value->drop();
+	return -1;
+}
+
+Mesh* Model::getMesh(int index) const {
+	return m_meshes[index].mesh;
+}
+Mesh* Model::getMesh(const char* name) const {
+	int index = getMeshIndex(name);
+	return index<0? 0: m_meshes[index].mesh;
+}
+
+int Model::addMesh(const char* name, Mesh* mesh, const char* materialName) {
+	mesh->addReference();
+	MeshInfo info;
+	info.mesh = mesh;
+	info.name = name && name[0]? strdup(name): 0;
+	info.skinMap = createSkinMap(m_skeleton, mesh);
+	info.materialName = materialName && materialName[0]? strdup(materialName): 0;
+	m_meshes.push_back(info);
+	return m_meshes.size() - 1;
+}
+
+void Model::removeMesh(int i) {
+	MeshInfo& m = m_meshes[i];
+	if(m.skinMap) delete [] m.skinMap;
+	if(m.materialName) free(m.materialName);
+	if(m.name) free(m.name);
+	m.mesh->dropReference();
+	m_meshes.erase( m_meshes.begin() + i);
+}
+
+void Model::removeMesh(const char* name) {
+	for(uint i=0; i<m_meshes.size(); ++i) {
+		if( strcmp(m_meshes[i].name, name) == 0 ) {
+			removeMesh(i);
+			return;
 		}
-		delete m_maps;
 	}
 }
+void Model::removeMesh(const Mesh* m) {
+	for(uint i=0; i<m_meshes.size(); ++i) {
+		if( m_meshes[i].mesh == m ) {
+			removeMesh(i);
+			return;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------------- //
+
+const char* Model::getMeshName(int index) const {
+	return m_meshes[index].name;
+}
+const char* Model::getMeshName(const Mesh* mesh) const {
+	for(size_t i=0; i<m_meshes.size(); ++i) {
+		if(m_meshes[i].mesh==mesh) return m_meshes[i].name;
+	}
+	return 0;
+}
+
+// --------------------------------------------------------------------------------------- //
+
+void Model::setMaterialName(const char* material) {
+	for(uint i=0; i<m_meshes.size(); ++i) setMaterialName(i, material);
+}
+void Model::setMaterialName(int index, const char* material) {
+	if(m_meshes[index].materialName) free(m_meshes[index].materialName);
+	if(material && material[0]) m_meshes[index].materialName = strdup(material);
+	else m_meshes[index].materialName = 0;
+}
+const char* Model::getMaterialName(int index) const {
+	return m_meshes[index].materialName? m_meshes[index].materialName: "";
+}
+const char* Model::getMaterialName(const char* mesh) const {
+	int index = getMeshIndex(mesh);
+	return index<0? "": getMaterialName(index);
+}
+const char* Model::getMaterialName(const Mesh* mesh) const {
+	for(size_t i=0; i<m_meshes.size(); ++i) {
+		if(mesh == m_meshes[i].mesh) return m_meshes[i].materialName? m_meshes[i].materialName: "";
+	}
+	return "";
+}
+
+
+// --------------------------------------------------------------------------------------- //
 
 
 void Model::setSkeleton(Skeleton* s) {
 	m_skeleton = s;
-	// Cache and skin bone indices
-	for(int i=0; i<getMeshCount(); ++i) {
-		Mesh* mesh = getMesh(i);
-		if(mesh->m_skins) {
-			for(uint j=0; j<mesh->m_skins->size; ++j) {
-				Skin& skin = mesh->m_skins->data[j];
-				if(skin.name && skin.name[0]) {
-					Bone* b = s->getBone(skin.name);
-					if(b) skin.bone = b->getIndex();
-				}
-			}
-		}
+	// Create skin maps
+	for(uint i=0; i<m_meshes.size(); ++i) {
+		if(m_meshes[i].skinMap) delete [] m_meshes[i].skinMap;
+		m_meshes[i].skinMap = createSkinMap(s, m_meshes[i].mesh);
 	}
 }
-
-
-int Model::addMesh(Mesh* mesh, const char* name, Bone* bone) {
-	mesh->grab();
-	MeshInfo info;
-	info.source  = mesh;
-	info.morphed = 0;
-	info.skinned = 0;
-	info.output  = mesh;
-	info.bone    = bone;
-	info.morphChanged = false;
-
-	m_meshes.push_back(info);
-	if(name) m_maps->meshes[name] = m_meshes.size()-1;
-	return m_meshes.size()-1;
+Skeleton* Model::getSkeleton() const {
+	return m_skeleton;
 }
 
-int Model::addSkin(Mesh* input, const char* name) {
-	input->grab();
-	MeshInfo info;
-	info.source  = input;
-	info.morphed = 0;
-	info.skinned = new Mesh(*input);
-	info.output  = info.skinned;
-	info.bone    = 0;
-	info.morphChanged = false;
-	info.skinned->grab();
+int* Model::createSkinMap(Skeleton* s, Mesh* m) {
+	int count = m->getSkinCount();
+	if(count == 0 || !s) return 0;
 
-	m_meshes.push_back(info);
-	if(name) m_maps->meshes[name] = m_meshes.size()-1;
-	return m_meshes.size()-1;
-}
-
-
-void Model::setAnimation(const Animation* anim, const Bone* b) {
-	AnimInfo* info = boneAnimation(b);
-	if(info && info->animation!=anim) {
-		info->animation = anim;
-		info->frame = 0;
-
-	} else if(!info) {
-		AnimInfo ninfo;
-		ninfo.animation = anim;
-		ninfo.bone = b;
-		ninfo.frame = 0;
-		ninfo.speed = 1;
-		m_animations.push_back(ninfo);
+	int* map = new int[count];
+	for(int i=0; i<count; ++i) {
+		int bone = s->getBoneIndex( m->getSkinName(i) );
+		if(bone<0) printf("Error: No bone for skin %s\n", m->getSkinName(i));
+		map[i] = bone<0? 0: bone;
 	}
+	return map;
 }
 
+// --------------------------------------------------------------------------------------- //
 
-Model::AnimInfo* Model::boneAnimation(const Bone* b) {
+void Model::setAnimationState(AnimationState* state) {
+	m_animationState = state;
+}
+
+AnimationState* Model::getAnimationState() const {
+	return m_animationState;
+}
+
+void Model::addAnimation(Animation* a) {
+	m_animations.push_back(a);
+}
+Animation* Model::getAnimation(const char* name) const {
 	for(uint i=0; i<m_animations.size(); ++i) {
-		if(m_animations[i].bone == b) return &m_animations[i];
+		if(strcmp(m_animations[i]->getName(), name)==0) return m_animations[i];
 	}
 	return 0;
 }
-const Model::AnimInfo* Model::boneAnimation(const Bone* b) const {
-	for(uint i=0; i<m_animations.size(); ++i) {
-		if(m_animations[i].bone == b) return &m_animations[i];
-	}
-	return 0;
+Animation* Model::getAnimation(int i) const {
+	if(i<0 || (size_t)i >= m_animations.size()) return 0;
+	return m_animations[i];
+}
+size_t Model::getAnimationCount() const {
+	return m_animations.size();
 }
 
+// --------------------------------------------------------------------------------------- //
 
-int Model::setMorph(int mesh, Morph* morph, float value) {
-	// ToDo: Validate morph against mesh
-	morph->grab();
-	MorphInfo info;
-	info.morph  = morph;
-	info.mesh   = mesh;
-	info.value  = value;
-	info.target = value;
-	info.speed  = 0;
-	// Add to lists
-	m_morphs.push_back(info);
-	m_maps->morphs[ morph->getName() ] = m_morphs.size()-1;
-	// Initial morph
-	if(value!=0) {
-		// Morph mesh here or flag update
-		m_meshes[ mesh ].morphChanged = true;
-	}
-	return m_morphs.size()-1;
+void Model::addExtension(ModelExtension* ext) {
+	m_extensions.push_back(ext);
 }
 
-void Model::setMorphValue(const char* morph, float value) {
-	int i = mapValue(m_maps->morphs, morph, -1);
-	if(i<0) return;
-	float oldValue = m_morphs[i].value;
-	m_morphs[i].value = m_morphs[i].target = value;
-	m_morphs[i].speed = 0;
-	if(value != oldValue) {
-		// Either morph mesh here, or flag a full update
-		m_meshes[ m_morphs[i].mesh ].morphChanged = true;
-	}
-}
+// --------------------------------------------------------------------------------------- //
 
-void Model::startMorph(const char* name, float target, float time) {
-	int i = mapValue(m_maps->morphs, name, -1);
-	if(i<0) return;
-	m_morphs[i].target = target;
-	m_morphs[i].speed  = (target - m_morphs[i].value) / time;
-}
-
-
-void Model::morphMesh(MeshInfo& mesh, MorphInfo& morph, bool clean) {
-	// Setup output mesh
-	if(mesh.source==0) {
-		mesh.source = mesh.output;
-		mesh.morphed = new Mesh(*mesh.source);
-		mesh.morphed->grab();
-	}
-	// Morph mesh
-	const Mesh* src = clean? mesh.source: mesh.morphed;
-	morphMesh(mesh.morphed, src, morph.morph, morph.value);
-	mesh.output = mesh.morphed;
-}
 
 void Model::update(float time) {
-	// Update any animated morphs
-	for(uint i=0; i<m_morphs.size(); ++i) {
-		if(m_morphs[i].speed!=0) {
-			// Update value
-			float r = fabs(m_morphs[i].value - m_morphs[i].target);
-			if(r <= fabs(m_morphs[i].speed)*time) {
-				m_morphs[i].value = m_morphs[i].target;
-				m_morphs[i].speed = 0;
-			} else m_morphs[i].value += m_morphs[i].speed * time;
-			// Flag change
-			m_meshes[ m_morphs[i].mesh ].morphChanged = true;
-		}
-	}
-
-	// Update the skeleton by any animations
-	for(uint i=0; i<m_animations.size(); ++i) {
-		if(m_animations[i].speed!=0) {
-			AnimInfo& info = m_animations[i];
-			const Animation* anim = info.animation;
-			int len = anim->getLength();
-			info.frame += anim->getSpeed() * info.speed * time;
-			// Loop, or terminate
-			if(anim->isLoop()) {
-				if(info.frame > len) info.frame -= len;
-				else if(info.frame<0) info.frame += len;
-			} else if(info.frame<=0 && info.speed<0) {
-				info.frame = 0;
-				info.speed = 0;
-			} else if(info.frame>=len && info.speed>0) {
-				info.frame = len;
-				info.speed = 0;
-			}
-			// Update skeleton
-			m_skeleton->animate(anim, info.frame, info.bone, 1);
-		}
-	}
-
-	// Update skeleton matrices
-	bool moved = m_skeleton && m_skeleton->update();
-
-	// Update any meshes - remorphing or skinning them
-	for(uint i=0; i<m_meshes.size(); ++i) {
-		bool morphed = false;
-		MeshInfo& mesh = m_meshes[i];
-		// Update morphs
-		if(mesh.morphChanged) {
-			mesh.morphChanged = false;
-			for(uint j=0; j<m_morphs.size(); ++j) {
-				if(m_morphs[j].mesh==i) {
-					morphMesh(mesh, m_morphs[j], morphed);
-					morphed = true;
-				}
-			}
-		}
-		// Reskin mesh
-		if(mesh.skinned && (moved || morphed)) {
-			skinMesh(mesh.skinned, mesh.morphed? mesh.morphed: mesh.source, m_skeleton);
-			mesh.output = mesh.skinned;;
-		}
+	// Update animation frames
+	if(m_animationState) {
+//		m_animationState->update(time);
+//		if(m_skeleton->update()) {
+			// Software skinning
+			if(getMeshCount() == 1) addMesh("skinned", createSkinTarget(m_meshes[0].mesh));
+			skinMesh(m_meshes[0].mesh, m_skeleton, m_meshes[0].skinMap, m_meshes[1].mesh);
+//		}
 	}
 }
 
 
 
 
-//// //// //// //// //// //// //// //// Static Mesh Manipulation Functions //// //// //// //// //// //// //// ////
+// --------------------------------------------------------------------------------------- //
 
-void Model::morphMesh(Mesh* out, const Mesh* src, const Morph* morph, float value) {
-	morph->apply(src, out, value);
+Mesh* Model::createSkinTarget(Mesh* src) {
+	Mesh* m = new Mesh();
+	// Reference index buffer
+	m->setIndexBuffer(src->getIndexBuffer());
+	// Duplicate vertex buffer
+	HardwareVertexBuffer* sbuf = src->getVertexBuffer();
+	HardwareVertexBuffer* buf = new HardwareVertexBuffer();
+	buf->copyData(sbuf->getData<char>(), sbuf->getVertexCount(), sbuf->getStride());
+	buf->attributes = sbuf->attributes;
+	m->setVertexBuffer(buf);
+	return m;
 }
 
-void Model::skinMesh(Mesh* out, const Mesh* src, const Skeleton* skeleton) {
-	// skin modifies vertex, normal, tangent
-	// src and out cannot be the same
-	
-	int  count = src->getVertexCount();
-	int  size = src->getStride() / sizeof(VertexType);
-	uint f = src->getFormat();
-	int  no = f&0xf;
-	int  to = no + ((f>>4)&0xf) + ((f>>8)&0xf) + ((f>>12)&0xf) + ((f>>16)&0xf);
+inline size_t getOffset(const base::HardwareVertexBuffer* buf, base::AttributeSemantic s) {
+	const base::Attribute& a = buf->attributes.get(s);
+	return a? a.offset: ~0u;
+}
 
-	// Clear affected vertex data
-	VertexType* r = out->getData();
-	for(int i=0; i<count; ++i)               memset(r+i*size,   0, no*sizeof(VertexType));
-	if(f&NORMAL)  for(int i=0; i<count; ++i) memset(r+no+i*size, 0, 3*sizeof(VertexType));
-	if(f&TANGENT) for(int i=0; i<count; ++i) memset(r+to+i*size, 0, 3*sizeof(VertexType));
+void Model::skinMesh(Mesh* in, const Skeleton* s, int* map, Mesh* out) {
+	int wpv = in->getWeightsPerVertex();
+	const char* skinData = in->getSkinBuffer()->getData<char>();
+	size_t wOffset = getOffset(in->getSkinBuffer(), VA_SKINWEIGHT);
+	size_t iOffset = getOffset(in->getSkinBuffer(), VA_SKININDEX);
+	size_t stride = in->getSkinBuffer()->getStride();
 
-	// Apply skins
-	const VertexType* in;
-	for(int i=0; i<src->getSkinCount(); ++i) {
-		const Skin* skin = src->getSkin(i);
-		const Bone* bone = skeleton->getBone( skin->bone );
-		Matrix mat = bone->getAbsoluteTransformation() * skin->offset;
+	// Setup skin matrices
+	Matrix* m = new Matrix[in->getSkinCount()];
+	for(uint i=0; i<in->getSkinCount(); ++i) {
+		m[i] =  s->getBone( map[i] )->getAbsoluteTransformation() * s->getSkinMatrix( map[i] );
+	}
 
-		// Transform vertex positions
-		for(uint j=0; j<skin->size; ++j) {
-			float weight = skin->weights[j];
-			uint ix      = skin->indices[j] * size;
-			in = src->getData() + ix;
-			r  = out->getData() + ix;
-			// Do multiply manually to save creating new objects
-			r[0] += weight * (mat[0]*in[0] + mat[4]*in[1] + mat[ 8]*in[2] + mat[12]);
-			r[1] += weight * (mat[1]*in[0] + mat[5]*in[1] + mat[ 9]*in[2] + mat[13]);
-			r[2] += weight * (mat[2]*in[0] + mat[6]*in[1] + mat[10]*in[2] + mat[14]);
-		}
+	// Get vertex offsets from semantics
+	size_t vOffset = getOffset(in->getVertexBuffer(), VA_VERTEX);
+	//size_t nOffset = getOffset(in->getVertexBuffer(), VA_NORMAL);
+	//size_t tOffset = getOffset(in->getVertexBuffer(), VA_TANGENT);
+	size_t vStride = in->getVertexBuffer()->getStride();
+	char* source = in->getVertexBuffer()->getData<char>();
+	char* dest  = out->getVertexBuffer()->getData<char>();
 
-		// Normals
-		if(f&NORMAL) for(uint j=0; j<skin->size; ++j) {
-			float weight = skin->weights[j];
-			uint ix      = skin->indices[j] * size + no;
-			in = src->getData() + ix;
-			r  = out->getData() + ix;
-			// Do multiply manually to save creating new objects
-			r[0] += weight * (mat[0]*in[0] + mat[4]*in[1] + mat[ 8]*in[2]);
-			r[1] += weight * (mat[1]*in[0] + mat[5]*in[1] + mat[ 9]*in[2]);
-			r[2] += weight * (mat[2]*in[0] + mat[6]*in[1] + mat[10]*in[2]);
-		}
+	// Positions
+	for(size_t i=0; i<in->getVertexCount(); ++i) {
+		vec3* vertexIn  = (vec3*) (source + vOffset + i*vStride);
+		vec3* vertexOut = (vec3*) (dest + vOffset + i*vStride);
 
-		// Tangents
-		if(f&TANGENT) for(uint j=0; j<skin->size; ++j) {
-			float weight = skin->weights[j];
-			uint ix      = skin->indices[j] * size + to;
-			in = src->getData() + ix;
-			r  = out->getData() + ix;
-			// Do multiply manually to save creating new objects
-			r[0] += weight * (mat[0]*in[0] + mat[4]*in[1] + mat[ 8]*in[2]);
-			r[1] += weight * (mat[1]*in[0] + mat[5]*in[1] + mat[ 9]*in[2]);
-			r[2] += weight * (mat[2]*in[0] + mat[6]*in[1] + mat[10]*in[2]);
+		float* weights = (float*) (skinData + i * stride + wOffset);
+		IndexType* indices = (IndexType*) (skinData + i*stride + iOffset);
+		
+		memset(vertexOut, 0, sizeof(vec3));
+		for(int j=0; j<wpv && weights[j]>0; ++j) {
+			*vertexOut += m[ indices[j] ] * *vertexIn * weights[j];
 		}
 	}
-}
 
+	delete [] m;
+}
 

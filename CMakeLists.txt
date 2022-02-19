@@ -8,32 +8,50 @@ set(src
 	src/directory.cpp
 	src/file.cpp
 	src/font.cpp
-	src/framebuffer.cpp
 	src/game.cpp
+	src/gamestate.cpp
 	src/glhprojection.cpp
-#	src/gui.cpp
-#	src/guifile.cpp
+	src/hardwarebuffer.cpp
 	src/inifile.cpp
 	src/input.cpp
 	src/joystick.cpp
-	src/material.cpp
 	src/png.cpp
+	src/resources.cpp
 	src/dds.cpp
-	src/scene.cpp
-	src/shader.cpp
-	src/state.cpp
-	src/texture.cpp
 	src/window.cpp
 	src/xml.cpp
 
-	src/model/model.cpp
-	src/model/mesh.cpp
-	src/model/morph.cpp
-	src/model/skeleton.cpp
+	src/scene/autovariables.cpp
+	src/scene/compositor.cpp
+	src/scene/debuggeometry.cpp
+	src/scene/drawable.cpp
+	src/scene/framebuffer.cpp
+	src/scene/material.cpp
+	src/scene/renderer.cpp
+	src/scene/scene.cpp
+	src/scene/shader.cpp
+	src/scene/texture.cpp
+
+	src/model/animationcontroller.cpp
 	src/model/animation.cpp
-	src/model/drawmodel.cpp
-	src/model/xmodel.cpp
+	src/model/animationstate.cpp
+	src/model/bmloader.cpp
+	src/model/mesh.cpp
+	src/model/model.cpp
+	src/model/skeleton.cpp
 	src/model/wavefront.cpp
+
+	src/gui/font.cpp
+	src/gui/gui.cpp
+	src/gui/imagegen.cpp
+	src/gui/layouts.cpp
+	src/gui/lists.cpp
+	src/gui/loader.cpp
+	src/gui/renderer.cpp
+	src/gui/table.cpp
+	src/gui/textbox.cpp
+	src/gui/tree.cpp
+	src/gui/widgets.cpp
 )
 
 set( png
@@ -68,48 +86,67 @@ set( zlib
 )
 
 set(headers
+
+	include/base/animationcontroller.h
 	include/base/animation.h
+	include/base/animationstate.h
+	include/base/autovariables.h
+	include/base/bmloader.h
+	include/base/bounds.h
 	include/base/camera.h
-	include/base/colour.h
-	include/base/fpscamera.h
-	include/base/orbitcamera.h
 	include/base/collision.h
+	include/base/colour.h
+	include/base/compositor.h
 	include/base/dds.h
-	include/base/draw.h
+	include/base/debuggeometry.h
 	include/base/directory.h
+	include/base/drawable.h
+	include/base/drawablemesh.h
 	include/base/file.h
-	include/base/font.h
+	include/base/fpscamera.h
 	include/base/framebuffer.h
 	include/base/game.h
-	include/base/graph.h
-#	include/base/gui.h
+	include/base/gamestate.h
+	include/base/genmesh.h
+	include/base/hardwarebuffer.h
 	include/base/hashmap.h
 	include/base/inifile.h
 	include/base/input.h
 	include/base/material.h
+	include/base/math.h
+	include/base/matrix.h
 	include/base/mesh.h
-	include/base/morph.h
 	include/base/model.h
 	include/base/noise.h
 	include/base/opengl.h
+	include/base/orbitcamera.h
+	include/base/parse.h
 	include/base/png.h
+	include/base/point.h
+	include/base/quaternion.h
+	include/base/renderer.h
+	include/base/resources.h
+	include/base/resourcemanager.h
 	include/base/scene.h
 	include/base/shader.h
 	include/base/skeleton.h
-	include/base/state.h
 	include/base/texture.h
 	include/base/thread.h
+	include/base/vec.h
+	include/base/wavefront.h
 	include/base/window.h
 	include/base/xml.h
-	include/base/xmodel.h
-	include/base/wavefront.h
 
-	include/base/math.h
-	include/base/bounds.h
-	include/base/matrix.h
-	include/base/point.h
-	include/base/quaternion.h
-	include/base/vec.h
+	include/base/gui/any.h
+	include/base/gui/delegate.h
+	include/base/gui/font.h
+	include/base/gui/gui.h
+	include/base/gui/layouts.h
+	include/base/gui/lists.h
+	include/base/gui/renderer.h
+	include/base/gui/skin.h
+	include/base/gui/tree.h
+	include/base/gui/widgets.h
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
@@ -128,7 +165,7 @@ elseif(UNIX)
 	list(APPEND headers include/base/window_x11.h)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
 add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
 include_directories( include )

@@ -1,12 +1,8 @@
-#ifndef _WAVEFRONT_
-#define _WAVEFRONT_
+#pragma once
 
 #include <base/math.h>
 
 namespace base {
-	class SMaterial;
-
-namespace model {
 	class Model;
 	class Mesh;
 
@@ -14,19 +10,13 @@ namespace model {
 	class Wavefront {
 		public:
 		static Model* load(const char* filename);
-		static Model* parse(const char* string);
+		static Model* parse(const char* data);
 		static bool   save(Model* model, const char* filename);
-
-		static void setMaterialFunc( SMaterial*(*)(const char* name));
+		static bool   save(Mesh* model, const char* filename);
 
 		protected:
-		static Mesh* build(int size, Point3* f, vec3* vx, vec2* tx, vec3* nx, const char* mat);
-		static SMaterial*(*s_matFunc)(const char*);
+		static Mesh* buildMesh(int size, Point3* f, vec3* vx, vec2* tx, vec3* nx);
 	};
 
 }
-}
-
-
-#endif
 

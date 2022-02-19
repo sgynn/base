@@ -1,19 +1,12 @@
-#include "base/wavefront.h"
-#include "base/model.h"
-#include "base/parse.h"
+#include <base/wavefront.h>
+#include <base/hardwarebuffer.h>
+#include <base/model.h>
+#include <base/parse.h>
 #include <cstdio>
 #include <vector>
 #include <map>
 
 using namespace base;
-using namespace model;
-
-SMaterial*(*Wavefront::s_matFunc)(const char*) = 0;
-void Wavefront::setMaterialFunc(SMaterial*(*func)(const char*)) {
-	s_matFunc = func;
-}
-
-
 
 Model* Wavefront::load(const char* file) {
 	FILE* fp  = fopen(file, "r");
@@ -33,7 +26,6 @@ Model* Wavefront::load(const char* file) {
 	}
 	printf("Failed to load Wavefront model %s\n", file);
 	return 0;
-
 }
 
 Model* Wavefront::parse(const char* str) {
@@ -127,7 +119,7 @@ Model* Wavefront::parse(const char* str) {
 
 			// start a new mesh
 			if(!f.empty()) {
-				model->addMesh( build(f.size(), &f[0], &vx[0], &vt[0], &vn[0], material) );
+				model->addMesh(0, buildMesh(f.size(), &f[0], &vx[0], &vt[0], &vn[0]), material);
 				f.clear();
 			}
 			break;
@@ -140,7 +132,7 @@ Model* Wavefront::parse(const char* str) {
 				s += r;
 				// Start a new mesh
 				if(!f.empty()) {
-					model->addMesh( build(f.size(), &f[0], &vx[0], &vt[0], &vn[0], material) );
+					model->addMesh(0, buildMesh(f.size(), &f[0], &vx[0], &vt[0], &vn[0]), material);
 					f.clear();
 				}
 				break;
@@ -152,7 +144,7 @@ Model* Wavefront::parse(const char* str) {
 	}
 
 	// Add final mesh
-	if(!f.empty()) model->addMesh( build(f.size(), &f[0], &vx[0], &vt[0], &vn[0], material) );
+	if(!f.empty()) model->addMesh(0, buildMesh(f.size(), &f[0], &vx[0], &vt[0], &vn[0]), material);
 
 	// Something failed
 	if(model->getMeshCount()==0) { delete model; return 0; }
@@ -160,9 +152,12 @@ Model* Wavefront::parse(const char* str) {
 }
 
 
-Mesh* Wavefront::build(int size, Point3* f, vec3* vx, vec2* tx, vec3* nx, const char* mat) {
+Mesh* Wavefront::buildMesh(int size, Point3* f, vec3* vx, vec2* tx, vec3* nx) {
 	std::map<Point3, int> map;
 	std::map<Point3, int>::iterator it;
+
+	HardwareVertexBuffer* vertexBuffer = new HardwareVertexBuffer();
+	HardwareIndexBuffer* indexBuffer = new HardwareIndexBuffer();
 	
 	// Index array
 	uint16* ix = new uint16[size];
@@ -173,29 +168,66 @@ Mesh* Wavefront::build(int size, Point3* f, vec3* vx, vec2* tx, vec3* nx, const 
 			map[f[i]] = ix[i];
 		} else ix[i] = it->second;
 	}
+	indexBuffer->setData(ix, size, true);
 
 	// Vertex array
-	uint format = VERTEX3 | (tx? TEXCOORD: 0) | (nx? NORMAL: 0);
-	int stride = Mesh::formatSize(format);
+	vertexBuffer->attributes.add(VA_VERTEX, VA_FLOAT3);
+	if(nx) vertexBuffer->attributes.add(VA_NORMAL, VA_FLOAT3);
+	if(tx) vertexBuffer->attributes.add(VA_TEXCOORD, VA_FLOAT2);
+	int stride = vertexBuffer->attributes.calculateStride() / 4;
 	int on = 3, ot = (nx?6:3);
-
 	float* v = new float[ stride * map.size() ];
 	for(it=map.begin(); it!=map.end(); ++it) {
 		const Point3& d = it->first;
 		int k = it->second * stride;
 		memcpy(v+k, vx+d.x-1,  3*sizeof(float));
-		if(tx && d.y) memcpy(v+k+ot, tx+d.y-1, 2*sizeof(float));
 		if(nx && d.z) memcpy(v+k+on, nx+d.z-1, 3*sizeof(float));
+		if(tx && d.y) memcpy(v+k+ot, tx+d.y-1, 2*sizeof(float));
 	}
 
 	// Create mesh object
 	Mesh* mesh = new Mesh;
-	mesh->setVertices(map.size(), v, format);
-	mesh->setIndices(size, ix);
-	if(mat[0] && s_matFunc) mesh->setMaterial( s_matFunc(mat) );
+	mesh->setVertexBuffer(vertexBuffer);
+	mesh->setIndexBuffer(indexBuffer);
 	return mesh;
 }
 
+static void writeMesh(FILE* fp, Mesh* mesh, int offset=0) {
+	bool hasNormals = mesh->getVertexBuffer()->attributes.hasAttrribute(VA_NORMAL);
+	bool hasTexCoords = mesh->getVertexBuffer()->attributes.hasAttrribute(VA_TEXCOORD);
+	uint vertexCount = mesh->getVertexCount();
+
+	// Vertices
+	for(uint i=0; i<vertexCount; ++i) {
+		const vec3& v = mesh->getVertex(i);
+		fprintf(fp, "v %g %g %g\n", v.x, v.y, v.z);
+	}
+	// Normals
+	if(hasNormals) {
+		for(uint i=0; i<vertexCount; ++i) {
+			const vec3& n = mesh->getNormal(i);
+			fprintf(fp, "vn %g %g %g\n", n.x, n.y, n.z);
+		}
+	}
+	//TexCoords
+	if(hasTexCoords) {
+		const Attribute& elem = mesh->getVertexBuffer()->attributes.get(VA_TEXCOORD, 0);
+		for(uint i=0; i<vertexCount; ++i) {
+			const vec2& t = mesh->getVertexBuffer()->getVertexData<vec2>(elem, i);
+			fprintf(fp, "vt %g %g\n", t.x, t.y);
+		}
+	}
+	// Faces
+	uint size = mesh->getIndexCount();
+	for(uint i=0; i<size; ++i) {
+		if(i%3==0) fprintf(fp, "\nf ");
+		uint16 ix = mesh->getIndexBuffer()->getIndex(i) + offset;
+		fprintf(fp, "%d", ix);
+		if(hasTexCoords) fprintf(fp,"/%d", ix);
+		else if(hasNormals) fprintf(fp, "/");
+		if(hasNormals) fprintf(fp, "/%d", ix);
+	}
+}
 
 
 bool Wavefront::save(Model* model, const char* filename) {
@@ -206,35 +238,19 @@ bool Wavefront::save(Model* model, const char* filename) {
 	int offset = 1;
 	for(int m=0; m<model->getMeshCount(); ++m) {
 		Mesh* mesh = model->getMesh(m);
-		uint f = mesh->getFormat();
 		if(model->getMeshCount()>1) fprintf(fp, "g mesh%d\n", m+1);
-		// Vertices
-		for(uint i=0; i<mesh->getVertexCount(); ++i) {
-			const vec3& v = mesh->getVertex(i);
-			fprintf(fp, "v %g %g %g\n", v.x, v.y, v.z);
-		}
-		// Normals
-		if(f&NORMAL) for(uint i=0; i<mesh->getVertexCount(); ++i) {
-			const vec3& n = mesh->getNormal(i);
-			fprintf(fp, "vn %g %g %g\n", n.x, n.y, n.z);
-		}
-		//TexCoords
-		if(f&TEXCOORD) for(uint i=0; i<mesh->getVertexCount(); ++i) {
-			const vec2& t = mesh->getTexCoord(i);
-			fprintf(fp, "vt %g %g\n", t.x, t.y);
-		}
-		// Faces
-		for(uint i=0; i<mesh->getSize(); ++i) {
-			if(i%3==0) fprintf(fp, "\nf ");
-			uint16 ix = mesh->getIndex(i) + offset;
-			fprintf(fp, "%d", ix);
-			if(f&TEXCOORD) fprintf(fp,"/%d", ix);
-			else if(f&NORMAL) fprintf(fp, "/");
-			if(f&NORMAL) fprintf(fp, "/%d", ix);
-		}
-		
+		writeMesh(fp, mesh, offset);
 		offset += mesh->getVertexCount();
 	}
+	fclose(fp);
+	return true;
+}
+
+bool Wavefront::save(Mesh* mesh, const char* filename) {
+	FILE* fp = fopen(filename, "w");
+	if(!fp) return false;
+	fprintf(fp, "# libbase OBJ file #\n");
+	writeMesh(fp, mesh, 1);
 	fclose(fp);
 	return true;
 }

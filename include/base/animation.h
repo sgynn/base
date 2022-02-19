@@ -1,11 +1,11 @@
-#ifndef _BASE_ANIMATION_
-#define _BASE_ANIMATION_
+#pragma once
 
-#include "math.h"
+#include <base/math.h>
 #include <vector>
 
 namespace base {
-namespace model {
+
+	class Skeleton;
 
 
 	/** Model animation class. */
@@ -14,10 +14,10 @@ namespace model {
 		Animation();										/**< Default constructor */
 		~Animation();										/**< Destructor */
 
-		Animation*  grab();									/** Grab reference */
-		int         drop();									/** Drop reference */
+		Animation*  addReference();							/** Add reference */
+		int         dropReference();						/** Drop reference */
 
-		Animation*  extract(int start, int end) const;		/**< Create an animation from a subset of keyframes */
+		Animation*  subAnimation(int start, int end) const;	/**< Create an animation from a subset of keyframes */
 		void        optimise();								/**< Remove redundant keyframes */
 		int         getLength() const;						/**< Get the animation length in frames */
 		void        setSpeed(float fps);					/**< Set animation speed in frames per second */
@@ -26,41 +26,54 @@ namespace model {
 		bool        isLoop() const;                         /**< Is this animation looped */
 		const char* getName() const;						/**< Get animation name */
 		void        setName(const char* name);				/**< Set animation name */
+		int         getSize() const;						/// Get number of key sets
 
-		void addPositionKey(int bone, int frame, const vec3& position);	/**< Add a position keyframe */
-		void addRotationKey(int bone, int frame, const Quaternion& q);	/**< Add a rotation keyframe */
-		void addScaleKey   (int bone, int frame, const vec3& scale);	/**< Add a scale keyframe */
+		int  getBoneID(const char* name) const;				// Get the bone id of a named bone
+		int  addKeySet(const char* name);					// Add animation keyset
 
-		bool removePositionKey(int bone, int frame);					/**< Delete a position keyframe */
-		bool removeRotationKey(int bone, int frame);					/**< Delete a rotation keyframe */
-		bool removeScaleKey(int bone, int frame);						/**< Delete a scale keyframe */
+		const char* getMap(const Skeleton* s) const;		// Get bone->keyset map
 
-		int getPosition(int bone, float frame, int hint, vec3& position) const;			/**< Get the interpolated position at a frame */
-		int getRotation(int bone, float frame, int hint, Quaternion& rotation) const;	/**< Get the interpolated rotation at a frame */
-		int getScale   (int bone, float frame, int hint, vec3& scale) const;			/**< Get the interpolated scale at a frame */
+		void addPositionKey(int set, int frame, const vec3& position);	/**< Add a position keyframe */
+		void addRotationKey(int set, int frame, const Quaternion& q);	/**< Add a rotation keyframe */
+		void addScaleKey   (int set, int frame, const vec3& scale);	/**< Add a scale keyframe */
+
+		bool removePositionKey(int set, int frame);					/**< Delete a position keyframe */
+		bool removeRotationKey(int set, int frame);					/**< Delete a rotation keyframe */
+		bool removeScaleKey(int set, int frame);						/**< Delete a scale keyframe */
+
+		int getPosition(int set, float frame, int hint, vec3& position) const;			/**< Get the interpolated position at a frame */
+		int getRotation(int set, float frame, int hint, Quaternion& rotation) const;	/**< Get the interpolated rotation at a frame */
+		int getScale   (int set, float frame, int hint, vec3& scale) const;			/**< Get the interpolated scale at a frame */
 
 		private:
 		// Keyframe structure
 		template<int N> struct Keyframe { int frame; float data[N]; };
 		// Each bone has a keyframe list
-		struct KeyframeList {
+		struct KeySet {
+			char name[64];
 			std::vector< Keyframe<4> > rotation;
 			std::vector< Keyframe<3> > position;
 			std::vector< Keyframe<3> > scale;
 		};
 
-		KeyframeList* m_animations;		// Array of bone animations
-		const         char* m_name;		// Animation name
-		int           m_size;			// Number of bone animations
-		int           m_length;			// Animation length in frames
-		float         m_fps;			// Animation speed
-		bool          m_loop;			// Does animation loop
-		int           m_ref;			// Reference counter
+		std::vector<KeySet*> m_animations;	// Bone animations
+		const    char* m_name;		// Animation name
+		int      m_length;			// Animation length in frames
+		float    m_fps;				// Animation speed
+		bool     m_loop;			// Does animation loop
+		int      m_ref;				// Reference counter
 
-		KeyframeList& addList(int bone);	// Get keyframe list from a bone, add if not there.
 		template<int N> void addKey(    std::vector< Keyframe<N> >&, int frame, const float* value);
 		template<int N> bool removeKey( std::vector< Keyframe<N> >&, int frame);
 		template<int N, class P> int getValue( std::vector< Keyframe<N> >& keys, float frame, int hint, float* value, const float* def, P interpolate) const;
+
+		// Skeleton maps
+		struct SkeletonMap {
+			char*      map;
+			int        size;
+			unsigned   skeletonID;
+		};
+		mutable std::vector<SkeletonMap> m_maps;
 	};
 
 	// Interpolation functors
@@ -93,8 +106,8 @@ namespace model {
 
 	// Inline implementation
 	
-	inline Animation*  Animation::grab()                 { ++m_ref; return this; }
-	inline int         Animation::drop()                 { if(--m_ref>0) return m_ref; delete this; return 0; }
+	inline Animation*  Animation::addReference()         { ++m_ref; return this; }
+	inline int         Animation::dropReference()        { if(--m_ref>0) return m_ref; delete this; return 0; }
 	inline int         Animation::getLength() const      { return m_length; }
 	inline float       Animation::getSpeed() const       { return m_fps; }
 	inline void        Animation::setSpeed(float fps)    { m_fps = fps; }
@@ -102,10 +115,8 @@ namespace model {
 	inline bool        Animation::isLoop() const         { return m_loop; }
 	inline const char* Animation::getName() const        { return m_name; }
 	inline void        Animation::setName(const char* n) { m_name = n; }
+	inline int         Animation::getSize() const        { return m_animations.size(); }
 
 	
-};
-};
-
-#endif
+}
 

@@ -1,151 +1,120 @@
-#ifndef _BASE_SHADER_
-#define _BASE_SHADER_
+#pragma once
 
-#include <map>
 #include <vector>
 #include <string>
+
 namespace base {
 
-class ShaderBase {
-	protected:
+enum ShaderType { VERTEX_SHADER, FRAGMENT_SHADER, GEOMETRY_SHADER, TESSCONTROL_SHADER, TESSELATION_SHADER };
+class ShaderPart {
 	friend class Shader;
-	unsigned int m_shader;
-	bool m_compiled;
-	int m_type;
-	ShaderBase(int type): m_shader(0), m_compiled(0), m_type(type) {}
 	public:
-	char* log(char* buffer, int size) const;
+	ShaderPart(ShaderType type, const char* source=0, const char* defines=0);
+	ShaderPart(const ShaderPart&);
+	ShaderPart(ShaderPart&&);
+	~ShaderPart();
+	ShaderPart& operator=(ShaderPart&);
+	int  getLog(char* buffer, int size) const;		// Get shader compile log
+	void setSource(const char*);					// Set shader source
+	void define(const char* def);					// Set a preprocessor define
+	void undef(const char* def);					// Unset a preprocessor define
+	bool isDefined(const char* def) const;			// Is a preprocessor defined
+	void setDefines(const char* def);				// Set all proprocessor defines separated by commas
+	bool compile();									// Compile shader
+
+	ShaderType  getType() const { return m_type; }
+	const char* getSource() const { return m_source; }
+	protected:
+	bool preprocess(const char* code, ShaderType type, int& version, char*& output);
+	int  getDefineIndex(const char*) const;
+	void dropSource();
+
+	protected:
+	ShaderType  m_type;
+	unsigned    m_object;
+	int         m_compiled;
+	bool        m_changed;
+	char*       m_source;
+	int*        m_sourceRef;
+	std::vector<char*> m_defines;
 };
 
-class VertexShader : public ShaderBase {
-	public:
-	VertexShader() : ShaderBase(1) {};
-};
-
-class FragmentShader : public ShaderBase {
-	public:
-	FragmentShader() : ShaderBase(2) {};
-};
-
-class GeometryShader : public ShaderBase {
-	public:
-	GeometryShader() : ShaderBase(3) {};
-};
+enum AttributeMode { SA_FLOAT, SA_NORMALISED, SA_INTEGER, SA_DOUBLE };
 
 /** Simple GLSL Shader class */
 class Shader {
-	friend class ShaderBase;
 	public:
-	
-	/** Load and compile a GLSL shader from file. Must include both vertex and fragment programs */
-	static Shader load(const char* filename);
-	/** Load and compile a GLSL shader from seperate files for each part */
-	static Shader load(const char* vertFile, const char* fragFile);
-	/** Load and compile a GLSL shader from seperate files for each part */
-	static Shader load(const char* vertFile, const char* geomFile, const char* fragFile);
-	
-	/** Link a shader containing specified pre-made parts */
-	static Shader link(const VertexShader&, const FragmentShader&); 
-	/** Link a shader containing specified pre-made parts */
-	static Shader link(const VertexShader&, const GeometryShader&, const FragmentShader&);
 
-	/** Load a vertex shader from file */
-	static VertexShader   loadVertex(const char* filename);
-	/** Load a fragment shader from file */
-	static FragmentShader loadFragment(const char* filename);
-	/** Load a geometry shader from file */
-	static GeometryShader loadGeometry(const char* filename);
+	/** Get supported shader version */
+	static int getSupportedVersion();
 
-	/** Create a vertex shader from a string array */
-	static VertexShader   createVertex(const char** code, int c=1);
-	/** Create a fragment shader from a string array */
-	static FragmentShader createFragment(const char** code, int c=1);
-	/** Create a geometry shader from a string array */
-	static GeometryShader createGeometry(const char** code, int c=1);
-
-	// Backwards compatibiliy
-	static Shader getShader(const char* f) { return load(f); }
-
-
-	/** Does this computer support shaders? */
-	static int supported();
-	/** Get the currently bound shader. */
-	static Shader& current() { return s_currentShader; }
-	/** A null shader constant */
+	/** Currently bound shader */
+	static const Shader& current() { return *s_currentShader; }
 	static const Shader Null;
-	
-	/** Default constructor - creates null shader */
+
+	public:
 	Shader();
-	
-	/** Bind the shader program. Bind null shader to unbind */
-	void bind() const;
+	~Shader();
+	Shader(Shader&& s);
+	Shader& operator=(const Shader&) = default;
 
-	/** Is the shader ready to be bound? */
-	bool ready() const { return m_program; }
-	
-	/** Get the linker log for this shader */
-	char* log(char* buffer, int size) const;
+	Shader clone() const;	// Create a clone of this shader, with cloned program objects
 
-	void Texture(const char* name, int index) { Uniform1i(name, index); }
-	
-	void Uniform1i(const char* name, int v1);
-	void Uniform2i(const char* name, int v1, int v2);
-	void Uniform3i(const char* name, int v1, int v2, int v3);
-	void Uniform4i(const char* name, int v1, int v2, int v3, int v4);
-	void Uniformiv(const char* name, int size, const int *v);
-	
-	void Uniform1f(const char* name, float v1);
-	void Uniform2f(const char* name, float v1, float v2);
-	void Uniform3f(const char* name, float v1, float v2, float v3);
-	void Uniform4f(const char* name, float v1, float v2, float v3, float v4);
-	void Uniformfv(const char* name, int size, const float *v);
+	void attach(ShaderPart* s);
+	void setEntryPoint(ShaderType stage, const char* entry);
+	bool isCompiled() const;	// is shader compiled
+	bool needsRecompile() const;// does this shader need recompiling
+	bool compile();				// compile shader
+	void bind() const;			// bind shader
 
-	unsigned getName(const char* name) const;
-	void uniform1i(unsigned name, int v1) const;
-	void uniformiv(unsigned name, int size, const int* v) const;
-	void uniform1f(unsigned name, float v1) const;
-	void uniform2f(unsigned name, float v1, float v2) const;
-	void uniform3f(unsigned name, float v1, float v2, float v3) const;
-	void uniform4f(unsigned name, float v1, float v2, float v3, float v4) const;
+	void setDefines(const char* defines);		// Set defines on all shader objeccts
 
-	
-	//There are a hell of a lot more where these came from: short1-4, double1-4, many others types in array form 1-4
-	//If you want them, #include glext.h, and use Shader.variable(name, type) to get the variable's index.
-	void Attribute1f(const char* name, float v1);
-	void Attribute2f(const char* name, float v1, float v2);
-	void Attribute3f(const char* name, float v1, float v2, float v3);
-	void Attribute4f(const char* name, float v1, float v2, float v3, float v4);
-	
-	void EnableAttributeArray(const char* name);
-	void DisableAttributeArray(const char* name);
-	void AttributePointer(const char *name, int size, int type, bool normalised, size_t stride, const void *pointer);
-	
+	int getLog(char* buffer, int size) const;	// Get compile log
+
+	// Attributes
+	void bindAttributeLocation(const char* name, int index);
+	int  getAttributeLocation(const char* name) const;
+	void setAttributePointer(int loc, int size, int type, size_t stride, AttributeMode mode, const void *pointer) const;
+
+	static void enableAttributeArray(int loc);
+	static void disableAttributeArray(int loc);
+
+	// Outputs
+	void bindOutput(const char* name, int index);
+
+	// Uniforms
+	int getUniformLocation(const char* name) const;
+	void setUniform1(int loc, int count, const int* values) const;
+	void setUniform2(int loc, int count, const int* values) const;
+	void setUniform3(int loc, int count, const int* values) const;
+	void setUniform4(int loc, int count, const int* values) const;
+
+	void setUniform1(int loc, int count, const float* values) const;
+	void setUniform2(int loc, int count, const float* values) const;
+	void setUniform3(int loc, int count, const float* values) const;
+	void setUniform4(int loc, int count, const float* values) const;
+
+	void setMatrix2(int loc, int count, const float* matrices) const;
+	void setMatrix3(int loc, int count, const float* matrices) const;
+	void setMatrix4(int loc, int count, const float* matrices) const;
+	void setMatrix3x4(int loc, int count, const float* matrices) const;
+
+	struct UniformInfo { char name[32]; int type; int size; };
+	typedef std::vector<UniformInfo> UniformList;
+	UniformList getUniforms() const;
+
+	const std::vector<ShaderPart*> getParts() const { return m_shaders; }
+
 	private:
-	enum VType { UNIFORM, ATTRIBUTE };
-	int variable(const char* name, VType type);
-	
-	static const char* loadFile(const char* filename);
-	static bool preprocess(const char* data, int type, int& version, char*& output);
-	static bool compile(ShaderBase& shader, const char** code, int l);
-	static int  queryShader(unsigned int shader, int param);
-	static int  queryProgram(unsigned int shader, int param);
-	
-	//store variable pointers
-	std::map<std::string, int> m_vars;
-	int m_linked;
-	FragmentShader m_fragment;
-	GeometryShader m_geometry;
-	VertexShader   m_vertex;
-	unsigned int m_program;
-	
-	//need to store uniform variable values so they can be edited when the shader is not bound ?
-	//that is a job for a material class though
-	
-	static int s_supported;
-	static Shader s_currentShader;
-	static unsigned int s_bound; //currently bound shader
-};
-};
+	std::vector<ShaderPart*> m_shaders;
+	char*    m_entry[5];
+	unsigned m_object;
+	int      m_linked;
+	bool     m_changed;
 
-#endif
+	
+	static int           s_supported;
+	static const Shader* s_currentShader;
+};
+}
 
