@@ -54,6 +54,13 @@ set(src
 	src/gui/widgets.cpp
 )
 
+set(audio
+	src/audio/audio.cpp
+	src/audio/loader.cpp
+	src/audio/object.cpp
+	src/audio/source.cpp
+)
+
 set( png
 	src/png/png.c
 	src/png/pngerror.c
@@ -90,6 +97,7 @@ set(headers
 	include/base/animationcontroller.h
 	include/base/animation.h
 	include/base/animationstate.h
+	include/base/audio.h
 	include/base/autovariables.h
 	include/base/bmloader.h
 	include/base/bounds.h
@@ -169,14 +177,14 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
-add_library(base STATIC ${src} ${png} ${zlib} ${headers} )
+add_library(base STATIC ${src} ${png} ${zlib} ${audio} ${headers} ${guiheaders} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 install(FILES ${guiheaders} DESTINATION include/base/gui)
 
 
 if(WEB)
-	set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -pthread -s USE_PTHREADS=1")
+	set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -DFREETYPE -pthread -s USE_PTHREADS=1 -s USE_FREETYPE=1")
 	install(TARGETS base DESTINATION lib)
 elseif(MINGW)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
