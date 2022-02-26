@@ -112,7 +112,8 @@ Model* Wavefront::parse(const char* str) {
 			break;
 		
 		case 'g':	// Groups
-			s += parseSpace(++s);
+			++s;
+			s += parseSpace(s);
 			r += parseDelimiter(s, '\n', group, 32);
 			for(char* c=group; *c; ++c) if(*c==' ' || *c=='\t') { *c=0; break; }
 			s += r;

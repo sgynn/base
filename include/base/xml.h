@@ -18,7 +18,7 @@ class RefString {
 	const RefString& operator=(const RefString&);
 	const RefString& operator=(const char*);
 	operator const char*() const { return s; }
-	RefString substr(size_t start, size_t len=~0ull);
+	RefString substr(size_t start, size_t len=(size_t)-1);
 	RefString& append(const char* s);
 };
 

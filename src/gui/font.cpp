@@ -22,6 +22,10 @@
 #include FT_TRUETYPE_TABLES_H
 #endif
 
+#if !defined(LINUX) && !defined(WIN32) && !defined(FREETYPE)
+#error "No font system defined"
+#endif
+
 using namespace gui;
 
 gui::Font::Font(const char* name, int size) : m_size(size) {
@@ -166,7 +170,10 @@ const Point& gui::Font::print(int x, int y, int size, const char* text) const {
 
 unsigned char* gui::Font::build(const char* name, int size, int width, int height) {
 	memset(m_glyphs, 0, 128*sizeof(Rect));
+
+	#ifndef FREETYPE
 	bool bold = false;
+	#endif
 	
 	#ifdef LINUX // LINUX (X11)
 	char str[256];
@@ -351,7 +358,7 @@ unsigned char* gui::Font::build(const char* name, int size, int width, int heigh
 			FT_UInt index = FT_Get_Char_Index(face, i);
 			if(FT_Load_Glyph(face, index, FT_LOAD_DEFAULT | FT_LOAD_RENDER)==0) {
 				if(face->glyph->bitmap.buffer) {
-					float bearingX = face->glyph->metrics.horiBearingX / 64.f;
+					//float bearingX = face->glyph->metrics.horiBearingX / 64.f;
 
 					// Copy out glyph pixels
 					int w = face->glyph->bitmap.width;
@@ -393,6 +400,8 @@ unsigned char* gui::Font::build(const char* name, int size, int width, int heigh
 	FT_Done_FreeType(library);
 	return data;
 	#endif
+
+	return 0;
 }
 
 

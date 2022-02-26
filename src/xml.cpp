@@ -240,7 +240,7 @@ const char* XML::toString() const {
 	size_t len = 1024;
 	size_t p = 0;
 	char* s = new char[len];
-	sprintf(s, head);
+	sprintf(s, "%s", head);
 	p = strlen(head);
 	std::vector<const Element*> stack;
 	std::vector<unsigned> index;

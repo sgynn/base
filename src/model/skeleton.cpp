@@ -103,9 +103,9 @@ void Bone::updateLocal() {
 
 
 
-Skeleton::Skeleton(): m_bones(0), m_count(0), m_last(0), m_hints(0), m_flags(0), m_matrices(0), m_rest(0) {
+Skeleton::Skeleton(): m_bones(0), m_count(0), m_hints(0), m_flags(0), m_matrices(0), m_rest(0) {
 }
-Skeleton::Skeleton(const Skeleton& s) : m_count(s.m_count), m_last(0), m_matrices(0) {
+Skeleton::Skeleton(const Skeleton& s) : m_count(s.m_count), m_matrices(0) {
 	m_bones = new Bone*[ m_count ];
 	m_hints = new uint16[ 3 * m_count ];
 	m_flags = new ubyte[ m_count ];

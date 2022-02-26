@@ -107,7 +107,6 @@ namespace base {
 		private:
 		Bone**           m_bones;	// Array of bones
 		int              m_count;	// Number of bones
-		const Animation* m_last;	// Last animation used
 		uint16*          m_hints;	// Animation hints
 		ubyte*           m_flags;	// Flag array to save reallocation
 		Matrix*          m_matrices;	// Final transform matrices for all bones (bone.combined * rest.skin)

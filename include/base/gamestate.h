@@ -7,6 +7,8 @@ namespace base {
 
 enum TransitionState { T_NONE, T_IN, T_OUT };
 enum StateFlags { NONE=0, OVERLAP=1, PERSISTANT=2 };
+enum ComponentFlags { BLOCK_KEYS=1, BLOCK_MOUSE=2, BLOCK_WHEEL=4, BLOCK_UPDATE=8, BLOCK_DRAW=16 };
+
 
 class StateManager;
 class GameState;
@@ -22,6 +24,15 @@ class GameStateComponent {
 	virtual void update() = 0;
 	virtual void draw() = 0;
 	GameState* getState() const { return m_gameState; }
+
+	// Component flags are used to pass state information to subsequent components in the game state
+	// They are reset at the start of every frame so need to set every update
+	// It is up to the component implementation how to handle them
+	// Some basic flags are defined in the ComponentFlags enum
+	void setComponentFlags(unsigned set);
+	bool hasComponentFlags(unsigned flags) const;
+	unsigned getComponentFlags() const;
+		
 	private:
 	GameState* m_gameState;
 	int m_references = 0;
@@ -35,6 +46,7 @@ States can have transitions. The transition times are passed to the constructor.
 */
 class GameState : public GameStateComponent {
 	friend class StateManager;
+	friend class GameStateComponent;
 	public:
 		GameState(float tIn=0, float tOut=0, StateFlags flags=NONE);
 		virtual ~GameState();
@@ -46,9 +58,7 @@ class GameState : public GameStateComponent {
 		void draw() {}
 
 		void addComponent(GameStateComponent*);
-		unsigned getComponentFlags() const { return m_componentFlags; }
-		void setComponentFlags(unsigned set) { m_componentFlags |= set; }
-		
+
 	protected:
 		/** Current state the gamestate */
 		TransitionState state() const { return m_state; }
@@ -101,6 +111,12 @@ class StateManager {
 		GameState* prevState;
 		bool m_running;
 };
+
+// Component flags implemntation - needs to be after GameState class
+inline void GameStateComponent::setComponentFlags(unsigned set) { m_gameState->m_componentFlags |= set; }
+inline bool GameStateComponent::hasComponentFlags(unsigned flags) const { return m_gameState->m_componentFlags & flags; }
+inline unsigned GameStateComponent::getComponentFlags() const { return m_gameState->m_componentFlags; }
+
 };
 
 #endif

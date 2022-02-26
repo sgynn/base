@@ -15,7 +15,7 @@ using namespace base;
 extern PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
 #endif
 
-extern void initialiseFBOExtensions();
+extern int initialiseFBOExtensions();
 
 Renderer::Renderer() {
 	memset(m_queueMode, 0, 256*sizeof(RenderQueueMode));

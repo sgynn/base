@@ -8,7 +8,6 @@ namespace base {
 	class FrameBuffer;
 	class HardwareIndexBuffer;
 	class HardwareVertexBuffer;
-	class Attribute;
 
 	class Pass;
 	class Material;
