@@ -46,6 +46,8 @@ class ResourceManager : public ResourceManagerBase {
 	int   drop(const T* item);            /// Drop reference to resource
 	void  clear();                        /// Delete everything
 
+	const char* getName(const T* item) const; /// Get registered name if a resource. Returns null if not found.
+
 //	T*    create(const char* name) const;   /// Create a resource using default loader. Does not add to manager
 
 
@@ -191,6 +193,14 @@ bool ResourceManager<T>::reload(const char* name) {
 	typename base::HashMap<Resource*>::iterator it = m_resources.find(name);
 	if(it == m_resources.end() || !it->value->loader) return false;
 	return it->value->loader->reload(it->key, it->value->object, this);
+}
+
+template<class T>
+const char* ResourceManager<T>::getName(const T* item) const {
+	for(const auto& i: m_resources) {
+		if(i.value.object == item) return i.key;
+	}
+	return 0;
 }
 
 }

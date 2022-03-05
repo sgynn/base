@@ -51,7 +51,7 @@ int audio::initialise() {
 	Data::instance->m_mixerMap["master"] = 0;
 	Data::instance->m_attenuations.push_back( Attenuation() );	// index 0 is invalid
 	Data::instance->m_variables.push_back( Variable() );
-	audioLogMessage("Audio systems initialised");
+	audioLogMessage("Audio systems initialised\n");
 	return 0;
 }
 int audio::shutdown() {

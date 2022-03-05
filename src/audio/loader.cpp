@@ -171,7 +171,7 @@ namespace audio {
 			else if(*i=="enum") {
 				const char* name = translateName(prefix, i->attribute("name"));
 				if(!name) { printf("Invalid enum name\n"); continue; }
-				int k, ix = data->declare(name, data->m_enumMap, data->m_enums);
+				int k = 0, ix = data->declare(name, data->m_enumMap, data->m_enums);
 				data->m_enums[ix].value = i->attribute("default", 0);
 				for(base::XML::iterator j=i->begin(); j!=i->end(); ++j) {
 					name = j->text()? j->text(): j->attribute("name");

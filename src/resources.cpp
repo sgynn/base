@@ -42,6 +42,13 @@ void ResourceManagerBase::error(const char* msg, const char* name) const {
 	printf("%s %s\n", msg, name);
 }
 
+void Resources::addPath(const char* path) {
+	models.addPath(path);
+	textures.addPath(path);
+	materials.addPath(path);
+	shaders.addPath(path);
+}
+
 // ----------------------------------------------------------------------------------- //
 
 // Helper for loading a raw file
@@ -188,9 +195,9 @@ ShaderPart* ShaderPartLoader::create(const char* name, Manager* manager) {
 		printf("Error: Invalid type specifier on shader part '%s'\n", name);
 		return 0;
 	}
-	else if(strstr(name, ".vert")) type = VERTEX_SHADER;
-	else if(strstr(name, ".frag")) type = FRAGMENT_SHADER;
-	else if(strstr(name, ".geom")) type = GEOMETRY_SHADER;
+	else if(strstr(name, ".vert") || strstr(name, ".vs")) type = VERTEX_SHADER;
+	else if(strstr(name, ".frag") || strstr(name, ".fs")) type = FRAGMENT_SHADER;
+	else if(strstr(name, ".geom") || strstr(name, ".gs")) type = GEOMETRY_SHADER;
 	else {
 		printf("Error: Could not determine type of shader part '%s'\n", name);
 		return 0;
@@ -756,20 +763,30 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				if(shader[0]) {
 					char tmp[512];
 					const char* defines = i.attribute("defines");
-					if(defines[0]) sprintf(tmp, "quad.vert,%s:%s", shader, defines);
+					if(defines[0]) sprintf(tmp, "quad.vert,%s|%s", shader, defines);
 					else sprintf(tmp, "quad.vert,%s", shader);
 
 					mat = new Material();
-					Pass* mpass = mat->addPass();
+					Pass* mpass = mat->addPass("default");
 					mpass->setShader( resources.shaders.get(tmp) );
 					pass->setMaterial(mat, 0, true);
 					compileShader(mpass->getShader(), shader);
+				}
+				else if(material[0]) {
+					Material* m = resources.materials.get(material);
+					if(m) pass->setMaterial(m, 0, false);
 				}
 
 				if(!shader && !material[0]) printf("Error: Compositior %s pass %s has no shader\n", e.attribute("name"), target);
 
 				// textures
-				for(const XMLElement& t: i) {
+				if(mat) {
+					Pass* mpass = mat->getPass(0);
+					loadMaterialPass(i, mpass);
+					compilePass(mpass, e.attribute("name"), "(compositor pass)");
+				}
+				// Load textures if material not yet found ?
+				else for(const XMLElement& t: i) {
 					if(t=="texture") {
 						const char* name = t.attribute("name");
 						const char* buffer = t.attribute("buffer", nullString);
@@ -784,20 +801,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 							if(tex) pass->setTexture(name, tex, false);
 						}
 					}
-					else if(mat && t=="variable") {
-						parseShaderVariable(mat->getPass(0)->getParameters(), t);
-					}
-					else if(mat && t=="shared") {
-						const char* name = t.attribute("name");
-						ShaderVars* shared = resources.shaderVars.get(name);
-						if(shared) mat->getPass(0)->addShared(shared);
-					}
-					else if(mat && t=="blend") {
-						mat->getPass(0)->blend = parseBlendState(t);
-					}
 				}
-
-				if(mat) compilePass(mat->getPass(0), e.attribute("name"), "(compositir pass)");
 			}
 			else if(strcmp(type, "clear")==0) {
 				int flags = 0;

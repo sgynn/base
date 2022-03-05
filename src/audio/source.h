@@ -6,7 +6,7 @@ namespace audio {
 	/** Audio source data base class */
 	class Source {
 		friend class Data;
-		friend class Object;
+		friend struct Object;
 		unsigned buffers[2];	// Sreams use two buffers
 		protected:
 		TimeStamp length;		// Sound clip duration
@@ -32,6 +32,5 @@ namespace audio {
 		public:
 		virtual bool load(const char* file);
 	};
-
 }
 

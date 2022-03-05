@@ -24,9 +24,9 @@ using namespace base;
 Compositor* Compositor::Output = new Compositor();
 
 CompositorPassClear::CompositorPassClear(char bits, uint c, float d) : mDepth(d), mBits(0) {
-	mColour[0] = (c&0xff)/255.f;
+	mColour[2] = (c&0xff)/255.f;
 	mColour[1] = ((c>>8)&0xff)/255.f;
-	mColour[2] = ((c>>16)&0xff)/255.f;
+	mColour[0] = ((c>>16)&0xff)/255.f;
 	mColour[3] = ((c>>24)&0xff)/255.f;
 	if(bits & CLEAR_COLOUR)  mBits |= GL_COLOR_BUFFER_BIT;
 	if(bits & CLEAR_DEPTH)   mBits |= GL_DEPTH_BUFFER_BIT;
@@ -64,11 +64,12 @@ CompositorPassQuad::CompositorPassQuad(Material* mat, const char* tech) : mMater
 }
 CompositorPassQuad::~CompositorPassQuad() {
 	free(mMaterialName);
-	for(auto i: mTextures) free(i.value.source);
+	for(auto& i: mTextures) free(i.value.source);
 	if(mInstancedMaterial) delete mMaterial;
 }
 void CompositorPassQuad::setMaterial(Material* m, const char* tech, bool isInstance) {
 	if(tech) mTechnique = Material::getPassID(tech);
+	else mTechnique = 0;
 	mInstancedMaterial = isInstance;
 	mMaterial = m;
 
@@ -912,6 +913,7 @@ FrameBuffer* Workspace::createBuffer(Compositor::Buffer* b, int sw, int sh) {
 	buf->bind();
 	if(b->depthFormat) {
 		buf->attachDepth( FrameBuffer::TEXTURE, (Texture::Format) b->depthFormat );
+		buf->depthTexture().setFilter(GL_NEAREST, GL_NEAREST);
 	}
 	for(int f: b->format) {
 		if(f == Texture::NONE) break;
@@ -928,7 +930,7 @@ Workspace* base::getDefaultCompositor() {
 	static Workspace* instance = 0;
 	if(instance) return instance;
 	Compositor* c = new Compositor();
-	c->addPass("0", new CompositorPassClear() );
+	c->addPass("0", new CompositorPassClear(3, 0x000020, 1) );
 	c->addPass("0", new CompositorPassScene(0,255) );
 	c->addOutput("0");
 	CompositorGraph* chain = new CompositorGraph;

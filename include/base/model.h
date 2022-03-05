@@ -80,13 +80,17 @@ class Model {
 	template<class T> T* getExtension(int index=0) { for(ModelExtension* e: m_extensions) { if(e->getType()==T::staticType() && --index==-1) return e->as<T>(); } return 0; }
 	//template<class T> MaskedIterable getExtensions() { return MaskedIterator(m_extensions, [](ModelExtension* e){return e->getType()==T::staticType();}); }
 
-	protected:
 	struct MeshInfo {
 		Mesh* mesh;
 		char* name;
 		char* materialName;
 		int* skinMap;
 	};
+
+	const std::vector<MeshInfo>::const_iterator begin() const { return m_meshes.begin(); }
+	const std::vector<MeshInfo>::const_iterator end() const { return m_meshes.end(); }
+
+	protected:
 	std::vector<MeshInfo> m_meshes;
 	Skeleton* m_skeleton;
 

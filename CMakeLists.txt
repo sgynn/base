@@ -7,7 +7,6 @@ set(src
 	src/collision.cpp
 	src/directory.cpp
 	src/file.cpp
-	src/font.cpp
 	src/game.cpp
 	src/gamestate.cpp
 	src/glhprojection.cpp
@@ -40,7 +39,9 @@ set(src
 	src/model/model.cpp
 	src/model/skeleton.cpp
 	src/model/wavefront.cpp
+)
 
+set(gui
 	src/gui/font.cpp
 	src/gui/gui.cpp
 	src/gui/imagegen.cpp
@@ -52,6 +53,10 @@ set(src
 	src/gui/textbox.cpp
 	src/gui/tree.cpp
 	src/gui/widgets.cpp
+
+	src/gui/systemfont.cpp
+	src/gui/bitmapfont.cpp
+	src/gui/freetypefont.cpp
 )
 
 set(audio
@@ -177,7 +182,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
-add_library(base STATIC ${src} ${png} ${zlib} ${audio} ${headers} ${guiheaders} )
+add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${audio} ${headers} ${guiheaders} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 install(FILES ${guiheaders} DESTINATION include/base/gui)
@@ -185,7 +190,7 @@ install(FILES ${guiheaders} DESTINATION include/base/gui)
 
 if(WEB)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -DFREETYPE -pthread -s USE_PTHREADS=1 -s USE_FREETYPE=1")
-	install(TARGETS base DESTINATION lib)
+	install(TARGETS base DESTINATION lib/wasm32-emscripten)
 elseif(MINGW)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
 	install(TARGETS base DESTINATION lib)

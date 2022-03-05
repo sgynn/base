@@ -12,7 +12,7 @@
 #endif
 
 #include "base/game.h"
-#include "base/state.h"
+#include "base/gamestate.h"
 #include <sys/time.h>
 #include <cstdio>
 #include <cstdlib>
