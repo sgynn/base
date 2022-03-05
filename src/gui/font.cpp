@@ -28,6 +28,52 @@
 
 using namespace gui;
 
+gui::Font* FontLoader::createFontObject(int size, int height) {
+	Font* font = new Font();
+	font->m_texture = 0;
+	font->m_w = 0;
+	font->m_h = 0;
+	font->m_size = size;
+	font->m_glyphHeight = height;
+	return font;
+}
+
+void FontLoader::setFontSize(Font* font, int size, int height) {
+	font->m_size = size;
+	font->m_glyphHeight = height;
+}
+
+Point FontLoader::selectImageSize(int size, int count) {
+	unsigned pitch = (int)ceil(sqrt(count)) * size;
+	// Round up to next power of 2
+	--pitch;
+	pitch |= pitch>>1;
+	pitch |= pitch>>2;
+	pitch |= pitch>>4;
+	pitch |= pitch>>8;
+	pitch |= pitch>>16;
+	++pitch;
+	return Point(pitch, pitch);
+}
+
+void FontLoader::setFontImage(Font* font, int w, int h, void* data) {
+	font->m_w = w;
+	font->m_h = h;
+	base::Texture t = base::Texture::create(w, h, 4, data);
+	font->m_texture = t.unit();
+}
+
+
+void FontLoader::setGlyph(Font* font, unsigned code, const Rect& r) {
+	while(font->m_glyphs.size()<=code) font->m_glyphs.emplace_back(0,0,0,0);
+	font->m_glyphs[code] = r;
+}
+
+// ======================================================================================================== //
+
+gui::Font::Font() : m_w(0), m_h(0), m_size(0), m_glyphHeight(0) {
+}
+
 gui::Font::Font(const char* name, int size) : m_size(size) {
 	// Guess a reasonable texture size
 	m_w = 64;
@@ -49,10 +95,10 @@ gui::Font::Font(const char* file, const char* characters) : m_w(0), m_h(0), m_si
 		m_texture = t.unit();
 	} else {
 		::printf("Failed to load image font %s\n", file);
-		memset(m_glyphs, 0, 128*sizeof(Rect));
 		m_w = m_h = 0;
 	}
 }
+
 gui::Font::~Font() {
 	if(m_w>0) glDeleteTextures(1, &m_texture);
 }
@@ -169,8 +215,7 @@ const Point& gui::Font::print(int x, int y, int size, const char* text) const {
 
 
 unsigned char* gui::Font::build(const char* name, int size, int width, int height) {
-	memset(m_glyphs, 0, 128*sizeof(Rect));
-
+	m_glyphs.resize(128, Rect(0,0,0,0));
 	#ifndef FREETYPE
 	bool bold = false;
 	#endif
@@ -409,7 +454,7 @@ unsigned char* gui::Font::build(const char* name, int size, int width, int heigh
 
 
 int gui::Font::findGlyphs(char* data, int w, int h, int bpp, const char* chars) {
-	memset(m_glyphs, 0, 128*sizeof(Rect));
+	m_glyphs.resize(128, Rect(0,0,0,0));
 	m_size = 0;
 	m_w = w; m_h = h;		// Set size
 	size_t stride = bpp/8;	// Pixel stride

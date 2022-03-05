@@ -103,8 +103,11 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 			const char* src = i->attribute("source", name);
 			int baseSize = i->attribute("size", 16);
 			printf("new Font %s (%s, %d)\n", name, src, baseSize);
-			Font* font = new Font(src, baseSize);
-			addFont(name, font);
+			Font* font = 0;
+			if(strstr(src, ".png")) font = BitmapFont::load(src);
+			else if(strstr(src, ".ttf")) font = FreeTypeFont::load(src, baseSize);
+			else font = SystemFont::load(src, baseSize);
+			if(font) addFont(name, font);
 		}
 		else if(*i == "skin") {
 			if(~flags&LoadFlags::SKINS) continue;

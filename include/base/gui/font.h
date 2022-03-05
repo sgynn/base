@@ -3,6 +3,7 @@
 #pragma once
 
 #include <base/point.h>
+#include <vector>
 
 namespace gui {
 
@@ -38,12 +39,45 @@ class Font {
 	int findGlyphs(char* bmp, int w, int h, int bpp, const char* characters=0);
 
 	private:
+	friend class FontLoader;
+	Font();
 	unsigned m_texture;	// OpenGL texture unit
 	int m_w, m_h;		// Texture size
 	int m_size;			// Rendered font size
 	int m_glyphHeight; 	// Everything has the same height
-	Rect m_glyphs[128];	// Glyph texture coordinates
+	std::vector<Rect> m_glyphs; // Glyph texture coordinates
 };
+
+struct GlyphRange { unsigned min, max; };
+using GlyphRangeVector = std::vector<GlyphRange>;
+
+class FontLoader {
+	protected:
+	static Font* createFontObject(int size, int height);
+	static void  setFontSize(Font* font, int size, int height);
+	static void  setFontImage(Font* font, int w, int h, void* data);
+	static Point selectImageSize(int fontSize, int glyphCount);
+	static void  setGlyph(Font* font, unsigned code, const Rect& rect);
+};
+
+class SystemFont : public FontLoader {
+	public:
+	static Font* load(const char* name, int size, const GlyphRangeVector& characters={{32,126}});
+};
+
+class FreeTypeFont : public FontLoader {
+	public:
+	static Font* load(const char* name, int size, const GlyphRangeVector& characters={{32,126}});
+};
+
+class BitmapFont : public FontLoader {
+	public:
+	static Font* load(const char* name, const char* characters=0);
+};
+
+
+
+
 
 }
 
