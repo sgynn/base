@@ -137,6 +137,8 @@ namespace base {
 		void setUpVector(const vec3& up);
 		/** Set pitch constraint */
 		void setPitchLimits(float min=-PI, float max=PI);
+		/** Set key input binding */
+		void setKeys(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down);
 
 		protected:
 		bool m_active;		// Does the camera update
@@ -151,6 +153,7 @@ namespace base {
 		bool m_useUpVector;	// Enforce up vector
 		vec3 m_upVector;	// Up vector
 		Range m_constraint;	// Pitch constraints
+		unsigned m_keyBinding[6]; // Keys
 	};
 
 

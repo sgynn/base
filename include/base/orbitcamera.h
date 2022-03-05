@@ -24,9 +24,12 @@ namespace base {
 		/** Get zoom factor */
 		float getZoomFactor() const { return m_zoomFactor; }
 
+		void setZoomLimits(float min, float max);
+
 		private:
 		vec3 m_target;		// Target point
 		float m_zoomFactor;
+		float m_zoomMin, m_zoomMax;
 	};
 };
 

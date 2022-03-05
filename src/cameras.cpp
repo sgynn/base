@@ -9,7 +9,7 @@ using namespace base;
 CameraBase::CameraBase(float fov, float aspect, float near, float far) 
 	: Camera(fov,aspect?aspect:Game::aspect(),near,far), m_active(true), m_grabMouse(false),
 	m_moveSpeed(10), m_rotateSpeed(0.004), m_moveAcc(1), m_rotateAcc(1),
-	m_useUpVector(false), m_constraint(-8,8) {}
+	m_useUpVector(false), m_constraint(-8,8), m_keyBinding{0,1,2,3,~0u,~0u} {}
 
 void CameraBase::setSpeed(float m, float r) {
 	m_moveSpeed = m;
@@ -41,6 +41,15 @@ void CameraBase::grabMouse(bool g) {
 	}
 }
 
+void CameraBase::setKeys(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down) {
+	m_keyBinding[0] = forward;
+	m_keyBinding[1] = back;
+	m_keyBinding[2] = left;
+	m_keyBinding[3] = right;
+	m_keyBinding[4] = up;
+	m_keyBinding[5] = down;
+}
+
 
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
 
@@ -53,10 +62,12 @@ void FPSCamera::update(int mask) {
 	// Key Movement
 	if(mask & CU_KEYS) {
 		vec3 move;
-		if(in->key(KEY_UP)    || in->key(KEY_W)) move.z = -1;
-		if(in->key(KEY_DOWN)  || in->key(KEY_S)) move.z =  1;
-		if(in->key(KEY_LEFT)  || in->key(KEY_A)) move.x = -1;
-		if(in->key(KEY_RIGHT) || in->key(KEY_D)) move.x =  1;
+		if(in->check(m_keyBinding[0])) move.z = -1;
+		if(in->check(m_keyBinding[1])) move.z =  1;
+		if(in->check(m_keyBinding[2])) move.x = -1;
+		if(in->check(m_keyBinding[3])) move.x =  1;
+		if(in->check(m_keyBinding[4])) move.y =  1;
+		if(in->check(m_keyBinding[5])) move.y = -1;
 		m_velocity += move * (m_moveSpeed * m_moveAcc);
 		m_position += m_rotation * m_velocity;
 		if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
@@ -105,6 +116,8 @@ void FPSCamera::update(int mask) {
 
 OrbitCamera::OrbitCamera(float f, float a, float near, float far) : CameraBase(f,a,near,far), m_zoomFactor(0.2) {
 	setUpVector( vec3(0,1,0) );
+	setZoomLimits(near, far);
+	setSpeed(0.04);
 }
 void OrbitCamera::setTarget(const vec3& t) {
 	m_position += t - m_target;
@@ -119,6 +132,14 @@ void OrbitCamera::setPosition(float yaw, float pitch, float distance) {
 	lookat( m_target + dir * distance, m_target, m_upVector * inv );
 }
 
+void OrbitCamera::setZoomLimits(float min, float max) {
+	m_zoomMin = min;
+	m_zoomMax = max;
+	float d = m_position.distance2(m_target);
+	if(d<min*min) m_position = m_target - getDirection() * min;
+	else if(d>max*max) m_position = m_target - getDirection() * max;
+}
+
 void OrbitCamera::update(int mask) {
 	Input* in = Game::input();
 
@@ -128,7 +149,33 @@ void OrbitCamera::update(int mask) {
 		float distance = m_target.distance(m_position);
 		while(wheel<0) { distance *= 1+m_zoomFactor; wheel++; }
 		while(wheel>0) { distance *= 1-m_zoomFactor; wheel--; }
+		distance = fmax(fmin(distance, m_zoomMax), m_zoomMin);
 		m_position = m_target + getDirection() * distance;
+	}
+
+	// Movement
+	// Key Movement
+	if(mask & CU_KEYS) {
+		vec3 move;
+		if(in->check(m_keyBinding[0])) move.z = -1;
+		if(in->check(m_keyBinding[1])) move.z =  1;
+		if(in->check(m_keyBinding[2])) move.x = -1;
+		if(in->check(m_keyBinding[3])) move.x =  1;
+		if(in->check(m_keyBinding[4])) move.y =  1;
+		if(in->check(m_keyBinding[5])) move.y = -1;
+
+		vec3 z = getDirection();
+		vec3 x = m_upVector.cross(z);
+		z = x.cross(m_upVector);
+		move = x*move.x + m_upVector*move.y + z*move.z;
+
+		float distance = m_position.distance(m_target);
+
+		m_velocity += move * (m_moveSpeed * m_moveAcc) * distance;
+		m_target += m_velocity;
+		m_position += m_velocity;
+		if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
+		else m_velocity = vec3();
 	}
 
 	//Rotation
@@ -164,7 +211,6 @@ void OrbitCamera::update(int mask) {
 			in->queryMouse();
 			m = m_last;
 		}
-
 	}
 	m_last = m;
 }
