@@ -155,14 +155,13 @@ int HardwareVertexBuffer::getDataSize(AttributeType t) {
 
 // -------------------------------------------------------------------------------------- //
 
-HardwareIndexBuffer::HardwareIndexBuffer(int bits) : HardwareBuffer(STATIC_DRAW, true) {
-	m_type = bits==16?2: bits==8?1: bits==32?3: 0;
+HardwareIndexBuffer::HardwareIndexBuffer(IndexSize t) : HardwareBuffer(STATIC_DRAW, true), m_type(t) {
 	m_target = GL_ELEMENT_ARRAY_BUFFER;
 }
 
 unsigned HardwareIndexBuffer::getDataType() const {
-	static const unsigned types[] = { 0, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT };
-	return types[m_type];
+	static const unsigned types[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT };
+	return types[(int)m_type];
 }
 
 

@@ -28,6 +28,7 @@ namespace base {
 		void        setName(const char* name);				/**< Set animation name */
 		int         getSize() const;						/// Get number of key sets
 
+		const char* getName(int set) const;					// Get animation key set name
 		int  getBoneID(const char* name) const;				// Get the bone id of a named bone
 		int  addKeySet(const char* name);					// Add animation keyset
 
@@ -116,6 +117,7 @@ namespace base {
 	inline const char* Animation::getName() const        { return m_name; }
 	inline void        Animation::setName(const char* n) { m_name = n; }
 	inline int         Animation::getSize() const        { return m_animations.size(); }
+	inline const char* Animation::getName(int i) const   { return m_animations[i]->name; }
 
 	
 }

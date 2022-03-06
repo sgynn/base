@@ -165,7 +165,7 @@ void OrbitCamera::update(int mask) {
 		if(in->check(m_keyBinding[5])) move.y = -1;
 
 		vec3 z = getDirection();
-		vec3 x = m_upVector.cross(z);
+		vec3 x = m_upVector.cross(z).normalise();
 		z = x.cross(m_upVector);
 		move = x*move.x + m_upVector*move.y + z*move.z;
 

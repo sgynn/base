@@ -76,7 +76,7 @@ void AnimationBank::calculateMeta(AnimationInfo& anim, const char* root) {
 
 }
 
-bool AnimationBank::autoDetectMove(Animation* anim) const {
+bool AnimationBank::autoDetectMove(const Animation* anim) const {
 	// Detect if this it a movment animation loop
 	if(!anim || anim->getLength()==0) return false;
 	int rootTrack = anim->getBoneID(m_rootBone);
@@ -94,12 +94,29 @@ bool AnimationBank::autoDetectMove(Animation* anim) const {
 	if(va.y!=vb.y && va.z!=vb.z) return false;
 	if(va.x!=vb.x && va.z!=vb.z) return false;
 
-	for(int i=0; i<anim->getSize(); ++i) {
-		anim->getRotation(rootTrack, 0, 0, qa);
-		anim->getRotation(rootTrack, last, 0, qb);
-		if(qa != qb) return false;	// No bones can not rotate
+	printf("%s:\n", anim->getName());
+
+	// all other bones must match first frame
+	for(int track=0; track<anim->getSize(); ++track) {
+		if(track == rootTrack) continue;
+		anim->getRotation(track, 0, 0, qa);
+		anim->getRotation(track, last, 0, qb);
+		
+		printf("> %s : %g\n", anim->getName(track), qa.dot(qb));
+		
+		if(fabs(qa.dot(qb)-1) > 0.001) return false;
+		//if(qa != qb) return false;
 	}
 	return true;
+}
+
+float AnimationBank::getFastestMoveSpeed(int group) const {
+	float result = 0;
+	uint mask = group<0? ~0u: 1<<group;
+	for(AnimationInfo* a: m_movement) {
+		if((a->groupMask&mask) && a->speedKey > result) result = a->speedKey;
+	}
+	return result;
 }
 
 void AnimationBank::add(const AnimationKey& key, Animation* anim, uint groupMask, float weight, bool move) {

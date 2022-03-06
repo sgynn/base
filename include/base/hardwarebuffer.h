@@ -171,25 +171,29 @@ namespace base {
 		std::vector<Attribute> m_attributes;
 	};
 
+	enum class IndexSize : char { I8, I16, I32 };
+
 	/** Index buffer data */
 	class HardwareIndexBuffer : public HardwareBuffer {
 		public:
-		HardwareIndexBuffer(int bits=16);
+		HardwareIndexBuffer(IndexSize size=IndexSize::I16);
+		void setIndexSize(IndexSize size) { m_type = size; }
+		IndexSize getIndexSize() const { return m_type; }
 		unsigned int getIndex(int i) const {
 			switch(m_type) {
-			case 1: return getData<unsigned char>()[i]; 
-			case 2: return getData<unsigned short>()[i]; 
-			case 3: return getData<unsigned int>()[i]; 
+			case IndexSize::I8: return getData<unsigned char>()[i]; 
+			case IndexSize::I16: return getData<unsigned short>()[i]; 
+			case IndexSize::I32: return getData<unsigned int>()[i]; 
 			default: return 0;
 			}
 		}
 		int getIndexCount() const {
-			static const int bytes[] = { 1,1,2,4 };
-			return m_size / bytes[m_type];
+			static const int bytes[] = { 1, 2, 4 };
+			return m_size / bytes[(int)m_type];
 		}
 		unsigned getDataType() const;
 		protected:
-		int m_type;
+		IndexSize m_type;
 	};
 }
 

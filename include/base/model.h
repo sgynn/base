@@ -87,13 +87,13 @@ class Model {
 		int* skinMap;
 	};
 
-	const std::vector<MeshInfo>::const_iterator begin() const { return m_meshes.begin(); }
-	const std::vector<MeshInfo>::const_iterator end() const { return m_meshes.end(); }
+	// Collectons to be iterated over
+	const std::vector<Animation*> animations() const { return m_animations; }
+	const std::vector<MeshInfo> meshes() const { return m_meshes; }
 
 	protected:
 	std::vector<MeshInfo> m_meshes;
 	Skeleton* m_skeleton;
-
 
 	// Animations
 	std::vector<Animation*> m_animations;	// All animations

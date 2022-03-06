@@ -65,12 +65,13 @@ class AnimationBank {
 	public:
 	AnimationBank(const char* rootBone);
 	~AnimationBank();
-	bool autoDetectMove(Animation* anim) const;
+	bool autoDetectMove(const Animation* anim) const;
 	void calculateMeta(AnimationInfo& anim, const char* root);
 	void add(const AnimationKey&, Animation*, uint groupMask=~0u, float weight=1, bool move=false);
 	const AnimationInfo* getAnimation(const AnimationKey&, int group) const;
 	const AnimationInfo* getAnimation(float speed, int group) const;
 	const char* getRootBone() const { return m_rootBone; }
+	float getFastestMoveSpeed(int group=-1) const;
 
 	private:
 	std::vector<AnimationInfo*> m_animations;
