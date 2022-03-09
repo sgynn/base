@@ -94,16 +94,11 @@ bool AnimationBank::autoDetectMove(const Animation* anim) const {
 	if(va.y!=vb.y && va.z!=vb.z) return false;
 	if(va.x!=vb.x && va.z!=vb.z) return false;
 
-	printf("%s:\n", anim->getName());
-
 	// all other bones must match first frame
 	for(int track=0; track<anim->getSize(); ++track) {
 		if(track == rootTrack) continue;
 		anim->getRotation(track, 0, 0, qa);
 		anim->getRotation(track, last, 0, qb);
-		
-		printf("> %s : %g\n", anim->getName(track), qa.dot(qb));
-		
 		if(fabs(qa.dot(qb)-1) > 0.001) return false;
 		//if(qa != qb) return false;
 	}

@@ -244,6 +244,7 @@ namespace base {
 		~Workspace();
 		void destroy();
 		bool compile(int w, int h);										// Compile compositor instance from graph - creates buffers
+		bool compile(const Point& size) { return compile(size.x, size.y); }
 		void execute(Scene*, Renderer*);								// Execute compositor
 		void execute(const base::FrameBuffer* target, Scene*, Renderer*);	// Execute compositor
 		void execute(const base::FrameBuffer* target, const Rect& view, Scene*, Renderer*);	// Execute compositor

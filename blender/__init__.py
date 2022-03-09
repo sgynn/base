@@ -125,6 +125,7 @@ class ExportBaseLib(bpy.types.Operator):
         items = [('NONE', "None", "Don't export animation"),
                  ("ACTIVE", "Active", "Export only active action"),
                  ("LINKED", "Linked", "Export actions linked to object (in NLA editor)"),
+                 ("UNLOCKED", "Linked Unlocked", "Export actions linked to object in unlocked strips (in NLA editor)"),
                  ("ALL", "All", "Export all animations")],
         default="NONE")
 

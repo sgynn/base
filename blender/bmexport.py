@@ -310,8 +310,10 @@ def export_animations(context, config, skeleton, xml):
             actions.append( skeleton.animation_data.action )
 
         restore = {}
-        if skeleton.animation_data.nla_tracks and config.export_animations == "LINKED":
+        if skeleton.animation_data.nla_tracks and (config.export_animations == "LINKED" or config.export_animations == "UNLOCKED"):
+            unlocked_only = config.export_animations == "UNLOCKED"
             for track in skeleton.animation_data.nla_tracks.values():
+                if track.lock and unlocked_only: continue;
                 restore[track] = (track.mute, track.is_solo)
                 track.mute = True
                 track.is_solo = False
@@ -378,6 +380,7 @@ def export_action(context, skeleton, action, xml):
     anim.setAttribute("name", action.name)
     anim.setAttribute("frames", str(length))
     anim.setAttribute("rate", str(context.scene.render.fps))
+    export_custom_properties(anim, action, "properties")
     for _,keys in data:
         if keys.rotation or keys.position or keys.scale:
             keyset = append_element(anim, "keyset")
