@@ -414,6 +414,8 @@ def export_scene(objects, config, xml):
     for obj in objects: children[obj] = []
     for obj in objects:
         p = obj.parent
+        for c in obj.constraints:
+            if c.type == 'CHILD_OF' and c.enabled and c.is_valid: p = c.target
         while(True):
             if p in children:
                 children[p].append(obj)
@@ -421,6 +423,7 @@ def export_scene(objects, config, xml):
             p = p.parent
 
     print(children);
+
 
     # Write xml
     scene = append_element(xml.firstChild, "layout")
@@ -453,7 +456,7 @@ def write_object(node, obj, config):
     if obj.parent_bone: bone = obj.parent_bone
     else:
         for c in obj.constraints:
-            if c.type == 'CHILD_OF' and c.is_valid:
+            if c.type == 'CHILD_OF' and c.is_valid and c.enabled:
                 bone = c.subtarget;
                 inverse = c.inverse_matrix
                 break
@@ -461,8 +464,15 @@ def write_object(node, obj, config):
     if inverse:
         pos = inverse @ pos
         r = inverse.to_quaternion() @ r
-        pos = pos.yxz
-        r = r @ mathutils.Quaternion((0,0,1,0))
+        
+        if bone: 
+            r = mathutils.Quaternion((0,1,0,0)) @ r
+            pos.y *= -1
+            pos.z *= -1
+
+            # Parenting to a bone puts it at the head point for some reason
+            if obj.parent_bone:
+                pos.y -= obj.parent.pose.bones[obj.parent_bone].length
 
 
     rot = (r.w, r.x, r.z, -r.y)
