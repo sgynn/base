@@ -100,6 +100,7 @@ class TreeView : public Widget {
 	void initialise(const Root*, const PropertyMap&) override;
 	void scrollChanged(Scrollbar*, int);
 	void onMouseButton(const Point&, int, int) override;
+	void onMouseMove(const Point&, const Point&, int) override;
 	bool onMouseWheel(int w) override;
 	int  getItemState(uint, const Rect&) const;
 	void cacheItem(TreeNode*, Widget*) const;
@@ -110,6 +111,7 @@ class TreeView : public Widget {
 	int        m_indent;
 	bool       m_hideRootNode;
 	int        m_lineColour;
+	char       m_zip = 0;
 
 	Widget*    m_expand;
 	TreeNode*  m_rootNode;

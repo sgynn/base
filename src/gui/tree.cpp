@@ -252,6 +252,7 @@ void TreeView::onMouseButton(const Point& p, int d, int u) {
 	// Single selection for now. ToDo: mutli selection modes
 	Point m = p - m_client->getAbsolutePosition();
 	m.y -= m_cacheOffset;
+	m_zip = 0;
 	int index = m.y / m_itemHeight;
 	if(index >= 0 && index < (int)m_drawCache.size()) {
 		TreeNode* node = m_drawCache[index].node;
@@ -265,6 +266,7 @@ void TreeView::onMouseButton(const Point& p, int d, int u) {
 				node->expand( !node->isExpanded() );
 				if(eventExpanded && node->isExpanded()) eventExpanded(this, node);
 				else if(eventCollapsed && !node->isExpanded()) eventCollapsed(this, node);
+				m_zip = node->isExpanded()? 1: 2;
 			}
 			// Selection
 			else if(m.x > 0 && !node->isSelected()) {
@@ -282,6 +284,28 @@ void TreeView::onMouseButton(const Point& p, int d, int u) {
 		clearSelection();
 	}
 	Widget::onMouseButton(p, d, u);
+}
+
+void TreeView::onMouseMove(const Point& a, const Point& p, int b) {
+	if(m_zip) {
+		Point m = p - m_client->getAbsolutePosition();
+		m.y -= m_cacheOffset;
+		int index = m.y / m_itemHeight;
+		if(index >= 0 && index < (int)m_drawCache.size()) {
+			bool expand = m_zip == 1;
+			TreeNode* node = m_drawCache[index].node;
+			if(node->size() && node->isExpanded() != expand) {
+				m.y -= (m.y/m_itemHeight)*m_itemHeight;
+				m.x -= node->m_depth * m_indent;
+				if(m_hideRootNode) m.x += m_indent;
+				if(Rect(m_expand->getPosition(), m_expand->getSize()).contains(m)) {
+					node->expand(expand);
+					if(eventExpanded && node->isExpanded()) eventExpanded(this, node);
+					else if(eventCollapsed && !node->isExpanded()) eventCollapsed(this, node);
+				}
+			}
+		}
+	}
 }
 
 void TreeView::setSize(int w, int h) {
