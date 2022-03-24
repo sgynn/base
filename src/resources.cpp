@@ -26,7 +26,15 @@ void ResourceManagerBase::addPath(const char* path) {
 }
 
 bool ResourceManagerBase::findFile(const char* name, char* out, size_t s) const {
-	for(size_t i=0; i<m_paths.size(); ++i) {
+	if(m_paths.empty()) {
+		FILE* fp = fopen(name, "rb");
+		if(fp) {
+			fclose(fp);
+			strcpy(out, name);
+			return true;
+		}
+	}
+	else for(size_t i=0; i<m_paths.size(); ++i) {
 		snprintf(out, s, "%s/%s", m_paths[i], name);
 		out[s-1] = 0;
 		FILE* fp = fopen(out, "rb");
