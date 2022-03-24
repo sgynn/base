@@ -229,6 +229,7 @@ namespace base {
 		
 		/** Warp the mouse pointer to a location. Origin botom left of the window */
 		void warpMouse(int x, int y);
+		void warpMouse(const Point& p) { warpMouse(p.x, p.y); }
 		/** Directly query the mouse location */
 		Point queryMouse();
 

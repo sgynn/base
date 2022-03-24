@@ -1,11 +1,7 @@
-#ifndef _BASE_FILE_
-#define _BASE_FILE_
+#pragma once
 
 #include <vector>
 #include <cstdio>
-
-// Macro to convert filename into a found file based on path lookup
-#define FindFile(filename) char path_##filename[128]; if(base::File::find(filename, path_##filename)) filename = path_##filename;
 
 /** File loader class. This can be extended to use pak files etc */
 namespace base {
@@ -15,14 +11,22 @@ namespace base {
 		enum Mode { READ=1, WRITE=2, READWRITE=3, BUFFER=8 };
 		File();
 		File(const char* name, Mode mode=BUFFER);
-		File(const File&);
+		File(const File&) = delete;
+		File(File&&);
 		~File();
 		const char* data() const { return m_data; }
 		bool isOpen() const { return m_file != 0; }
 		size_t size() const { return m_size; }
-		int read(char* data, size_t length);
-		int write(char* data, size_t length);
+		size_t tell() const;
+		bool eof() const;
 		int seek(int pos, int from=SEEK_SET);
+		int read(char* data, size_t length);
+		int write(const char* data, size_t length);
+		template<class T> int write(const T& value)                 { return write((const char*)&value, sizeof(T)); }
+		template<class T> int writeArray(const T* value, int count) { return write((const char*)value, sizeof(T)*count); }
+		template<class T> bool read(T& value)                       { return read((char*)&value, sizeof(value)) == sizeof(T); }
+		template<class T> bool readArray(T* value, int count)       { return read((char*)value, sizeof(T)*count) == sizeof(T)*count; }
+		template<class T=char> T get()                              { T value; read(value); return value; }
 		protected:
 		int open();
 		int find();
@@ -34,7 +38,6 @@ namespace base {
 		FILE* m_file;		
 		size_t m_size;
 		Mode m_mode;
-		int* m_ref;
 
 		// Mechanism to add search paths
 		public:
@@ -45,6 +48,4 @@ namespace base {
 		static std::vector<const char*> s_paths;
 	};
 };
-
-#endif
 

@@ -15,6 +15,7 @@ namespace base {
 	enum BlendMode   { BLEND_NONE, BLEND_ALPHA, BLEND_ADD, BLEND_MULTIPLY };
 	enum DepthTest   { DEPTH_ALWAYS, DEPTH_LESS, DEPTH_LEQUAL, DEPTH_GREATER, DEPTH_GEQUAL, DEPTH_EQUAL };
 	enum CompileResult { COMPILE_FAILED, COMPILE_OK, COMPILE_WARN };
+	enum ColourMask  { MASK_RED=1, MASK_GREEN=2, MASK_BLUE=4, MASK_ALPHA=8, MASK_ALL=0xf, MASK_NONE=0 };
 
 	/** Scene blend mode */
 	class Blend {
@@ -46,6 +47,7 @@ namespace base {
 		CullMode  cullMode;		// Polygon cull mode
 		DepthTest depthTest;	// Depth test mode
 		bool      depthWrite;	// Do we write to depth buffer
+		char      colourMask;	// RGBA bitset for colour channels to write to
 		bool      wireframe;	// wireframe polygon mode
 	};
 

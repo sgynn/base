@@ -81,6 +81,10 @@ namespace base {
 	BASEAPI int intersectRayAABB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, vec3& out);
 	BASEAPI int intersectRayAABB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, float& t);
 
+	/** Intersection between a ray and an oriented bounding box
+	 */
+	BASEAPI int intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, const Quaternion& orientation, float& t);
+
 
 	/** Intersection of a line and a triangle
 	 * @param p Start of line
@@ -108,6 +112,18 @@ namespace base {
 	 */
 	BASEAPI int intersectLines(const vec2& p0, const vec2& q0, const vec2& p1, const vec2& q1, vec2& out);
 	BASEAPI int intersectLines(const vec2& p0, const vec2& q0, const vec2& p1, const vec2& q1, float& u, float& v);
+
+
+	/** Detect whether oriented boxes are colliding
+	 * @param ac Centre point of first box
+	 * @param ae Half extents of first box
+	 * @param aq Orientation of first box
+	 * @param bc Centre point of second box
+	 * @param be Half extents of second box
+	 * @param bq Orientation of second box
+	 * @return if boxes intersect
+	 */
+	BASEAPI int intersectBoxes(const vec3& ac, const vec3& ae, const Quaternion& aq, const vec3& bc, const vec3& be, const Quaternion bq);
 
 };
 #endif

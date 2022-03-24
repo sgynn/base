@@ -293,5 +293,81 @@ int base::closestPointOnTriangle(const vec3& p, const vec3& a, const vec3& b, co
 	return 0;
 }
 
+int base::intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, const Quaternion& orientation, float& t) {
+	Quaternion inverse = orientation.getInverse();
+	vec3 lp = inverse * (p - centre);
+	vec3 ld = inverse * d;
+	return intersectRayAABB(lp, ld, vec3(), halfSize, t);
+}
+
+int base::intersectBoxes(const vec3& ac, const vec3& ae, const Quaternion& aq, const vec3& bc, const vec3& be, const Quaternion bq) {
+	// Get transform of B relative to A
+	Quaternion r = bq * aq.getInverse();
+	vec3 t = aq.getInverse() * (bc - ac);
+	vec3 mat[3]  = { r.xAxis(), r.yAxis(), r.zAxis() };
+	vec3 amat[3] = { fabs(mat[0]), fabs(mat[1]), fabs(mat[2]) };
+	float ra, rb;
+
+	// Test axes on A
+	for(int i=0; i<3; ++i) {
+		ra = ae[i];
+		rb = be.x * amat[0][i] + be.y * amat[1][i] + be.z * amat[2][i];
+		if(fabs(t[i]) > ra + rb) return 0;
+	}
+
+	// Test axes on B
+	for(int i=0; i<3; ++i) {
+		ra = ae.x * amat[i][0] + ae.y * amat[i][1] + ae.z * amat[i][2];
+		rb = be[i];
+		if(fabs(t.x * mat[i][0] + t.y * mat[i][1] + t.z * mat[i][2]) > ra + rb) return 0;
+	}
+	
+	// Test axis AX x BX
+	ra = ae.y * amat[0][2] + ae.z * amat[0][1];
+	rb = be.y * amat[2][0] + be.z * amat[1][0];
+	if(fabs(t.z * mat[0][1] - t.y * mat[0][2]) > ra + rb) return 0;
+
+	// Test axis AX x BY
+	ra = ae.y * amat[1][2] + ae.z * amat[1][1];
+	rb = be.x * amat[2][0] + be.z * amat[0][0];
+	if(fabs(t.z * mat[1][1] - t.y * mat[1][2]) > ra + rb) return 0;
+
+	// Test axis AX x BZ
+	ra = ae.y * amat[2][2] + ae.z * amat[2][1];
+	rb = be.x * amat[1][0] + be.y * amat[0][0];
+	if(fabs(t.z * mat[2][1] - t.y * mat[2][2]) > ra + rb) return 0;
+
+	// Test axis AY x BX
+	ra = ae.x * amat[0][2] + ae.z * amat[0][0];
+	rb = be.y * amat[2][1] + be.z * amat[1][1];
+	if(fabs(t.x * mat[0][2] - t.z * mat[0][0]) > ra + rb) return 0;
+	
+	// Test axis AY x BY
+	ra = ae.x * amat[1][2] + ae.z * amat[1][0];
+	rb = be.x * amat[2][1] + be.z * amat[0][1];
+	if(fabs(t.x * mat[1][2] - t.z * mat[1][0]) > ra + rb) return 0;
+
+	// Test axis AY x BZ
+	ra = ae.x * amat[2][2] + ae.z * amat[2][0];
+	rb = be.x * amat[1][1] + be.y * amat[0][1];
+	if(fabs(t.x * mat[2][2] - t.z * mat[2][0]) > ra + rb) return 0;
+
+	// Test axis AZ x BX
+	ra = ae.x * amat[0][1] + ae.y * amat[0][0];
+	rb = be.y * amat[2][2] + be.z * amat[1][2];
+	if(fabs(t.y * mat[0][0] - t.x * mat[0][1]) > ra + rb) return 0;
+
+	// Test axis AY x BY
+	ra = ae.x * amat[1][1] + ae.y * amat[1][0];
+	rb = be.x * amat[2][2] + be.z * amat[0][2];
+	if(fabs(t.y * mat[0][0] - t.x * mat[1][1]) > ra + rb) return 0;
+
+	// Test axis AZ x BZ
+	ra = ae.x * amat[2][1] + ae.y * amat[2][0];
+	rb = be.x * amat[1][2] + be.y * amat[0][2];
+	if(fabs(t.y * mat[2][0] - t.x * mat[2][1]) > ra + rb) return 0;
+
+	return 1;
+}
 
 

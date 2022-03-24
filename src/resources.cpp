@@ -627,6 +627,13 @@ void XMLResourceLoader::loadMaterialPass(const XMLElement& e, Pass* pass) {
 			pass->state.depthTest = enumValueT(i.attribute("depth"), 6, depthModes, DEPTH_LEQUAL);
 			pass->state.depthWrite = i.attribute("depthWrite", 1);	// perhaps use mask="RGBD"
 			pass->state.wireframe  = i.attribute("wireframe", 0);
+			if(const char* mask = i.attribute("colour", nullString)) {
+				pass->state.colourMask = MASK_NONE;
+				if(strchr(mask, 'r')) pass->state.colourMask |= MASK_RED;
+				if(strchr(mask, 'g')) pass->state.colourMask |= MASK_GREEN;
+				if(strchr(mask, 'b')) pass->state.colourMask |= MASK_BLUE;
+				if(strchr(mask, 'a')) pass->state.colourMask |= MASK_ALPHA;
+			}
 		}
 	}
 }

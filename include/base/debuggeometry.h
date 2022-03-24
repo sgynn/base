@@ -17,7 +17,9 @@ namespace base {
 	enum DebugGeometryFlush {
 		SDG_MANUAL,			// Requires calling DebugGeometry::flush() manually
 		SDG_FRAME,			// Flush automatically called every frame
+		SDG_ALWAYS = SDG_FRAME,
 		SDG_FRAME_IF_DATA,	// Flush automatically called every frame if there is new data
+		SDG_AUTOMATIC = SDG_FRAME_IF_DATA,
 		SDG_APPEND			// Flush automatically, previous lines are not cleared. use reset() to clear.
 	};
 
