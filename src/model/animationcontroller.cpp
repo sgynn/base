@@ -250,8 +250,9 @@ void AnimationController::setIdle(const AnimationKey& key) {
 	const AnimationBank::AnimationInfo* a = m_bank->getAnimation(key, m_group);
 	if(!a) m_idleTrack = -1;
 	else if(m_idleTrack<0 || m_state->getAnimation(m_idleTrack) != a->animation) {
+		float initialWeight = m_idleTrack<0? 1: 0;
 		m_idleTrack = allocateActionTrack();
-		m_state->play(a->animation, 1, AnimationBlend::Add, m_idleTrack<0? 1: 0, true, -1, m_idleTrack);
+		m_state->play(a->animation, 1, AnimationBlend::Add, initialWeight, true, -1, m_idleTrack);
 		setMeta(m_idleTrack, a, IDLE, ActionMode::Loop);
 		m_lastPosition += a->startPos;
 		m_lastOrientation *= a->startRot;
