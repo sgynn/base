@@ -862,7 +862,7 @@ void Widget::draw() const {
 	drawChildren();
 }
 void Widget::drawSkin() const {
-	if(m_skin) {
+	if(m_skin && m_skin->getImage()>=0) {
 		unsigned colour = deriveColour(m_skin->getState(getState()).backColour, m_colour, m_states);
 		m_root->getRenderer()->drawSkin(m_skin, m_rect, colour, getState());
 	}
