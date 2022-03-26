@@ -198,7 +198,7 @@ bool ResourceManager<T>::reload(const char* name) {
 template<class T>
 const char* ResourceManager<T>::getName(const T* item) const {
 	for(const auto& i: m_resources) {
-		if(i.value.object == item) return i.key;
+		if(i.value->object == item) return i.key;
 	}
 	return 0;
 }

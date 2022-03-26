@@ -91,6 +91,7 @@ static PFNGLUNIFORMMATRIX2FVPROC   glUniformMatrix2fv = 0;
 static PFNGLUNIFORMMATRIX3FVPROC   glUniformMatrix3fv = 0;
 static PFNGLUNIFORMMATRIX4FVPROC   glUniformMatrix4fv = 0;
 static PFNGLUNIFORMMATRIX3X4FVPROC glUniformMatrix3x4fv = 0;
+static PFNGLGETACTIVEUNIFORMPROC   glGetActiveUniform = 0;
 
 PFNGLENABLEVERTEXATTRIBARRAYPROC   glEnableVertexAttribArray  = 0;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC  glDisableVertexAttribArray = 0;
@@ -138,6 +139,7 @@ static int initialiseShaderExtensions() {
 	glUniformMatrix3fv = (PFNGLUNIFORMMATRIX3FVPROC)	wglGetProcAddress("glUniformMatrix3fv");
 	glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)	wglGetProcAddress("glUniformMatrix4fv");
 	glUniformMatrix3x4fv = (PFNGLUNIFORMMATRIX3X4FVPROC)	wglGetProcAddress("glUniformMatrix3x4fv");
+	glGetActiveUniform = (PFNGLGETACTIVEUNIFORMPROC)    wglGetProcAddress("glGetActiveUniform");
 	
 	glEnableVertexAttribArray  = (PFNGLENABLEVERTEXATTRIBARRAYPROC)  wglGetProcAddress("glEnableVertexAttribArray");
 	glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC) wglGetProcAddress("glDisableVertexAttribArray");
@@ -603,5 +605,21 @@ void Shader::setMatrix3x4(int loc, int count, const float* data) const {
 	glUniformMatrix3x4fv(loc, count, false, data);
 }
 
+
+Shader::UniformList Shader::getUniforms() const {
+	int count = 0;
+	GLsizei length;
+	GLenum type;
+	GLint size;
+	UniformList list;
+	glGetProgramiv(m_object, GL_ACTIVE_UNIFORMS, &count);
+	for(int i=0; i<count; ++i) {
+		list.emplace_back();
+		glGetActiveUniform(m_object, (GLuint)i, 32, &length, &size, &type, list.back().name);
+		list.back().type = type;
+		list.back().size = size;
+	}
+	return list;
+}
 
 
