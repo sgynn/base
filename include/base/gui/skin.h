@@ -25,11 +25,11 @@ class Skin {
 
 	/** State info */
 	struct State {
-		Rect     rect;		// Source rect on image (pixels)
-		Border   border;	// Border info
-		unsigned foreColour;// Text/Icon colour
-		unsigned backColour;// Widget colour
-		Point    textPos;	// Text position offset
+		Rect     rect = {0,0,0,0};		// Source rect on image (pixels)
+		Border   border;				// Border info
+		unsigned foreColour=0xffffffff; // Text/Icon colour
+		unsigned backColour=0xffffffff; // Widget colour
+		Point    textPos;				// Text position offset
 	};
 
 	public:
