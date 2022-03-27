@@ -28,7 +28,7 @@ typedef unsigned int uint;
 enum Orientation { HORIZONTAL=0, VERTICAL=1 };
 enum class Tangible  { NONE, SELF, CHILDREN, ALL };
 enum class KeyMask   { None=0, Ctrl=1, Shift=2, Alt=4, Meta=8 };
-enum class LoadFlags { WIDGETS=1, TEMPLATES=2, SKINS=4, ICONS=8, REPLACE=16, ALL=0xff };
+enum class LoadFlags { WIDGETS=1, TEMPLATES=2, SKINS=4, ICONS=8, REPLACE=16, ALL=0xf };
 
 inline int operator&(KeyMask a, KeyMask b) { return (int)a & (int)b; }
 inline KeyMask operator|(KeyMask a, KeyMask b) { return (KeyMask)((int)a | (int)b); }
@@ -291,8 +291,8 @@ class Root {
 	void    resize(int width, int height);
 	void    update();
 	void    draw() const;
-	Widget* parse(const char* xml, Widget* root=0, LoadFlags flags=LoadFlags::ALL);	// Load all from string
-	Widget* load(const char* file, Widget* root=0, LoadFlags flags=LoadFlags::ALL);	// Load all from file
+	Widget* parse(const char* xml, Widget* root=0, LoadFlags flags=LoadFlags::ALL|LoadFlags::REPLACE);	// Load all from string
+	Widget* load(const char* file, Widget* root=0, LoadFlags flags=LoadFlags::ALL|LoadFlags::REPLACE);	// Load all from file
 	Widget* loadWidget(const char* file, const char* widget);	// Only load a single widget
 	Widget* load(const base::XMLElement& xmlRoot, Widget* parent=0, LoadFlags flags=LoadFlags::ALL);
 	Widget* loadWidget(const base::XMLElement&, bool isTemplate) const;

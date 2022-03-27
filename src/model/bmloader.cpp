@@ -43,7 +43,7 @@ Model* BMLoader::parse(const char* data) {
 Model* BMLoader::loadModel(const XMLElement& e) {
 	Model* model = new Model();
 	float version = e.attribute("version", 1.f);
-	if(version<2 && e.find("animation").name()) printf("Warning: Old model version. Animations wil be broken\n");
+	if(version<2 && e.find("animation").name()) printf("Warning: Old model version. Animations will be broken\n");
 
 	for(XML::iterator i=e.begin(); i!=e.end(); ++i) {
 		if(*i == "mesh") {
