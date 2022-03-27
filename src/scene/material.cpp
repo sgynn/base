@@ -420,7 +420,7 @@ MacroState::MacroState() : cullMode(CULL_BACK), depthTest(DEPTH_LEQUAL), depthWr
 }
 
 bool MacroState::operator==(const MacroState& m) const {
-	return cullMode==m.cullMode && depthTest==m.depthTest && depthWrite==m.depthWrite && wireframe==m.wireframe;
+	return cullMode==m.cullMode && depthTest==m.depthTest && depthWrite==m.depthWrite && wireframe==m.wireframe && colourMask==m.colourMask;
 }
 void MacroState::bind() const {
 	switch(cullMode) {
@@ -430,12 +430,13 @@ void MacroState::bind() const {
 	}
 
 	switch(depthTest) {
-	case DEPTH_ALWAYS:  glDisable(GL_DEPTH_TEST); break;
+	case DEPTH_ALWAYS:  glEnable(GL_DEPTH_TEST); glDepthFunc(GL_ALWAYS); break;
 	case DEPTH_LESS:    glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LESS); break;
 	case DEPTH_LEQUAL:  glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LEQUAL); break;
 	case DEPTH_GREATER: glEnable(GL_DEPTH_TEST); glDepthFunc(GL_GREATER); break;
 	case DEPTH_GEQUAL:  glEnable(GL_DEPTH_TEST); glDepthFunc(GL_GEQUAL); break;
 	case DEPTH_EQUAL:   glEnable(GL_DEPTH_TEST); glDepthFunc(GL_EQUAL); break;
+	case DEPTH_DISABLED: glDisable(GL_DEPTH_TEST); break;
 	}
 
 	glDepthMask(depthWrite);

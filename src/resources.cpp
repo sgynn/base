@@ -631,8 +631,8 @@ void XMLResourceLoader::loadMaterialPass(const XMLElement& e, Pass* pass) {
 		else if(i=="state") {
 			const char* cullModes[] = { "none", "back", "front" };
 			pass->state.cullMode = enumValueT(i.attribute("cull"), 3, cullModes, CULL_BACK);
-			const char* depthModes[] = { "ignore", "less", "lequal", "greater", "gequal", "equal" };
-			pass->state.depthTest = enumValueT(i.attribute("depth"), 6, depthModes, DEPTH_LEQUAL);
+			const char* depthModes[] = { "always", "less", "lequal", "greater", "gequal", "equal", "disabled" };
+			pass->state.depthTest = enumValueT(i.attribute("depth"), 7, depthModes, DEPTH_LEQUAL);
 			pass->state.depthWrite = i.attribute("depthWrite", 1);	// perhaps use mask="RGBD"
 			pass->state.wireframe  = i.attribute("wireframe", 0);
 			if(const char* mask = i.attribute("colour", nullString)) {

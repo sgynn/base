@@ -14,15 +14,21 @@
 
 using namespace base;
 
+class DebugGeometrySceneNode : public SceneNode {
+	public:
+	DebugGeometrySceneNode() : SceneNode("Debug Geometry") {}
+	~DebugGeometrySceneNode() { DebugGeometryManager::getInstance()->removeNode(this); }
+};
+
+
 DebugGeometryManager* DebugGeometryManager::s_instance = 0;
 DebugGeometryManager::DebugGeometryManager() : m_renderQueue(10), m_material(0) {
 	s_instance = this;
-	m_node = new SceneNode("Debug Lines");
 }
 DebugGeometryManager::~DebugGeometryManager() {
 	if(s_instance==this) s_instance=0;
-	m_node->deleteAttachments();
-	delete m_node;
+	for(auto& i: m_drawables) delete i.second;
+	while(!m_nodes.empty()) delete m_nodes[0];
 }
 
 void DebugGeometryManager::initialise(Scene* scene, int queue, Material* mat) {
@@ -31,13 +37,26 @@ void DebugGeometryManager::initialise(Scene* scene, int queue, Material* mat) {
 		s_instance->setMaterial( getDefaultMaterial() );
 	}
 	s_instance->setRenderQueue(queue);
-	if(scene) scene->add(s_instance->m_node);
+	if(scene) {
+		SceneNode* node = new DebugGeometrySceneNode();
+		for(auto& i: s_instance->m_drawables) node->attach(i.second);
+		s_instance->m_nodes.push_back(node);
+		scene->add(node);
+	}
 }
 void DebugGeometryManager::initialise(Scene* scene, int queue, bool onTop) {
 	initialise(scene, queue);
 	if(onTop) getDefaultMaterial()->getPass(0)->state.depthTest = DEPTH_ALWAYS;
 }
 
+void DebugGeometryManager::removeNode(SceneNode* node) {
+	for(size_t i=0; i<m_nodes.size(); ++i) {
+		if(m_nodes[i] == node) {
+			m_nodes[i] = m_nodes.back();
+			m_nodes.pop_back();
+		}
+	}
+}
 
 Material* DebugGeometryManager::getDefaultMaterial() {
 	static Material* defaultMaterial = 0;
@@ -102,7 +121,7 @@ void DebugGeometryManager::update() {
 		for(DebugGeometry* removed: m_deleteList) if(item == removed) { valid=false; break; }
 		if(valid) {
 			m_drawables[item] = item->m_drawable;
-			m_node->attach(item->m_drawable);
+			for(SceneNode* node: m_nodes) node->attach(item->m_drawable);
 			item->m_drawable->setMaterial(m_material);
 			item->m_drawable->setRenderQueue(m_renderQueue);
 		}
@@ -115,7 +134,7 @@ void DebugGeometryManager::update() {
 		it = m_drawables.find(item);
 		if(it!=m_drawables.end()) {
 			m_drawables.erase(it);
-			m_node->detach(it->second);
+			for(SceneNode* node: m_nodes) node->detach(it->second);
 			delete it->second;
 		}
 	}
@@ -136,15 +155,15 @@ void DebugGeometryManager::update() {
 
 void DebugGeometryManager::setRenderQueue(int queue) {
 	m_renderQueue = queue;
-	for(size_t i=0; i<m_node->getAttachmentCount(); ++i) {
-		m_node->getAttachment(i)->setRenderQueue(queue);
+	for(auto& i: m_drawables) {
+		i.second->setRenderQueue(queue);
 	}
 }
 
 void DebugGeometryManager::setMaterial(Material* m) {
 	m_material = m;
-	for(size_t i=0; i<m_node->getAttachmentCount(); ++i) {
-		m_node->getAttachment(i)->setMaterial(m);
+	for(auto& i: m_drawables) {
+		i.second->setMaterial(m);
 	}
 }
 

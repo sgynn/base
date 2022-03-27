@@ -76,20 +76,20 @@ namespace base {
 		static Material* getDefaultMaterial();
 		static void flush() { if(s_instance) s_instance->update(); } // Call this in render function to update drawables
 		Material* getMaterial() const { return m_material; }
-		SceneNode* getSceneNode() const { return m_node; }
 		void setRenderQueue(int queue);
 		void setMaterial(Material*);
 		void add(DebugGeometry*);
 		void remove(DebugGeometry*);
+		void removeNode(SceneNode*);
 		void update();
 		protected:
 
 		int m_renderQueue;
-		SceneNode* m_node;
 		Material* m_material;
 		std::map<DebugGeometry*, Drawable*> m_drawables;
 		std::vector<DebugGeometry*> m_addList;
 		std::vector<DebugGeometry*> m_deleteList;
+		std::vector<SceneNode*> m_nodes;
 		Mutex m_mutex;
 	};
 

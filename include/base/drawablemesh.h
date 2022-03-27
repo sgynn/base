@@ -22,6 +22,7 @@ namespace base {
 		void                        setInstanceBuffer(base::HardwareVertexBuffer*);
 		base::HardwareVertexBuffer* getInstanceBuffer() const;
 		base::Mesh* 		        getMesh() const;
+		base::Skeleton*             getSkeleton() const;
 
 		protected:
 		void updateSkeletonSource(RenderState&) const;				// Updates skeleton matrices in auto variable source. Must be called before material is bound.

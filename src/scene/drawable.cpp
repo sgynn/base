@@ -172,6 +172,10 @@ Mesh* DrawableMesh::getMesh() const {
 	return m_mesh;
 }
 
+Skeleton* DrawableMesh::getSkeleton() const {
+	return m_skeleton;
+}
+
 void DrawableMesh::draw( RenderState& state) {
 	if(!m_binding) return;
 	GL_CHECK_ERROR;
