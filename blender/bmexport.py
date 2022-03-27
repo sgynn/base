@@ -307,11 +307,12 @@ def export_animations(context, config, skeleton, xml):
     if skeleton.animation_data:
         actions = []
         if skeleton.animation_data.action:
-            actions.append( skeleton.animation_data.action )
+            actions.append( (skeleton.animation_data.action, "Action") )
 
         restore = {}
         if skeleton.animation_data.nla_tracks and (config.export_animations == "LINKED" or config.export_animations == "UNLOCKED"):
             unlocked_only = config.export_animations == "UNLOCKED"
+            mode = config.animation_names
             for track in skeleton.animation_data.nla_tracks.values():
                 if track.lock and unlocked_only: continue;
                 restore[track] = (track.mute, track.is_solo)
@@ -319,25 +320,41 @@ def export_animations(context, config, skeleton, xml):
                 track.is_solo = False
                 for strip in track.strips.values():
                     if strip.action and strip.action not in actions:
-                        actions.append(strip.action)
+                        name = strip.name if mode == "STRIP" else track.name if mode == "TRACK" else action.name
+                        actions.append((strip.action, name))
 
-        # Export actions
-        context.scene.tool_settings.use_keyframe_insert_auto = False # this really messes things up if left on
-        last = skeleton.animation_data.action
-        context.view_layer.objects.active = skeleton
-        bpy.ops.object.mode_set(mode='POSE')
-        for action in actions:
-            export_action(context, skeleton, action, xml)
+        if actions:
+            active = context.view_layer.objects.active
+            context.scene.tool_settings.use_keyframe_insert_auto = False # this really messes things up if left on
+            last = skeleton.animation_data.action
+            context.view_layer.objects.active = skeleton
+            bpy.ops.object.mode_set(mode='POSE')
 
-        # Restore
-        skeleton.animation_data.action = last
-        for track, data in restore.items():
-            track.mute = data[0]
-            track.is_solo = data[1]
+            # Save pose
+            transforms = []
+            for b in skeleton.pose.bones:
+                transforms.append((b, b.location.copy(), b.rotation_quaternion.copy(), b.scale.copy()))
+
+            # Export actions
+            for action in actions:
+                export_action(context, skeleton, action[0], action[1], xml)
+
+            # Restore
+            context.view_layer.objects.active = active
+            skeleton.animation_data.action = last
+            for track, data in restore.items():
+                track.mute = data[0]
+                track.is_solo = data[1]
+
+            # restore pose
+            for b in transforms:
+                b[0].location = b[1];
+                b[0].rotation_quaternion = b[2]
+                b[0].scale = b[3]
 
 def same(a,b): return abs(a-b)<0.00001
 
-def export_action(context, skeleton, action, xml):
+def export_action(context, skeleton, action, name, xml):
     print("Context", context.mode, context.active_object.name);
     skeleton.animation_data.action = None
     bpy.ops.pose.user_transforms_clear(False)
@@ -377,7 +394,7 @@ def export_action(context, skeleton, action, xml):
 
     # Write xml
     anim = append_element(xml.firstChild, "animation")
-    anim.setAttribute("name", action.name)
+    anim.setAttribute("name", name)
     anim.setAttribute("frames", str(length))
     anim.setAttribute("rate", str(context.scene.render.fps))
     export_custom_properties(anim, action, "properties")
@@ -515,12 +532,25 @@ def add_heirachy(obj, out):
 
 def export(context, config):
     # What to export
-    if config.export_group == "SELECTED": exportList = list(context.selected_objects)
+    if config.export_group == "SELECTED":
+        exportList = list(context.selected_objects)
     elif config.export_group == "HEIRACHY":
         exportList = set()
         for obj in context.selected_objects:
             add_heirachy(obj, exportList)
-    elif config.export_group == "ALL": exportList = list(context.view_layer.objects)
+    elif config.export_group == "COLLECTION":
+        exportList = set()
+        collections = set()
+        if context.active_object:
+            collections = set(context.active_object.users_collection)
+        for obj in context.selected_objects:
+            collections |= set(obj.users_collection)
+        for collection in collections:
+            exportList |= set(collection.objects);
+    elif config.export_group == "VISIBLE":
+        exportList = list(filter(lambda o : not o.hide_viewport, context.view_layer.objects))
+    elif config.export_group == "ALL":
+        exportList = list(context.view_layer.objects)
 
     # Linked skeleton
     exportAnimation = config.export_animations != "NONE"

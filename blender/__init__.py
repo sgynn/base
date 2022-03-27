@@ -61,7 +61,7 @@ class ExportBaseLib(bpy.types.Operator):
                  ("SELECTED", "Selected", "Only export selected object"),
                  ("HEIRACHY", "Heirachy", "Export selected objects and their children"),
                  ("VISIBLE", "Visible", "Export all visible objects"),
-                 ("GROUP", "Group", "Export all objects in groups of which objects are selected")],
+                 ("COLLECTION", "Collection", "Export all objects in collections of which objects are selected")],
         default="SELECTED")
 
     export_meshes: BoolProperty(
@@ -125,10 +125,17 @@ class ExportBaseLib(bpy.types.Operator):
         items = [('NONE', "None", "Don't export animation"),
                  ("ACTIVE", "Active", "Export only active action"),
                  ("LINKED", "Linked", "Export actions linked to object (in NLA editor)"),
-                 ("UNLOCKED", "Linked Unlocked", "Export actions linked to object in unlocked strips (in NLA editor)"),
+                 ("UNLOCKED", "Linked Unlocked", "Export actions linked to object in unlocked tracks (in NLA editor)"),
                  ("ALL", "All", "Export all animations")],
         default="NONE")
 
+    animation_names: EnumProperty(
+        name="Names",
+        description="How to name exported animations",
+        items = [("ACTION", "Action Name", "Use action data name"),
+                 ("STRIP", "Strip Name", "Use name on NLA strip"),
+                 ("TRACK", "Track Name", "Use name of NLA track. Can have multiple animations with the same name")],
+        default="ACTION")
 
     export_layout: BoolProperty(
         name="Export Layout",
@@ -167,20 +174,31 @@ class ExportBaseLib(bpy.types.Operator):
         skel = skel.column()
         skel.enabled = self.hasAnimation(context)
         skel.prop(self, 'export_animations')
+        names = skel.column()
+        names.enabled = self.export_animations in ("LINKED", "UNLOCKED")
+        names.prop(self, 'animation_names')
 
         lay = layout.box()
         lay.prop(self, 'export_layout')
 
-    def getHeirachy(obj, out):
+    def getHeirachy(self, obj, out):
         out.add(obj)
-        for o in obj.children: getHeirachy(o, out)
+        for o in obj.children: self.getHeirachy(o, out)
 
     def getObjects(self, context):
         if self.export_group == "ALL": return context.view_layer.objects
         elif self.export_group == "SELECTED": return context.selected_objects
+        elif self.export_group == "VISIBLE": return filter(lambda o : not o.hide_viewport, context.view_layer.objects)
         elif self.export_group == "HEIRACHY": 
             items = set();
             for o in context.selected_objects: self.getHeirachy(o, items)
+            return items
+        elif self.export_group == "COLLECTION":
+            items = set()
+            collections = set()
+            if context.active_object: collections = set(context.active_object.users_collection)
+            for obj in context.selected_objects: collections |= set(obj.users_collection)
+            for collection in collections: items |= set(collection.objects);
             return items
         else: return None
 
