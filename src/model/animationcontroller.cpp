@@ -427,7 +427,8 @@ void AnimationController::setOverrideStartTrack(int newStart) {
 void AnimationController::playOverride(const AnimationKey& key, ActionMode mode, bool fade, bool additive) {
 	const AnimationBank::AnimationInfo* a = m_bank->getAnimation(key, m_group);
 	if(a) {
-		int track = m_state->play(a->animation, 0, additive? AnimationBlend::Add: AnimationBlend::Mix, fade?0:1, mode==ActionMode::Loop?1:0);
+		AnimationBlend blend = additive? AnimationBlend::Add: AnimationBlend::Mix;
+		int track = m_state->play(a->animation, 1, blend, fade?0:1, mode==ActionMode::Loop?1:0);
 		setMeta(track, a, OVERRIDE_IN, mode);
 		if(track < m_overrideStart) m_overrideStart = track;
 	}
