@@ -320,7 +320,7 @@ def export_animations(context, config, skeleton, xml):
                 track.is_solo = False
                 for strip in track.strips.values():
                     if strip.action and strip.action not in actions:
-                        name = strip.name if mode == "STRIP" else track.name if mode == "TRACK" else action.name
+                        name = strip.name if mode == "STRIP" else track.name if mode == "TRACK" else strip.action.name
                         actions.append((strip.action, name))
 
         if actions:
