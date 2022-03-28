@@ -5,25 +5,25 @@
 
 namespace base {
 
-enum TransitionState { T_NONE, T_IN, T_OUT };
-enum StateFlags { NONE=0, OVERLAP=1, PERSISTANT=2 };
+enum StateMode { TRANSIENT, PERSISTENT };
 enum ComponentFlags { BLOCK_KEYS=1, BLOCK_MOUSE=2, BLOCK_WHEEL=4, BLOCK_UPDATE=8, BLOCK_DRAW=16 };
 
-
-class StateManager;
+class GameStateManager;
 class GameState;
 
 /** Game state component base class
  * These are encapsulated update/draw plugins that can be added to the game state
+ * Persistent components will automatically be added to the new state
  */
 class GameStateComponent {
 	friend class GameState;
 	public:
-	GameStateComponent(int updateOrder=0, int drawOrder=0) : m_updateOrder(updateOrder), m_drawOrder(drawOrder) {}
+	GameStateComponent(int updateOrder=0, int drawOrder=0, StateMode mode=TRANSIENT) : m_mode(mode), m_updateOrder(updateOrder), m_drawOrder(drawOrder) {}
 	virtual ~GameStateComponent() {}
 	virtual void update() = 0;
 	virtual void draw() = 0;
 	GameState* getState() const { return m_gameState; }
+	StateMode getMode() const { return m_mode; }
 
 	// Component flags are used to pass state information to subsequent components in the game state
 	// They are reset at the start of every frame so need to set every update
@@ -35,6 +35,7 @@ class GameStateComponent {
 		
 	private:
 	GameState* m_gameState;
+	StateMode m_mode;
 	int m_references = 0;
 	int m_updateOrder;
 	int m_drawOrder;
@@ -45,10 +46,10 @@ class GameStateComponent {
 States can have transitions. The transition times are passed to the constructor.
 */
 class GameState : public GameStateComponent {
-	friend class StateManager;
+	friend class GameStateManager;
 	friend class GameStateComponent;
 	public:
-		GameState(float tIn=0, float tOut=0, StateFlags flags=NONE);
+		GameState();
 		virtual ~GameState();
 		
 		virtual void begin() {}
@@ -60,56 +61,43 @@ class GameState : public GameStateComponent {
 		void addComponent(GameStateComponent*);
 
 	protected:
-		/** Current state the gamestate */
-		TransitionState state() const { return m_state; }
-		float transition() const { return m_transition; }
-		
 		/** Set the next state to change to and start transitions */
 		void changeState(GameState* state);
+
 		/** Get the previous state */
-		GameState* lastState() const;
-		
-		float tIn() const { return m_in; }
-		float tOut() const { return m_out; }
+		GameState* previousState() const;
 
 	private:
-		int updateState();
+		void updateState();
 		void drawState();
 
 	private:
-		TransitionState m_state;
-		float m_transition;
-		StateManager* m_stateManager;
-		float m_in, m_out;
-		StateFlags m_flags;
+		GameStateManager* m_stateManager;
 		unsigned m_componentFlags;
 		std::vector<GameStateComponent*> m_updateComponents;
 		std::vector<GameStateComponent*> m_drawComponents;
 };
 
 /** Game State manager - Handles transitions and control */
-class StateManager {
+class GameStateManager {
 	friend class GameState;
 	public:
-		StateManager();
-		~StateManager();
+		GameStateManager();
+		~GameStateManager();
 		
 		void update();
 		void draw();
 		
-		/** Change the game state */
-		bool change(GameState* next);
-		bool state(GameState* next) { return change(next); } //alias for compatibility
+		void changeState(GameState* next);
 		
-		bool running() const { return m_running; }
+		bool running() const { return m_currentState || m_nextState; }
 		
 		void quit();
 		
 	private:
-		GameState* currentState;
-		GameState* nextState;
-		GameState* prevState;
-		bool m_running;
+		GameState* m_currentState;
+		GameState* m_nextState;
+		GameState* m_prevState;
 };
 
 // Component flags implemntation - needs to be after GameState class

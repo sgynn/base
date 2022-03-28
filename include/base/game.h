@@ -8,7 +8,7 @@ namespace base {
 class Window;
 class Input;
 class GameState;
-class StateManager;
+class GameStateManager;
 
 /** Game main functions */
 class Game {
@@ -76,7 +76,7 @@ class Game {
 	static void clear(int bits) { s_clearBits = bits; }
 
 	protected:
-	StateManager* m_state; 
+	GameStateManager* m_state; 
 	static int s_clearBits;
 
 	static Window* s_window;

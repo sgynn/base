@@ -8,13 +8,16 @@
 
 using namespace base;
 
-GameState::GameState(float in, float out, StateFlags flags) : m_state(T_IN), m_transition(0), m_stateManager(0), m_in(in), m_out(out), m_flags(flags) {
+GameState::GameState() {
 	addComponent(this);
 }
 GameState::~GameState() {
 	for(GameStateComponent* c: m_updateComponents) {
 		if(--c->m_references==0 && c!=this) delete c;
 	}
+	if(m_stateManager->m_prevState==this) m_stateManager->m_prevState = 0;
+	if(m_stateManager->m_currentState==this) m_stateManager->m_currentState = 0;
+	if(m_stateManager->m_nextState==this) m_stateManager->m_nextState = 0;
 }
 
 template<class T> inline void addToList(std::vector<GameStateComponent*>& list, GameStateComponent* c, const T& less) {
@@ -35,25 +38,9 @@ void GameState::addComponent(GameStateComponent* c) {
 	c->m_gameState = this;
 }
 
-int GameState::updateState() {
-	//update transition
-	if(m_state==T_IN) {
-		if(m_in==0) m_transition = 1;
-		else m_transition += time/m_in;
-		if(m_transition>=1.0f){ 
-			m_state = T_NONE;
-			m_transition = 1.0f;
-		}
-	} else if(m_state==T_OUT) {
-		if(m_out==0) m_transition=0;
-		else m_transition -= time/m_out;
-		if(m_transition<=0.0f) return 0;
-	}
-	
+void GameState::updateState() {
 	m_componentFlags = 0;
 	for(GameStateComponent* c: m_updateComponents) c->update();
-
-	return 1;
 }
 
 void GameState::drawState() {
@@ -61,58 +48,48 @@ void GameState::drawState() {
 }
 
 void GameState::changeState(GameState* state) {
-	m_stateManager->change(state);
+	m_stateManager->changeState(state);
 }
 
-GameState* GameState::lastState() const {
-	return m_stateManager->prevState;
+GameState* GameState::previousState() const {
+	return m_stateManager->m_prevState;
 }
 
 
 // ------------------------------------------------------------------------------------------- //
 
 
-StateManager::StateManager() : currentState(0), nextState(0), prevState(0), m_running(true) {}
-StateManager::~StateManager() {}
+GameStateManager::GameStateManager() : m_currentState(0), m_nextState(0), m_prevState(0){}
+GameStateManager::~GameStateManager() {}
 
-void StateManager::update() {
-	if(!currentState) m_running = false;
-	else {
-		if(nextState && (nextState->m_flags&OVERLAP)) nextState->updateState(); //update the other state if set to overlap
-		if(currentState->updateState()==0) {
-			currentState->end();
-			prevState = 0;
-			if(~currentState->m_flags&PERSISTANT) delete currentState;
-			else prevState = currentState;
-			currentState = nextState;
-			nextState = 0;
-			if(currentState) {
-				currentState->m_state = T_IN;
-				currentState->begin();
-			}
+void GameStateManager::update() {
+	if(m_nextState != m_currentState) {
+		if(m_prevState && m_prevState!=m_currentState && m_prevState!=m_nextState) {
+			m_prevState->m_stateManager = 0;
 		}
+		m_prevState = m_currentState;
+		if(m_currentState) m_currentState->end();
+		if(m_nextState) {
+			if(m_currentState) for(GameStateComponent* c: m_currentState->m_updateComponents) {
+				if(c->getMode() == PERSISTENT) m_nextState->addComponent(c);
+			}
+			m_nextState->begin();
+		}
+		m_currentState = m_nextState;
 	}
+	if(m_currentState) m_currentState->updateState();
 }
 
-void StateManager::draw() {
-	if(nextState && (nextState->m_flags&OVERLAP)) nextState->drawState(); //Draw the other state if set to overlap
-	if(currentState) currentState->drawState();
+void GameStateManager::draw() {
+	if(m_currentState) m_currentState->drawState();
 }
 
-/** Change the game state */
-bool StateManager::change(GameState* next) {
+void GameStateManager::changeState(GameState* next) {
 	if(next) next->m_stateManager = this;
-	if(currentState==0) {
-		currentState = next;
-		if(currentState) currentState->begin();
-	} else {
-		currentState->m_state = T_OUT; //signal current state to end
-		nextState = next;
-	}
-	return true;
+	m_nextState = next;
 }
 
-void StateManager::quit() {
-	m_running = false;
+void GameStateManager::quit() {
+	m_nextState = 0;
 }
 

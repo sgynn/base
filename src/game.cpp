@@ -60,7 +60,7 @@ Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_stat
 	s_window->clear();
 
 
-	m_state = new StateManager();
+	m_state = new GameStateManager();
 
 	s_input = new Input();
 
@@ -100,7 +100,7 @@ int Game::width() { return s_window->getSize().x; }
 int Game::height() { return s_window->getSize().y; }
 
 void Game::setInitialState(GameState* state) {
-	m_state->change(state);
+	m_state->changeState(state);
 }
 
 void Game::setTargetFPS(uint fps) {
