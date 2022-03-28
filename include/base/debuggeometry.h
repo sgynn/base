@@ -78,6 +78,7 @@ namespace base {
 		Material* getMaterial() const { return m_material; }
 		void setRenderQueue(int queue);
 		void setMaterial(Material*);
+		void setVisible(bool);
 		void add(DebugGeometry*);
 		void remove(DebugGeometry*);
 		void removeNode(SceneNode*);

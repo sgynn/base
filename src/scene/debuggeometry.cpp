@@ -49,6 +49,10 @@ void DebugGeometryManager::initialise(Scene* scene, int queue, bool onTop) {
 	if(onTop) getDefaultMaterial()->getPass(0)->state.depthTest = DEPTH_ALWAYS;
 }
 
+void DebugGeometryManager::setVisible(bool vis) {
+	for(SceneNode* n: m_nodes) n->setVisible(vis);
+}
+
 void DebugGeometryManager::removeNode(SceneNode* node) {
 	for(size_t i=0; i<m_nodes.size(); ++i) {
 		if(m_nodes[i] == node) {
