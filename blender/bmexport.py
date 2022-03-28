@@ -385,7 +385,7 @@ def export_action(context, skeleton, action, name, xml):
 
             if bone.parent: pos = pos @ mrot # Hack ?
             keys.rotation.append( (frame, rot) )
-            keys.scale.append( (frame, bone.scale.copy()) )
+            keys.scale.append( (frame, bone.scale.xzy) )
             keys.position.append( (frame, pos) )
 
     # Optimise
