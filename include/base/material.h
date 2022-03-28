@@ -64,6 +64,7 @@ namespace base {
 		void set(const char* name, float x, float y, float z, float w);		// set vec4 by element
 		void set(const char* name, const vec2& v);							// set vec2 value
 		void set(const char* name, const vec3& v);							// set vec3 value
+		void set(const char* name, const vec4& v);							// set vec3 value
 		void set(const char* name, int elements, int array, const int* v);	// set int data from pointer
 		void set(const char* name, int elements, int array, const float* v);// set float data from pointer
 		void setMatrix(const char* name, float* m);							// set matrix (4x4)

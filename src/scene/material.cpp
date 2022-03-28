@@ -46,6 +46,7 @@ void ShaderVars::set(const char* name, float x, float y, float z) { float v[]={x
 void ShaderVars::set(const char* name, float x, float y, float z, float w) { float v[]={x,y,z,w}; set(name, 4, 1, v); }
 void ShaderVars::set(const char* name, const vec2& v) { set(name, 2, 1, v); }
 void ShaderVars::set(const char* name, const vec3& v) { set(name, 3, 1, v); }
+void ShaderVars::set(const char* name, const vec4& v) { set(name, 4, 1, v); }
 
 void ShaderVars::set(const char* name, int c, int a, const int* v) {
 	SVar& var = m_variables[name];
