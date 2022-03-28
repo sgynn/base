@@ -66,15 +66,9 @@ void Bone::updateLocal() {
 		Quaternion rot( rest );
 		rot *= m_angle;
 		rot.toMatrix(m_local);
-		m_local[12] = m_position.x + rest[12];
-		m_local[13] = m_position.y + rest[13];
-		m_local[14] = m_position.z + rest[14];
+		// Translation relative to rest pose of this bone
+		m_local.setTranslation(rest * m_position);
 		}
-//		for(int i=0; i<3; ++i) {
-//			m_local[i  ] *= m_scale.x;
-//			m_local[i+4] *= m_scale.y;
-//			m_local[i+8] *= m_scale.z;
-//		}
 		m_state=3;
 		break;
 	case 2: // Matrix to parts

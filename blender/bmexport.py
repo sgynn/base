@@ -325,6 +325,7 @@ def export_animations(context, config, skeleton, xml):
 
         if actions:
             active = context.view_layer.objects.active
+            frame = context.scene.frame_current
             context.scene.tool_settings.use_keyframe_insert_auto = False # this really messes things up if left on
             last = skeleton.animation_data.action
             context.view_layer.objects.active = skeleton
@@ -347,6 +348,7 @@ def export_animations(context, config, skeleton, xml):
                 track.is_solo = data[1]
 
             # restore pose
+            context.scene.frame_set(frame)
             for b in transforms:
                 b[0].location = b[1];
                 b[0].rotation_quaternion = b[2]
