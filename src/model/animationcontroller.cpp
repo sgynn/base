@@ -27,7 +27,7 @@ const char* AnimationKey::lookup(uint key) {
 
 // ============================================================================================= //
 
-AnimationBank::AnimationBank(const char* rootBone) {
+AnimationBank::AnimationBank(const char* rootBone, const vec3& forward) : m_forward(forward) {
 	m_rootBone = rootBone? strdup(rootBone): 0;
 }
 AnimationBank::~AnimationBank() {
@@ -71,7 +71,7 @@ void AnimationBank::calculateMeta(AnimationInfo& anim, const char* root) {
 		anim.loopOffset = endPos - anim.startPos;
 		anim.loopRotation = endRot * anim.startRot.getInverse();
 
-		anim.speedKey = anim.loopOffset.z / length * anim.animation->getSpeed();
+		anim.speedKey = m_forward.dot(anim.loopOffset) / length * anim.animation->getSpeed();
 	}
 
 }
@@ -83,16 +83,14 @@ bool AnimationBank::autoDetectMove(const Animation* anim) const {
 	if(rootTrack<0) return false;
 	int last = anim->getLength() + 1;
 
-	// Root track must just move forward. Forward is not determined however so assume single axis
-	// Having lateral offsets can be resired in a move animation but this is just a simple shortcut.
+	// Root track must just move forward.
+	// Having lateral offsets can be desired in a move animation but this is just a simple shortcut.
 	vec3 va, vb;
 	Quaternion qa, qb;
 	anim->getPosition(rootTrack, 0, 0, va);
 	anim->getPosition(rootTrack, last, 0, vb);
 	if(va == vb) return false; // Must have moved
-	if(va.x!=vb.x && va.y!=vb.y) return false;
-	if(va.y!=vb.y && va.z!=vb.z) return false;
-	if(va.x!=vb.x && va.z!=vb.z) return false;
+	if(fabs(m_forward.dot((va-vb).normalise())) < 0.999) return false;
 
 	// all other bones must match first frame
 	for(int track=0; track<anim->getSize(); ++track) {

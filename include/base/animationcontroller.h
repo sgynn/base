@@ -63,7 +63,7 @@ class AnimationBank {
 	};
 
 	public:
-	AnimationBank(const char* rootBone);
+	AnimationBank(const char* rootBone=0, const vec3& forward = vec3(0,0,1));
 	~AnimationBank();
 	bool autoDetectMove(const Animation* anim) const;
 	void calculateMeta(AnimationInfo& anim, const char* root);
@@ -77,6 +77,7 @@ class AnimationBank {
 	std::vector<AnimationInfo*> m_animations;
 	std::vector<AnimationInfo*> m_movement;
 	const char* m_rootBone;
+	vec3 m_forward;
 };
 
 
