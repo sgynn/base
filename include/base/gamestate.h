@@ -1,5 +1,4 @@
-#ifndef _BASE_GAMESTATE_
-#define _BASE_GAMESTATE_
+#pragma once
 
 #include <vector>
 
@@ -32,7 +31,7 @@ class GameStateComponent {
 	void setComponentFlags(unsigned set);
 	bool hasComponentFlags(unsigned flags) const;
 	unsigned getComponentFlags() const;
-		
+
 	private:
 	GameState* m_gameState;
 	StateMode m_mode;
@@ -49,7 +48,7 @@ class GameState : public GameStateComponent {
 	friend class GameStateManager;
 	friend class GameStateComponent;
 	public:
-		GameState();
+		GameState(StateMode mode=TRANSIENT);
 		virtual ~GameState();
 		
 		virtual void begin() {}
@@ -59,8 +58,9 @@ class GameState : public GameStateComponent {
 		void draw() {}
 
 		void addComponent(GameStateComponent*);
+		void removeComponent(GameStateComponent*);
 
-	protected:
+	//protected:
 		/** Set the next state to change to and start transitions */
 		void changeState(GameState* state);
 
@@ -76,6 +76,7 @@ class GameState : public GameStateComponent {
 		unsigned m_componentFlags;
 		std::vector<GameStateComponent*> m_updateComponents;
 		std::vector<GameStateComponent*> m_drawComponents;
+		bool m_transient = false;
 };
 
 /** Game State manager - Handles transitions and control */
@@ -106,6 +107,4 @@ inline bool GameStateComponent::hasComponentFlags(unsigned flags) const { return
 inline unsigned GameStateComponent::getComponentFlags() const { return m_gameState->m_componentFlags; }
 
 };
-
-#endif
 

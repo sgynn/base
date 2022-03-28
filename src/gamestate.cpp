@@ -1,16 +1,14 @@
-//state manager implementation
-
 #include "base/gamestate.h"
 #include "base/game.h"
 #include <cstdio>
 
-#define time Game::frameTime()
-
 using namespace base;
 
-GameState::GameState() {
+
+GameState::GameState(StateMode mode) : m_transient(mode==TRANSIENT) {
 	addComponent(this);
 }
+
 GameState::~GameState() {
 	for(GameStateComponent* c: m_updateComponents) {
 		if(--c->m_references==0 && c!=this) delete c;
@@ -36,6 +34,19 @@ void GameState::addComponent(GameStateComponent* c) {
 	addToList(m_updateComponents, c, [](GameStateComponent* a, GameStateComponent* b) { return a->m_updateOrder < b->m_updateOrder; });
 	addToList(m_drawComponents, c, [](GameStateComponent* a, GameStateComponent* b) { return a->m_drawOrder < b->m_drawOrder; });
 	c->m_gameState = this;
+}
+
+void GameState::removeComponent(GameStateComponent* c) {
+	for(auto i=m_drawComponents.begin(); i!=m_drawComponents.end(); ++i) {
+		if(*i ==c) { m_drawComponents.erase(i); break; }
+	}
+	for(auto i=m_updateComponents.begin(); i!=m_updateComponents.end(); ++i) {
+		if(*i ==c) {
+			m_updateComponents.erase(i);
+			if(--c->m_references==0 && c!=this) delete c;
+			break;
+		}
+	}
 }
 
 void GameState::updateState() {
@@ -76,6 +87,10 @@ void GameStateManager::update() {
 			m_nextState->begin();
 		}
 		m_currentState = m_nextState;
+
+		if(m_prevState && m_prevState->m_transient) {
+			delete m_prevState;
+		}
 	}
 	if(m_currentState) m_currentState->updateState();
 }
