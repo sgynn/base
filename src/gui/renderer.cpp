@@ -541,7 +541,7 @@ void Renderer::drawRect(const Rect& r, uint colour) {
 void Renderer::drawImage(int image, const Rect& r, float angle, uint colour, float alpha) {
 	Point s = getImageSize(image);
 	colour |= (int)(alpha*0xff) << 24;
-	drawBox(r, image, Rect(0,0,s.x,s.y), colour);
+	drawBox(r, image, Rect(0,0,s.x,s.y), colour, angle);
 }
 
 void Renderer::drawIcon(IconList* list, int index, const Rect& r, float angle, unsigned colour) {

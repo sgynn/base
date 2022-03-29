@@ -180,7 +180,7 @@ void Icon::initialise(const Root* root, const PropertyMap& p) {
 		m_iconIndexAlt = strtol(icon, &e, 10);
 		if(e==icon) setAltIcon(icon);
 	}
-	if(p.contains("angle")) m_angle = atof(p["angle"]);
+	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
 }
 Widget* Icon::clone(const char* nt) const {
 	Icon* w = Widget::clone(nt)->cast<Icon>();
@@ -216,7 +216,7 @@ Image::Image(const Rect& r, Skin* s) : Widget(r, s), m_image(-1), m_angle(0) {
 	m_states |= 0x40; // add inherit state
 }
 void Image::initialise(const Root* root, const PropertyMap& p) {
-	if(p.contains("angle")) m_angle = atof(p["angle"]);
+	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
 	if(root && p.contains("image")) {
 		const char* file = p["image"];
 		int index = root->getRenderer()->getImage(file);
