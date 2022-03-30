@@ -187,7 +187,7 @@ class Widget {
 	std::vector<Widget*>::iterator end() const   { return m_client->m_children.end(); }
 
 	virtual Widget* clone(const char* newType=0) const;				// Clone widget and children. newType can override widget class
-	virtual void    initialise(const Root*, const PropertyMap&) {}
+	virtual void    initialise(const Root*, const PropertyMap&);
 	const Point&    getAbsolutePosition() const { return m_rect.position(); }
 	const Rect&     getAbsoluteRect() const { return m_rect; }
 	const Rect&     getAbsoluteClientRect() const { return m_client->m_rect; }

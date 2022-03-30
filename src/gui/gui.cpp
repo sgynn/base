@@ -300,6 +300,7 @@ Widget* Widget::clone(const char* newType) const {
 		w->m_children.push_back(c);
 		c->m_parent = w;
 	}
+
 	w->initialise(m_root, PropertyMap()); // Note: m_root will nearly always be null
 	w->resumeLayout();
 	return w;
@@ -319,6 +320,11 @@ Widget::~Widget() {
 	if(m_name && m_root && m_root->m_widgets[m_name]==this) m_root->m_widgets.erase(m_name);
 	for(uint i=0; i<m_children.size(); ++i) delete m_children[i];
 	if(m_layout && --m_layout->ref<=0) delete m_layout;
+}
+
+void Widget::initialise(const Root*, const PropertyMap&) {
+	m_client = getTemplateWidget("_client");
+	if(!m_client) m_client = this;
 }
 
 Point Widget::getPosition() const {
