@@ -112,7 +112,9 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 		else if(*i == "skin") {
 			if(~flags&LoadFlags::SKINS) continue;
 			const char* name = i->attribute("name");
-			if((~flags&LoadFlags::REPLACE) && getSkin(name)) continue;
+			Skin* exists = getSkin(name);
+			if((~flags&LoadFlags::REPLACE) && exists) continue;
+			if(exists) printf("Replacing skin %s\n", name);
 			Skin* skin = 0;
 			// Inherit existing skin
 			const char* inherit = i->attribute("inherit");
