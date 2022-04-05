@@ -125,7 +125,7 @@ int Object::play(soundID id) {
 	
 	// Attenuation
 	if(inst.sound->attenuationID > 0) {
-		
+		// TODO
 	}
 
 	
