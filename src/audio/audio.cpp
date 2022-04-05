@@ -227,6 +227,7 @@ void audio::destroyObject(objectID id) {
 	vector<Object*>& objects = Data::instance->m_objects;
 	if(id<objects.size() && objects[id]) {
 		printf("Destroyed object %u\n", id);
+		object[id]->stopAll();
 
 		// stop any sounds
 		deleteMutex.lock();
@@ -397,7 +398,6 @@ void audio::audioMainLoop(int) {
 			deleteMutex.lock();
 			for(unsigned i=0; i<data->m_deleted.size(); ++i) {
 				for(Data::EndEvent& e : data->m_endEvents) if(e.object == data->m_deleted[i]) e.object = 0;
-				data->m_deleted[i]->stopAll();
 				delete data->m_deleted[i];
 			}
 			data->m_deleted.clear();
