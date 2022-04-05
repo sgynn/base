@@ -1,6 +1,4 @@
-#ifndef _BASE_QUATERNION_
-#define _BASE_QUATERNION_
-
+#pragma once
 #include "matrix.h"
 
 /** Quaternion class */
@@ -278,5 +276,14 @@ inline vec3 Quaternion::zAxis() const {
 }
 
 
-#endif
+inline Quaternion step(const Quaternion& from, const Quaternion& to, float angleStep) {
+	float cosAngle = fabs(from.dot(to));
+	if(cosAngle >= 1) return to;
+	float angle = acos(cosAngle);
+	if(angle < angleStep) return to;
+	else return slerp(from, to, angleStep/angle);
+}
+
+
+
 
