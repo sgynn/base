@@ -202,12 +202,7 @@ void Textbox::onMouseMove(const Point&, const Point& p, int b) {
 
 inline void Textbox::drawText(Point& p, char* t, uint len, uint col) const {
 	if(len>0 && t[0]) {
-		if(len==~0u) p = m_root->getRenderer()->drawText(p, t, m_skin, getState());
-		else {
-			char c = t[len]; t[len] = 0;
-			p = m_root->getRenderer()->drawText(p, t, m_skin, getState());
-			t[len] = c;
-		}
+		p = m_root->getRenderer()->drawText(p, t, len, m_skin, getState());
 	}
 }
 void Textbox::draw() const {
@@ -229,8 +224,8 @@ void Textbox::draw() const {
 	else {
 		Point tp = m_rect.position();
 		tp.x -= m_offset;
-		tp = m_root->getRenderer()->drawText(tp, m_text, m_skin, getState());
-		if(m_suffix) m_root->getRenderer()->drawText(tp, m_suffix, m_skin, getState());
+		tp = m_root->getRenderer()->drawText(tp, m_text, 0, m_skin, getState());
+		if(m_suffix) m_root->getRenderer()->drawText(tp, m_suffix, 0, m_skin, getState());
 		if(hasFocus() && (clock()&0x1000)) m_root->getRenderer()->drawRect(m_selectRect, m_selectColour); // I beam
 	}
 	m_root->getRenderer()->pop();

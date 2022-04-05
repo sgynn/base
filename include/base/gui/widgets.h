@@ -15,7 +15,6 @@ struct Range {
 class Label : public Widget {
 	WIDGET_TYPE(Label);
 	Label(const Rect&, Skin*, const char* c="");
-	virtual ~Label();
 	virtual void draw() const override;
 	virtual void setSize(int w, int h) override;
 	virtual void setCaption(const char*);
@@ -28,7 +27,7 @@ class Label : public Widget {
 	virtual Widget* clone(const char*) const override;
 	void updateAutosize() override;
 	void updateWrap();
-	char* m_caption;
+	String m_caption;
 	int   m_fontSize;	// Override font sise
 	int   m_fontAlign;	// Override font align
 	bool  m_wordWrap;	// Word wrap option
@@ -108,6 +107,7 @@ class Button : public Label, public IconInterface {
 	protected:
 	virtual void initialise(const Root*, const PropertyMap&) override;
 	void onMouseButton(const Point&, int, int) override;
+	void updateAutosize() override;
 };
 
 /** Checkbox */

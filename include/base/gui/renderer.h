@@ -57,9 +57,9 @@ class Renderer {
 	virtual void  end();
 
 	virtual void  drawSkin(const Skin*, const Rect& r, unsigned colour=-1, int state=0, const char* text=0);
-	virtual Point drawText(const Point&, const char* text, const Font*, int size, unsigned colour=0xffffffff);
-	virtual Point drawText(const Point& p, const char* text, const Skin* skin, int state);
-	virtual Point drawText(const Rect& r, const char* text, const Skin* skin, int state);
+	virtual Point drawText(const Point&, const char* text, unsigned len, const Font*, int size, unsigned colour=0xffffffff);
+	virtual Point drawText(const Point& p, const char* text, unsigned len, const Skin* skin, int state);
+	virtual Point drawText(const Rect& r, const char* text, unsigned len, const Skin* skin, int state);
 	virtual void  drawRect(const Rect&, unsigned colour=0xffffffff);
 	virtual void  drawIcon(IconList* list, int index, const Rect& dest, float angle=0, unsigned colour=-1);
 	virtual void  drawImage(int image, const Rect& rect, float angle=0, unsigned colour=0xffffff, float alpha=1.0);
@@ -111,7 +111,7 @@ class Renderer {
 	void  drawNineSlice(const Rect& rect, int image, const Rect& src, const Skin::Border& border, unsigned colour);
 
 	public:
-	Point drawText(const Point& pos, const Font* font, int size, unsigned colour, const char* text);
+	Point drawText(const Point& pos, const Font* font, int size, unsigned colour, const char* text, unsigned len=0);
 };
 
 }

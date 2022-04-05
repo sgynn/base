@@ -386,7 +386,7 @@ void Listbox::draw() const {
 		// Draw item text
 		cr.y = startY + m_text->getPosition().y;
 		for(int i=start; i<=end; ++i) {
-			m_root->getRenderer()->drawText(cr.position(), getItem(i), m_text->getSkin(), cache[i-start]);
+			m_root->getRenderer()->drawText(cr.position(), getItem(i), 0, m_text->getSkin(), cache[i-start]);
 			cr.y += m_itemHeight;
 		}
 	}

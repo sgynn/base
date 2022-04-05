@@ -20,12 +20,8 @@ inline unsigned parseColour(const PropertyMap& p, const char* key, unsigned d=0x
 // ===================================================================================== //
 
 
-Label::Label(const Rect& r, Skin* s, const char* c) : Widget(r,s), m_caption(0), m_fontSize(0), m_fontAlign(0), m_wordWrap(0) {
+Label::Label(const Rect& r, Skin* s, const char* c) : Widget(r,s), m_caption(c), m_fontSize(0), m_fontAlign(0), m_wordWrap(0) {
 	m_states = 0x3; // intangible
-	m_caption = strdup(c);
-}
-Label::~Label() {
-	free(m_caption);
 }
 void Label::initialise(const Root*, const PropertyMap& map) {
 	if(map.contains("align")) m_fontAlign = atoi(map["align"]);
@@ -42,8 +38,7 @@ Widget* Label::clone(const char* nt) const {
 	return w;
 }
 void Label::setCaption( const char* c) {
-	free(m_caption);
-	m_caption = c? strdup(c): 0;
+	m_caption = c;
 	if(m_wordWrap) updateWrap();
 	updateAutosize();
 }
@@ -53,7 +48,7 @@ void Label::setSize(int w, int h) {
 }
 void Label::updateAutosize() {
 	if(isAutosize() && m_skin->getFont()) {
-		const char* t = m_caption && m_caption[0]? m_caption: "XX";
+		const char* t = m_caption? m_caption.str(): "XX";
 		int fontSize = m_fontSize? m_fontSize: m_skin->getFontSize();
 		Point size;
 		if(m_wrapValues.empty()) size = m_skin->getFont()->getSize(t, fontSize);
@@ -62,9 +57,10 @@ void Label::updateAutosize() {
 			size = m_skin->getFont()->getSize(t, fontSize);
 			for(int w: m_wrapValues) m_caption[w] = ' ';
 		}
+		assert(size.x<5000 && size.y<5000);
 		Point& offset = m_skin->getState(0).textPos;
 		Point lastSize = getSize();
-		setSize(size.x + 2*offset.x, size.y + 2*offset.y);
+		setSizeAnchored(Point(size.x + 2*offset.x, size.y + 2*offset.y));
 		// Align dictates direction
 		int a = m_fontAlign? m_fontAlign: m_skin->getFontAlign();
 		if(a&10) {
@@ -85,7 +81,7 @@ void Label::updateWrap() {
 	m_wrapValues.clear();
 	if(!m_caption) return;
 	int size = m_fontSize? m_fontSize: m_skin->getFontSize();
-	int length = strlen(m_caption);
+	int length = m_caption.length();
 	Point full = m_skin->getFont()->getSize(m_caption, size, length);
 	if(full.x > m_rect.width) {
 		int start=0, end=0;
@@ -114,7 +110,7 @@ const char* Label::getCaption() const {
 }
 void Label::draw() const {
 	if(!isVisible()) return;
-	if(m_caption[0] && m_skin->getFont()) {
+	if(m_caption && m_skin->getFont()) {
 		Skin::State& s = m_skin->getState( getState() );
 		static Skin tempSkin(1);
 		int align = m_fontAlign? m_fontAlign: m_skin->getFontAlign();
@@ -123,12 +119,14 @@ void Label::draw() const {
 		tempSkin.getState(0).foreColour = deriveColour(s.foreColour, m_colour, m_states);
 		tempSkin.getState(0).textPos = s.textPos;
 		if(m_wrapValues.empty()) {
-			m_root->getRenderer()->drawText(m_rect, m_caption, &tempSkin, 0);
+			m_root->getRenderer()->drawText(m_rect, m_caption, 0, &tempSkin, 0);
 		}
 		else {
-			for(int w: m_wrapValues) m_caption[w] = '\n';
-			m_root->getRenderer()->drawText(m_rect, m_caption, &tempSkin, 0);
-			for(int w: m_wrapValues) m_caption[w] = ' ';
+			// FIXME  - do this properly
+			char* caption = const_cast<char*>(m_caption.str());
+			for(int w: m_wrapValues) caption[w] = '\n';
+			m_root->getRenderer()->drawText(m_rect, caption, 0, &tempSkin, 0);
+			for(int w: m_wrapValues) caption[w] = ' ';
 		}
 	}
 	drawChildren();
@@ -308,6 +306,10 @@ void Button::draw() const {
 void Button::onMouseButton(const Point& p, int d, int u) {
 	Widget::onMouseButton(p, d, u);
 	if(hasFocus() && u==1 && eventPressed && m_rect.contains(p)) eventPressed(this);
+}
+void Button::updateAutosize() {
+	if(m_caption) Label::updateAutosize();
+	else Widget::updateAutosize();
 }
 void Button::setCaption(const char* s) {
 	Label* txt = getTemplateWidget("_text")->cast<Label>();

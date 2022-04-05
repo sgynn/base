@@ -452,13 +452,14 @@ void Renderer::drawNineSlice(const Rect& rect, int image, const Rect& src, const
 	}
 }
 
-Point Renderer::drawText(const Point& pos, const Font* font, int size, unsigned colour, const char* text) {
+Point Renderer::drawText(const Point& pos, const Font* font, int size, unsigned colour, const char* text, uint limit) {
 	if(colour>>24==0) return pos; // fully transparent
 	const Rect rect(pos, font->getSize(text, size));
 	Batch* batch = getBatch(rect, font->getTexture() | 0x10000);
 	if(!batch) return Point(rect.right(), pos.y);
 
-	int len = strlen(text);
+	uint len = strlen(text);
+	if(limit>0 && limit<len) len = limit;
 	float scale = font->getScale(size);
 	Point ts = font->getTextureSize();
 	float ix = 1.f/ts.x;
@@ -466,7 +467,7 @@ Point Renderer::drawText(const Point& pos, const Font* font, int size, unsigned 
 	Rect dst = rect;
 	batch->vertices.reserve(batch->vertices.size() + len*4);
 	batch->indices.reserve(batch->vertices.size() + len*5);
-	for(const char* c=text; *c; ++c) {
+	for(const char* c=text; *c&&len; ++c, --len) {
 		if(*c=='\n') {
 			dst.x = pos.x;
 			dst.y += font->getLineHeight(size);
@@ -531,7 +532,7 @@ void Renderer::drawSkin(const Skin* skin, const Rect& r, unsigned colour, int st
 		drawNineSlice(r, skin->getImage(), s.rect, s.border, colour); 
 	}
 	else drawBox(r, skin->getImage(), s.rect, colour);
-	if(text && text[0]) drawText(r, text, skin, state);
+	if(text && text[0]) drawText(r, text, 0, skin, state);
 }
 
 void Renderer::drawRect(const Rect& r, uint colour) {
@@ -552,27 +553,27 @@ void Renderer::drawIcon(IconList* list, int index, const Rect& r, float angle, u
 
 
 
-Point Renderer::drawText(const Point& p, const char* text, const Font* font, int size, unsigned colour) {
-	return drawText(p, font, size, colour, text);
+Point Renderer::drawText(const Point& p, const char* text, uint len, const Font* font, int size, unsigned colour) {
+	return drawText(p, font, size, colour, text, len);
 }
 
-Point Renderer::drawText(const Point& p, const char* text, const Skin* skin, int state) {
+Point Renderer::drawText(const Point& p, const char* text, uint len, const Skin* skin, int state) {
 	Skin::State& s = skin->getState(state);
-	Point r =  drawText(p + s.textPos, skin->getFont(), skin->getFontSize(), s.foreColour, text);
+	Point r =  drawText(p + s.textPos, skin->getFont(), skin->getFontSize(), s.foreColour, text, len);
 	return r - s.textPos;
 }
 
-Point Renderer::drawText(const Rect& r, const char* text, const Skin* skin, int state) {
+Point Renderer::drawText(const Rect& r, const char* text, uint len, const Skin* skin, int state) {
 	Point p = r.position();
 	int align = skin->getFontAlign();
 	if(align != 0x5) {
-		Point s = skin->getFont()->getSize(text, skin->getFontSize());
+		Point s = skin->getFont()->getSize(text, skin->getFontSize(), len? len: -1);
 		if((align&0x3)==ALIGN_RIGHT) p.x = r.right() - s.x;
 		else if((align&0x3)==ALIGN_CENTER) p.x += r.width/2 - s.x/2;
 		if((align&0xc)==ALIGN_BOTTOM) p.y = r.bottom() - s.y;
 		else if((align&0xc)==ALIGN_MIDDLE) p.y += r.height/2 - s.y/2;
 	}
-	return drawText(p + skin->getState(state).textPos, text, skin, state);
+	return drawText(p + skin->getState(state).textPos, text, len, skin, state);
 }
 
 

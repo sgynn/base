@@ -426,7 +426,7 @@ void Widget::updateAutosize() {
 	int margin = getLayout()? getLayout()->getMargin(): 0;
 	Point newSize;
 	auto setMax = [](int& value, int other) { if(other>value) value=other; };
-	for(Widget* w: *this) {
+	for(Widget* w: m_client->m_children) {
 		if(w->isVisible()) {
 			const Rect r = w->getRect();
 			switch(w->m_anchor&0xf) {
@@ -444,6 +444,7 @@ void Widget::updateAutosize() {
 		}
 	}
 	newSize += getSize() - clientSize;
+	assert(newSize.x<5000 && newSize.y<5000);
 	setSizeAnchored(newSize);
 }
 

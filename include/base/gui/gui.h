@@ -87,6 +87,7 @@ class String {
 	bool empty() const							{ return !m_data || !m_data[0]; }
 	void clear()                                { set(0); }
 
+	char& operator[](uint i)                    { return m_data[i]; }
 	String& operator+=(const char* s)           { if(s&&s[0]) *this = *this + s; return *this; }
 	String& operator+=(const String& s)         { if(!s.empty()) *this = *this + s; return *this; }
 	String operator+(const char* s)             { if(empty()) return String(s); if(!s||!s[0]) return *this; String r; r.m_data=(char*)malloc(length() + strlen(s) + 1); sprintf(r.m_data, "%s%s", m_data,s); return r; }
@@ -147,7 +148,7 @@ class Widget {
 	void     setColour(unsigned rgb, float a=1.0) { m_colour=rgb; setAlpha(a); m_states|=0x100; }
 	void     setColour(float r, float g, float b, float a=1.0) { setColour((int(r*255)&0xff)<<16 | (int(g*255)&0xff)<<8 | (int(b*255)&0xff), a); }
 	void     resetColour()                        { m_colour = 0xffffffff; m_states &= ~0x300; }
-	void     setAlpha(float a)                    { m_colour = (m_colour&0xffffff) | int(a*255)<<24; m_states|=0x200; }
+	void     setAlpha(float a)                    { a=a>0?a<1?a:1:0; m_colour = (m_colour&0xffffff) | int(a*255)<<24; m_states|=0x200; }
 	float    getAlpha() const                     { return (m_colour>>24)/255.0; }
 
 

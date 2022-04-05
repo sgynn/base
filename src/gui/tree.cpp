@@ -618,7 +618,7 @@ void TreeView::draw() const {
 				exp.x = r.x + m_drawCache[i].node->m_depth * m_indent + m_indent;
 				exp.y = r.y + i * m_itemHeight;
 				int state = m_drawCache[i].node->isSelected()? 4: 0;	// ToDo: other state
-				renderer->drawText(exp.position(), text, getSkin(), state);
+				renderer->drawText(exp.position(), text, 0, getSkin(), state);
 			}
 		}
 	}
