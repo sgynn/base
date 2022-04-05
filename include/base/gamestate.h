@@ -5,7 +5,7 @@
 namespace base {
 
 enum StateMode { TRANSIENT, PERSISTENT };
-enum ComponentFlags { BLOCK_KEYS=1, BLOCK_MOUSE=2, BLOCK_WHEEL=4, BLOCK_UPDATE=8, BLOCK_DRAW=16 };
+enum ComponentFlags { BLOCK_KEYS=1, BLOCK_MOUSE=2, BLOCK_WHEEL=4, BLOCK_UPDATE=8, BLOCK_DRAW=0x10, BLOCK_GRAB=0x20 };
 
 class GameStateManager;
 class GameState;
@@ -59,6 +59,11 @@ class GameState : public GameStateComponent {
 
 		void addComponent(GameStateComponent*);
 		void removeComponent(GameStateComponent*);
+
+		template<class T> T* getComponent() {
+			for(GameStateComponent* c: m_updateComponents) if(T* r = dynamic_cast<T*>(c)) return r;
+			return 0;
+		}
 
 	//protected:
 		/** Set the next state to change to and start transitions */
