@@ -11,14 +11,6 @@
 #include <map>
 #include <set>
 
-
-#ifdef WIN32
-extern PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
-extern PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
-extern PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
-extern PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
-#endif
-
 using namespace base;
 
 Compositor* Compositor::Output = new Compositor();

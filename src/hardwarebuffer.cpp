@@ -2,44 +2,10 @@
 #include <base/opengl.h>
 #include <cstdio>
 
-// Extensions
-#ifdef WIN32
-#define GL_ARRAY_BUFFER          0x8892
-#define GL_ELEMENT_ARRAY_BUFFER  0x8893
-#define GL_STATIC_DRAW           0x88E4
-
-typedef ptrdiff_t GLsizeiptr;
-typedef void (*PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
-typedef void (*PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
-typedef void (*PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
-typedef void (*PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
-
-PFNGLBINDBUFFERPROC    glBindBuffer    = 0;
-PFNGLDELETEBUFFERSPROC glDeleteBuffers = 0;
-PFNGLGENBUFFERSPROC    glGenBuffers    = 0;
-PFNGLBUFFERDATAPROC    glBufferData    = 0;
-void setupExtensions() {
-	if(glBindBuffer) return;
-	glBindBuffer    = (PFNGLBINDBUFFERPROC)    wglGetProcAddress("glBindBuffer");
-	glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) wglGetProcAddress("glDeleteBuffers");
-	glGenBuffers    = (PFNGLGENBUFFERSPROC)    wglGetProcAddress("glGenBuffers");
-	glBufferData    = (PFNGLBUFFERDATAPROC)    wglGetProcAddress("glBufferData");
-}
-#else
-void setupExtensions() {}
-#endif
-
 using namespace base;
-
-
-// ------------------------------------------------------------------------------------- //
-
-
-
 
 HardwareBuffer::HardwareBuffer(Usage u, bool keep) :
 	m_ref(0), m_buffer(~0u), m_target(0), m_usage(u), m_size(0), m_data(0), m_keepCopy(keep), m_ownsData(false) {
-		setupExtensions();
 }
 HardwareBuffer::~HardwareBuffer() {
 }

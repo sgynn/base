@@ -14,6 +14,7 @@ set(src
 	src/inifile.cpp
 	src/input.cpp
 	src/joystick.cpp
+	src/opengl.cpp
 	src/png.cpp
 	src/resources.cpp
 	src/dds.cpp

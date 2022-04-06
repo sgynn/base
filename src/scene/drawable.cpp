@@ -11,18 +11,6 @@
 
 using namespace base;
 
-#ifdef WIN32
-extern PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
-extern PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
-extern PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
-extern PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
-extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced;
-extern PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
-extern PFNGLACTIVETEXTUREARBPROC glActiveTexture;
-extern PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
-#endif
-
-
 Drawable::Drawable(): m_transform(new Matrix), m_sharedTransform(false) {}
 Drawable::~Drawable() {
 	if(!m_sharedTransform) delete m_transform;

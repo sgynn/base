@@ -7,11 +7,6 @@
 
 using namespace base;
 
-#ifdef WIN32
-extern PFNGLACTIVETEXTUREARBPROC glActiveTexture;
-extern PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
-#endif
-
 enum VarType {	VT_AUTO, VT_FLOAT, VT_INT, VT_MATRIX };
 
 ShaderVars::ShaderVars() : m_nextIndex(0) {}

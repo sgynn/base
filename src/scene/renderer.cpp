@@ -11,16 +11,8 @@
 
 using namespace base;
 
-#ifdef WIN32
-extern PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
-#endif
-
-extern int initialiseFBOExtensions();
-
 Renderer::Renderer() {
 	memset(m_queueMode, 0, 256*sizeof(RenderQueueMode));
-	Shader::getSupportedVersion();
-	initialiseFBOExtensions();
 }
 
 Renderer::~Renderer() {

@@ -2,92 +2,10 @@
 #include <base/texture.h>
 #include <cstdio>
 
-#ifndef GL_CLAMP_TO_EDGE
-# define GL_CLAMP_TO_EDGE 0x812f
-# define GL_TEXTURE0      0x84C0
-#endif
-
-#ifndef GL_VERSION_2_0
-#define GL_TEXTURE_1D_ARRAY	 0x8C18
-#define GL_TEXTURE_2D_ARRAY  0x8C1A
-#define GL_R32F              0x822E
-#define GL_RG32F             0x8230
-#define GL_RGB32F            0x8815
-#define GL_RGBA32F           0x8814
-#define GL_R16F              0x822D
-#define GL_RG16F             0x822F
-#define GL_RGB16F            0x881B
-#define GL_RGBA16F           0x881A
-#define GL_RGB565            0x8D62
-#define GL_R11F_G11F_B10F    0x8C3A
-#define GL_DEPTH_COMPONENT16 0x81A5
-#define GL_DEPTH_COMPONENT24 0x81A6
-#define GL_DEPTH_COMPONENT32 0x81A7
-#define GL_DEPTH24_STENCIL8  0x88F0
-#define GL_HALF_FLOAT        0x140B
-
-#define APIENTRYP __stdcall *
-typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
-#endif
-
-#ifdef WIN32
-#define GL_TEXTURE_1D_ARRAY	 0x8C18
-#define GL_TEXTURE_2D_ARRAY  0x8C1A
-#define GL_R32F              0x822E
-#define GL_RG32F             0x8230
-#define GL_RGB32F            0x8815
-#define GL_RGBA32F           0x8814
-#define GL_R16F              0x822D
-#define GL_RG16F             0x822F
-#define GL_RGB16F            0x881B
-#define GL_RGBA16F           0x881A
-#define GL_RGB565            0x8D62
-#define GL_R11F_G11F_B10F    0x8C3A
-#define GL_DEPTH_COMPONENT16 0x81A5
-#define GL_DEPTH_COMPONENT24 0x81A6
-#define GL_DEPTH_COMPONENT32 0x81A7
-#define GL_DEPTH24_STENCIL8  0x88F0
-#define GL_HALF_FLOAT        0x140B
-
-//#define APIENTRYP __stdcall *
-typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
-PFNGLACTIVETEXTUREARBPROC glActiveTexture = 0;
-PFNGLTEXIMAGE3DPROC glTexImage3D = 0;
-PFNGLTEXSUBIMAGE3DPROC glTexSubImage3D = 0;
-PFNGLCOMPRESSEDTEXIMAGE1DPROC glCompressedTexImage1D = 0;
-PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = 0;
-PFNGLCOMPRESSEDTEXIMAGE3DPROC glCompressedTexImage3D = 0;
-PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glCompressedTexSubImage1D = 0;
-PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D = 0;
-PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glCompressedTexSubImage3D = 0;
-PFNGLGENERATEMIPMAPPROC glGenerateMipmap = 0;
-PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate = 0;
-int initialiseTextureExtensions() {
-	if(glActiveTexture) return 1;
-	glActiveTexture        = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
-	glTexImage3D           = (PFNGLTEXIMAGE3DPROC)wglGetProcAddress("glTexImage3D");
-	glTexSubImage3D        = (PFNGLTEXSUBIMAGE3DPROC)wglGetProcAddress("glTexSubImage3D");
-	glCompressedTexImage1D = (PFNGLCOMPRESSEDTEXIMAGE1DPROC)wglGetProcAddress("glCompressedTexImage1D");
-	glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)wglGetProcAddress("glCompressedTexImage2D");
-	glCompressedTexImage3D = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)wglGetProcAddress("glCompressedTexImage3D");
-	glCompressedTexSubImage1D = (PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC)wglGetProcAddress("glCompressedTexSubImage1D");
-	glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)wglGetProcAddress("glCompressedTexSubImage2D");
-	glCompressedTexSubImage3D = (PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)wglGetProcAddress("glCompressedTexSubImage3D");
-	glGenerateMipmap       = (PFNGLGENERATEMIPMAPPROC)wglGetProcAddress("glGenerateMipmap");
-	glBlendFuncSeparate    = (PFNGLBLENDFUNCSEPARATEPROC)wglGetProcAddress("glBlendFuncSeparate");
-	return glActiveTexture? 1: 0;
-}
-#else
-int initialiseTextureExtensions() { return 1; }
-#endif
-
-
-
 using namespace base;
 
 /** Constructor */
 Texture::Texture(): m_unit(0), m_type(TEX2D), m_format(NONE), m_hasMipMaps(false), m_width(0), m_height(0), m_depth(0) {
-	initialiseTextureExtensions();
 }
 
 /** Get bind target */

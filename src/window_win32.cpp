@@ -180,6 +180,8 @@ bool Win32Window::createWindow() {
 		printf("Legacy context created\n");
 		m_hRC = wglCreateContext(m_hDC);
 	}
+
+	initialiseOpenglExtensions();
 	return true;
 }
 void base::Win32Window::destroyWindow() {
