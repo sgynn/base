@@ -142,7 +142,7 @@ uint64 Game::getTickFrequency() {
 
 #ifdef EMSCRIPTEN
 EM_BOOL emscriptenUpdate(double totalTime, void* data) {
-	StateManager* state = (StateManager*)data;
+	GameStateManager* state = (GameStateManager*)data;
 	state->update();
 	state->draw();
 	Game::input()->update();

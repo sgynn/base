@@ -28,6 +28,7 @@ namespace base {
 		
 		bool createWindow() override;
 		void destroyWindow() override {}
+		bool setFullScreen(bool f) override;
 
 		protected:
 		static EM_BOOL key_callback(int type, const EmscriptenKeyboardEvent* e, void*);

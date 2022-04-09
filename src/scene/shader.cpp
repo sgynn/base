@@ -14,10 +14,12 @@ ShaderPart::ShaderPart(ShaderType t, const char* src, const char* def) : m_type(
 ShaderPart::ShaderPart(const ShaderPart& s) : m_type(s.m_type), m_object(0), m_compiled(false), m_changed(true), m_source(s.m_source), m_sourceRef(s.m_sourceRef) {
 	if(m_source) ++*m_sourceRef;
 	for(size_t i=0; i<s.m_defines.size(); ++i) {
-		m_defines.push_back( strdup(m_defines[i]) );
+		m_defines.push_back( strdup(s.m_defines[i]) );
 	}
 }
 ShaderPart::ShaderPart(ShaderPart&& s) : m_type(s.m_type), m_object(s.m_object), m_compiled(s.m_compiled), m_changed(s.m_changed), m_source(s.m_source), m_sourceRef(s.m_sourceRef), m_defines(s.m_defines) {
+	s.m_defines.clear();
+	s.m_source = 0;
 }
 ShaderPart::~ShaderPart() {
 	dropSource();

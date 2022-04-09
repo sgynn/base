@@ -13,6 +13,19 @@ using namespace base;
 
 Point EMWindow::s_mousePos;
 
+static const char *emscripten_result_to_string(EMSCRIPTEN_RESULT result) {
+        if(result == EMSCRIPTEN_RESULT_SUCCESS) return "EMSCRIPTEN_RESULT_SUCCESS";
+        if(result == EMSCRIPTEN_RESULT_DEFERRED) return "EMSCRIPTEN_RESULT_DEFERRED";
+        if(result == EMSCRIPTEN_RESULT_NOT_SUPPORTED) return "EMSCRIPTEN_RESULT_NOT_SUPPORTED";
+        if(result == EMSCRIPTEN_RESULT_FAILED_NOT_DEFERRED) return "EMSCRIPTEN_RESULT_FAILED_NOT_DEFERRED";
+        if(result == EMSCRIPTEN_RESULT_INVALID_TARGET) return "EMSCRIPTEN_RESULT_INVALID_TARGET";
+        if(result == EMSCRIPTEN_RESULT_UNKNOWN_TARGET) return "EMSCRIPTEN_RESULT_UNKNOWN_TARGET";
+        if(result == EMSCRIPTEN_RESULT_INVALID_PARAM) return "EMSCRIPTEN_RESULT_INVALID_PARAM";
+        if(result == EMSCRIPTEN_RESULT_FAILED) return "EMSCRIPTEN_RESULT_FAILED";
+        if(result == EMSCRIPTEN_RESULT_NO_DATA) return "EMSCRIPTEN_RESULT_NO_DATA";
+        return "Unknown EMSCRIPTEN_RESULT!";
+}
+
 EMWindow::EMWindow(int w, int h, const char* canvas) : Window(w, h), m_context(0), m_canvas(canvas) {
 }
 
@@ -100,8 +113,24 @@ EM_BOOL EMWindow::wheel_callback(int type, const EmscriptenWheelEvent* e, void*)
 	return 0;
 }
 
+bool EMWindow::setFullScreen(bool fullscreen) {
+	EmscriptenFullscreenChangeEvent state;
+	emscripten_get_fullscreen_status(&state);
+	if(!state.isFullscreen && fullscreen) {
+		int r = emscripten_request_fullscreen(m_canvas, 1);
+		printf("Fullscreen mode = %s  (%s)\n", emscripten_result_to_string(r), m_canvas);
+		m_fullScreen = true;
+	}
+	else if (state.isFullscreen && !fullscreen) {
+		printf("Windowed mode\n");
+		emscripten_exit_fullscreen();
+		m_fullScreen = false;
+	}
+	return true;
+}
+
 void EMWindow::lockMouse(bool lock) {
-	if(lock) emscripten_request_pointerlock ( m_canvas , true);
+	if(lock) emscripten_request_pointerlock(m_canvas, true);
 	else emscripten_exit_pointerlock(); 
 }
 

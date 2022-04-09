@@ -451,12 +451,15 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 
 
 static bool compileShader(Shader* shader, const char* name) {
+	if(shader->isCompiled()) return true;
+
 	if(!shader->compile()) {
 		char buffer[2048];
 		shader->getLog(buffer, sizeof(buffer));
 		printf("Errors compiling %s:\n", name);
 		printf("%s", buffer);
 	}
+
 	return shader->isCompiled();
 }
 
