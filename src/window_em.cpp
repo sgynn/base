@@ -87,6 +87,8 @@ EM_BOOL EMWindow::mouse_callback(int type, const EmscriptenMouseEvent* e, void*)
 	case EMSCRIPTEN_EVENT_MOUSEMOVE:
 		s_mousePos.x = e->targetX;
 		s_mousePos.y = e->targetY;
+		Game::input()->m_mouseDelta.x += (int)e->movementX;
+		Game::input()->m_mouseDelta.y -= (int)e->movementY;
 		break;
 	}
 
@@ -96,6 +98,11 @@ EM_BOOL EMWindow::mouse_callback(int type, const EmscriptenMouseEvent* e, void*)
 EM_BOOL EMWindow::wheel_callback(int type, const EmscriptenWheelEvent* e, void*) {
 	Game::input()->m_mouseState.wheel -= e->deltaY / 3.0f;
 	return 0;
+}
+
+void EMWindow::lockMouse(bool lock) {
+	if(lock) emscripten_request_pointerlock ( m_canvas , true);
+	else emscripten_exit_pointerlock(); 
 }
 
 

@@ -20,8 +20,8 @@ namespace base {
 		bool makeCurrent() override;
 		void swapBuffers() override {}
 		uint pumpEvents(Input* input) override { return 0; }
-		void warpMouse(int x, int y) override {}
 		Point queryMouse() override { return s_mousePos; }
+		void lockMouse(bool);
 
 		virtual void setCursor(unsigned c) override {}
 		virtual void createCursor(unsigned id, const char* image, int w, int h, int x=0, int y=0) override {}

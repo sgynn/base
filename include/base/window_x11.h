@@ -25,7 +25,7 @@ namespace base {
 		bool makeCurrent();
 		void swapBuffers(); 
 		uint pumpEvents(Input* input);
-		void warpMouse(int x, int y);
+		bool warpMouse(int x, int y);
 		Point queryMouse();
 
 		virtual void setCursor(unsigned c);

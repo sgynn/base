@@ -327,12 +327,13 @@ Point Win32Window::queryMouse() {
 	return Point(pnt.x, pnt.y);
 }
 
-void Win32Window::warpMouse(int x, int y) { 
+bool Win32Window::warpMouse(int x, int y) { 
 	POINT point;
 	point.x = x;
 	point.y = y;
 	ClientToScreen(m_hWnd, &point);
 	SetCursorPos(point.x, point.y);
+	return true;
 }
 
 // ==================================================================================================== //

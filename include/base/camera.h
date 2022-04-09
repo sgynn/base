@@ -143,7 +143,6 @@ namespace base {
 		protected:
 		bool m_active;		// Does the camera update
 		bool m_grabMouse;	// Does this camera lock the mouse position
-		Point m_last;		// Last mouse coordinates
 		float m_moveSpeed;	// Movement speed
 		float m_rotateSpeed;// Rotation speed
 		float m_moveAcc;	// Movement acceleration for smoothing

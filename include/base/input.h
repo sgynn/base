@@ -164,7 +164,7 @@ namespace base {
 		int pressed;	// button mask presse last frame
 		int released;	// button mask released last frame
 		float wheel;	// Wheel delta since last frame
-		Point moved;	// Movement since last frame
+		Point delta;	// Movement since last frame
 		operator Point() const { return Point(x,y); }
 	};
 
@@ -272,6 +272,7 @@ namespace base {
 		
 		//Mouse stuff 
 		Mouse m_mouseState;
+		Point m_mouseDelta;
 
 		// Joysticks
 		std::vector<Joystick*> m_joysticks;

@@ -34,11 +34,6 @@ void CameraBase::setPitchLimits(float min, float max) {
 
 void CameraBase::grabMouse(bool g) {
 	m_grabMouse = g;
-	if(g && m_last.x==0 && m_last.y==0) {
-		m_last.x = Game::width()/2;
-		m_last.y = Game::height()/2;
-		Game::input()->warpMouse(m_last.x, m_last.y);
-	}
 }
 
 void CameraBase::setKeys(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down) {
@@ -57,17 +52,17 @@ FPSCamera::FPSCamera(float f, float a, float near, float far) : CameraBase(f,a,n
 	setUpVector( vec3(0,1,0) );
 }
 void FPSCamera::update(int mask) {
-	Input* in = Game::input();
+	Input& in = *Game::input();
 
 	// Key Movement
 	if(mask & CU_KEYS) {
 		vec3 move;
-		if(in->check(m_keyBinding[0])) move.z = -1;
-		if(in->check(m_keyBinding[1])) move.z =  1;
-		if(in->check(m_keyBinding[2])) move.x = -1;
-		if(in->check(m_keyBinding[3])) move.x =  1;
-		if(in->check(m_keyBinding[4])) move.y =  1;
-		if(in->check(m_keyBinding[5])) move.y = -1;
+		if(in.check(m_keyBinding[0])) move.z = -1;
+		if(in.check(m_keyBinding[1])) move.z =  1;
+		if(in.check(m_keyBinding[2])) move.x = -1;
+		if(in.check(m_keyBinding[3])) move.x =  1;
+		if(in.check(m_keyBinding[4])) move.y =  1;
+		if(in.check(m_keyBinding[5])) move.y = -1;
 		m_velocity += move * (m_moveSpeed * m_moveAcc);
 		m_position += m_rotation * m_velocity;
 		if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
@@ -75,11 +70,10 @@ void FPSCamera::update(int mask) {
 	}
 	
 	//Rotation
-	Point m = in->queryMouse();
 	if(m_active && (mask&CU_MOUSE)) {
-		float dx = m_last.x - m.x;
-		float dy = m_last.y - m.y;
-		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
+		float dx = in.mouse.delta.x;
+		float dy = in.mouse.delta.y;
+		m_rVelocity -= vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
 
 		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
 		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
@@ -102,14 +96,10 @@ void FPSCamera::update(int mask) {
 		}
 
 		// Warp mouse
-		if(m_grabMouse && (m_last.x!=m.x || m_last.y!=m.y)) {
-			in->warpMouse(m_last.x, m_last.y);
-			in->queryMouse();
-			m = m_last;
+		if(m_grabMouse && (in.mouse.delta.x || in.mouse.delta.y)) {
+			in.warpMouse(Game::width()/2, Game::height()/2);
 		}
-
 	}
-	m_last = m;
 }
 
 //// //// //// //// //// //// //// //// //// //// //// //// //// //// //// ////
@@ -141,10 +131,10 @@ void OrbitCamera::setZoomLimits(float min, float max) {
 }
 
 void OrbitCamera::update(int mask) {
-	Input* in = Game::input();
+	Input& in = *Game::input();
 
 	// Zoom
-	int wheel = in->mouse.wheel;
+	int wheel = in.mouse.wheel;
 	if(wheel && (mask&CU_WHEEL)) {
 		float distance = m_target.distance(m_position);
 		while(wheel<0) { distance *= 1+m_zoomFactor; wheel++; }
@@ -157,12 +147,12 @@ void OrbitCamera::update(int mask) {
 	// Key Movement
 	if(mask & CU_KEYS) {
 		vec3 move;
-		if(in->check(m_keyBinding[0])) move.z = -1;
-		if(in->check(m_keyBinding[1])) move.z =  1;
-		if(in->check(m_keyBinding[2])) move.x = -1;
-		if(in->check(m_keyBinding[3])) move.x =  1;
-		if(in->check(m_keyBinding[4])) move.y =  1;
-		if(in->check(m_keyBinding[5])) move.y = -1;
+		if(in.check(m_keyBinding[0])) move.z = -1;
+		if(in.check(m_keyBinding[1])) move.z =  1;
+		if(in.check(m_keyBinding[2])) move.x = -1;
+		if(in.check(m_keyBinding[3])) move.x =  1;
+		if(in.check(m_keyBinding[4])) move.y =  1;
+		if(in.check(m_keyBinding[5])) move.y = -1;
 
 		vec3 z = getDirection();
 		vec3 x = m_upVector.cross(z).normalise();
@@ -179,10 +169,9 @@ void OrbitCamera::update(int mask) {
 	}
 
 	//Rotation
-	Point m = in->mouse;
 	if(m_active && (mask&CU_MOUSE)) {
-		float dx = m.x - m_last.x;
-		float dy = m.y - m_last.y;
+		float dx = in.mouse.delta.x;
+		float dy = in.mouse.delta.y;
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
 
 		float distance = m_target.distance(m_position);
@@ -206,13 +195,10 @@ void OrbitCamera::update(int mask) {
 		else m_rVelocity.x = m_rVelocity.y = 0.f;
 
 		// Warp mouse
-		if(m_grabMouse && (m_last.x!=m.x || m_last.y!=m.y)) {
-			in->warpMouse(m_last.x, m_last.y);
-			in->queryMouse();
-			m = m_last;
+		if(m_grabMouse && (in.mouse.delta.x || in.mouse.delta.y)) {
+			in.warpMouse(Game::width()/2, Game::height()/2);
 		}
 	}
-	m_last = m;
 }
 
 

@@ -56,7 +56,7 @@ namespace base {
 
 		/// Mouse data comes from window. Used by Input
 		virtual Point queryMouse() { return Point(); }
-		virtual void warpMouse(int x, int y) {}
+		virtual bool warpMouse(int x, int y) { return false; }
 
 		virtual void setCursor(unsigned c) = 0;
 		virtual void createCursor(unsigned c, const char* image, int w, int h, int x=0, int y=0) = 0; // ARGB image

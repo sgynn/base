@@ -20,6 +20,8 @@ Input::Input() : mouse(m_mouseState) {
 Input::~Input() {
 }
 
+static Point addDelta;
+
 void Input::update() {
 	//clear frame data
 	memset(m_keyChange, 0, 128);
@@ -27,12 +29,13 @@ void Input::update() {
 	m_lastChar = 0;
 	// Mouse
 	Point mousePos = queryMouse();
-	m_mouseState.moved = mousePos - m_mouseState;
+	m_mouseState.delta = mousePos - m_mouseState + m_mouseDelta;
 	m_mouseState.x = mousePos.x;
 	m_mouseState.y = mousePos.y;
 	m_mouseState.pressed = 0;
 	m_mouseState.released = 0;
 	m_mouseState.wheel = 0;
+	m_mouseDelta.set(0,0);
 	// Joysticks
 	updateJoysticks();
 }
@@ -43,9 +46,12 @@ Point Input::queryMouse() {
 	return p;
 }
 void Input::warpMouse(int x, int y) {
-	m_mouseState.x = x;
-	m_mouseState.y = y;
-	Game::window()->warpMouse(x, Game::window()->getSize().y - y);
+	m_mouseDelta += queryMouse() - m_mouseState;
+	if(Game::window()->warpMouse(x, Game::window()->getSize().y - y)) {
+		m_mouseState.x = x;
+		m_mouseState.y = y;
+	}
+	queryMouse();
 }
 
 void Input::setButton(int code, bool down, const Point& pt) {

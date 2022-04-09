@@ -318,8 +318,9 @@ Point X11Window::queryMouse() {
 	return result;
 }
 
-void X11Window::warpMouse(int x, int y) { 
+bool X11Window::warpMouse(int x, int y) { 
 	XWarpPointer(getXDisplay(), 0, getXWindow(), 0, 0, 0, 0, x, y);
+	return true;
 }
 
 
