@@ -250,9 +250,7 @@ int Renderer::generateImage(const char* name, const ImageGenerator& data) {
 	if(!image.data) return -1;
 	int exists = getImage(name);
 	if(exists < 0) return addImage(name, image.width, image.height, 4, image.data);
-	replaceImage(exists, image.width, image.height, m_images[exists].texture);
-	glBindTexture(GL_TEXTURE_2D, m_images[exists].texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
+	else replaceImage(exists, image.width, image.height, 4, image.data);
 	delete [] image.data;
 	return exists;
 }

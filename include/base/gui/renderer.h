@@ -23,7 +23,22 @@ struct ImageGenerator {
 /** Renderer class - Cannot be shared any more */
 class Renderer {
 	protected:
-	struct Image { char name[128]; unsigned texture; float multX, multY; int ref; };
+	struct Image {
+		String name;
+		unsigned texture : 31;
+		unsigned atlased : 1;
+		Point size;
+		float multX, multY;
+		float offX, offY;
+		int ref;
+	};
+	struct AtlasedImage { int image; Rect rect; };
+	struct Atlas {
+		unsigned texture = 0;
+		int width, height;
+		std::vector<AtlasedImage> images;
+	};
+	std::vector<Atlas> m_atlases;
 	std::vector<Image> m_images;
 	String m_imagePath;
 
@@ -41,6 +56,7 @@ class Renderer {
 	virtual int   addImage(const char* name, int width, int height, int channels, void* data, bool clamp=false);
 	virtual int   addImage(const char* name, int width, int height, int glUnit);
 	virtual int   getImage(const char* name) const;
+	virtual bool  replaceImage(unsigned index, int width, int height, int channels, void* data);
 	virtual bool  replaceImage(unsigned index, int width, int height, int glUnit);
 
 	Point         getImageSize(unsigned index) const;
@@ -71,6 +87,12 @@ class Renderer {
 	void  pop();
 
 	protected:
+	int createTexture(int w, int h, int channels, void* data, bool clamp);
+	int createAtlas(int width, int height);
+	bool addToAtlas(int atlas, int image, void* data);
+	bool removeFromAtlas(int image);
+
+	protected:
 	struct Vertex {
 		float x, y, u, v; unsigned colour; 
 		Vertex(float x, float y, float u, float v, unsigned c) : x(x), y(y), u(u), v(v), colour(c) {}
@@ -83,7 +105,7 @@ class Renderer {
 		std::vector<unsigned short> indices;
 		Rect scissor;
 		Rect bounds;
-		int image = 0;
+		int texture = 0;
 		float line = 0;
 	};
 	// OpenGL render structure - can be peristant

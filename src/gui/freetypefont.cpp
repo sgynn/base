@@ -22,7 +22,7 @@ gui::Font* gui::FreeTypeFont::load(const char* file, int size, const gui::GlyphR
 	else {
 		// Set font size
 		if(face->face_flags & FT_FACE_FLAG_SCALABLE) {
-			FT_F26Dot6 ftSize = (FT_F26Dot6)(size * (1<<6));
+			FT_F26Dot6 ftSize = (FT_F26Dot6)(size*0.75) << 6;
 			FT_Set_Char_Size(face, ftSize, 0, 100, 100);
 		}
 		else printf("Error: Font %s not scalable\n", file);
@@ -45,6 +45,7 @@ gui::Font* gui::FreeTypeFont::load(const char* file, int size, const gui::GlyphR
 		int height = imageSize.y;
 		count = 0;
 
+		printf("Font metrics: %d : %dx%d %d %d\n", size, width, height, ascent, descent);
 		font = createFontObject(size, ascent + descent);
 		Rect rect(0,0,0,ascent+descent);
 		unsigned char* data = new unsigned char[width * height * 4];

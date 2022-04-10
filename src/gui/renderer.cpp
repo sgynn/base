@@ -52,6 +52,12 @@ void Renderer::setImagePath(const char* path) {
 	m_imagePath = path;
 }
 
+int Renderer::createTexture(int w, int h, int channels, void* data, bool clamp) {
+	base::Texture t = base::Texture::create(w, h, channels, data);
+	if(clamp) t.setWrap(base::Texture::CLAMP);
+	return t.unit();
+}
+
 int Renderer::addImage(const char* file) {
 	base::PNG png;
 	if(m_imagePath.empty()) png = base::PNG::load(file);
@@ -59,30 +65,62 @@ int Renderer::addImage(const char* file) {
 	if(!png.data) return -1;
 	return addImage(file, png.width, png.height, png.bpp/8, png.data);
 }
-int Renderer::addImage(const char* name, int w, int h, int c, void* data, bool clamp) {
-	base::Texture t = base::Texture::create(w, h, c, data);
-	if(clamp) t.setWrap(base::Texture::CLAMP);
-	return addImage(name, t.width(), t.height(), t.unit());
+int Renderer::addImage(const char* name, int w, int h, int channels, void* data, bool clamp) {
+	if(m_atlases.empty()) createAtlas(256, 256);
+	int image = addImage(name, w, h, 0);
+	if(channels!=4 || !addToAtlas(0, image, data)) {
+		m_images[image].texture = createTexture(w, h, channels, data, true);
+	}
+	return image;
 }
 int Renderer::addImage(const char* name, int width, int height, int glUnit) {
 	m_images.push_back( Image() );
-	m_images.back().texture = glUnit;
-	m_images.back().multX = 1.0f / width;
-	m_images.back().multY = 1.0f / height;
-	m_images.back().ref = 0;
-	strcpy(m_images.back().name, name);
+	Image& img = m_images.back();
+	img.texture = glUnit;
+	img.atlased = 0;
+	img.size.set(width, height);
+	img.multX = 1.0f / width;
+	img.multY = 1.0f / height;
+	img.offX = 0;
+	img.offY = 0;
+	img.ref = 0;
+	img.name = name;
 	return m_images.size() - 1;
+}
+bool Renderer::replaceImage(unsigned index, int w, int h, int channels, void* data) {
+	if(index >= m_images.size()) return false;
+	Image& image = m_images[index];
+	image.size.set(w,h);
+	if(image.atlased) {
+		int atlas = image.texture;
+		removeFromAtlas(index);
+		if(!addToAtlas(atlas, index, data)) {
+			image.texture = createTexture(w, h, channels, data, true);
+			image.multX = 1.f / w;
+			image.multY = 1.f / h;
+		}
+	}
+	else {
+		int format = base::Texture::getInternalFormat((base::Texture::Format)channels);
+		glBindTexture(GL_TEXTURE_2D, image.texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
+		replaceImage(index, w, h, image.texture);
+	}
+	return true;
 }
 bool Renderer::replaceImage(unsigned index, int w, int h, int unit) {
 	if(index >= m_images.size()) return false;
-	m_images[index].texture = unit;
-	m_images[index].multX = 1.f / w;
-	m_images[index].multY = 1.f / h;
+	removeFromAtlas(index);
+	Image& image = m_images[index];
+	image.texture = unit;
+	image.size.set(w,h);
+	image.multX = 1.f / w;
+	image.multY = 1.f / h;
 	return true;
 }
 
 int Renderer::getImage(const char* name) const {
-	for(unsigned i=0; i<m_images.size(); ++i) if( strcmp(m_images[i].name, name)==0) return i;
+	for(unsigned i=0; i<m_images.size(); ++i) if(m_images[i].name == name) return i;
 	return -1;
 }
 
@@ -90,11 +128,11 @@ int Renderer::getImage(const char* name) const {
 
 unsigned Renderer::getImageCount() const { return m_images.size(); }
 Point Renderer::getImageSize(unsigned index) const {
-	if(index<m_images.size()) return Point( 1.0f/m_images[index].multX, 1.0f/m_images[index].multY);
+	if(index<m_images.size()) return m_images[index].size;
 	else return Point(0,0);
 }
 const char* Renderer::getImageName(unsigned index) const {
-	return index<m_images.size()? m_images[index].name: "";
+	return index<m_images.size()? m_images[index].name.str(): "";
 }
 
 void Renderer::grabImageReference(unsigned i) {
@@ -104,6 +142,72 @@ void Renderer::dropImageReference(unsigned i) {
 	if(i<m_images.size() && m_images[i].ref>0) --m_images[i].ref;
 }
 
+// ========================================================================================= //
+
+int Renderer::createAtlas(int width, int height) {
+	base::Texture t = base::Texture::create(width, height, base::Texture::RGBA8, 0);
+	t.setWrap(base::Texture::CLAMP);
+	m_atlases.push_back(Atlas{t.unit(), width, height});
+	return m_atlases.size() - 1;
+}
+
+bool Renderer::addToAtlas(int atlasId, int imageId, void* imageData) {
+	Atlas& atlas = m_atlases[atlasId];
+	Image& image = m_images[imageId];
+	AtlasedImage img { imageId, Rect(0, 0, image.size) };
+	if(img.rect.width > atlas.width || img.rect.height > atlas.height) return false;
+	if(!atlas.images.empty()) {
+		// Brute force it
+		auto test = [](const Atlas& atlas, const AtlasedImage& img) {
+			if(atlas.width < img.rect.right()) return false;
+			if(atlas.height < img.rect.bottom()) return false;
+			for(const AtlasedImage& i: atlas.images) if(i.rect.intersects(img.rect)) return false;
+			return true;
+		};
+		
+		bool success = false;
+		for(AtlasedImage& i: atlas.images) {
+			img.rect.x = i.rect.right();
+			img.rect.y = i.rect.y;
+			if(test(atlas, img)) { success=true; break; };
+			img.rect.x = i.rect.x;
+			img.rect.y = i.rect.bottom();
+			if(test(atlas, img)) { success=true; break; };
+		}
+		if(!success) return false;
+	}
+	glBindTexture(GL_TEXTURE_2D, atlas.texture);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, img.rect.x, img.rect.y, img.rect.width, img.rect.height, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+
+	float mx = 1.f / atlas.width;
+	float my = 1.f / atlas.height;
+	image.atlased = 1;
+	image.texture = atlasId;
+	image.offX = img.rect.x * mx;
+	image.offY = img.rect.y * my;
+	image.multX = mx;
+	image.multY = my;
+	atlas.images.push_back(img);
+	return true;
+}
+
+bool Renderer::removeFromAtlas(int imageId) {
+	Image& image = m_images[imageId];
+	if(image.atlased) {
+		Atlas& atlas = m_atlases[image.texture];
+		for(size_t i=0; i<atlas.images.size(); ++i) {
+			if(atlas.images[i].image == imageId) {
+				atlas.images[i] = atlas.images.back();
+				atlas.images.pop_back();
+				image.atlased = 0;
+				image.texture = 0;
+				image.offX = image.offY = 0;
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 // ========================================================================================= //
 
@@ -123,11 +227,18 @@ Renderer::~Renderer() {
 Renderer::Batch* Renderer::getBatch(const Rect& box, int image, float line) {
 	if(image<0 || !m_scissor.back().intersects(box)) return 0;
 
+	int texture;
+	if(image & 0x10000) texture = image & 0xffff; // Use opengl unit directly
+	else {
+		const Image& img = m_images[image];
+		texture = img.atlased? m_atlases[img.texture].texture: img.texture;
+	}
+
 	// Get active batch
 	size_t activeIndex = 0;
 	for(activeIndex = 0; activeIndex<m_active.size(); ++activeIndex) {
 		Batch* b = m_active[activeIndex];
-		if(b->image == image && b->line == line) break;
+		if(b->texture == texture && b->line == line) break;
 	}
 	Batch* result = activeIndex<m_active.size()? m_active[activeIndex]: 0;
 
@@ -171,7 +282,7 @@ Renderer::Batch* Renderer::getBatch(const Rect& box, int image, float line) {
 	if(result) result->bounds.include(box);
 	else {
 		result = new Batch();
-		result->image = image;
+		result->texture = texture;
 		result->line = line;
 		result->next = 0;
 		result->bounds = box;
@@ -269,7 +380,7 @@ void Renderer::buildRenderBatches() {
 		glBufferData(GL_ARRAY_BUFFER, b->vertices.size() * sizeof(Vertex), &b->vertices[0], GL_STATIC_DRAW);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, b->indices.size()*2, &b->indices[0], GL_STATIC_DRAW);
 		r.size = b->indices.size();
-		r.texture = b->image&0x10000? b->image&0xffff : m_images[b->image].texture;
+		r.texture = b->texture;
 		r.line = b->line;
 
 		if(previous!=b && previous->scissor == b->scissor) r.scissor.set(0,0,0,0);
@@ -353,14 +464,16 @@ void Renderer::drawBox(const Rect& rect, int image, const Rect& src, unsigned co
 	if(!batch) return;
 	Batch& b = *batch;
 
-	float ix = image<0? 1: m_images[image].multX;
-	float iy = image<0? 1: m_images[image].multY;
+	const float ix = m_images[image].multX;
+	const float iy = m_images[image].multY;
+	const float ox = m_images[image].offX;
+	const float oy = m_images[image].offY;
 
 	unsigned short start = b.vertices.size();
-	b.vertices.emplace_back(rect.x,       rect.y,        src.x*ix,       src.y*iy,        colour);
-	b.vertices.emplace_back(rect.right(), rect.y,        src.right()*ix, src.y*iy,        colour);
-	b.vertices.emplace_back(rect.x,       rect.bottom(), src.x*ix,       src.bottom()*iy, colour);
-	b.vertices.emplace_back(rect.right(), rect.bottom(), src.right()*ix, src.bottom()*iy, colour);
+	b.vertices.emplace_back(rect.x,       rect.y,        src.x*ix+ox+ix/2,       src.y*iy+oy+iy/2,        colour);
+	b.vertices.emplace_back(rect.right(), rect.y,        src.right()*ix+ox-ix/2, src.y*iy+oy+iy/2,        colour);
+	b.vertices.emplace_back(rect.x,       rect.bottom(), src.x*ix+ox+ix/2,       src.bottom()*iy+oy-iy/2, colour);
+	b.vertices.emplace_back(rect.right(), rect.bottom(), src.right()*ix+ox-ix/2, src.bottom()*iy+oy-iy/2, colour);
 	
 	if(angle != 0) {
 		float sinAngle = sin(angle);
@@ -401,13 +514,15 @@ void Renderer::drawNineSlice(const Rect& rect, int image, const Rect& src, const
 	if(rect.width < b.left+b.right)  b.right  = b.right * rect.width / (b.left+b.right),   b.left = rect.width - b.right;
 	if(rect.height < b.top+b.bottom) b.bottom = b.bottom * rect.height / (b.top+b.bottom), b.top = rect.height - b.bottom;
 
-	float ix = image<0? 1: m_images[image].multX;
-	float iy = image<0? 1: m_images[image].multY;
+	const float ix = m_images[image].multX;
+	const float iy = m_images[image].multY;
+	const float ox = m_images[image].offX;
+	const float oy = m_images[image].offY;
 
 	float dx[4] = { (float)rect.x, (float)rect.x + b.left, (float)rect.right() - b.right, (float)rect.right() };
 	float dy[4] = { (float)rect.y, (float)rect.y + b.top, (float)rect.bottom() - b.bottom, (float)rect.bottom() };
-	float sx[4] = { src.x*ix, (src.x + b.left)*ix, (src.right() - b.right)*ix,   src.right()*ix };
-	float sy[4] = { src.y*iy, (src.y + b.top)*iy,  (src.bottom() - b.bottom)*iy, src.bottom()*iy };
+	float sx[4] = { src.x*ix+ox, (src.x + b.left)*ix+ox, (src.right() - b.right)*ix+ox,   src.right()*ix+ox };
+	float sy[4] = { src.y*iy+oy, (src.y + b.top)*iy+oy,  (src.bottom() - b.bottom)*iy+oy, src.bottom()*iy+oy };
 
 	unsigned short start = batch->vertices.size();
 	for(int i=0; i<4; ++i) {
