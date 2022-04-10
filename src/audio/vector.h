@@ -8,8 +8,7 @@ class vector {
 	struct StringSort { bool operator()(const char* a, const char* b) { return strcmp(a,b)<0; } };
 	public:
 	vector(int s=0)                        : m_data(0), m_size(0), m_capacity(0) { if(s) reserve(s); }
-	vector(const vector& v)                : m_size(0), m_capacity(0) { reserve(m_size); memcpy(m_data, v.m_data, m_size*sizeof(T)); }
-	vector& operator=(const vector& v)     { clear(); reserve(v.m_size); memcpy(m_data, v.m_data, m_size*sizeof(T)); return *this; }
+	vector(const vector& v) = delete;
 	~vector()                              { if(m_data) free(m_data); }
 
 	unsigned size() const                  { return m_size; }

@@ -5,8 +5,8 @@ namespace audio {
 	typedef unsigned int soundID;
 	typedef unsigned int objectID;
 
-	int initialise();				// Initialise sound engine
-	int shutdown();					// Shut down sound engine
+	int initialise(bool threaded=true);	// Initialise sound engine
+	int shutdown();						// Shut down sound engine
 
 	void load(const char* file);	// Load sound definition file and contained sounds
 	void unload(const char* file);	// Unload sound bank

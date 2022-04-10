@@ -162,7 +162,7 @@ namespace audio {
 
 	/** Game object */
 	struct Object {
-		objectID id;
+		objectID id = 0;
 		float position[3];
 		float velocity[3];
 

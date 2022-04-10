@@ -27,22 +27,28 @@ namespace audio {
 			float   vecValue[3];
 		};
 	};
+
 	std::list<Message> messages;
 	base::Thread mainThread;
 	base::Mutex  mutex;
 	base::Mutex  deleteMutex;
 	void audioMainLoop(int);
+	void setupAudioSystem();
+	void destroyAudioSystem();
+	bool processAudioMessages();
 	void pushMessage(const Message&);
+	bool singleThreadedMode = false;
 	Data* Data::instance = 0;
+	ALCcontext* context = 0;
+	ALCdevice* device = 0;
 };
 
 extern void audioLogMessage(const char* message);
 
 
 //// Setup ////
-int audio::initialise() {
+int audio::initialise(bool threaded) {
 	if(mainThread.running()) return -1;
-	mainThread.begin(audioMainLoop, 0);
 	Data::instance = new Data();
 	Data::instance->m_mixers.push_back( Mixer() );
 	Data::instance->m_mixers[0].volume.value = 1.0;
@@ -51,6 +57,9 @@ int audio::initialise() {
 	Data::instance->m_mixerMap["master"] = 0;
 	Data::instance->m_attenuations.push_back( Attenuation() );	// index 0 is invalid
 	Data::instance->m_variables.push_back( Variable() );
+	if(threaded) mainThread.begin(audioMainLoop, 0);
+	else setupAudioSystem();
+	singleThreadedMode = !threaded;
 	audioLogMessage("Audio systems initialised\n");
 	return 0;
 }
@@ -62,6 +71,7 @@ int audio::shutdown() {
 	mainThread.join();
 	delete Data::instance;
 	Data::instance = 0;
+	if(singleThreadedMode) destroyAudioSystem();
 	audioLogMessage("Audio systems shut down\n");
 	return 0;
 }
@@ -186,6 +196,8 @@ void audio::setListener(const float* p) {
 	m.string   = 0;
 	memcpy(m.vecValue, p, 3*sizeof(float));
 	pushMessage(m);
+
+	if(singleThreadedMode) processAudioMessages();
 }
 
 //// //// LOAD BANKS //// ////
@@ -244,13 +256,23 @@ void audio::destroyObject(objectID id) {
 
 //// MAIN AUDIO LOOP ////
 void audio::audioMainLoop(int) {
+	setupAudioSystem();
+	while(processAudioMessages()) {
+		#ifndef EMSCRIPTEN
+		base::Thread::sleep(1);
+		#endif
+	}
+	destroyAudioSystem();
+}
+
+void audio::setupAudioSystem() {
 	// Initialise audio
-	ALCdevice* device = alcOpenDevice(0);
+	device = alcOpenDevice(0);
 	if(!device) {
 		audioLogMessage("Failed to open audio device\n");
 		return;
 	}
-	ALCcontext* context = alcCreateContext(device, 0);
+	context = alcCreateContext(device, 0);
 	if(!context) {
 		alcCloseDevice(device);
 		audioLogMessage("Failed to create context\n");
@@ -270,144 +292,143 @@ void audio::audioMainLoop(int) {
 	alListenerfv(AL_POSITION, f);		// f3
 	alListenerfv(AL_ORIENTATION, f+1);	// f6 (at, up)
 	alListenerfv(AL_VELOCITY, f);		// f3
+}
 
+bool audio::processAudioMessages() {
+	bool running = true;
 	Object* object = 0;
 	Data* data = Data::instance;
+	while(!messages.empty()) {
+		mutex.lock();
+		Message m = messages.front();
+		messages.pop_front();
+		mutex.unlock();
+		// Handle message
+		switch(m.type) {
+		case LOAD_BANK:		// background load
+			data->loadSoundBank(m.string);
+			break;
 
-	// Main loop
-	bool running = true;
-	while(running) {
-		while(!messages.empty()) {
-			mutex.lock();
-			Message m = messages.front();
-			messages.pop_front();
-			mutex.unlock();
-			// Handle message
-			switch(m.type) {
-			case LOAD_BANK:		// background load
-				data->loadSoundBank(m.string);
-				break;
+		case UNLOAD_BANK:	// Background unload
+			data->unloadSoundBank(m.string);
+			break;
 
-			case UNLOAD_BANK:	// Background unload
-				data->unloadSoundBank(m.string);
-				break;
+		case LOAD_SOUND:	// Load a sound file
+			printf("LOAD_SOUND not implemented\n");
+			break;
 
-			case LOAD_SOUND:	// Load a sound file
-				printf("LOAD_SOUND not implemented\n");
-				break;
+		case LISTENER_POS:	// Listener position
+			alListenerfv(AL_POSITION, m.vecValue);
+			break;
 
-			case LISTENER_POS:	// Listener position
-				alListenerfv(AL_POSITION, m.vecValue);
-				break;
-
-			case GLOBAL_VALUE:	// Mixer variables ?
-				m.target = Data::lookup( m.string, Data::instance->m_variableMap );
-				if(m.target == INVALID) printf("Error: variable %s not found\n", m.string);
-				else {
-					for(size_t i=0; i<data->m_mixers.size(); ++i) {
-						Mixer& mixer = data->m_mixers[i];
-						mixer.setVar(m.target, m.floatValue);
-					}
+		case GLOBAL_VALUE:	// Mixer variables ?
+			m.target = Data::lookup( m.string, Data::instance->m_variableMap );
+			if(m.target == INVALID) printf("Error: variable %s not found\n", m.string);
+			else {
+				for(size_t i=0; i<data->m_mixers.size(); ++i) {
+					Mixer& mixer = data->m_mixers[i];
+					mixer.setVar(m.target, m.floatValue);
 				}
-				break;
+			}
+			break;
 
-			case SET_VALUE:
-				object = data->getObject(m.object);
-				if(!object) printf("Error: Object %d does not exist\n", m.object);
-				m.target = Data::lookup( m.string, Data::instance->m_variableMap );
-				if(m.target==INVALID) printf("Error: variable %s not found\n", m.string);
-				if(object && m.target!=INVALID) object->setVar(m.target, m.floatValue);
-				free(m.string);
-				break;
-				
-			case SET_ENUM:
-				object = data->getObject(m.object);
-				m.target = Data::lookup( m.string, Data::instance->m_enumMap );
-				if(!object) printf("Error: Object %d does not exist\n", m.object);
-				if(m.target==INVALID) printf("Error: variable %s not found\n", m.string);
-				if(m.target!=INVALID && object) {
-					size_t value = m.intValue;
-					if(m.flags) {
-						value = Data::lookup( m.stringValue, data->m_enums[m.target].names );
-						if(value==INVALID) printf("Error: Enum %s has no member %s\n", m.string, m.stringValue);
-						free(m.stringValue);
-					}
-					if(value != INVALID) object->setEnum(m.target, value);
+		case SET_VALUE:
+			object = data->getObject(m.object);
+			if(!object) printf("Error: Object %d does not exist\n", m.object);
+			m.target = Data::lookup( m.string, Data::instance->m_variableMap );
+			if(m.target==INVALID) printf("Error: variable %s not found\n", m.string);
+			if(object && m.target!=INVALID) object->setVar(m.target, m.floatValue);
+			free(m.string);
+			break;
+			
+		case SET_ENUM:
+			object = data->getObject(m.object);
+			m.target = Data::lookup( m.string, Data::instance->m_enumMap );
+			if(!object) printf("Error: Object %d does not exist\n", m.object);
+			if(m.target==INVALID) printf("Error: variable %s not found\n", m.string);
+			if(m.target!=INVALID && object) {
+				size_t value = m.intValue;
+				if(m.flags) {
+					value = Data::lookup( m.stringValue, data->m_enums[m.target].names );
+					if(value==INVALID) printf("Error: Enum %s has no member %s\n", m.string, m.stringValue);
+					free(m.stringValue);
 				}
-				break;
-
-			case SET_POSITION:
-				object = data->getObject(m.object);
-				if(!object) printf("Error: Object %d does not exist\n", m.object);
-				if(object) object->setPosition(m.vecValue);
-				break;
-
-			case PLAY:
-				object = data->getObject(m.object);
-				if(!object) printf("Error: Object %d does not exist\n", m.object);
-				if(m.string) m.target = Data::lookup( m.string, data->m_soundMap );
-				if(m.target==INVALID) printf("Error: Sound %s not found\n", m.string);
-				if(object && m.target!=INVALID) object->play(m.target);
-				break;
-
-			case STOP:
-				object = data->getObject(m.object);
-				if(!object) printf("Error: Object %d does not exist\n", m.object);
-				if(m.string) m.target = Data::lookup( m.string, data->m_soundMap );
-				if(object && m.target!=INVALID) object->stop(m.target);
-				break;
-
-			case STOP_ALL:
-				object = data->getObject(m.object);
-				if(!object) printf("Error: Object %d does not exist\n", m.object);
-				if(object && m.target!=INVALID) object->stopAll();
-				break;
-
-			case EVENT:
-				object = data->getObject(m.object);
-				if(!object) printf("Error: Object %d does not exist\n", m.object);
-				if(m.string) m.target = Data::lookup( m.string, data->m_eventMap );
-				// Fire event
-				break;
-
-			case SHUTDOWN:
-				for(SoundBank* bank: data->m_banks) data->unloadSoundBank(bank);
-				running = false;
-				break;
+				if(value != INVALID) object->setEnum(m.target, value);
 			}
-			if(m.string) free(m.string);
+			break;
+
+		case SET_POSITION:
+			object = data->getObject(m.object);
+			if(!object) printf("Error: Object %d does not exist\n", m.object);
+			if(object) object->setPosition(m.vecValue);
+			break;
+
+		case PLAY:
+			object = data->getObject(m.object);
+			if(!object) printf("Error: Object %d does not exist\n", m.object);
+			if(m.string) m.target = Data::lookup( m.string, data->m_soundMap );
+			if(m.target==INVALID) printf("Error: Sound %s not found\n", m.string);
+			if(object && m.target!=INVALID) object->play(m.target);
+			break;
+
+		case STOP:
+			object = data->getObject(m.object);
+			if(!object) printf("Error: Object %d does not exist\n", m.object);
+			if(m.string) m.target = Data::lookup( m.string, data->m_soundMap );
+			if(object && m.target!=INVALID) object->stop(m.target);
+			break;
+
+		case STOP_ALL:
+			object = data->getObject(m.object);
+			if(!object) printf("Error: Object %d does not exist\n", m.object);
+			if(object && m.target!=INVALID) object->stopAll();
+			break;
+
+		case EVENT:
+			object = data->getObject(m.object);
+			if(!object) printf("Error: Object %d does not exist\n", m.object);
+			if(m.string) m.target = Data::lookup( m.string, data->m_eventMap );
+			// Fire event
+			break;
+
+		case SHUTDOWN:
+			for(SoundBank* bank: data->m_banks) data->unloadSoundBank(bank);
+			running = false;
+			break;
 		}
-
-		// Update streams etc
-		
-
-
-		// End events
-		if(!data->m_endEvents.empty()) {
-			TimeStamp time = data->getTimeStamp();
-			while(time >= data->m_endEvents.front().time) {
-				Object* o = data->m_endEvents.front().object;
-				if(o) o->onEndEvent(data->m_endEvents.front());
-				data->m_endEvents.pop_front();
-				if(data->m_endEvents.empty()) break;
-			}
-		}
-
-		// Delete objects
-		if(!data->m_deleted.empty()) {
-			deleteMutex.lock();
-			for(unsigned i=0; i<data->m_deleted.size(); ++i) {
-				for(Data::EndEvent& e : data->m_endEvents) if(e.object == data->m_deleted[i]) e.object = 0;
-				delete data->m_deleted[i];
-			}
-			data->m_deleted.clear();
-			deleteMutex.unlock();
-		}
-
-		base::Thread::sleep(1);
+		if(m.string) free(m.string);
 	}
 
-	// Cleanup
+	// Update streams etc
+	
+
+
+	// End events
+	if(!data->m_endEvents.empty()) {
+		TimeStamp time = data->getTimeStamp();
+		while(time >= data->m_endEvents.front().time) {
+			Object* o = data->m_endEvents.front().object;
+			if(o) o->onEndEvent(data->m_endEvents.front());
+			data->m_endEvents.pop_front();
+			if(data->m_endEvents.empty()) break;
+		}
+	}
+
+	// Delete objects
+	if(!data->m_deleted.empty()) {
+		deleteMutex.lock();
+		for(unsigned i=0; i<data->m_deleted.size(); ++i) {
+			for(Data::EndEvent& e : data->m_endEvents) if(e.object == data->m_deleted[i]) e.object = 0;
+			delete data->m_deleted[i];
+		}
+		data->m_deleted.clear();
+		deleteMutex.unlock();
+	}
+
+	return running;
+}
+
+void audio::destroyAudioSystem() {
 	alcDestroyContext(context);
 	alcCloseDevice(device);
 }
