@@ -8,7 +8,11 @@
 
 using namespace gui;
 
-Textbox::Textbox(const Rect& r, Skin* s) : Widget(r,s), m_text(0), m_buffer(0), m_length(0), m_cursor(0), m_selectLength(0), m_readOnly(false), m_password(0), m_suffix(0), m_offset(0), m_selection(0) {
+Textbox::Textbox(const Rect& r, Skin* s) : Widget(r,s)
+	, m_text(0), m_buffer(0), m_length(0), m_cursor(0), m_selectLength(0)
+	, m_multiline(false), m_readOnly(false), m_password(0)
+	, m_suffix(0), m_offset(0), m_selection(0)
+{
 	int h = s&&s->getFont()? s->getFont()->getSize('x', s->getFontSize()).y: 16;
 	m_selectRect.set(0,0,1,h);
 	m_buffer = 16;
@@ -24,10 +28,31 @@ Textbox::~Textbox() {
 }
 void Textbox::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("text")) setText(p["text"]);
+	if(p.contains("multiline")) m_multiline = atoi(p["multiline"]);
 	if(p.contains("readonly")) m_readOnly = atoi(p["readonly"]);
 	if(p.contains("password")) m_password = p["password"][0];
 	if(p.contains("suffix")) setSuffix(p["suffix"]);
 }
+Widget* Textbox::clone(const char* t) const {
+	Widget* w = Widget::clone(t);
+	if(Textbox* t = w->cast<Textbox>()) {
+		t->m_suffix = m_suffix? strdup(m_suffix): 0;
+		t->m_selectColour = m_selectColour;
+		t->m_multiline = m_multiline;
+		t->m_readOnly = m_readOnly;
+		t->m_password = m_password;
+	}
+	return w;
+}
+
+void Textbox::updateAutosize() {
+	if(isAutosize()) {
+		Point s = m_skin->getFont()->getSize(m_text, m_skin->getFontSize());
+		s += m_skin->getState(0).textPos;
+		setSizeAnchored(s);
+	}
+}
+
 void Textbox::setPosition(int x, int y) {
 	int sx = m_selectRect.x - m_rect.x;
 	Widget::setPosition(x, y);
@@ -46,6 +71,11 @@ void Textbox::setText(const char* t) {
 	}
 	memcpy(m_text, t, m_length+1);
 	select(m_cursor);
+	updateLineData();
+}
+
+void Textbox::setMultiLine(bool m) {
+	m_multiline = m;
 }
 
 void Textbox::setReadOnly(bool r) {
@@ -97,8 +127,9 @@ void Textbox::insertText(const char* t) {
 		if(s>0) memcpy(m_text+start, t, s);
 		m_length += d;
 	}
-	select(start+s);
 	m_text[m_length] = 0;
+	updateLineData();
+	select(start+s);
 }
 void Textbox::select(int s, int len, bool shift) {
 	if(s<0) s=0;
@@ -117,18 +148,40 @@ void Textbox::select(int s, int len, bool shift) {
 		delete [] m_selection;
 		m_selection = 0;
 	}
+
+	auto getTextSize = [this](const char* s, int len) { return m_skin->getFont()->getSize(s, m_skin->getFontSize(), len).x; };
 	int start = len<0? s+len: s;
-	if(s!=m_cursor) {
-		Point textSize = m_skin->getFont()->getSize(m_text, m_skin->getFontSize(), start);
-		m_selectRect.x = m_rect.x + textSize.x - m_offset;
-		m_selectRect.y = m_rect.y;
+	if(m_multiline) {
+		int lineHeight = m_skin->getFont()->getLineHeight(m_skin->getFontSize());
+		int startLine=0, endLine=0;
+		int end = start + abs(len);
+		for(size_t i=0; i<m_lines.size(); ++i) {
+			if(start >= m_lines[i]) startLine = i + 1;
+			if(end >= m_lines[i]) endLine = i + 1;
+		}
+		m_selectRect.y = m_rect.y + startLine * lineHeight;
+		m_selectRect.height = (endLine-startLine+1) * lineHeight;
+		int startStart = startLine? m_lines[startLine-1]: 0;
+		m_selectRect.x = m_rect.x + getTextSize(m_text+startStart, start-startStart);
+		if(len==0) 	m_selectRect.width = 1;
+		else if(startLine == endLine) m_selectRect.width = getTextSize(m_text+start, abs(len));
+		else {
+			int endStart = m_lines[endLine-1];
+			m_selectRect.width = m_rect.x + getTextSize(m_text+endStart, end - endStart) - m_selectRect.x;
+		}
 		m_cursor = s;
+		printf("Select %d (%d - %d)\n", s, startLine, endLine);
 	}
-	if(len!=0) {
-		Point textSize = m_skin->getFont()->getSize(m_text+start, m_skin->getFontSize(), abs(len));
-		m_selectRect.width = textSize.x;
+	else {
+		if(s != m_cursor) {
+			Point textSize = m_skin->getFont()->getSize(m_text, m_skin->getFontSize(), start);
+			m_selectRect.x = m_rect.x + textSize.x - m_offset;
+			m_selectRect.y = m_rect.y;
+			m_cursor = s;
+		}
+		if(len != 0) m_selectRect.width = getTextSize(m_text+start, abs(len));
+		else m_selectRect.width = 1;
 	}
-	else m_selectRect.width = 1;
 	m_selectLength = len;
 	updateOffset(false);
 }
@@ -144,14 +197,24 @@ void Textbox::updateOffset(bool end) {
 	m_offset -= shift;
 }
 
-void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
-	//printf("Key %c mask %d\n", (char)chr, (int)mask);
+void Textbox::updateLineData() {
+	if(!m_multiline) return;
+	m_lines.clear();
+	char* e = strchr(m_text, '\n');
+	while(e) {
+		m_lines.push_back(e - m_text + 1);
+		e = strchr(e+1, '\n');
+	}
+}
 
-	if(code == base::KEY_ENTER) {
+void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
+	if(code == base::KEY_ENTER && !m_multiline) {
 		if(eventSubmit) eventSubmit(this);
 	}
 	else if(code == base::KEY_LEFT)  select(m_cursor-1, 0, mask==KeyMask::Shift);
 	else if(code == base::KEY_RIGHT) select(m_cursor+1, 0, mask==KeyMask::Shift);
+	else if(code == base::KEY_UP && m_multiline) select(indexAt(Point(m_selectRect.x-m_rect.x, m_selectRect.y-m_rect.y-2)), 0, mask==KeyMask::Shift);
+	else if(code == base::KEY_DOWN && m_multiline) select(indexAt(Point(m_selectRect.x-m_rect.x, m_selectRect.bottom()-m_rect.y+2)), 0, mask==KeyMask::Shift);
 	else if(code == base::KEY_HOME)  select(0,          0, mask==KeyMask::Shift);
 	else if(code == base::KEY_END)   select(m_length,   0, mask==KeyMask::Shift);
 	else if(code == base::KEY_BACKSPACE) {
@@ -160,6 +223,7 @@ void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 			select(m_cursor-1);
 			for(int i=m_cursor; i<m_length; ++i) m_text[i] = m_text[i+1];
 			--m_length;
+			updateLineData();
 		}
 		if(eventChanged) eventChanged(this, m_text);
 	}
@@ -168,41 +232,49 @@ void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 		else if(m_cursor<m_length && !m_readOnly) {
 			for(int i=m_cursor; i<m_length; ++i) m_text[i] = m_text[i+1];
 			--m_length;
+			updateLineData();
 		}
 		if(eventChanged) eventChanged(this, m_text);
 	}
-	else if(chr>=32 && !m_readOnly && mask!=KeyMask::Ctrl) {
+	else if((chr>=32 || chr==10) && !m_readOnly && mask!=KeyMask::Ctrl) {
 		char tmp[2] = { (char)chr, 0 };
 		insertText(tmp);
 		if(eventChanged) eventChanged(this, m_text);
 	}
 }
-int Textbox::indexAt(int pos) const {
-	pos -= m_skin->getState( getState() ).textPos.x - m_offset;
-	for(int i=0; i<m_length; ++i) {
+int Textbox::indexAt(const Point& pos) const {
+	int px = pos.x - m_skin->getState( getState() ).textPos.x - m_offset;
+	int start = 0;
+	if(m_multiline && !m_lines.empty()) {
+		int py = pos.y - m_skin->getState(getState()).textPos.y;
+		int line = py / m_skin->getFont()->getLineHeight(m_skin->getFontSize());
+		if(line > (int)m_lines.size()) start = m_lines.back();
+		else if(line > 0) start = m_lines[line-1];
+	}
+	for(int i=start; i<m_length; ++i) {
 		Point characterSize = m_skin->getFont()->getSize(m_text[i], m_skin->getFontSize());
-		if(pos < characterSize.x/2) return i;
-		pos -= characterSize.x;
+		if(px < characterSize.x/2) return i;
+		if(m_text[i] == '\n') return i;
+		px -= characterSize.x;
 	}
 	return m_length;
 }
 void Textbox::onMouseButton(const Point& p, int b, int u) {
-	if(b==1) select( indexAt(p.x-m_rect.x) ), m_held=m_cursor;
+	if(b==1) select( indexAt(p-m_rect.position()) ), m_held=m_cursor;
 	Widget::onMouseButton(p, b, u);
 }
 void Textbox::onMouseMove(const Point&, const Point& p, int b) {
 	if(b==1) {
-		int i = indexAt(p.x-m_rect.x);
+		int i = indexAt(p-m_rect.position());
 		select(i, m_held-i);
 		updateOffset(i>m_held);
 	}
 }
 
 
-
 inline void Textbox::drawText(Point& p, char* t, uint len, uint col) const {
 	if(len>0 && t[0]) {
-		p = m_root->getRenderer()->drawText(p, t, len, m_skin, getState());
+		p = m_root->getRenderer()->drawText(p, t, len, m_skin->getFont(), m_skin->getFontSize(), col);
 	}
 }
 void Textbox::draw() const {
@@ -211,15 +283,64 @@ void Textbox::draw() const {
 	// Selection - do we change text colour too?
 	m_root->getRenderer()->push(m_rect);
 	if(m_selectLength!=0) {
-		int start = m_selectLength<0? m_cursor+m_selectLength: m_cursor;
-		m_root->getRenderer()->drawRect(m_selectRect, m_selectColour);
 		uint col = m_skin->getState( getState() ).foreColour;
-		Point tp = m_rect.position();
-		tp.x -= m_offset;
-		drawText(tp, m_text, start, col);
-		drawText(tp, m_text+start, abs(m_selectLength), col);
-		drawText(tp, m_text+start+abs(m_selectLength), ~0u, col);
-		if(m_suffix) drawText(tp, m_suffix, ~0u, col);
+		uint scol = m_skin->getState(4).foreColour;
+		scol = 0xffff8000;
+		if(m_multiline && !m_lines.empty()) {
+			int lineHeight = m_skin->getFont()->getLineHeight(m_skin->getFontSize());
+			int selectedLines = m_selectRect.height / lineHeight;
+			// Selection background: 2 or 3 boxes
+			if(selectedLines == 1) {
+				m_root->getRenderer()->drawRect(m_selectRect, m_selectColour);
+			}
+			else {
+				Rect r = m_selectRect;
+				r.height = lineHeight;
+				r.width = m_rect.right() - r.x;
+				m_root->getRenderer()->drawRect(r, m_selectColour);
+				r.x = m_rect.x;
+				r.y = m_selectRect.bottom()-lineHeight;
+				r.width = m_selectRect.right() - r.x;
+				m_root->getRenderer()->drawRect(r, m_selectColour);
+				if(selectedLines > 2) {
+					r.width = m_rect.width;
+					r.height = m_selectRect.height - 2*lineHeight;
+					r.y = m_selectRect.y + lineHeight;
+					m_root->getRenderer()->drawRect(r, m_selectColour);
+				}
+			}
+			auto findEol = [](char* s) { char* r=strchr(s, '\n'); return r? r-s: 0; };
+			int start = m_selectLength<0? m_cursor + m_selectLength: m_cursor;
+			int end = m_selectLength<0? m_cursor: m_cursor + m_selectLength;
+			int selectedEol = findEol(m_text + start);
+			if(start + selectedEol > end) selectedEol = 0;
+			int selectedBlock = abs(m_selectLength) - selectedEol;
+			int postEol = findEol(m_text + end);
+
+			Point tp = m_rect.position();
+			tp.x -= m_offset;
+			drawText(tp, m_text, start, col);
+			if(selectedEol>0) {
+				drawText(tp, m_text+start, selectedEol, scol);
+				tp.x = m_rect.x - m_offset;
+			}
+			if(selectedBlock>0) drawText(tp, m_text+start+selectedEol, selectedBlock, scol);
+			if(postEol > 0) {
+				drawText(tp, m_text+end, postEol, col);
+				tp.x = m_rect.x - m_offset;
+			}
+			drawText(tp, m_text+end+postEol, m_length, col);
+		}
+		else {
+			int start = m_selectLength<0? m_cursor+m_selectLength: m_cursor;
+			m_root->getRenderer()->drawRect(m_selectRect, m_selectColour);
+			Point tp = m_rect.position();
+			tp.x -= m_offset;
+			drawText(tp, m_text, start, col);
+			drawText(tp, m_text+start, abs(m_selectLength), scol);
+			drawText(tp, m_text+start+abs(m_selectLength), ~0u, col);
+			if(m_suffix) drawText(tp, m_suffix, ~0u, col);
+		}
 	}
 	else {
 		Point tp = m_rect.position();

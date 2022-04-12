@@ -169,11 +169,13 @@ class Textbox : public Widget {
 	~Textbox();
 	void draw() const override;
 	void setPosition(int x, int y) override;
+	void updateAutosize() override;
 	const char* getText() const { return m_text; }
 	const char* getSelectedText() const;
 	void setText(const char*);
 	void insertText(const char*);
 	void select(int start, int len=0, bool shift=false);
+	void setMultiLine(bool);
 	void setReadOnly(bool r);
 	void setPassword(char character);
 	void setSuffix(const char*);
@@ -182,13 +184,15 @@ class Textbox : public Widget {
 	Delegate<void(Textbox*)>              eventSubmit;
 
 	protected:
-	virtual void initialise(const Root*, const PropertyMap&) override;
+	Widget* clone(const char*) const override;
+	void initialise(const Root*, const PropertyMap&) override;
 	void onKey(int code, wchar_t key, KeyMask mask) override;
 	void onMouseButton(const Point&, int, int) override;
 	void onMouseMove(const Point&, const Point&, int) override;
 	void drawText(Point& p, char* t, uint len, uint col) const;
-	int  indexAt(int) const;
+	int  indexAt(const Point&) const;
 	void updateOffset(bool end);
+	void updateLineData();
 	private:
 	char* m_text;
 	int   m_buffer;
@@ -197,12 +201,14 @@ class Textbox : public Widget {
 	int   m_selectLength;
 	Rect  m_selectRect;
 	uint  m_selectColour;
+	bool  m_multiline;
 	bool  m_readOnly;
 	char  m_password;
 	char* m_suffix;
 	int   m_held;
 	int   m_offset;
 	mutable char* m_selection;
+	std::vector<int> m_lines; // Start of each line
 };
 
 /** Spinbox - Editable number with up/down buttons */

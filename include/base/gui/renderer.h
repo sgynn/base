@@ -73,7 +73,7 @@ class Renderer {
 	virtual void  end();
 
 	virtual void  drawSkin(const Skin*, const Rect& r, unsigned colour=-1, int state=0, const char* text=0);
-	virtual Point drawText(const Point&, const char* text, unsigned len, const Font*, int size, unsigned colour=0xffffffff);
+	virtual Point drawText(const Point& p, const char* text, unsigned len, const Font*, int size, unsigned colour=0xffffffff);
 	virtual Point drawText(const Point& p, const char* text, unsigned len, const Skin* skin, int state);
 	virtual Point drawText(const Rect& r, const char* text, unsigned len, const Skin* skin, int state);
 	virtual void  drawRect(const Rect&, unsigned colour=0xffffffff);
