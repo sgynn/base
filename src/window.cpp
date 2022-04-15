@@ -1,5 +1,7 @@
 #include "base/window.h"
 #include "base/opengl.h"
+#include "base/game.h"
+#include "base/gamestate.h"
 #include <cstdio>
 
 base::Window::Window(int width, int height, bool fullscreen, int bpp, int depth, int fsaa) 
@@ -57,6 +59,16 @@ void base::Window::clear() {
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	GL_CHECK_ERROR;
 	swapBuffers();
+}
+
+void base::Window::notifyResize(Point&& s) {
+	m_size = s;
+	base::Game::s_inst->m_state->onResized(s);
+}
+
+void base::Window::notifyFocus(bool focus) {
+	m_focus = focus;
+	base::Game::s_inst->m_state->onFocusChanged(focus);
 }
 
 // -------------------------------------------------------------------- //

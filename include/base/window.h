@@ -1,5 +1,4 @@
-#ifndef _BASE_WINDOW_
-#define _BASE_WINDOW_
+#pragma once
 
 #include "math.h"
 #include <vector>
@@ -38,6 +37,7 @@ namespace base {
 		int  getFSAA() const      { return m_fsaa; }
 		const Point& getPosition() const { return m_position; }
 		const Point& getSize() const { return m_size; }
+		bool hasFocus() const { return m_focus; }
 		
 
 		/// Get the native screen resolution
@@ -62,6 +62,10 @@ namespace base {
 		virtual void createCursor(unsigned c, const char* image, int w, int h, int x=0, int y=0) = 0; // ARGB image
 
 		protected:
+		void notifyResize(Point&& newSize);
+		void notifyFocus(bool hasFocus);
+
+		protected:
 		//Data
 		int m_fsaa;
 		Point m_position;
@@ -69,9 +73,8 @@ namespace base {
 		int m_colourDepth;
 		int m_depthBuffer;
 		bool m_fullScreen;
-		bool m_created;
+		bool m_created = false;
+		bool m_focus = true;
 	};
 };
-	
-#endif
 

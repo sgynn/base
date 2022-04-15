@@ -44,12 +44,14 @@ bool EMWindow::created() const {
 }
 
 bool EMWindow::createWindow() {
-	emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, EMWindow::key_callback);
-	emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, EMWindow::key_callback);
-	emscripten_set_mousemove_callback(m_canvas, 0, 1, EMWindow::mouse_callback);
-	emscripten_set_mousedown_callback(m_canvas, 0, 1, EMWindow::mouse_callback);
-	emscripten_set_mouseup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, EMWindow::mouse_callback);
-	emscripten_set_wheel_callback(m_canvas, 0, 1, EMWindow::wheel_callback);
+	emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, EMWindow::keyCallback);
+	emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, EMWindow::keyCallback);
+	emscripten_set_mousemove_callback(m_canvas, 0, 1, EMWindow::mouseCallback);
+	emscripten_set_mousedown_callback(m_canvas, 0, 1, EMWindow::mouseCallback);
+	emscripten_set_mouseup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, EMWindow::mouseCallback);
+	emscripten_set_wheel_callback(m_canvas, 0, 1, EMWindow::wheelCallback);
+	emscripten_set_focus_callback(m_canvas, this, 1, EMWindow::focusCallback);
+	emscripten_set_focusout_callback(m_canvas, this, 1, EMWindow::focusCallback);
 
 
 	// Init webgl
@@ -75,7 +77,7 @@ bool EMWindow::makeCurrent() {
 }
 
 
-EM_BOOL EMWindow::key_callback(int type, const EmscriptenKeyboardEvent* e, void*) {
+EM_BOOL EMWindow::keyCallback(int type, const EmscriptenKeyboardEvent* e, void*) {
 	switch(type) {
 	case EMSCRIPTEN_EVENT_KEYDOWN:
 		//printf("KeyDown %s (%s %lu : %lu %lu %lu)\n", e->key, e->code, e->location, e->charCode, e->keyCode, e->which);
@@ -89,7 +91,7 @@ EM_BOOL EMWindow::key_callback(int type, const EmscriptenKeyboardEvent* e, void*
 	return 0;
 }
 
-EM_BOOL EMWindow::mouse_callback(int type, const EmscriptenMouseEvent* e, void*) {
+EM_BOOL EMWindow::mouseCallback(int type, const EmscriptenMouseEvent* e, void*) {
 	switch(type) {
 	case EMSCRIPTEN_EVENT_MOUSEDOWN:
 		Game::input()->setButton(e->button+1, 1, Point(e->targetX, e->targetY));
@@ -108,8 +110,20 @@ EM_BOOL EMWindow::mouse_callback(int type, const EmscriptenMouseEvent* e, void*)
 //	printf("Mouse %d %ld %ld %hu\n", type, e->canvasX, e->canvasY, e->buttons);
 	return 0;
 }
-EM_BOOL EMWindow::wheel_callback(int type, const EmscriptenWheelEvent* e, void*) {
+EM_BOOL EMWindow::wheelCallback(int type, const EmscriptenWheelEvent* e, void*) {
 	Game::input()->m_mouseState.wheel -= e->deltaY / 3.0f;
+	return 0;
+}
+
+EM_BOOL EMWindow::focusCallback(int type, const EmscriptenFocusEvent* e, void* p) {
+	switch(type) {
+	case EMSCRIPTEN_EVENT_FOCUS:
+		reinterpret_cast<EMWindow*>(p)->notifyFocus(true);
+		break;
+	case EMSCRIPTEN_EVENT_FOCUSOUT:
+		reinterpret_cast<EMWindow*>(p)->notifyFocus(false);
+		break;
+	}
 	return 0;
 }
 

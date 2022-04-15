@@ -1,7 +1,6 @@
-#ifndef _BASE_WINDOW_EM_
+#pragma once
 
-#include "window.h"
-
+#include <base/window.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 
@@ -31,15 +30,14 @@ namespace base {
 		bool setFullScreen(bool f) override;
 
 		protected:
-		static EM_BOOL key_callback(int type, const EmscriptenKeyboardEvent* e, void*);
-		static EM_BOOL mouse_callback(int type, const EmscriptenMouseEvent* e, void*);
-		static EM_BOOL wheel_callback(int type, const EmscriptenWheelEvent* e, void*);
+		static EM_BOOL keyCallback(int type, const EmscriptenKeyboardEvent* e, void*);
+		static EM_BOOL mouseCallback(int type, const EmscriptenMouseEvent* e, void*);
+		static EM_BOOL wheelCallback(int type, const EmscriptenWheelEvent* e, void*);
+		static EM_BOOL focusCallback(int type, const EmscriptenFocusEvent* e, void*);
 
 		int m_context;
 		static Point s_mousePos;
 		const char* m_canvas;
 	};
 }
-
-#endif
 

@@ -20,9 +20,6 @@ class Game {
 	Game(int width=800, int height=600, int bpp=32, bool fullscreen=false, uint antialiasing=0);
 	~Game();
 	
-	/** Set title */
-	void setTitle(const char* title);
-	
 	/** Set the initial game state */
 	void setInitialState(GameState* state);
 
@@ -34,11 +31,6 @@ class Game {
 
 	/** terminate the app */
 	static void exit();
-
-	/** Resize the window - Nore: may need to reload glContext (textures, shaders, buffers)*/
-	void resize(int width, int height);
-	void resize(bool fullscreen);
-	void resize(int width, int height, bool fullscreen);
 
 	static Point getSize();
 	static int width();
@@ -72,12 +64,9 @@ class Game {
 
 	static base::Window* window() { return s_window; }
 
-	//Set clear bits
-	static void clear(int bits) { s_clearBits = bits; }
-
 	protected:
+	friend class Window;
 	GameStateManager* m_state; 
-	static int s_clearBits;
 
 	static Window* s_window;
 	static Input* s_input;

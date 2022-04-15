@@ -1,6 +1,6 @@
-#ifndef _BASE_WINDOW_X11_
+#pragma once
 
-#include "window.h"
+#include <base/window.h>
 
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -50,6 +50,4 @@ namespace base {
 		size_t               m_cursors[32];
 	};
 }
-
-#endif
 

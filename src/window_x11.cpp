@@ -101,6 +101,7 @@ bool X11Window::createWindow() {
 	m_swa.border_pixel = 0;
 	m_swa.event_mask =	ExposureMask |
 				StructureNotifyMask |
+				FocusChangeMask |
 				KeyReleaseMask |
 				KeyPressMask |
 				ButtonPressMask |
@@ -264,11 +265,17 @@ uint X11Window::pumpEvents(Input* input) {
 				break;
 			case ConfigureNotify:
 				if(event.xconfigure.width!=m_size.x || event.xconfigure.height!=m_size.y) {
-					m_size.x = event.xconfigure.width;
-					m_size.y = event.xconfigure.height;
-					//printf("Resize Window (%d, %d)\n", m_size.x, m_size.y);
+					notifyResize(Point(event.xconfigure.width, event.xconfigure.height));
 				}
 				break;
+
+			case FocusIn:
+				notifyFocus(true);
+				break;
+			case FocusOut:
+				notifyFocus(false);
+				break;
+				
 			
 			//Keyboard input
 			case KeyPress:

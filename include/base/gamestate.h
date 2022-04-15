@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+class Point;
 
 namespace base {
 
@@ -21,6 +22,8 @@ class GameStateComponent {
 	virtual ~GameStateComponent() {}
 	virtual void update() = 0;
 	virtual void draw() = 0;
+	virtual void resized(const Point& size) {}
+	virtual void focusChanged(bool focus) {}
 	GameState* getState() const { return m_gameState; }
 	StateMode getMode() const { return m_mode; }
 
@@ -95,6 +98,8 @@ class GameStateManager {
 		void draw();
 		
 		void changeState(GameState* next);
+		void onResized(const Point& newSize);
+		void onFocusChanged(bool focus);
 		
 		bool running() const { return m_currentState || m_nextState; }
 		

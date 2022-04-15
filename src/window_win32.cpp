@@ -273,8 +273,13 @@ uint Win32Window::pumpEvents(Input* input) {
 		case WM_QUIT:
 			return 0x100; //Exit signal
 		case WM_SIZE: //Window resized
-			m_size.x = msg.lParam & 0xffff;
-			m_size.y = msg.lParam >> 16;
+			notifyResize(Point(msg.lParam & 0xffff, msg.lParam >> 16));
+			break;
+		case WM_SETFOCUS:
+			notifyFocus(true);
+			break;
+		case WM_KILLFOCUS:
+			notifyFocus(false);
 			break;
 		
 		//Keyboard

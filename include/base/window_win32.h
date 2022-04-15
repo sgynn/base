@@ -1,6 +1,6 @@
-#ifndef _BASE_WINDOW_WIN32_
+#pragma once
 
-#include "window.h"
+#include <base/window.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -42,6 +42,4 @@ namespace base {
 		HCURSOR m_cursors[32];
 	};
 }
-
-#endif
 

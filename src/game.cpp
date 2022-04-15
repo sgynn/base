@@ -27,7 +27,6 @@ using namespace base;
 base::Window* Game::s_window;
 Input* Game::s_input;
 Game* Game::s_inst=0;
-int Game::s_clearBits=0;
 
 Game* Game::create(int width, int height, int bpp, bool fullscreen, int fps, uint antialiasing) {
 	if(s_inst!=0) printf("Warning: A game instance already exists.\n");
@@ -64,9 +63,6 @@ Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_stat
 
 	s_input = new Input();
 
-	//What to clear every frame
-	s_clearBits = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT; 
-
 	//Target fps
 	m_targetFPS = 0;
 
@@ -79,20 +75,6 @@ Game::~Game() {
 void Game::cleanup() { 
 	delete s_window;
 	delete s_input;
-}
-
-void Game::setTitle(const char* title) {
-	s_window->setTitle(title);
-}
-
-void Game::resize(int width, int height) {
-	s_window->setSize(width, height);
-}
-
-void Game::resize(bool fullscreen) {
-}
-
-void Game::resize(int width, int height, bool fullscreen) {
 }
 
 Point Game::getSize() { return s_window->getSize(); } 
@@ -202,7 +184,6 @@ void Game::run() {
 
 			//Render
 			renderTime = time;
-			glClear( s_clearBits );
 			m_state->draw();
 			s_window->swapBuffers();		
 			time = getTicks();
@@ -252,7 +233,6 @@ void Game::run() {
 				}
 				//Render
 				renderTime = time;
-				glClear( s_clearBits );
 				m_state->draw();
 				s_window->swapBuffers();		
 

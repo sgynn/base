@@ -104,6 +104,13 @@ void GameStateManager::changeState(GameState* next) {
 	m_nextState = next;
 }
 
+void GameStateManager::onResized(const Point& s) {
+	if(m_currentState) for(GameStateComponent* c: m_currentState->m_updateComponents) c->resized(s);
+}
+void GameStateManager::onFocusChanged(bool focus) {
+	if(m_currentState) for(GameStateComponent* c: m_currentState->m_updateComponents) c->focusChanged(focus);
+}
+
 void GameStateManager::quit() {
 	m_nextState = 0;
 }
