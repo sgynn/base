@@ -153,6 +153,8 @@ class Widget {
 	void     setAlpha(float a)                    { a=a>0?a<1?a:1:0; m_colour = (m_colour&0xffffff) | int(a*255)<<24; m_states|=0x200; }
 	float    getAlpha() const                     { return (m_colour>>24)/255.0; }
 
+	const char* getToolTip() const { return m_tip; }
+	void setToolTip(const char* tip) { m_tip = tip; }
 
 	void raise();				// Move this widget to the front within its container
 	void setFocus();			// Set keyboard focus to this widget
@@ -246,7 +248,8 @@ class Widget {
 	Widget*  m_parent;			// Parent widget
 	Widget*  m_client;			// Client widget
 	Root*    m_root;			// Gui manager class
-	String   m_name;
+	String   m_name;			// Widget name for lookups.
+	String   m_tip;				// Tool tip data
 
 	std::vector<Widget*>  m_children;
 

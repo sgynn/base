@@ -172,6 +172,7 @@ class Textbox : public Widget {
 	void updateAutosize() override;
 	const char* getText() const { return m_text; }
 	const char* getSelectedText() const;
+	int getLineCount() const;
 	void setText(const char*);
 	void insertText(const char*);
 	void select(int start, int len=0, bool shift=false);

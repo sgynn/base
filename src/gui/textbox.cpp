@@ -92,6 +92,10 @@ void Textbox::setSuffix(const char* s) {
 	m_suffix = s && s[0]? strdup(s): 0;
 }
 
+int Textbox::getLineCount() const {
+	return m_lines.size() + 1;
+}
+
 const char* Textbox::getSelectedText() const {
 	if(m_selection) return m_selection;
 	if(m_selectLength==0) return "";

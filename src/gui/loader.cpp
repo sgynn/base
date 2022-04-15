@@ -365,6 +365,7 @@ Widget* Root::loadWidget(const base::XMLElement& e, bool isTemplate) const {
 	if(e.hasAttribute("tangible")) w->setTangible((Tangible)e.attribute("tangible", 3));
 	if(e.hasAttribute("colour")) w->setColour(e.attribute("colour", 0xffffff));
 	if(e.hasAttribute("alpha")) w->setAlpha(e.attribute("alpha", 1.0f));
+	w->setToolTip(e.attribute("tip"));
 
 
 	// Create properties
