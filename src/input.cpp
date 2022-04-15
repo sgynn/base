@@ -15,6 +15,10 @@ char Input::s_ascii[2][128];
 Input::Input() : mouse(m_mouseState) {
 	clear();
 	createMap();
+
+	Point mousePos = queryMouse();
+	m_mouseState.x = mousePos.x;
+	m_mouseState.y = mousePos.y;
 }
 
 Input::~Input() {
