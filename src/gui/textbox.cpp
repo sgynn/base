@@ -49,16 +49,16 @@ void Textbox::updateAutosize() {
 	if(isAutosize()) {
 		Point s = m_skin->getFont()->getSize(m_text, m_skin->getFontSize());
 		s += m_skin->getState(0).textPos;
+		pauseLayout();
 		setSizeAnchored(s);
+		resumeLayout();
 	}
 }
 
 void Textbox::setPosition(int x, int y) {
-	int sx = m_selectRect.x - m_rect.x;
+	Point from = m_rect.position();
 	Widget::setPosition(x, y);
-	m_selectRect.x = m_rect.x + sx;
-	m_selectRect.y = m_rect.y;
-	
+	m_selectRect.position() += m_rect.position() - from;
 }
 void Textbox::setText(const char* t) {
 	if(!t) t = "";
@@ -72,6 +72,7 @@ void Textbox::setText(const char* t) {
 	memcpy(m_text, t, m_length+1);
 	select(m_cursor);
 	updateLineData();
+	updateAutosize();
 }
 
 void Textbox::setMultiLine(bool m) {
@@ -109,7 +110,7 @@ void Textbox::insertText(const char* t) {
 	if(m_selectLength<0) start = m_cursor + m_selectLength, end = m_cursor;
 	else start = m_cursor, end = m_cursor+m_selectLength;
 	int lastBit = m_length - end;
-	if(m_buffer < start + s + lastBit) {
+	if(m_buffer < start + s + lastBit + 1) {
 		m_buffer = start + s + lastBit + 16;
 		printf("Resize buffer %d\n", m_buffer);
 		char* n = new char[m_buffer];
@@ -129,6 +130,7 @@ void Textbox::insertText(const char* t) {
 	}
 	m_text[m_length] = 0;
 	updateLineData();
+	updateAutosize();
 	select(start+s);
 }
 void Textbox::select(int s, int len, bool shift) {
@@ -170,7 +172,6 @@ void Textbox::select(int s, int len, bool shift) {
 			m_selectRect.width = m_rect.x + getTextSize(m_text+endStart, end - endStart) - m_selectRect.x;
 		}
 		m_cursor = s;
-		printf("Select %d (%d - %d)\n", s, startLine, endLine);
 	}
 	else {
 		if(s != m_cursor) {
@@ -187,14 +188,27 @@ void Textbox::select(int s, int len, bool shift) {
 }
 
 void Textbox::updateOffset(bool end) {
-	int min = m_rect.x + m_skin->getState( getState() ).textPos.x;
-	int max = m_rect.right() - 1;
-	int x = end? m_selectRect.right(): m_selectRect.x;
-	int shift = 0;
-	if(x < min) shift = min - x;
-	else if(x > max) shift = max - x;
-	m_selectRect.x += shift;
-	m_offset -= shift;
+	if(Scrollpane* pane = getParent()->cast<Scrollpane>()) {
+		int lineHeight = m_skin->getFont()->getLineHeight(m_skin->getFontSize());
+		Point pos = end? m_selectRect.bottomRight(): m_selectRect.position();
+		pos -= m_rect.position();
+		if(end) pos.y -= lineHeight;
+		pane->ensureVisible(pos);
+		pos.y += lineHeight;
+		pane->ensureVisible(pos);
+		m_offset = 0;
+	}
+	else if(isAutosize()) m_offset = 0;
+	else {
+		int min = m_rect.x + m_skin->getState( getState() ).textPos.x;
+		int max = m_rect.right() - 1;
+		int x = end? m_selectRect.right(): m_selectRect.x;
+		int shift = 0;
+		if(x < min) shift = min - x;
+		else if(x > max) shift = max - x;
+		m_selectRect.x += shift;
+		m_offset -= shift;
+	}
 }
 
 void Textbox::updateLineData() {
@@ -285,7 +299,6 @@ void Textbox::draw() const {
 	if(m_selectLength!=0) {
 		uint col = m_skin->getState( getState() ).foreColour;
 		uint scol = m_skin->getState(4).foreColour;
-		scol = 0xffff8000;
 		if(m_multiline && !m_lines.empty()) {
 			int lineHeight = m_skin->getFont()->getLineHeight(m_skin->getFontSize());
 			int selectedLines = m_selectRect.height / lineHeight;
@@ -320,12 +333,12 @@ void Textbox::draw() const {
 			Point tp = m_rect.position();
 			tp.x -= m_offset;
 			drawText(tp, m_text, start, col);
-			if(selectedEol>0) {
+			if(selectedEol>0 || m_text[start]=='\n') {
 				drawText(tp, m_text+start, selectedEol, scol);
 				tp.x = m_rect.x - m_offset;
 			}
 			if(selectedBlock>0) drawText(tp, m_text+start+selectedEol, selectedBlock, scol);
-			if(postEol > 0) {
+			if(postEol > 0 || m_text[end]=='\n') {
 				drawText(tp, m_text+end, postEol, col);
 				tp.x = m_rect.x - m_offset;
 			}

@@ -127,6 +127,8 @@ class Widget {
 	virtual void setInheritState(bool);
 	inline void setPosition(const Point& p) { setPosition(p.x, p.y); }
 	inline void setSize(const Point& s)     { setSize(s.x, s.y); }
+	inline void setRect(const Rect& r)      { setPosition(r.x, r.y); setSize(r.width, r.height); }
+	inline void setRect(int x, int y, int w, int h) { setPosition(x, y); setSize(w, h); }
 	void setSizeAnchored(const Point& s);	// Set size, and adjust position based on anchor. Skips if anchored to both sides
 	void setPositionFloat(float x, float y, float w, float h);
 	void useRelativePositioning(bool);

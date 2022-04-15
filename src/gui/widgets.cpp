@@ -815,6 +815,20 @@ const Point& Scrollpane::getPaneSize() const {
 	return m_client->getSize();
 }
 
+void Scrollpane::ensureVisible(const Point& p) {
+	Point view = getViewWidget()->getSize();
+	printf("EnsureVisible %d,%d (%dx%d)\n", p.x, p.y, view.x, view.y);
+	Point min(p - view);
+	Point max = p;
+	Point c = getOffset();
+	if(c.x < min.x) c.x = min.x;
+	else if(c.x > max.x) c.x = max.x;
+	if(c.y < min.y) c.y = min.y;
+	else if(c.y > max.y) c.y = max.y;
+	setOffset(c.x, c.y);
+	printf("-> Offset %d,%d\n", getOffset().x, getOffset().y);
+}
+
 void Scrollpane::updateAutosize() {
 	if(this == m_client) return;	// Stop infinite recursion
 	// Autosize pane
@@ -830,6 +844,18 @@ void Scrollpane::updateAutosize() {
 				const Point& s = getViewWidget()->getSize();
 				m_client->setSize(s); // Prevent expanding items from stopping client from shrinking
 				r.set(0,0,s.x,s.y);
+
+				// Special override for textbox
+				if(m_useFullSize && getWidgetCount() == 1) {
+					Widget* w = getWidget(0);
+					if(w->cast<Textbox>() && w->isAutosize() && w->getAnchor()==0) {
+						if(!w->isLayoutPaused()) w->refreshLayout();
+						Point s = w->getSize();
+						w->pauseLayout();
+						w->setSize(r.width>s.x? r.width: s.x, r.height>s.y? r.height: s.y);
+						w->resumeLayout();
+					}
+				}
 			}
 			for(Widget* w: *m_client) {
 				if(w->isVisible()) {

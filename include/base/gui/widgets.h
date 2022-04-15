@@ -320,6 +320,7 @@ class Scrollpane : public Widget {
 	void add(Widget* w, unsigned index) override;// Adding child widgets resizes pane if in autosize mode
 	void setSize(int w, int h) override;
 	Widget* getViewWidget() const;				// Get viewport widget - mey need for events if client is smaller
+	void ensureVisible(const Point& pos);		// Set scrollbars so a point is within view
 	public:
 	Delegate<void(Scrollpane*)> eventChanged;	// Scroll viewport changed
 	private:

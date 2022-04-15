@@ -113,22 +113,27 @@ Point gui::Font::getSize(char c, int s) const {
 }
 
 
-Point gui::Font::getSize(const char* text, int size, int len) const {
-	Point s;
-	int cx=0, cy=0;
+Point gui::Font::getSize(const char* text, int fontSize, int len) const {
+	Point size;
+	if(!text[0]) return size;
+	int lineHeight = getLineHeight(fontSize);
+	size.y = lineHeight;
+	int cx = 0;
 	++len;
-	if(size<=0) size = m_size;
-	float scale = (float) size / m_size;
+	if(fontSize<=0) fontSize = m_size;
+	float scale = (float) fontSize / m_size;
 	for(const char* c=text; *c && --len; c++) {
-		if(*c=='\n') cx = 0, cy = s.y;
-		else {
-			const Point& g = m_glyphs[ (int)*c ].size();
-			cx += g.x * scale;
-			if(cx > s.x) s.x = cx;
-			if(cy + g.y * scale > s.y) s.y = cy + g.y * scale;
+		if(*c=='\n') {
+			if(cx > size.x) size.x = cx;
+			size.y += lineHeight;
+			cx = 0;
 		}
+		else cx += m_glyphs[ (int)*c ].width * scale;
 	}
-	return s;
+	if(cx > size.x) size.x = cx;
+	//size.x *= scale;
+	//size.y *= scale;
+	return size;
 }
 
 // ======================================================================================================== //
