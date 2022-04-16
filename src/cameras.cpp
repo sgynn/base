@@ -87,9 +87,10 @@ void FPSCamera::update(int mask) {
 			vec3 direction = getDirection();
 			float dot = face.dot(direction);
 			float angle = dot>1? 0: dot<-1? PI: acos(dot);
+			if(direction.dot(m_upVector) > 0) angle *= -1;
 			if(!m_constraint.contains(angle)) {
 				angle = m_constraint.clamp(angle);
-				direction = m_rotation * vec3(0, sin(angle), cos(angle));
+				direction = face * cos(angle) - m_upVector * sin(angle);
 			}
 			float inv = face.dot(direction)>0? 1: -1;
 			lookat(m_position, m_position-direction, m_upVector * inv);
