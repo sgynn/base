@@ -296,7 +296,7 @@ class Root {
 	void    resize(const Point& s) { resize(s.x, s.y); }
 	void    resize(int width, int height);
 	void    update();
-	void    draw() const;
+	void    draw(const Point& viewport=Point()) const;
 	Widget* parse(const char* xml, Widget* root=0, LoadFlags flags=LoadFlags::ALL|LoadFlags::REPLACE);	// Load all from string
 	Widget* load(const char* file, Widget* root=0, LoadFlags flags=LoadFlags::ALL|LoadFlags::REPLACE);	// Load all from file
 	Widget* loadWidget(const char* file, const char* widget);	// Only load a single widget

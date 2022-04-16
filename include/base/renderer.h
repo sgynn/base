@@ -58,6 +58,7 @@ namespace base {
 		void setQueue(unsigned char queue, RenderQueueMode mode);
 
 		void render(unsigned char first=0, unsigned char last=255);
+		void clearScreen();
 
 		RenderState& getState() { return m_state; }
 

@@ -198,8 +198,9 @@ void Root::update() {
 	// Anything actually need updating?
 }
 
-void Root::draw() const {
-	getRenderer()->begin(m_root->m_rect.width, m_root->m_rect.height);
+void Root::draw(const Point& viewport) const {
+	const Point& view = viewport.x? viewport: m_root->m_rect.size();
+	getRenderer()->begin(m_root->m_rect.size(), view);
 	m_root->draw();
 	getRenderer()->end();
 }

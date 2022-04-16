@@ -69,7 +69,7 @@ class Renderer {
 	void          setImagePath(const char* path);
 
 	public:
-	virtual void  begin(int w, int h);
+	virtual void  begin(const Point& root, const Point& viewport);
 	virtual void  end();
 
 	virtual void  drawSkin(const Skin*, const Rect& r, unsigned colour=-1, int state=0, const char* text=0);
@@ -123,6 +123,7 @@ class Renderer {
 	std::vector<RenderBatch> m_renderData;
 	std::vector<Rect> m_scissor;
 	std::vector<Batch*> m_active;
+	Point  m_viewport;
 	Batch* m_batches = 0;
 	Batch* m_head = 0;
 	Batch* getBatch(const Rect& rect, int image, float line=0);

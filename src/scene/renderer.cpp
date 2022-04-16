@@ -59,6 +59,10 @@ void Renderer::render(unsigned char first, unsigned char last) {
 	}
 }
 
+void Renderer::clearScreen() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
 // ============================================================= //
 
 RenderState::RenderState() : m_camera(0), m_activePass(0), m_materialOverride(0), m_materialTechnique(0) {

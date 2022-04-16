@@ -397,8 +397,9 @@ void Renderer::buildRenderBatches() {
 	}
 }
 
-void Renderer::begin(int w, int h) {
-	m_scissor.emplace_back(0, 0, w, h);
+void Renderer::begin(const Point& root, const Point& viewport) {
+	m_scissor.emplace_back(0, 0, root.x, root.y);
+	m_viewport = viewport;
 }
 
 void Renderer::end() {
@@ -418,6 +419,9 @@ void Renderer::end() {
 	transform[13] =  1;
 	transform[14] = 0;
 
+	int sx = size.x, sy = size.y;
+	int wx = m_viewport.x, wy = m_viewport.y;
+
 	// Draw
 	GL_CHECK_ERROR;
 	glEnable(GL_BLEND);
@@ -431,7 +435,7 @@ void Renderer::end() {
 	float lineWidth = 1;
 	for(const RenderBatch& b: m_renderData) {
 		if(b.size==0) break;
-		if(b.scissor.width) glScissor(b.scissor.x, size.y - b.scissor.bottom(), b.scissor.width, b.scissor.height);
+		if(b.scissor.width) glScissor(b.scissor.x*wx/sx, wy - b.scissor.bottom()*wy/sy, b.scissor.width*wx/sx, b.scissor.height*wy/sy);
 		if(b.line && b.line!=lineWidth) lineWidth=b.line, glLineWidth(b.line);
 		glBindVertexArray(b.vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b.ix);
