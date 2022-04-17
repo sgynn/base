@@ -139,12 +139,6 @@ void Game::run() {
 	emscripten_request_animation_frame_loop(&emscriptenUpdate, m_state);
 	
 	#else
-
-	//Set up dome OpenGL stuff
-	//glMatrixMode(GL_PROJECTION);
-	//glOrtho(0, s_window->getSize().x, 0, s_window->getSize().y, -1, 1);
-	//glMatrixMode(GL_MODELVIEW);
-	
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -195,10 +189,11 @@ void Game::run() {
 		// Fixed framerate version (hardcode 60fps)
 		uint maxFrameSkip = 5;
 		uint64 frequency = getTickFrequency();
-		uint64 rate = frequency / 60ull;
+		uint64 rate = frequency / m_targetFPS;
 		uint64 skip = rate * (maxFrameSkip+1);
 		uint64 time, last, delta=0;
 		uint64 gameTime, systemTime, updateTime, renderTime;
+		float frameTime = m_frameTime = 1.f / m_targetFPS;
 		last = systemTime = getTicks();
 		m_totalTime = 0;
 		while(m_state->running()) {
@@ -217,8 +212,7 @@ void Game::run() {
 				while(delta >= rate) {
 					//update timer
 					m_elapsedTime = rate; //This is the update time value
-					m_frameTime = (float)rate / frequency;
-					m_totalTime += m_frameTime;
+					m_totalTime += frameTime;
 					updateTime = time;
 					delta -= rate;
 
@@ -239,10 +233,10 @@ void Game::run() {
 				time = systemTime = getTicks();
 				m_renderTime = time - renderTime;
 				m_gameTime = time - gameTime;
+				m_frameTime = fmax(frameTime, (float)m_gameTime/frequency);
 			} else {
 				Sleep(1);
 			}
-
 		}
 	}
 	#endif
