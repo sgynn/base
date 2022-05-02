@@ -144,8 +144,10 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 	else if(strcmp(ext, ".png")==0) {
 		PNG png = PNG::load(filename);
 		if(png.data && png.bpp<=32) {
+			bool mipmaps = png.width == png.height;
 			Texture::Format format = (Texture::Format) (png.bpp / 8);
-			Texture tex = Texture::create(png.width, png.height, format, png.data, true);
+			Texture tex = Texture::create(png.width, png.height, format, png.data, mipmaps);
+			if(mipmaps) tex.setFilter( Texture::TRILINEAR );
 			return new Texture(tex);
 		}
 		else {

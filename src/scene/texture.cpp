@@ -227,6 +227,7 @@ Texture Texture::create(Type type, int w, int h, int d, Format f, const void* da
 	Texture t = create(type, w, h, d, f, &data, 1);
 	// Generate mipmaps
 	if(genmips && t.m_format==f) {
+		glTexParameteri(t.getTarget(), GL_TEXTURE_MAX_LEVEL, (int)log2(w<h? w: h));
 		glGenerateMipmap( t.getTarget() );
 		// t.generateMipMaps(format, data);	// cpu version
 	}
