@@ -124,37 +124,37 @@ namespace base {
 		KEY_UNKNOWN7	= 113,
 		KEY_UNKNOWN8	= 114,
 
-		KEY_LSHIFT	= 115,
-		KEY_RSHIFT	= 116,
-		KEY_LCONTROL	= 117,
-		KEY_LCTRL	= 117,
-		KEY_RCONTROL	= 118,
-		KEY_RCTRL	= 118,
-		KEY_ALT		= 119,
-		KEY_ALTGR	= 120,
-		KEY_LMETA	= 121,
-		KEY_RMETA	= 122,
-		KEY_MENU      	= 123,
-		KEY_SCRLOCK	= 124,
-		KEY_NUMLOCK	= 125,
-		KEY_CAPSLOCK	= 126,
+		KEY_LSHIFT	 = 115,
+		KEY_RSHIFT	 = 116,
+		KEY_LCONTROL = 117,
+		KEY_LCTRL	 = 117,
+		KEY_RCONTROL = 118,
+		KEY_RCTRL	 = 118,
+		KEY_ALT		 = 119,
+		KEY_ALTGR	 = 120,
+		KEY_LMETA	 = 121,
+		KEY_RMETA	 = 122,
+		KEY_MENU     = 123,
+		KEY_SCRLOCK	 = 124,
+		KEY_NUMLOCK	 = 125,
+		KEY_CAPSLOCK = 126,
 	};
 
 	enum KeyModifiers {
-		MODIFIER_NONE=0,
-		MODIFIER_CTRL=1,
-		MODIFIER_SHIFT=2,
-		MODIFIER_ALT=4,
-		MODIFIER_META=8,
-		MODIFIER_ANY=16,
+		MODIFIER_ANY   = 0,
+		MODIFIER_NONE  = 1<<8,
+		MODIFIER_CTRL  = 1<<9,
+		MODIFIER_SHIFT = 1<<10,
+		MODIFIER_ALT   = 1<<11,
+		MODIFIER_META  = 1<<12,
 	};
 
 	enum MouseButton {
-		MOUSE_LEFT = 1,
+		MOUSE_LEFT   = 1,
 		MOUSE_MIDDLE = 2,
-		MOUSE_RIGHT = 4,
-		MOUSE_SIDE1 = 8,
-		MOUSE_SIDE2 = 16
+		MOUSE_RIGHT  = 4,
+		MOUSE_SIDE1  = 8,
+		MOUSE_SIDE2  = 16
 	};
 
 	/// Mouse class -----------------------------------------------------------------
@@ -245,7 +245,7 @@ namespace base {
 		uint getAction(const char* name);	// Will create it if it does not exist
 		uint setAction(const char* name, uint action); // Use to force actions to an enum or something
 		const char* getActionName(uint action) const;
-		void bind(uint action, uint keycode, uint modifiers=MODIFIER_ANY);
+		void bind(uint action, uint keycode);
 		void bindMouse(uint action, uint button);
 		void bindJoystick(uint action, uint joystick, uint button);
 		void bindJoystick(uint action, uint joystick, uint axis, float threshold);
@@ -256,6 +256,9 @@ namespace base {
 		bool released(uint action) const;
 		void loadActions(const class INIFile&);
 		void saveActions(class INIFile&) const;
+
+		template<typename...A>
+		void bind(uint action, uint keycode, A...keycodes) { bind(action, keycode); bind(action, keycodes...); }
 		
 		/** Update must be called once per frame BEFORE window events are processed */
 		void update();

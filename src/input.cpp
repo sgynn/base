@@ -244,9 +244,9 @@ uint Input::setAction(const char* name, uint key) {
 	return key;
 }
 
-void Input::bind(uint action, uint keycode, uint mask) {
+void Input::bind(uint action, uint keycode) {
 	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
-	m_binding[action].push_back(Binding{keycode, 0, mask});
+	m_binding[action].push_back(Binding{keycode&0xff, 0, keycode>>8});
 }
 
 void Input::bindMouse(uint action, uint button) {
@@ -271,7 +271,7 @@ bool Input::check(uint action) const {
 	if(action >= m_binding.size()) return false;
 	for(Binding b: m_binding[action]) {
 		switch(b.type) {
-		case 0: if(key(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask))) return true; break;
+		case 0: if(key(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask>>8))) return true; break;
 		case 1: if(mouse.button & 1<<b.button) return true; break;
 		case 2: if(joystick(b.mask).button(b.button)) return true; break;
 		}
@@ -283,7 +283,7 @@ bool Input::pressed(uint action) const {
 	if(action >= m_binding.size()) return false;
 	for(Binding b: m_binding[action]) {
 		switch(b.type) {
-		case 0: if(keyPressed(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask))) return true; break;
+		case 0: if(keyPressed(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask>>8))) return true; break;
 		case 1: if(mouse.pressed & 1<<b.button) return true; break;
 		case 2: if(joystick(b.mask).pressed(b.button)) return true; break;
 		}

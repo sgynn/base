@@ -498,6 +498,7 @@ static int floatArray(const char* s, float* array, int max) {
 
 static int enumValue(const char* value, int size, const char** strings) {
 	for(int i=0; i<size; ++i) if(strcmp(value, strings[i])==0) return i;
+	if(value && value[0]) printf("Error: Invalid resource enum value '%s'\n", value);
 	return -1;
 }
 template<typename T> T enumValueT(const char* value, int size, const char** strings, T defaultValue) {

@@ -90,8 +90,8 @@ class String {
 	char& operator[](uint i)                    { return m_data[i]; }
 	String& operator+=(const char* s)           { if(s&&s[0]) *this = *this + s; return *this; }
 	String& operator+=(const String& s)         { if(!s.empty()) *this = *this + s; return *this; }
-	String operator+(const char* s)             { if(empty()) return String(s); if(!s||!s[0]) return *this; String r; r.m_data=(char*)malloc(length() + strlen(s) + 1); sprintf(r.m_data, "%s%s", m_data,s); return r; }
-	String operator+(const String& s)           { if(empty()) return s; if(s.empty()) return *this; String r; r.m_data=(char*)malloc(length() + s.length() + 1); sprintf(r.m_data, "%s%s", m_data,s.m_data); return r; }
+	String operator+(const char* s) const       { if(empty()) return String(s); if(!s||!s[0]) return *this; String r; r.m_data=(char*)malloc(length() + strlen(s) + 1); sprintf(r.m_data, "%s%s", m_data,s); return r; }
+	String operator+(const String& s) const     { if(empty()) return s; if(s.empty()) return *this; String r; r.m_data=(char*)malloc(length() + s.length() + 1); sprintf(r.m_data, "%s%s", m_data,s.m_data); return r; }
 	friend String operator+(const char* a, const String& s) { if(!a&&!a[0]) return s; if(s.empty()) return String(a); String r; r.m_data=(char*)malloc(strlen(a)+s.length()+1); sprintf(r.m_data, "%s%s", a, s.m_data); return r; }
 	private:
 	void set(const char* s)                     { if(m_data==s) return; if(m_data) free(m_data); m_data = s&&s[0]? strdup(s): 0; }
