@@ -102,6 +102,8 @@ namespace base {
 		bool applyBonePose(Bone* bone, const Animation* anim, int set, float frame, int blend=1, float weight=1);
 
 		const Matrix* getMatrixPtr() const;		/// Null if update not yet called
+		Bone** begin() { return m_bones; }
+		Bone** end() { return m_bones + m_count; }
 
 
 		private:
