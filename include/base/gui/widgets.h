@@ -44,6 +44,7 @@ class Icon : public Widget {
 	void setIcon(const char* name);							// Set icon index by name
 	void setIcon(int index);								// Set icon index
 	int  getIcon() const;									// Get icon index
+	const char* getIconName() const;
 	void setAltIcon(int index);
 	void setAltIcon(const char* name);
 	int  getAltIcon() const;								// Get icon index for alternate icon (when selected)
@@ -67,10 +68,11 @@ class IconInterface {
 	void setIcon(IconList* list, int index, int alt=-1);
 	void setIcon(const char* name);
 	void setIcon(int index);
-	int  getIcon();
+	int  getIcon() const;
+	const char* getIconName() const;
 	void setAltIcon(const char* name);
 	void setAltIcon(int index);
-	int  getAltIcon();
+	int  getAltIcon() const;
 	void setIconColour(unsigned rgb, float a=1);
 	private:
 	Icon* m_icon = nullptr;

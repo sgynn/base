@@ -161,6 +161,9 @@ void Icon::setIcon(const char* name) {
 		updateAutosize();
 	}
 }
+const char* Icon::getIconName() const {
+	return m_iconList? m_iconList->getIconName(m_iconIndex): 0;
+}
 void Icon::setAltIcon(const char* name) {
 	if(m_iconList) {
 		m_iconIndexAlt = m_iconList->getIconIndex(name);
@@ -272,8 +275,11 @@ void IconInterface::setIcon(int index) {
 void IconInterface::setIcon(const char* name) {
 	if(m_icon) m_icon->setIcon(name);
 }
-int IconInterface::getIcon() {
+int IconInterface::getIcon() const {
 	return m_icon? m_icon->getIcon(): 0;
+}
+const char* IconInterface::getIconName() const {
+	return m_icon? m_icon->getIconName(): 0;
 }
 void IconInterface::setAltIcon(int index) {
 	if(m_icon) m_icon->setAltIcon(index);
@@ -281,7 +287,7 @@ void IconInterface::setAltIcon(int index) {
 void IconInterface::setAltIcon(const char* name) {
 	if(m_icon) m_icon->setAltIcon(name);
 }
-int IconInterface::getAltIcon() {
+int IconInterface::getAltIcon() const {
 	return m_icon? m_icon->getAltIcon(): 0;
 }
 void IconInterface::setIconColour(unsigned rgb, float a) {
