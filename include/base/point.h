@@ -53,7 +53,7 @@ struct Rect {
 	Rect(int x, int y, int w, int h): x(x), y(y), width(w), height(h) {}
 	Rect(int x, int y, const Point& size): x(x), y(y), width(size.x), height(size.y) {}
 	Rect(const Point& pos, const Point& size): x(pos.x), y(pos.y), width(size.x), height(size.y) {}
-	Rect(const Point& pos, int w, int h): x(pos.x), y(pos.y), width(w), height(h) {}
+	Rect(const Point& pos, int w=0, int h=0): x(pos.x), y(pos.y), width(w), height(h) {}
 
 	Rect& set(int x, int y, int w, int h) { this->x=x; this->y=y; width=w; height=h; return *this; }
 	Rect& set(const Point& pos, const Point& size) { x=pos.x; y=pos.y; width=size.x; height=size.y; return *this; }
