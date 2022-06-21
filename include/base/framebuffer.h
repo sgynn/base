@@ -1,5 +1,4 @@
-#ifndef _BASE_FRAMEBUFFER_
-#define _BASE_FRAMEBUFFER_
+#pragma once
 
 #include "texture.h"
 #include "point.h"
@@ -13,8 +12,9 @@ class FrameBuffer {
 	FrameBuffer(int width, int height, int flags=COLOUR);
 	~FrameBuffer();
 
-	int width() const;
-	int height() const;
+	int width() const { return m_width; }
+	int height() const { return m_height; }
+	Point getSize() const { return Point(m_width, m_height); }
 
 	/** Get the framebuffer as a texture */
 	const Texture& texture(int index=0) const { return m_colour[index].texture; }
@@ -40,18 +40,20 @@ class FrameBuffer {
 	bool isValid() const;
 
 	/** Null framebuffer - used for unbinding */
-	static const FrameBuffer Screen;
+	static const FrameBuffer& Screen;
 	static const FrameBuffer& current() { return *s_bound; }
+	static void setScreenSize(int w, int h);
 
 	private:
+	static FrameBuffer s_screen;
 	int m_width, m_height;
 	int m_flags;
 	uint m_buffer; //Frame Buffer Object
 
 	//Storage objects
 	struct Storage {
-		uint type;
-		uint data;
+		uint type = 0;
+		uint data = 0;
 		Texture texture;
 	};
 
@@ -63,7 +65,5 @@ class FrameBuffer {
 	static const  FrameBuffer* s_bound;
 
 };
-};
-
-#endif
+}
 

@@ -2,11 +2,13 @@
 #include "base/opengl.h"
 #include "base/game.h"
 #include "base/gamestate.h"
+#include "base/framebuffer.h"
 #include <cstdio>
 
 base::Window::Window(int width, int height, bool fullscreen, int bpp, int depth, int fsaa) 
 	: m_fsaa(fsaa), m_size(width, height), m_colourDepth(bpp), m_depthBuffer(depth), m_fullScreen(fullscreen)
 {
+	base::FrameBuffer::setScreenSize(width, height);
 }
 
 base::Window::~Window() {
@@ -63,6 +65,7 @@ void base::Window::clear() {
 
 void base::Window::notifyResize(Point&& s) {
 	m_size = s;
+	base::FrameBuffer::setScreenSize(s.x, s.y);
 	base::Game::s_inst->m_state->onResized(s);
 }
 

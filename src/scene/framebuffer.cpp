@@ -7,14 +7,18 @@
 
 using namespace base;
 
-const FrameBuffer FrameBuffer::Screen;
+FrameBuffer FrameBuffer::s_screen;
+const FrameBuffer& FrameBuffer::Screen = FrameBuffer::s_screen;
 const FrameBuffer* FrameBuffer::s_bound = &FrameBuffer::Screen;
 
+void FrameBuffer::setScreenSize(int w, int h) {
+	s_screen.m_width = w;
+	s_screen.m_height = h;
+}
+
 FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0), m_count(0) {
-	memset(m_colour, 0, 4*sizeof(Storage));
 }
 FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0), m_count(0) {
-	memset(m_colour, 0, 4*sizeof(Storage));
 	if(w==0 || h==0) return; //Invalid size
 
 	// Create the frame buffer
@@ -111,13 +115,6 @@ uint FrameBuffer::attachDepth(uint type, Texture::Format format) {
 
 bool FrameBuffer::isValid() const {
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE;
-}
-
-int FrameBuffer::width() const {
-	return m_buffer? m_width: Game::width();
-}
-int FrameBuffer::height() const {
-	return m_buffer? m_height: Game::height();
 }
 
 bool FrameBuffer::bind(const Rect& r) const {
