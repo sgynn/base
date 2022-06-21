@@ -454,6 +454,7 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 
 static bool compileShader(Shader* shader, const char* name) {
 	if(shader->isCompiled()) return true;
+	if(shader->getParts().empty()) return false;
 
 	if(!shader->compile()) {
 		char buffer[2048];
@@ -577,6 +578,7 @@ Shader* XMLResourceLoader::loadShader(const XMLElement& e) {
 			s->attach(fs);
 			// TODO: Add to shader part resoure manager
 		}
+		else printf("Error: Shader file not found: %s\n", filename);
 	}
 	// additional source files
 	for(const XMLElement& i: e) {
