@@ -17,6 +17,7 @@ set(src
 	src/opengl.cpp
 	src/png.cpp
 	src/resources.cpp
+	src/scenecomponent.cpp
 	src/dds.cpp
 	src/window.cpp
 	src/xml.cpp
@@ -147,6 +148,7 @@ set(headers
 	include/base/renderer.h
 	include/base/resources.h
 	include/base/resourcemanager.h
+	include/base/scenecomponent.h
 	include/base/scene.h
 	include/base/shader.h
 	include/base/skeleton.h
@@ -160,6 +162,9 @@ set(headers
 	include/base/variable.h
 	include/base/script.h
 	include/base/console.h
+
+	include/base/consolecomponent.h
+	include/base/guicomponent.h
 )
 
 set(guiheaders
