@@ -13,8 +13,16 @@ class GUIComponent : public GameStateComponent {
 	void update() override {
 		const Mouse& mouse = Game::input()->mouse;
 		m_gui->setKeyMask((gui::KeyMask)Game::input()->getKeyModifier());
-		m_gui->mouseEvent(Point(mouse.x*m_mult, Game::height()-mouse.y*m_mult), mouse.button, mouse.wheel);
-		if(Game::LastKey()) m_gui->keyEvent(Game::LastKey(), Game::LastChar());
+		int wheel = hasComponentFlags(BLOCK_WHEEL)? 0: mouse.wheel;
+		if(hasComponentFlags(BLOCK_MOUSE)) {
+			m_gui->mouseEvent(Point(-1,-1), 0, wheel);
+		}
+		else {
+			m_gui->mouseEvent(Point(mouse.x*m_mult, Game::height()-mouse.y*m_mult), mouse.button, wheel);
+		}
+		if(Game::LastKey() && !hasComponentFlags(BLOCK_KEYS)) {
+			m_gui->keyEvent(Game::LastKey(), Game::LastChar());
+		}
 		m_gui->update();
 		if(m_gui->getWidgetUnderMouse()) setComponentFlags(BLOCK_MOUSE);
 		if(m_gui->getWheelEventConsumed()) setComponentFlags(BLOCK_WHEEL);
