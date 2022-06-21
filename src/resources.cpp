@@ -454,9 +454,14 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 
 static bool compileShader(Shader* shader, const char* name) {
 	if(shader->isCompiled()) return true;
-	if(shader->getParts().empty()) return false;
 
-	if(!shader->compile()) {
+	int mask = 0;
+	for(ShaderPart* p: shader->getParts()) mask |= 1 << p->getType(); 
+	if((mask&3) != 3)
+	{
+		printf("Incomplete shader %s\n", name);
+	}
+	else if(!shader->compile()) {
 		char buffer[2048];
 		shader->getLog(buffer, sizeof(buffer));
 		printf("Errors compiling %s:\n", name);
