@@ -60,6 +60,12 @@ set(gui
 	src/gui/freetypefont.cpp
 )
 
+set(script
+	src/script/console.cpp
+	src/script/script.cpp
+	src/script/variable.cpp
+)
+
 set(audio
 	src/audio/audio.cpp
 	src/audio/loader.cpp
@@ -150,6 +156,10 @@ set(headers
 	include/base/wavefront.h
 	include/base/window.h
 	include/base/xml.h
+
+	include/base/variable.h
+	include/base/script.h
+	include/base/console.h
 )
 
 set(guiheaders
@@ -183,7 +193,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
-add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${audio} ${headers} ${guiheaders} )
+add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${script} ${audio} ${headers} ${guiheaders} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 install(FILES ${guiheaders} DESTINATION include/base/gui)
