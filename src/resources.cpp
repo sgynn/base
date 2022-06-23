@@ -955,7 +955,10 @@ void XMLResourceLoader::load(const XML& xml, const char* path) {
 }
 bool Resources::loadFile(const char* file) {
 	XML xml = XML::load(file);
-	if(xml.getRoot().size()==0) return false;
+	if(xml.getRoot().size()==0) {
+		printf("Error: Failed to load resource file: %s\n", file);
+		return false;
+	}
 	XMLResourceLoader loader(this);
 	loader.load(xml, file);
 	return true;

@@ -228,9 +228,9 @@ namespace script {
 	/// Variable name with pre-looked up strings
 	class VariableName {
 		friend class Variable;
+		friend class Expression;
 		public:
 		VariableName(const char* = 0);
-		VariableName(const char* s, int len);
 		String toString() const;
 		bool operator==(const VariableName&) const;
 		bool operator!=(const VariableName&) const;

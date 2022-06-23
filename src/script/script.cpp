@@ -323,11 +323,11 @@ Variable Expression::evaluate(Context&& context) const {
 		r = b;
 		}
 
-	case GET: // rhs is subtext of lhs - string, or integer if array
+	case GET: // rhs is subtext of lhs - string, or integer if array : lhs[rhs]
 		if(a.isArray() && b.isNumber()) r = a.get_const((int)b);
 		else r = a.find_const( b.toString() );
 		break;
-	case GET2: // rhs must be var or cvar
+	case GET2: // rhs must be var or cvar: lhs.rhs
 		assert(!a.isArray());
 		if(rhs.type==NAME) a = a.get_const(rhs.var);
 		else if(rhs.type==COMPOUNDNAME) {
