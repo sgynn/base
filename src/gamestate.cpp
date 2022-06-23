@@ -79,12 +79,14 @@ void GameStateManager::update() {
 			m_prevState->m_stateManager = 0;
 		}
 		m_prevState = m_currentState;
-		if(m_currentState) m_currentState->end();
+		if(m_currentState) {
+			for(GameStateComponent* c: m_currentState->m_updateComponents) c->end();
+		}
 		if(m_nextState) {
 			if(m_currentState) for(GameStateComponent* c: m_currentState->m_updateComponents) {
 				if(c->getMode() == PERSISTENT) m_nextState->addComponent(c);
 			}
-			m_nextState->begin();
+			for(GameStateComponent* c: m_nextState->m_updateComponents) c->begin();
 		}
 		m_currentState = m_nextState;
 

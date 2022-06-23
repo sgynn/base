@@ -20,6 +20,8 @@ class GameStateComponent {
 	public:
 	GameStateComponent(int updateOrder=0, int drawOrder=0, StateMode mode=TRANSIENT) : m_mode(mode), m_updateOrder(updateOrder), m_drawOrder(drawOrder) {}
 	virtual ~GameStateComponent() {}
+	virtual void begin() {}
+	virtual void end() {}
 	virtual void update() = 0;
 	virtual void draw() = 0;
 	virtual void resized(const Point& size) {}
@@ -53,9 +55,6 @@ class GameState : public GameStateComponent {
 	public:
 		GameState(StateMode mode=TRANSIENT);
 		virtual ~GameState();
-		
-		virtual void begin() {}
-		virtual void end() {}
 
 		void update() {}
 		void draw() {}
