@@ -20,6 +20,7 @@ class SceneComponent : public base::GameStateComponent {
 	bool setCompositor(base::CompositorGraph* graph);
 	Workspace*& getWorkspace() { return m_workspace; }
 	Renderer* getRenderer() { return m_renderer; }
+	Scene* getScene() { return m_scene; }
 	private:
 	Scene*     m_scene;
 	Workspace* m_workspace;
