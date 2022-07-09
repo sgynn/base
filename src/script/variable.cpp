@@ -740,7 +740,7 @@ String Variable::toString(int depth, bool quotes, bool multiLine, int indent) co
 			// Sort output
 			std::vector<const char*> tmp;
 			for(auto& i: *this) tmp.push_back(i.key);
-			std::sort(tmp.begin(), tmp.end(), [](const char* a, const char* b) { return strcmp(a,b); });
+			std::sort(tmp.begin(), tmp.end(), [](const char* a, const char* b) { return strcmp(a,b) < 0; });
 
 			String s("{");
 			for(unsigned i=0; i<tmp.size(); ++i) {
