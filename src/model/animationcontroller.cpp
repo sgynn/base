@@ -620,8 +620,12 @@ void AnimationController::updateRootOffset(bool output) {
 				vec3 deltaPos = pos - meta.lastPos;
 				Quaternion deltaRot = rot * meta.lastRot.getInverse();
 
-				deltaPos *= weight;
-				//deltaRot = slerp(identity, deltaRot, weight); // Problems if wanting full rotation animation
+				// Problems if wanting full rotation animation
+				if(meta.type != ACTION) {
+					deltaPos *= weight;
+					if(deltaRot.w < 1)
+						deltaRot = slerp(identity, deltaRot, weight); 
+				}
 				
 				// Stop jumping back when animation loops
 				if(m_state->getLooped(i)) {
