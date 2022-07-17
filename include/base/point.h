@@ -1,5 +1,4 @@
-#ifndef _POINT_
-#define _POINT_
+#pragma once
 
 /** 2D integer point */
 struct Point {
@@ -113,5 +112,60 @@ inline Rect Rect::intersection(const Rect& r) const {
 	return result; 
 }
 
-#endif
+
+
+// ------------------------ Range iterators --------------------------------- //
+
+// Point range iterator - yeilds all points in a box. { min <= x < max }
+class PointRangeIterator {
+	public:
+	PointRangeIterator(Point start, Point end, Point value) : m_start(start), m_end(end), m_value(value) {
+		if(start.x>=end.x || start.y>=end.y) end = start;
+	}
+	PointRangeIterator operator++() { PointRangeIterator tmp=*this; operator++(0); return tmp; }
+	PointRangeIterator operator++(int) { ++m_value.x; if(m_value.x>=m_end.x) m_value.set(m_start.x, m_value.y+1); return *this; }
+	bool operator!=(const PointRangeIterator& o) const { return m_value != o.m_value; }
+	const Point& operator*() const { return m_value; }
+	private:
+	Point m_start, m_end, m_value;
+};
+struct PointRangeIteratorWrapper {
+	Point a, b;
+	PointRangeIterator begin() const { return PointRangeIterator(a,b,a); }
+	PointRangeIterator end() const { return PointRangeIterator(a,b,Point(a.x,b.y)); }
+};
+inline PointRangeIteratorWrapper range(const Point& a, const Point& b) { return PointRangeIteratorWrapper{a, b}; }
+inline PointRangeIteratorWrapper range(const Point& r) { return PointRangeIteratorWrapper{Point(), r}; }
+inline PointRangeIteratorWrapper range(const Rect& r) { return PointRangeIteratorWrapper{r.position(), r.bottomRight()}; }
+
+
+// 3D version - yeilds all points in a cube. { min <= x <= max }
+class Point3RangeIterator {
+	public:
+	Point3RangeIterator(Point3 start, Point3 end, Point3 value) : m_start(start), m_end(end), m_value(value) {
+		if(start.x>=end.x || start.y>=end.y || start.z>=end.z) end = start;
+	}
+	Point3RangeIterator operator++() { Point3RangeIterator tmp=*this; operator++(0); return tmp; }
+	Point3RangeIterator operator++(int) {
+		if(++m_value.x>=m_end.x) {
+			m_value.x = m_start.x;
+			if(++m_value.y>=m_end.y) m_value.set(m_start.x, m_start.y, m_value.z+1);
+		}
+		return *this;
+	}
+	bool operator!=(const Point3RangeIterator& o) const { return m_value != o.m_value; }
+	const Point3& operator*() const { return m_value; }
+	private:
+	Point3 m_start, m_end, m_value;
+};
+struct Point3RangeIteratorWrapper {
+	Point3 a, b;
+	Point3RangeIterator begin() const { return Point3RangeIterator(a,b,a); }
+	Point3RangeIterator end() const { return Point3RangeIterator(a,b,Point3(a.x,a.y,b.z)); }
+};
+inline Point3RangeIteratorWrapper range(const Point3& a, const Point3& b) { return Point3RangeIteratorWrapper{a, b}; }
+inline Point3RangeIteratorWrapper range(const Point3& r) { return Point3RangeIteratorWrapper{Point3(), r}; }
+
+
+
 
