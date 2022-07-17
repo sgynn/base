@@ -36,6 +36,7 @@ set(src
 	src/model/animationcontroller.cpp
 	src/model/animation.cpp
 	src/model/animationstate.cpp
+	src/model/batcher.cpp
 	src/model/bmloader.cpp
 	src/model/mesh.cpp
 	src/model/model.cpp
@@ -112,6 +113,7 @@ set(headers
 	include/base/animationstate.h
 	include/base/audio.h
 	include/base/autovariables.h
+	include/base/batcher.h
 	include/base/bmloader.h
 	include/base/bounds.h
 	include/base/camera.h
