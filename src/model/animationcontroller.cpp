@@ -63,10 +63,10 @@ void AnimationBank::calculateMeta(AnimationInfo& anim, const char* root) {
 
 		vec3 endPos;
 		Quaternion endRot;
-		anim.animation->getPosition(set, 0,0, anim.startPos);
-		anim.animation->getPosition(set, length, 0, endPos);
-		anim.animation->getRotation(set, 0,0, anim.startRot);
-		anim.animation->getRotation(set, 0,length, endRot);
+		anim.animation->getPosition(set, 0, 0, anim.startPos);
+		anim.animation->getPosition(set, length, length, endPos);
+		anim.animation->getRotation(set, 0, 0, anim.startRot);
+		anim.animation->getRotation(set, length, length, endRot);
 
 		anim.loopOffset = endPos - anim.startPos;
 		anim.loopRotation = endRot * anim.startRot.getInverse();
@@ -623,13 +623,16 @@ void AnimationController::updateRootOffset(bool output) {
 				deltaPos *= weight;
 				//deltaRot = slerp(identity, deltaRot, weight); // Problems if wanting full rotation animation
 				
-				if( m_state->getLooped(i)) {
+				// Stop jumping back when animation loops
+				if(m_state->getLooped(i)) {
 					deltaPos += meta.animation->loopOffset * weight * m_state->getLooped(i);
+					if(fabs(meta.animation->loopRotation.w) < 1) {
+						for(int i=0; i<m_state->getLooped(i); ++i) deltaRot *= meta.animation->loopRotation;
+					}
 				}
-				
-				// Need to apply its own object space rotation to offset
-				Quaternion base = m_rootRest * rot * m_rootSkin;
-				base.invert();
+
+				// Need to undo object rotation to keep things going in the right direction
+				Quaternion base = m_rootRest * rot.getInverse();
 
 				m_offset += base * deltaPos;
 				m_rotation *= deltaRot;

@@ -377,14 +377,16 @@ def export_action(context, skeleton, action, name, xml):
     #  Get key data
     start, end = action.frame_range
     length = int(end - start) + 1
+    start = int(start)
     for frame in range(length):
         context.scene.frame_set(start + frame)
         for bone, keys in data:
             rot = qrot.inverted() @ bone.rotation_quaternion @ qrot
             pos = bone.location.copy();
 
-            if bone.parent: pos = pos @ mrot # Hack ?
-            keys.rotation.append( (frame, rot) )
+            #if bone.parent: 
+            pos = pos @ mrot # Hack ?
+            keys.rotation.append( (frame, rot.normalized()) )
             keys.scale.append( (frame, bone.scale.xzy) )
             keys.position.append( (frame, pos) )
 
@@ -506,6 +508,11 @@ def write_object(node, obj, config):
     if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
     if obj.instance_type == 'COLLECTION' and obj.instance_collection: node.setAttribute("instance", obj.instance_collection.name)
     if bone: node.setAttribute("bone", bone)
+
+    if obj.type == 'EMPTY':
+        if obj.empty_display_type == 'CUBE': node.setAttribute("shape", "box")
+        elif obj.empty_display_type == 'CIRCLE': node.setAttribute("shape", "circle")
+        elif obj.empty_display_type == 'SPHERE': node.setAttribute("shape", "sphere")
 
     
     export_custom_properties(node, obj)
