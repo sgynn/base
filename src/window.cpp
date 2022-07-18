@@ -56,7 +56,7 @@ void base::Window::clear() {
 	glDepthFunc(GL_LEQUAL);                 // The type of depth testing to do
 	glCullFace(GL_BACK);					//back face culling
 	glEnable(GL_CULL_FACE);					
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);      // Really nice perspective calculations
+	//glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);      // Really nice perspective calculations - removed in gl3
 	glEnable(GL_BLEND);						// Enable alpha blending of textures
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	GL_CHECK_ERROR;

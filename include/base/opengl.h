@@ -86,9 +86,10 @@ extern PFNGLDELETEPROGRAMPROC  glDeleteProgram;
 extern PFNGLUSEPROGRAMPROC     glUseProgram;
 extern PFNGLGETPROGRAMIVPROC   glGetProgramiv;
 extern PFNGLGETSHADERIVPROC    glGetShaderiv;
+extern PFNGLISPROGRAMPROC      glIsProgram;
 extern PFNGLGETPROGRAMINFOLOGPROC    glGetProgramInfoLog;
 extern PFNGLGETSHADERINFOLOGPROC     glGetShaderInfoLog;
-extern PFNGLGETATTACHEDSHADERSPROC   glGetAttachedShader;
+extern PFNGLGETATTACHEDSHADERSPROC   glGetAttachedShaders;
 extern PFNGLGETUNIFORMLOCATIONPROC   glGetUniformLocation;
 extern PFNGLGETATTRIBLOCATIONPROC    glGetAttribLocation;
 extern PFNGLBINDFRAGDATALOCATIONPROC glBindFragDataLocation;
@@ -114,11 +115,28 @@ extern PFNGLVERTEXATTRIBPOINTERPROC       glVertexAttribPointer;
 extern PFNGLVERTEXATTRIBIPOINTERPROC      glVertexAttribIPointer;
 extern PFNGLVERTEXATTRIBDIVISORPROC       glVertexAttribDivisor;
 
-extern PFNGLGENVERTEXARRAYSPROC       glGenVertexArray;
+extern PFNGLGENVERTEXARRAYSPROC       glGenVertexArrays;
 extern PFNGLBINDVERTEXARRAYPROC       glBindVertexArray;
-extern PFNGLDELETEVERTEXARRAYSPROC    glDeleteVertexArray;
+extern PFNGLDELETEVERTEXARRAYSPROC    glDeleteVertexArrays;
 extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced;
 extern PFNGLDRAWARRAYSINSTANCEDPROC   glDrawArraysInstanced;
+
+extern PFNGLBINDBUFFERPROC     glBindBuffer;
+extern PFNGLDELETEBUFFERSPROC  glDeleteBuffers;
+extern PFNGLGENBUFFERSPROC     glGenBuffers;
+extern PFNGLBUFFERDATAPROC     glBufferData;
+
+extern PFNGLBINDRENDERBUFFERPROC        glBindRenderbuffer;
+extern PFNGLDELETERENDERBUFFERSPROC     glDeleteRenderbuffers;
+extern PFNGLGENRENDERBUFFERSPROC        glGenRenderbuffers;
+extern PFNGLRENDERBUFFERSTORAGEPROC     glRenderbufferStorage;
+extern PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer;
+extern PFNGLDELETEFRAMEBUFFERSPROC      glDeleteFramebuffers;
+extern PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers;
+extern PFNGLCHECKFRAMEBUFFERSTATUSPROC  glCheckFramebufferStatus;
+extern PFNGLFRAMEBUFFERTEXTURE2DPROC     glFramebufferTexture2D;
+extern PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
+extern PFNGLDRAWBUFFERSPROC             glDrawBuffers;
 #endif
 
 

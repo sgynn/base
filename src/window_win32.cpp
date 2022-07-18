@@ -181,7 +181,7 @@ bool Win32Window::createWindow() {
 		m_hRC = wglCreateContext(m_hDC);
 	}
 
-	initialiseOpenglExtensions();
+	initialiseOpenGLExtensions();
 	return true;
 }
 void base::Win32Window::destroyWindow() {

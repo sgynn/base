@@ -349,7 +349,8 @@ void Compositor::addConnector(std::vector<Connector>& list, const char* name, co
 		const char* split = strchr(buffer, ':');
 		if(!split) c.buffer = strdup(buffer);
 		else {
-			c.buffer = strndup(buffer, split-buffer);
+			c.buffer = strdup(buffer);
+			c.buffer[split-buffer] = 0;
 			if(strcmp(split, ":depth")==0) c.part = 1;
 			else if(split[1]>='0' && split[1]<='9') c.part = atoi(split+1) + 2;
 			if(c.part==0 || c.part>5) printf("Error: Invalid connector subscript '%s'\n", split+1);

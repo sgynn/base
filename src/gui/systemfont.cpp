@@ -7,7 +7,7 @@
 
 #ifdef WIN32
 #include <base/game.h>
-#include <base/window.h>
+#include <base/window_win32.h>
 #endif
 
 #ifdef LINUX	// Linux X11
@@ -94,6 +94,7 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 #ifdef WIN32
 gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRangeVector& glyphs) {
 	if(glyphs.empty()) return 0;
+	bool bold = false;
 
 	// Handle unicode
 	#ifdef UNICODE
@@ -140,8 +141,8 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 			GetCharWidth(memDC, c, c, &rect.width);
 			if(rect.right() > width) rect.x=0, rect.y += rect.height;
 			TextOut(memDC, rect.x, rect.y, &c, 1);
-			rect.x += rect.width;
 			setGlyph(result, i, rect);
+			rect.x += rect.width;
 		}
 	}
 

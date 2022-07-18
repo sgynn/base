@@ -970,6 +970,7 @@ bool Resources::loadFile(const char* file) {
 
 Resources::Resources() {
 	s_instance = this;
+	Shader::getSupportedVersion();
 	// Setup default loaders
 	textures.setDefaultLoader( new TextureLoader() );
 	shaders.setDefaultLoader( new ShaderLoader(shaderParts) );

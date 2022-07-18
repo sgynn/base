@@ -1,4 +1,5 @@
 #include <base/opengl.h>
+#include <cstdio>
 
 #ifdef WIN32
 #ifndef APIENTRYP
@@ -82,6 +83,7 @@ PFNGLDELETEPROGRAMPROC  glDeleteProgram = 0;
 PFNGLUSEPROGRAMPROC     glUseProgram    = 0;
 PFNGLGETPROGRAMIVPROC   glGetProgramiv  = 0;
 PFNGLGETSHADERIVPROC    glGetShaderiv   = 0;
+PFNGLISPROGRAMPROC      glIsProgram     = 0;
 
 PFNGLGETPROGRAMINFOLOGPROC    glGetProgramInfoLog    = 0;
 PFNGLGETSHADERINFOLOGPROC     glGetShaderInfoLog     = 0;
@@ -125,7 +127,7 @@ PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer         = 0;
 PFNGLDELETEFRAMEBUFFERSPROC      glDeleteFramebuffers      = 0;
 PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers         = 0;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC  glCheckFramebufferStatus  = 0;
-PFNGLFRAMEBUFFERTEXTURE2DPROC     glFramebufferTexture2D   = 0;
+PFNGLFRAMEBUFFERTEXTURE2DPROC    glFramebufferTexture2D   = 0;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer = 0;
 PFNGLDRAWBUFFERSPROC             glDrawBuffers             = 0;
 
@@ -163,6 +165,7 @@ int initialiseOpenGLExtensions() {
 	glUseProgram         = (PFNGLUSEPROGRAMPROC)     wglGetProcAddress("glUseProgram");
 	glGetProgramiv       = (PFNGLGETPROGRAMIVPROC)   wglGetProcAddress("glGetProgramiv");
 	glGetShaderiv        = (PFNGLGETSHADERIVPROC)    wglGetProcAddress("glGetShaderiv");
+	glIsProgram          = (PFNGLISPROGRAMPROC)      wglGetProcAddress("glIsProgram");
 	glGetProgramInfoLog  = (PFNGLGETPROGRAMINFOLOGPROC)  wglGetProcAddress("glGetProgramInfoLog");
 	glGetShaderInfoLog   = (PFNGLGETSHADERINFOLOGPROC)   wglGetProcAddress("glGetShaderInfoLog");
 	glGetAttachedShaders = (PFNGLGETATTACHEDSHADERSPROC) wglGetProcAddress("glGetAttachedShaders");
