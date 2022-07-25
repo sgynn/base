@@ -182,6 +182,7 @@ void Icon::initialise(const Root* root, const PropertyMap& p) {
 		if(e==icon) setAltIcon(icon);
 	}
 	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
+	updateAutosize();
 }
 Widget* Icon::clone(const char* nt) const {
 	Icon* w = Widget::clone(nt)->cast<Icon>();
