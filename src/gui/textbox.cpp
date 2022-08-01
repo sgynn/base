@@ -70,7 +70,9 @@ void Textbox::setText(const char* t) {
 		m_cursor = m_length;
 	}
 	memcpy(m_text, t, m_length+1);
-	select(m_cursor);
+	int tmp = m_cursor;
+	m_cursor = 0;
+	select(tmp);
 	updateLineData();
 	updateAutosize();
 }

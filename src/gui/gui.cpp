@@ -850,7 +850,7 @@ int Widget::getState() const {
 	if(m_states&0x40 && m_parent) return m_parent->getState();
 	int state = 0; // calculate state
 	if(!isEnabled() || !isParentEnabled()) state = 3;
-	else if(m_root->m_mouseFocus==this) {
+	else if(m_root && m_root->m_mouseFocus==this) {
 		state = 1; // or 2 of mouse is pressed
 		if(m_root->m_mouseState && m_rect.contains(m_root->m_mousePos)) state=2;
 	}
