@@ -206,14 +206,18 @@ const Matrix& SceneNode::getDerivedTransformUpdated() {
 	if(m_changed && m_parent) {
 		const Matrix& p = m_parent->getDerivedTransformUpdated();
 		Matrix tmp;
-		m_orientation.toMatrix(tmp);
-		tmp.setTranslation(m_position);
-		tmp.scale(m_scale);
+		createLocalMatrix(tmp);
 		m_derived = p * tmp;
 		m_changed = false;
 		for(SceneNode* c: children()) c->notifyChange();
 	}
 	return m_derived;
+}
+
+void SceneNode::createLocalMatrix(Matrix& out) const {
+	m_orientation.toMatrix(out);
+	out.setTranslation(m_position);
+	out.scale(m_scale);
 }
 
 void SceneNode::notifyChange() {
@@ -262,9 +266,7 @@ void Scene::updateSceneGraph() {
 	for(auto& level : m_changed) {
 		for(SceneNode* n : level) {
 			if(n->m_changed) {
-				n->m_orientation.toMatrix(tmp);
-				tmp.setTranslation(n->m_position);
-				tmp.scale(n->m_scale);
+				n->createLocalMatrix(tmp);
 				n->m_derived = n->m_parent->m_derived * tmp;
 				n->m_changed = false;
 				// Children

@@ -63,7 +63,7 @@ class AnimationBank {
 	};
 
 	public:
-	AnimationBank(const char* rootBone=0, const vec3& forward = vec3(0,0,1));
+	AnimationBank(const char* rootBone=0, const vec3& forward = vec3(0,-1,0)); // Note: forward axis in blender
 	~AnimationBank();
 	bool autoDetectMove(const Animation* anim) const;
 	void calculateMeta(AnimationInfo& anim, const char* root);

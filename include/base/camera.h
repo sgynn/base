@@ -131,7 +131,7 @@ namespace base {
 		virtual void update(int mask=CU_ALL) = 0;
 		/** Set camera speeds */
 		void setSpeed(float movement=1.0, float rotation=0.004);
-		/** Movement smoothing - parameters {0>x>=1} */
+		/** Movement smoothing - parameters {0>x>=1}. Lower values are smoother */
 		void setSmooth(float movement, float rotation);
 		/** Up vector - set to null vector if unconstrained */
 		void setUpVector(const vec3& up);

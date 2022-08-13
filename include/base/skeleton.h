@@ -34,7 +34,6 @@ namespace base {
 		const Quaternion& getAngle() const;		/**< Get the relative rotation as a quaternion */
 		const Matrix&     getTransformation() const;			/**< Get the local transformation of the bone */
 		const Matrix&     getAbsoluteTransformation() const;	/**< Get absolute transformation */
-		const Matrix&     getSkinningMatrix() const;			/**< Get matrix for skin transformation */
 
 		void setPosition(const vec3& pos);		/**< Set the relative position */
 		void setScale(float scale);				/**< Set the relative scale */

@@ -54,6 +54,7 @@ namespace base {
 		virtual void notifyChange();
 		virtual void notifyAdded();
 		virtual void notifyRemoved();
+		virtual void createLocalMatrix(Matrix& out) const;
 
 		void move(const vec3& delta);
 		void moveLocal(const vec3& delta);

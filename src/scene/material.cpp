@@ -267,6 +267,8 @@ bool Pass::hasShared(const ShaderVars* s) const {
 
 void Pass::setTexture(const char* name, const Texture* tex) {
 	// Does this texture already have a slot set
+	// FIXME: problem if multiple variables use this texture and we only want to change one of them
+	// Need to keep track of which int params are texture samplers. Perhaps a VT_SAMPLER vatriable type
 	for(size_t i=0; i<m_variableData.size(); ++i) {
 		const int* p = m_variableData[i].vars->getIntPointer(name);
 		if(p) {
