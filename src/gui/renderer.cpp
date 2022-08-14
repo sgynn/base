@@ -278,6 +278,9 @@ Renderer::Batch* Renderer::getBatch(const Rect& box, int image, float line) {
 		}
 	}
 
+	// Vertex buffer has become too large for uin16 indices
+	if(result && result->vertices.size() > 65500) result = 0;
+
 	// new batch
 	if(result) result->bounds.include(box);
 	else {
