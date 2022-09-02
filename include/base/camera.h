@@ -56,12 +56,7 @@ namespace base {
 		float getAspect() const { return m_aspect; }
 		const Matrix& getRotation() const { return m_rotation; }
 		const Matrix& getProjection() const { return m_projection; }
-		Matrix getModelview() const;
-
-		/** Apply camera transformations */
-		void applyProjection();
-		void applyRotation();
-		void applyTranslation();
+		virtual Matrix getModelview() const;
 
 		/** Recalculate the view frustum planes for culling
 		 *	For testing: 0=outside, 1=fully inside, bits[2-7]=intersecting this plane

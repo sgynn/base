@@ -119,7 +119,7 @@ void Camera::rotateLocal(int axis, float radians) {
 	mat[ib]=b.x; mat[ib+1]=b.y; mat[ib+2]=b.z;
 }
 
-/// Frustun Stuff ///
+/// Frustum Stuff ///
 #define FLEFT	0
 #define FRIGHT	1
 #define FBOTTOM	2
@@ -133,9 +133,7 @@ void Camera::updateFrustum() {
 	Matrix modelview = m_rotation.transposed();
 	//translation
 	vec3 t = modelview * (m_position * -1);
-	modelview[12] = t.x;
-	modelview[13] = t.y;
-	modelview[14] = t.z;
+	modelview.translate(t);
 
 	//Multiply matrices
 	m_combined = m_projection * modelview;
@@ -250,25 +248,9 @@ void Camera::updateProjectionMatrix() {
 	}
 }
 
-void Camera::applyProjection() {
-	glLoadMatrixf(m_projection);
-}
-void Camera::applyRotation() {
-	//glMultMatrixf(m_rotation);
-	float mat[16] = { m_rotation[0], m_rotation[4], m_rotation[8], 0,
-			  m_rotation[1], m_rotation[5], m_rotation[9], 0,
-			  m_rotation[2], m_rotation[6], m_rotation[10], 0, 0, 0, 0, 1 };
-	glMultMatrixf(mat);
-}
-void Camera::applyTranslation() {
-	glTranslatef(-m_position.x, -m_position.y, -m_position.z);
-}
-
 Matrix Camera::getModelview() const {
 	Matrix out, mat = m_rotation;
-	mat[12]=m_position.x;
-	mat[13]=m_position.y;
-	mat[14]=m_position.z;
+	mat.translate(m_position);
 	Matrix::inverseAffine(out, mat);
 	return out;
 }
@@ -295,12 +277,12 @@ Matrix Camera::orthographic(float left, float right, float bottom, float top, fl
 	float dy = top-bottom;
 	float dz = far-near;
 	Matrix m;
-	m[0] = 2/dx;
-	m[5] = 2/dy;
-	m[10] = -2/dz;
-	m[12] = -(right+left)/dx;
-	m[13] = -(top+bottom)/dy;
-	m[14] = (near+far)/dz;
+	m[0] = 2 / dx;
+	m[5] = 2 / dy;
+	m[10] = -2 / dz;
+	m[12] = -(right + left)/dx;
+	m[13] = -(top + bottom)/dy;
+	m[14] = (near + far)/dz;
 	return m;
 }
 
@@ -309,11 +291,11 @@ Matrix Camera::frustum(float left, float right, float bottom, float top, float n
 	float dy = top-bottom;
 	float dz = far-near;
 	Matrix m;
-	m[0] = 2*near / dx;
-	m[5] = 2*near / dy;
-	m[8] = (right+left) / dx;
-	m[9] = (top+bottom) / dy;
-	m[10] = -(far+near) / dz;
+	m[0] = 2 * near / dx;
+	m[5] = 2 * near / dy;
+	m[8] = (right + left) / dx;
+	m[9] = (top + bottom) / dy;
+	m[10] = -(far + near) / dz;
 	m[11] = -1;
 	m[14] = -2 * far * near / dz;
 	m[15] = 0;
@@ -330,9 +312,7 @@ vec3 Camera::project(const vec3& world, const Point& size) const {
 	Matrix modelview = m_rotation.transposed();
 	//translation
 	vec3 t = modelview * (m_position * -1);
-	modelview[12] = t.x;
-	modelview[13] = t.y;
-	modelview[14] = t.z;
+	modelview.translate(t);
 	//Project!
 	glhProjectf( world.x, world.y, world.z, modelview, m_projection, viewport, out);
 	return out;
@@ -345,9 +325,7 @@ vec3 Camera::unproject(const vec3& screen, const Point& size) const {
 	Matrix modelview = m_rotation.transposed();
 	//translation
 	vec3 t = modelview * (m_position * -1);
-	modelview[12] = t.x;
-	modelview[13] = t.y;
-	modelview[14] = t.z;
+	modelview.translate(t);
 	//Project!
 	glhUnProjectf( screen.x, screen.y, screen.z, modelview, m_projection, viewport, out);
 	return out;
