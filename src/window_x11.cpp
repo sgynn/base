@@ -79,9 +79,9 @@ bool X11Window::createWindow() {
 	}
 
 	// Possibly select best one from list ?
-	GLXFBConfig fbConfig = fbc[0];
+	m_fbConfig = fbc[0];
 	XFree(fbc);
-	m_visual = glXGetVisualFromFBConfig(m_display, fbConfig);
+	m_visual = glXGetVisualFromFBConfig(m_display, m_fbConfig);
 
 	// Extension
 	PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC) glXGetProcAddress((GLubyte*)"glXCreateContextAttribsARB");
@@ -93,7 +93,7 @@ bool X11Window::createWindow() {
 		//GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 		None
 	};
-	m_context = glXCreateContextAttribsARB(m_display, fbConfig, 0, GL_TRUE, attribs);
+	m_context = glXCreateContextAttribsARB(m_display, m_fbConfig, 0, GL_TRUE, attribs);
 
 	// Create window
 	m_colormap = XCreateColormap(m_display, RootWindow(m_display, m_visual->screen), m_visual->visual, AllocNone);

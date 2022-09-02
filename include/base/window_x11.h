@@ -34,9 +34,10 @@ namespace base {
 		bool createWindow();
 		void destroyWindow();
 
-		Display *getXDisplay() { return m_display; };
-		::Window getXWindow()  { return m_window; };
-		int getXScreen()       { return m_screen; };
+		Display *getXDisplay() const { return m_display; }
+		::Window getXWindow() const  { return m_window; }
+		int getXScreen() const       { return m_screen; }
+		const GLXFBConfig& getFBConfig() const { return m_fbConfig; }
 
 		protected:
 		Display*             m_display;
@@ -44,6 +45,7 @@ namespace base {
 		Colormap             m_colormap;
 		XSetWindowAttributes m_swa;
 		GLXContext           m_context;
+		GLXFBConfig          m_fbConfig;
 		::Window             m_window;
 		XF86VidModeModeInfo  m_deskMode;
 		int                  m_screen;
