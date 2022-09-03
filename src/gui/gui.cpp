@@ -245,6 +245,9 @@ void Skin::setStateCount(int count) {
 		if(old) memcpy(m_states, old, m_stateCount*sizeof(State));
 		if(old) delete [] old;
 	}
+	else {
+		m_definedStates &= ~(0xff << count);
+	}
 	m_stateCount = count;
 }
 void Skin::setState(int state, const Rect& r, const Border& b, unsigned fc, unsigned bc, const Point& o) {
@@ -258,13 +261,20 @@ void Skin::setState(int state, const Rect& r, const Border& b, unsigned fc, unsi
 	m_states[state].backColour = bc;
 	m_states[state].textPos = o;
 	m_definedStates |= 1<<state;
-
 	// Ensure all states are set
-	int from = state;
+	updateUndefinedStates();
+}
+void Skin::updateUndefinedStates() {
+	auto copyState = [this](int state, int from) { memcpy(m_states+state, m_states+from, sizeof(State)); };
+	if(~m_definedStates&1) {
+		for(int i=1; i<m_stateCount; ++i) if(m_definedStates&1<<i) {
+			copyState(0, i);
+			break;
+		}
+	}
+	int from[] = { 0, 0, 0, 0, 0, 4, 4, 3 };
 	for(int i=0; i<m_stateCount; ++i) {
-		if(i==7) from = 3;
-		if(~m_definedStates&(1<<i)) memcpy(m_states+i, m_states+from, sizeof(State));
-		else from = i;
+		if(~m_definedStates & 1<<i) copyState(i, from[i]);
 	}
 }
 void Skin::setState(int index, const State& s) {

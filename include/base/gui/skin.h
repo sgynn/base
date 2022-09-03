@@ -53,6 +53,7 @@ class Skin {
 	void  setState(int state, const Rect& rect, const Border& border=0, unsigned foreColour=0xffffffff, unsigned backColour=0xffffffff, const Point& textPos=Point());
 	void  setState(int state, const State& data);
 	void  setStateCount(int count); // 1, 4, 8;
+	void  updateUndefinedStates();
 
 	protected:
 	State*    m_states;
