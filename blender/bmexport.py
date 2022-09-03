@@ -37,6 +37,24 @@ def format_num(value):
 def modified(obj, config):
     return config.apply_modifiers and obj.type=='MESH' and len(obj.modifiers) and obj.data.users > 1
 
+
+# -------------------------------------------------------------------------- #
+
+def init_progress(context, total):
+    global current_progress
+    current_progress = 0
+    context.window_manager.progress_begin(0, total)
+
+def end_progress(context):
+    context.window_manager.progress_end()
+
+def advance_progress(context):
+    global current_progress
+    current_progress += 1
+    context.window_manager.progress_update(current_progress)
+    
+
+
 # -------------------------------------------------------------------------- #
 
 class Vertex(object):
@@ -336,11 +354,24 @@ def export_animations(context, config, skeleton, xml):
             for b in skeleton.pose.bones:
                 transforms.append((b, b.location.copy(), b.rotation_quaternion.copy(), b.scale.copy()))
 
+            # Disable any SUBSURF modifiers as they slow things down massively
+            modifiers = []
+            for o in context.view_layer.objects:
+                modifiers += [m for m in o.modifiers if m.type == 'SUBSURF' and m.show_viewport]
+            for m in modifiers: m.show_viewport = False
+
+
+            frameCount = 0;
+            for action in actions: frameCount += int(action[0].frame_range[1] - action[0].frame_range[0]) + 1
+            init_progress(context, frameCount)
+
             # Export actions
             for action in actions:
                 export_action(context, skeleton, action[0], action[1], xml)
 
             # Restore
+            end_progress(context);
+            for m in modifiers: m.show_viewport = True
             context.view_layer.objects.active = active
             skeleton.animation_data.action = last
             for track, data in restore.items():
@@ -380,6 +411,7 @@ def export_action(context, skeleton, action, name, xml):
     start = int(start)
     for frame in range(length):
         context.scene.frame_set(start + frame)
+        advance_progress(context);
         for bone, keys in data:
             rot = qrot.inverted() @ bone.rotation_quaternion @ qrot
             pos = bone.location.copy();
