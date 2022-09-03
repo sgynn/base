@@ -23,6 +23,17 @@ String::String(const char* v, uint l): s(0), ref(0) {
 		}
 	}
 }
+String::String(std::initializer_list<const char*> list) {
+	int len = 0;
+	for(const char* v: list) len += strlen(v);
+	if(len) {
+		ref = new int(1);
+		char* e = s = new char[len+1];
+		for(const char* v: list) e += sprintf(e, "%s", v);
+		*e = 0;
+	}
+}
+
 String::String(const String& v): s(v.s), ref(v.ref) {
 	if(ref) ++*ref;
 }

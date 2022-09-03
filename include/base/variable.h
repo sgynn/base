@@ -4,6 +4,7 @@
 #include <base/math.h>
 #include <base/hashmap.h>
 #include <base/gui/delegate.h>
+#include <initializer_list>
 #include <vector>
 
 #undef CONST // Some windows thing - how dare it!
@@ -22,6 +23,7 @@ namespace script {
 		public:
 		String(const char* s=0);
 		String(const char* s, uint length);
+		String(std::initializer_list<const char*> parts);
 		String(const String&);
 		String(String&&);
 		~String();
