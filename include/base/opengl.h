@@ -12,13 +12,14 @@
 
 
 #ifndef EMSCRIPTEN
-#define GL_CHECK_ERROR  { for(int e=glGetError(); e; e=glGetError()) printf("OpenGL Error 0x%x: %s:%d\n", e, __FILE__, __LINE__); fflush(stdout); }
+#define GL_CHECK_ERROR  { for(int e=glGetError(); e; e=glGetError()) printf("OpenGL Error %s: %s:%d\n", glTranslateError(e), __FILE__, __LINE__); fflush(stdout); }
 #else
 #define GL_CHECK_ERROR
 #endif
 
 
 extern int initialiseOpenGLExtensions();
+extern const char* glTranslateError(GLuint error);
 
 #ifdef WIN32
 

@@ -217,9 +217,26 @@ int initialiseOpenGLExtensions() {
 
 	return glCreateShader? 1: 0;
 }
+
+
+
 #else
 int initialiseShaderExtensions() {
 	return 1;
 }
 #endif
+
+
+const char* glTranslateError(GLuint error) {
+	switch(error) {
+	case 0: return "No Error";
+	case 0x500: return "Invalid Enum";
+	case 0x501: return "Invalid Value";
+	case 0x502: return "Invalid Operation";
+	case 0x503: return "Stack Overflow";
+	case 0x504: return "Stack Underflow";
+	case 0x505: return "Out Of Memory";
+	default: return "Unknown error";
+	}
+}
 
