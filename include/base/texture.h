@@ -23,6 +23,7 @@ namespace base {
 		enum Type   { TEX1D, TEX2D, TEX3D, CUBE, ARRAY1D, ARRAY2D };
 		enum Wrapping { REPEAT, CLAMP, BORDER };
 		Texture();
+		explicit Texture(uint glUnit, Type type=TEX2D); // Create from existing unit
 		/** Texture creation */
 		static Texture create(int width, int height, int channels, const void* data=0, bool generateMips=false);
 		static Texture create(int width, int height, Format format, const void* data=0, bool generateMips=false);
@@ -80,6 +81,7 @@ namespace base {
 		static unsigned getDataType(Format);
 		static bool     isCompressedFormat(Format);
 		static unsigned getMemorySize(Format, int w, int h, int d=1);
+		static bool     isDepthFormat(Format f) { return f>=D16 && f<=D24S8; }
 	};
 
 

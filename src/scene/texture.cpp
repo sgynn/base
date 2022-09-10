@@ -8,6 +8,18 @@ using namespace base;
 Texture::Texture(): m_unit(0), m_type(TEX2D), m_format(NONE), m_hasMipMaps(false), m_width(0), m_height(0), m_depth(0) {
 }
 
+Texture::Texture(uint glUnit, Type type) : m_unit(glUnit), m_type(type), m_format(NONE), m_hasMipMaps(false), m_width(0), m_height(0), m_depth(0) {
+	bind();
+	int fmt = 0;
+	unsigned target = getTarget();
+	glGetTexLevelParameteriv(target, 0, GL_TEXTURE_WIDTH, &m_width);
+	glGetTexLevelParameteriv(target, 0, GL_TEXTURE_HEIGHT, &m_height);
+	glGetTexLevelParameteriv(target, 0, GL_TEXTURE_INTERNAL_FORMAT, &fmt);
+	for(int f=NONE; f<D24S8; ++f) {
+		if(getInternalFormat((Format)f) == (uint)fmt) m_format = (Format)f;
+	}
+}
+
 /** Get bind target */
 inline unsigned Texture::getTarget() const {
 	static unsigned targets[] = { GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_1D_ARRAY, GL_TEXTURE_2D_ARRAY };
