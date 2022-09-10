@@ -16,88 +16,83 @@ void FrameBuffer::setScreenSize(int w, int h) {
 	s_screen.m_height = h;
 }
 
-FrameBuffer::FrameBuffer() : m_width(0), m_height(0), m_buffer(0), m_count(0) {
+FrameBuffer::FrameBuffer() {
 }
-FrameBuffer::FrameBuffer(int w, int h, int f) : m_width(w), m_height(h), m_buffer(0), m_count(0) {
-	if(w==0 || h==0) return; //Invalid size
 
-	// Create the frame buffer
+FrameBuffer::FrameBuffer(int w, int h) : m_width(w), m_height(h) {
 	glGenFramebuffers(1, &m_buffer);
-	if(f==0) return; //Framebuffer has no attachments
-
-	glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
-	const FrameBuffer* last = s_bound; //Avoid rebinding
-	s_bound = this;
-
-	//Attach stuff
-	if(f) {
-		if(f&COLOUR) attachColour(TEXTURE, Texture::RGBA8);
-		else {
-			//glDrawBuffer(GL_NONE);
-			//glReadBuffer(GL_NONE);
-		}
-		if(f&DEPTH)  attachDepth(TEXTURE, Texture::D24S8);
-	}
-
-
-	if(!m_buffer || glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE) {
-		printf("Error creating frame buffer\n");
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	if(isDepthOnly()) {
-		//glDrawBuffer(GL_BACK);
-		//glReadBuffer(GL_BACK);
-	}
-	s_bound = last;
+	if(!m_buffer) printf("Error creating frame buffer\n");
 }
+
 FrameBuffer::~FrameBuffer() {
-	//if(m_buffer) glDeleteFramebuffers(1, &m_buffer);
-	//if(m_depth.type) glDeleteRenderbuffers(1, &m_depth.data);
+	if(m_depth.type == RENDERBUFFER) glDeleteRenderbuffers(1, &m_depth.data);
+	if(m_buffer) glDeleteFramebuffers(1, &m_buffer);
 }
 
-uint FrameBuffer::attachColour(uint type, Texture::Format format) {
+void FrameBuffer::attachTexture(Texture::Format fmt) {
+	if(m_width > 0 && m_height > 0 && fmt != Texture::NONE) {
+		if(Texture::isDepthFormat(fmt)) {
+			if(m_depth.type) printf("Warning: Framebuffer already has a depth attachment\n");
+			attachDepth(fmt);
+		}
+		else attachColour(fmt);
+	}
+}
+
+void FrameBuffer::attachColour(uint index, const Texture& texture) {
+	if(!m_buffer) {
+		printf("Invalid framebuffer\n");
+	}
+	else if(texture.unit()) {
+		m_colour[index].type = TEXTURE;
+		m_colour[index].texture = texture;
+		m_colour[index].data = texture.unit();
+		if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+index, GL_TEXTURE_2D, m_colour[index].data, 0);
+		if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
+		if(index >= m_count) m_count = index + 1;
+		if(index==0) {
+			m_width = texture.width();
+			m_height = texture.height();
+		}
+	}
+}
+void FrameBuffer::attachDepth(const Texture& texture) {
+	if(!m_buffer) {
+		printf("Invalid framebuffer\n");
+	}
+	else if(!Texture::isDepthFormat(texture.getFormat())) {
+		printf("Texture is not a depth format\n");
+	}
+	else {
+		m_depth.type = TEXTURE;
+		m_depth.texture = texture;
+		m_depth.data = texture.unit();
+		if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
+		GLuint attachment = texture.getFormat() == Texture::D24S8? GL_DEPTH_STENCIL_ATTACHMENT: GL_DEPTH_ATTACHMENT;
+		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, m_depth.data, 0);
+		if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
+	}
+}
+
+uint FrameBuffer::attachColour(Texture::Format format) {
 	int index = m_count;
 	if(!format) format = Texture::RGBA8;
-	if(type==TEXTURE) {
-		m_colour[index].type = 1;
-		m_colour[index].texture = Texture::create(m_width, m_height, format);
-		m_colour[index].data = m_colour[index].texture.unit();
-		//Attach to buffer
-		if(m_colour[index].texture.unit()) {
-			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+index, GL_TEXTURE_2D, m_colour[index].data, 0);
-			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
-			++m_count;
-			return m_colour[index].data;
-		}
-	} else if(type==BUFFER) {
-		printf("Colour renderbuffers not yet implemented\n");
-	}
-	printf("Error attaching colour %s %d\n", type==TEXTURE? "texture": "renderbuffer", index);
-	return 0;
+	attachColour(index, Texture::create(m_width, m_height, format));
+	return m_colour[index].data;
 }
-uint FrameBuffer::attachDepth(uint type, Texture::Format format) {
-	if(format < Texture::D16 || format > Texture::D24S8) return 0; // invalid format
+
+uint FrameBuffer::attachDepth(Texture::Format format, BufferType type) {
+	if(!Texture::isDepthFormat(format)) return 0;
 	if(type==TEXTURE) {
-		m_depth.type = 1;
-		m_depth.texture = Texture::create(m_width, m_height, format);
-		//m_depth.texture.filter(GL_NEAREST, GL_NEAREST);
-		m_depth.texture.setWrap(Texture::CLAMP);
-		m_depth.data = m_depth.texture.unit();
-		//Attach to buffer
-		if(m_depth.texture.unit()) {
-			GLuint attachment = format == Texture::D24S8? GL_DEPTH_STENCIL_ATTACHMENT: GL_DEPTH_ATTACHMENT;
-			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, m_depth.data, 0);
-			if(s_bound!=this) glBindFramebuffer(GL_FRAMEBUFFER, s_bound->m_buffer);
-			return m_depth.data;
-		}
-	} else if(type==BUFFER) {
-		// Get openGL internal format
+		attachDepth(Texture::create(m_width, m_height, format));
+		return m_depth.data;
+	}
+	else if(type==RENDERBUFFER) {
 		static GLuint fmt[] = { GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8 };
 		int glformat = fmt[ format - Texture::D16 ];
 		
-		m_depth.type = 2;
+		m_depth.type = RENDERBUFFER;
 		glGenRenderbuffers(1, &m_depth.data);
 		glBindRenderbuffer(GL_RENDERBUFFER, m_depth.data);
 		glRenderbufferStorage(GL_RENDERBUFFER, glformat, m_width, m_height);

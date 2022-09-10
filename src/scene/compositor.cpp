@@ -902,15 +902,15 @@ bool Workspace::compile(int w, int h) {
 FrameBuffer* Workspace::createBuffer(Compositor::Buffer* b, int sw, int sh) {
 	int w = b->relativeWidth>0? b->relativeWidth * sw: b->width;
 	int h = b->relativeHeight>0? b->relativeHeight * sh: b->height;
-	FrameBuffer* buf = new FrameBuffer(w, h, 0);
+	FrameBuffer* buf = new FrameBuffer(w, h);
 	buf->bind();
 	if(b->depthFormat) {
-		buf->attachDepth( FrameBuffer::TEXTURE, (Texture::Format) b->depthFormat );
+		buf->attachDepth((Texture::Format) b->depthFormat);
 		buf->depthTexture().setFilter(GL_NEAREST, GL_NEAREST);
 	}
 	for(int f: b->format) {
 		if(f == Texture::NONE) break;
-		buf->attachColour( FrameBuffer::TEXTURE, (Texture::Format) f );
+		buf->attachColour((Texture::Format) f);
 	}
 	if(!buf->isValid()) printf("Error: Invalid framebuffer %s, [%d]\n", b->name, (int)b->format[0]);
 	FrameBuffer::Screen.bind();

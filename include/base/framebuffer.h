@@ -6,10 +6,9 @@
 namespace base {
 class FrameBuffer {
 	public:
-	enum Flags { DEPTH=0x1000, COLOUR=0x2000, BUFFER=0x4000, TEXTURE=0x8000 };
-
-	FrameBuffer();
-	FrameBuffer(int width, int height, int flags=COLOUR);
+	enum BufferType { NONE, TEXTURE, RENDERBUFFER };
+	FrameBuffer(int width, int height);
+	template<class...B> FrameBuffer(int width, int height, B...buffers);
 	~FrameBuffer();
 
 	int width() const { return m_width; }
@@ -22,8 +21,10 @@ class FrameBuffer {
 	operator const Texture&() const { return texture(); }
 
 	/** Attach various render targets */
-	uint attachColour(uint type, Texture::Format format);
-	uint attachDepth(uint type, Texture::Format format);
+	uint attachColour(Texture::Format format);
+	void attachColour(uint index, const Texture& texture);
+	void attachDepth(const Texture& texture);
+	uint attachDepth(Texture::Format format, BufferType type=TEXTURE);
 	uint attachStencil(uint type);
 
 	/** Bind the framebuffer as the current a render target */
@@ -45,25 +46,43 @@ class FrameBuffer {
 	static void setScreenSize(int w, int h);
 
 	private:
+	FrameBuffer();
+	void attachTexture(Texture::Format f);
+	template<class...B> void attachTexture(Texture::Format fmt, B...more) {
+		attachTexture(fmt);
+		attachTexture(more...);
+	}
+
+	private:
 	static FrameBuffer s_screen;
-	int m_width, m_height;
-	int m_flags;
-	uint m_buffer; //Frame Buffer Object
+	int m_width = 0;
+	int m_height = 0;
+	uint m_buffer = 0; //Frame Buffer Object
 
 	//Storage objects
 	struct Storage {
-		uint type = 0;
+		BufferType type = NONE;
 		uint data = 0;
 		Texture texture;
 	};
 
 	Storage m_colour[4];	// Colour buffers
 	Storage m_depth;		// Depth buffer
-	int     m_count;		// Number of attached colour buffers
+	uint    m_count = 0;	// Number of attached colour buffers
 
 	//What is bound?
 	static const  FrameBuffer* s_bound;
 
 };
+}
+
+template<class...B>
+base::FrameBuffer::FrameBuffer(int width, int height, B...buffers) : FrameBuffer(width, height) {
+	if(m_buffer) {
+		const FrameBuffer* previous = s_bound;
+		bind();
+		attachTexture(buffers...); 
+		previous->bind();
+	}
 }
 
