@@ -28,6 +28,8 @@ namespace base {
 		void setPerspective(float fov, float aspect, float near, float far);
 		void setPerspective(float left, float right, float bottom, float top, float near, float far);
 
+		void setTransform(const vec3& position, const Quaternion& orientation);
+		void setTransform(const Matrix& m);
 
 		/** Just set camera position */
 		void setPosition(const vec3& position) { m_position = position; }

@@ -94,6 +94,17 @@ void Camera::setRotation(float pitch, float yaw, float roll) {
 	if(roll!=0) rotateLocal(2, roll);
 }
 
+void Camera::setTransform(const Matrix& m) {
+	m_position = vec3(&m[12]);
+	m_rotation = m;
+	m_rotation[12] = m_rotation[13] = m_rotation[14] = 0;
+}
+
+void Camera::setTransform(const vec3& pos, const Quaternion& rot) {
+	rot.toMatrix(m_rotation);
+	m_position = pos;
+}
+
 /** Rotate a matrix about a local axis. Must be a rotation matrix */
 void Camera::rotateLocal(int axis, float radians) {
 	Matrix& mat = m_rotation;
@@ -287,10 +298,17 @@ Matrix Camera::orthographic(float left, float right, float bottom, float top, fl
 }
 
 Matrix Camera::frustum(float left, float right, float bottom, float top, float near, float far) {
-	float dx = right-left;
-	float dy = top-bottom;
-	float dz = far-near;
+	top = tan(top);
+	left = tan(left);
+	right = tan(right);
+	bottom = tan(bottom);
+
+	float dx = right - left;
+	float dy = top - bottom;
+	float dz = far - near;
+
 	Matrix m;
+	/*
 	m[0] = 2 * near / dx;
 	m[5] = 2 * near / dy;
 	m[8] = (right + left) / dx;
@@ -298,6 +316,23 @@ Matrix Camera::frustum(float left, float right, float bottom, float top, float n
 	m[10] = -(far + near) / dz;
 	m[11] = -1;
 	m[14] = -2 * far * near / dz;
+	m[15] = 0;
+	*/
+
+	// From OpenXR SDK
+	m[0] = 2.f / dx;
+	m[5] = 2.f / dy;
+	m[8] = (right + left) / dx;
+	m[9] = (top + bottom) / dy;
+	if(dz > 0) {
+		m[10] = -(far + near) / dz;
+		m[14] = -2 * far * near / dz;
+	}
+	else { // Infinite far plane
+		m[10] = -1;
+		m[14] = -(near + far);
+	}
+	m[11] = -1;
 	m[15] = 0;
 	return m;
 }
