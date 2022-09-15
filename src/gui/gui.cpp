@@ -319,8 +319,6 @@ Widget* Widget::clone(const char* newType) const {
 
 // ==================================================================================== //
 
-static int skipChangeCallback = 0;
-
 Widget::Widget(const Rect& r, Skin* s): m_rect(r), m_skin(s), m_colour(-1), m_anchor(0), m_layout(0), m_relative(0),
 		m_states(0xf), m_skipTemplate(0), m_parent(0), m_root(0) {
 	m_client = this;
@@ -346,26 +344,30 @@ const Point& Widget::getSize() const {
 }
 
 void Widget::setPosition(int x, int y) {
-	++skipChangeCallback;
 	if(m_parent) x += m_parent->m_rect.x, y += m_parent->m_rect.y;
 	int dx = x-m_rect.x, dy = y-m_rect.y;
-	if(dx==0 && dy==0) { --skipChangeCallback; return; } // No change
+	if(dx==0 && dy==0) return; // No change
+	
+	bool layoutPaused = isLayoutPaused();
+	pauseLayout();
+
 	for(uint i=0; i<m_children.size(); ++i) {
 		Widget* c = m_children[i];
 		Point p = c->getPosition();
 		c->setPosition( p.x+dx, p.y+dy );
 	}
-	--skipChangeCallback;
+
+	if(!layoutPaused) resumeLayout(false);
+
 	m_rect.x = x;
 	m_rect.y = y;
-	if(m_parent && !skipChangeCallback) m_parent->onChildChanged(this);
+	if(m_parent) m_parent->onChildChanged(this);
 	notifyChange();
 }
 void Widget::setSize(int w, int h) {
 	if(w==m_rect.width && h==m_rect.height) return;
 
 	// Update children positions and sizes
-	++skipChangeCallback;
 	if(!m_layout) for(uint i=0; i<m_children.size(); ++i) {
 		Widget* c = m_children[i];
 		if(c->m_relative) {
@@ -397,13 +399,10 @@ void Widget::setSize(int w, int h) {
 			c->setSize(r.width, r.height);
 		}
 	}
-	--skipChangeCallback;
 	m_rect.width = w;
 	m_rect.height = h;
 	if(!isLayoutPaused()) refreshLayout();
-	if(!skipChangeCallback) {
-		if(Widget* parent=getParent()) parent->onChildChanged(this);
-	}
+	if(Widget* parent=getParent()) parent->onChildChanged(this);
 	notifyChange();
 	if(eventResized) eventResized(this);
 }
@@ -796,27 +795,24 @@ void Widget::setLayout(Layout* layout) {
 	if(m_client->m_layout && --m_client->m_layout->ref<=0) delete m_client->m_layout;
 	if(layout) ++layout->ref;
 	m_client->m_layout = layout;
-	if(!isLayoutPaused()) {
-		m_client->refreshLayout();
-		if(m_client != this) updateAutosize();
-	}
+	if(!isLayoutPaused()) refreshLayout();
 }
 Layout* Widget::getLayout() const {
 	return m_client->m_layout;
 }
 
 void Widget::refreshLayout() {
-	++skipChangeCallback;
+	pauseLayout();
 	if(m_client->m_layout) m_client->m_layout->apply(m_client);
 	updateAutosize();
-	--skipChangeCallback;
+	resumeLayout(false);
 }
 
 bool Widget::isLayoutPaused() const { return m_states & 0x400; }
 void Widget::pauseLayout() { m_states |= 0x400; }
-void Widget::resumeLayout() {
+void Widget::resumeLayout(bool update) {
 	m_states &= ~0x400;
-	if(getWidgetCount()) refreshLayout();
+	if(update) refreshLayout();
 }
 
 // =================================================== //

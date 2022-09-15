@@ -106,7 +106,7 @@ void Label::setFontAlign(int a) {
 	m_fontAlign = a;
 }
 const char* Label::getCaption() const {
-	return m_caption;
+	return m_caption.str();
 }
 void Label::draw() const {
 	if(!isVisible()) return;
@@ -1143,7 +1143,10 @@ void CollapsePane::expand(bool e) {
 	}
 	else if(m_header) {
 		m_client->setAnchor(0);
-		setSize(m_header->getSize());
+		Point collapsedSize = m_header->getSize() + m_header->getPosition();
+		if((getAnchor()&0x0f) == 0x05) collapsedSize.x = getSize().x;
+		if((getAnchor()&0xf0) == 0x50) collapsedSize.y = getSize().y;
+		setSize(collapsedSize);
 	}
 	m_client->setVisible(e);
 	

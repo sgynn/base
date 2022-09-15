@@ -217,7 +217,7 @@ class Widget {
 	Layout* getLayout() const;
 	void setLayout(Layout*);
 	void pauseLayout();
-	void resumeLayout();
+	void resumeLayout(bool refresh=true);
 	bool isLayoutPaused() const;
 	virtual void refreshLayout();
 
