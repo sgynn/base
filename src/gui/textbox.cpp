@@ -9,9 +9,9 @@
 using namespace gui;
 
 Textbox::Textbox(const Rect& r, Skin* s) : Widget(r,s)
-	, m_text(0), m_buffer(0), m_length(0), m_cursor(0), m_selectLength(0)
+	, m_buffer(0), m_length(0), m_cursor(0), m_selectLength(0)
 	, m_multiline(false), m_readOnly(false), m_password(0)
-	, m_suffix(0), m_offset(0), m_selection(0)
+	, m_offset(0), m_selection(0)
 {
 	int h = s&&s->getFont()? s->getFont()->getSize('x', s->getFontSize()).y: 16;
 	m_selectRect.set(0,0,1,h);
@@ -24,7 +24,6 @@ Textbox::Textbox(const Rect& r, Skin* s) : Widget(r,s)
 Textbox::~Textbox() {
 	if(m_text) delete [] m_text;
 	if(m_selection) delete [] m_selection;
-	free(m_suffix);
 }
 void Textbox::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("text")) setText(p["text"]);
@@ -32,11 +31,13 @@ void Textbox::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("readonly")) m_readOnly = atoi(p["readonly"]);
 	if(p.contains("password")) m_password = p["password"][0];
 	if(p.contains("suffix")) setSuffix(p["suffix"]);
+	if(p.contains("hint")) setHint(p["hint"]);
 }
 Widget* Textbox::clone(const char* t) const {
 	Widget* w = Widget::clone(t);
 	if(Textbox* t = w->cast<Textbox>()) {
-		t->m_suffix = m_suffix? strdup(m_suffix): 0;
+		t->m_hint = m_hint;
+		t->m_suffix = m_suffix;
 		t->m_selectColour = m_selectColour;
 		t->m_multiline = m_multiline;
 		t->m_readOnly = m_readOnly;
@@ -51,7 +52,7 @@ void Textbox::updateAutosize() {
 		s += m_skin->getState(0).textPos;
 		pauseLayout();
 		setSizeAnchored(s);
-		resumeLayout();
+		resumeLayout(false);
 	}
 }
 
@@ -90,8 +91,11 @@ void Textbox::setPassword(char c) {
 }
 
 void Textbox::setSuffix(const char* s) {
-	free(m_suffix);
-	m_suffix = s && s[0]? strdup(s): 0;
+	m_suffix = s;
+}
+
+void Textbox::setHint(const char* s) {
+	m_hint = s;
 }
 
 int Textbox::getLineCount() const {
@@ -292,7 +296,7 @@ void Textbox::onMouseMove(const Point&, const Point& p, int b) {
 }
 
 
-inline void Textbox::drawText(Point& p, char* t, uint len, uint col) const {
+inline void Textbox::drawText(Point& p, const char* t, uint len, uint col) const {
 	if(len>0 && t[0]) {
 		p = m_root->getRenderer()->drawText(p, t, len, m_skin->getFont(), m_skin->getFontSize(), col);
 	}
@@ -367,6 +371,12 @@ void Textbox::draw() const {
 		tp = m_root->getRenderer()->drawText(tp, m_text, 0, m_skin, getState());
 		if(m_suffix) m_root->getRenderer()->drawText(tp, m_suffix, 0, m_skin, getState());
 		if(hasFocus() && (clock()&0x1000)) m_root->getRenderer()->drawRect(m_selectRect, m_selectColour); // I beam
+
+		if(m_length==0 && m_hint && !hasFocus()) {
+			unsigned hintColour = m_skin->getState(getState()).foreColour;
+			hintColour = (hintColour & 0xffffff) | (hintColour >> 26) << 24;
+			m_root->getRenderer()->drawText(tp, m_hint, 0, m_skin->getFont(), m_skin->getFontSize(), hintColour);
+		}
 	}
 	m_root->getRenderer()->pop();
 	drawChildren();

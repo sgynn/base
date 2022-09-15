@@ -182,6 +182,7 @@ class Textbox : public Widget {
 	void setReadOnly(bool r);
 	void setPassword(char character);
 	void setSuffix(const char*);
+	void setHint(const char*);
 	public:
 	Delegate<void(Textbox*, const char*)> eventChanged;
 	Delegate<void(Textbox*)>              eventSubmit;
@@ -192,24 +193,25 @@ class Textbox : public Widget {
 	void onKey(int code, wchar_t key, KeyMask mask) override;
 	void onMouseButton(const Point&, int, int) override;
 	void onMouseMove(const Point&, const Point&, int) override;
-	void drawText(Point& p, char* t, uint len, uint col) const;
+	void drawText(Point& p, const char* t, uint len, uint col) const;
 	int  indexAt(const Point&) const;
 	void updateOffset(bool end);
 	void updateLineData();
 	private:
-	char* m_text;
-	int   m_buffer;
-	int   m_length;
-	int   m_cursor;
-	int   m_selectLength;
-	Rect  m_selectRect;
-	uint  m_selectColour;
-	bool  m_multiline;
-	bool  m_readOnly;
-	char  m_password;
-	char* m_suffix;
-	int   m_held;
-	int   m_offset;
+	char*  m_text;
+	int    m_buffer;
+	int    m_length;
+	int    m_cursor;
+	int    m_selectLength;
+	Rect   m_selectRect;
+	uint   m_selectColour;
+	bool   m_multiline;
+	bool   m_readOnly;
+	char   m_password;
+	String m_suffix;
+	int    m_held;
+	int    m_offset;
+	String m_hint;
 	mutable char* m_selection;
 	std::vector<int> m_lines; // Start of each line
 };
