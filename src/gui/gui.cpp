@@ -516,7 +516,7 @@ void Widget::setVisible(bool v) {
 }
 
 void Widget::setEnabled(bool v) { m_states = v? m_states|2: m_states&~2; }
-void Widget::setTangible(Tangible t) { m_states = (m_states&0xf3) | ((int)t << 2); }
+void Widget::setTangible(Tangible t) { m_states = (m_states&~0xc) | ((int)t << 2); }
 void Widget::setSelected(bool v) { m_states = v? m_states|0x10: m_states&~0x10; }
 void Widget::setInheritState(bool v) { m_states = v? m_states|0x40: m_states&~0x40; }
 void Widget::setAsTemplate() { m_states |= 0x20; }
