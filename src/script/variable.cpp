@@ -624,6 +624,8 @@ void Variable::erase(const char* v) { if(isObject() && !(type&FIXED)) _erase( lo
 void Variable::erase(uint id)       { if(isObject() && !(type&FIXED)) _erase(id); else if(isArray()) _eraseArray(id, true); }
 int Variable::contains(const char* name) const { return isObject() || isVector()? _contains( lookupName_const(name) ): 0; }
 int Variable::contains(uint id) const          { return isObject() || isVector()? _contains( id ): isArray()? id<obj->items.size(): 0; }
+int Variable::contains(const VariableName& name) const { return get_const(name).isValid(); }
+
 Variable& Variable::get_const(const char* name) const  { return isArray()? nullVar: get( lookupName_const(name) ); }
 Variable& Variable::get(const char* name) const        { return isArray()? nullVar: get( lookupName_const(name) ); }
 Variable& Variable::get(const char* name)              { return isArray()? nullVar: get( lookupName(name) ); }

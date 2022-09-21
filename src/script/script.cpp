@@ -155,11 +155,11 @@ Variable Expression::opValue(const Operand& v, Context&& context) {
 Variable& Expression::opVariableRef(const Operand& o, Context&& context) {
 	Variable* v;
 	switch(o.type) {
-	case NAME: 
+	case NAME:  // name = ?
 		v = &context.getw(o.var);
 		if(!v->isValid()) v = &context.set(o.var, Variable());
 		return *v;
-	case COMPOUNDNAME:
+	case COMPOUNDNAME: // name.name = ?
 		v = &context.getw(o.cvar[0]);
 		if(!v->isValid()) return context.set(o.cvar, Variable()); // New variable
 		for(uint* n=o.cvar+1; *n!=~0u; ++n) {

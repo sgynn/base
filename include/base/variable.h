@@ -158,6 +158,7 @@ namespace script {
 		void erase(uint id);					// Erase sub variable
 		int contains(const char* name) const;	// Does this object contain a variable
 		int contains(uint id) const;			// Does this object contain a variable
+		int contains(const VariableName&) const;// Does this object contain a variable
 		int size() const;						// Number of elements if an object type
 		int getReferenceCount() const;			// Get reference count of object types
 
