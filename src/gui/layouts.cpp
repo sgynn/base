@@ -38,18 +38,17 @@ void HorizontalLayout::apply(Widget* p) const {
 	float totalSpring = 0;
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf)==0x5) totalSpring += max(1, w->getSize().x); // lr
+		if((w->getAnchor()&0xf)==0x5) totalSpring += w->isRelative()? getRelativeValues(w)[2]: 1.f; // lr
 		else total += w->getSize().x;
 	}
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
 		if((w->getAnchor()&0xf)==0x5) {
-			float spring = max(1,w->getSize().x) / totalSpring;
-			float s = (p->getSize().x - total) * spring;
+			if(totalSpring==0) totalSpring = 1;
+			float amount = (w->isRelative()? getRelativeValues(w)[2]: 1.f) / totalSpring;
+			float s = (p->getSize().x - total) * amount;
 			w->setSize(s<0?0:s, w->getSize().y);
 			// FixMe: rounding errors
-			// Problem if all springs = 0, we lose any relative sizing
-			// Ideally we need to store a fill percentage somewhere
 		}
 		slot.width = w->getSize().x;
 		assignSlot(slot, w);
@@ -78,17 +77,16 @@ void VerticalLayout::apply(Widget* p) const {
 	float totalSpring = 0;
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf0)==0x50) totalSpring += max(1,w->getSize().y); // tb
+		if((w->getAnchor()&0xf0)==0x50) totalSpring += w->isRelative()? getRelativeValues(w)[3]: 1.f; // tb
 		else total += w->getSize().y;
 	}
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
 		if((w->getAnchor()&0xf0)==0x50) {
-			float spring = max(1,w->getSize().y) / totalSpring;
-			float s = (p->getSize().y - total) * spring;
+			if(totalSpring==0) totalSpring = 1;
+			float amount = (w->isRelative()? getRelativeValues(w)[3]: 1.f) / totalSpring;
+			float s = (p->getSize().y - total) * amount;
 			w->setSize(w->getSize().x, s<0?0:s);
-			// FixMe: rounding errors
-			// Problem if all springs = 0, we lose any relative sizing
 		}
 		slot.height = w->getSize().y;
 		assignSlot(slot, w);

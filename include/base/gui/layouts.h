@@ -18,6 +18,7 @@ namespace gui {
 		int getSpacing() const { return m_space; }
 		protected:
 		const std::vector<Widget*>& getWidgets(const Widget* w) const { return w->m_children; }
+		const float* getRelativeValues(const Widget* w) const { return w->m_relative; }
 		void assignSlot(const Rect& slot, class Widget*) const;
 		int m_margin, m_space;
 		private:

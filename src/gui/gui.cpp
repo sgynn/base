@@ -607,6 +607,7 @@ void Widget::raise() {
 			}
 		}
 		list.push_back(this);
+		m_parent->refreshLayout();
 	}
 }
 void Widget::setFocus() {
