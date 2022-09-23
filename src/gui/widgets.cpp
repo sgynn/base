@@ -534,8 +534,11 @@ void Spinbox::setValue(int v) {
 		sprintf(buf, "%d", value);
 		m_text->setText(buf);
 	}
-	if(value != m_value && eventChanged) eventChanged(this, value);
-	m_value = value;
+
+	if(value != m_value) {
+		m_value = value;
+		if(eventChanged) eventChanged(this, value);
+	}
 }
 void Spinbox::setSuffix(const char* s)   { if(m_text) m_text->setSuffix(s); }
 void Spinbox::setRange(int min, int max) { m_min=min, m_max=max; setValue(m_value); }
@@ -602,8 +605,10 @@ void SpinboxFloat::setValue(float v) {
 		sprintf(buf, "%g", value);
 		m_text->setText(buf);
 	}
-	if(value != m_value && eventChanged) eventChanged(this, value);
-	m_value = value;
+	if(value != m_value) {
+		m_value = value;
+		if(eventChanged) eventChanged(this, value);
+	}
 }
 void SpinboxFloat::setSuffix(const char* s)   { if(m_text) m_text->setSuffix(s); }
 void SpinboxFloat::setRange(float min, float max) { m_min=min, m_max=max; setValue(m_value); }
