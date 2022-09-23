@@ -34,43 +34,57 @@ void Layout::assignSlot(const Rect& slot, Widget* w) const {
 
 void HorizontalLayout::apply(Widget* p) const {
 	Rect slot(m_margin,m_margin,0,p->getSize().y-2*m_margin);
-	int total = m_space * (p->getWidgetCount() - 1) + 2 * m_margin;
+	int total = m_space * (getWidgets(p).size() - 1) + 2 * m_margin;
 	float totalSpring = 0;
-	for(Widget* w: *p) {
+	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf)==0x5) totalSpring += w->getSize().x; // lr
+		if((w->getAnchor()&0xf)==0x5) totalSpring += max(1, w->getSize().x); // lr
 		else total += w->getSize().x;
 	}
-	for(Widget* w: *p) {
+	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
 		if((w->getAnchor()&0xf)==0x5) {
-			float spring = w->getSize().x / totalSpring;
+			float spring = max(1,w->getSize().x) / totalSpring;
 			float s = (p->getSize().x - total) * spring;
 			w->setSize(s<0?0:s, w->getSize().y);
 			// FixMe: rounding errors
 			// Problem if all springs = 0, we lose any relative sizing
+			// Ideally we need to store a fill percentage somewhere
 		}
 		slot.width = w->getSize().x;
 		assignSlot(slot, w);
 		slot.x += slot.width + m_space;
 	}
 }
+Point HorizontalLayout::getMinimumSize(const Widget* p) const {
+	Point size(0,0);
+	for(Widget* w: getWidgets(p)) {
+		size.x += m_space;
+		if(w->getAnchor() == 0x55 || !w->isVisible()) continue;
+		Point s = w->getPreferredSize();
+		if((w->getAnchor()&0xf) != 5) size.x += s.x;
+		if(w->getAnchor()>>4 != 5) size.y = max(size.y, s.y);
+	}
+	size.x -= m_space;
+	size += m_margin;
+	return size;
+}
 
 // ======================================================================= //
 
 void VerticalLayout::apply(Widget* p) const {
 	Rect slot(m_margin, m_margin, p->getSize().x - 2*m_margin, 0);
-	int total = m_space * (p->getWidgetCount() - 1) + 2 * m_margin;
+	int total = m_space * (getWidgets(p).size() - 1) + 2 * m_margin;
 	float totalSpring = 0;
-	for(Widget* w: *p) {
+	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf0)==0x50) totalSpring += w->getSize().y; // tb
+		if((w->getAnchor()&0xf0)==0x50) totalSpring += max(1,w->getSize().y); // tb
 		else total += w->getSize().y;
 	}
-	for(Widget* w: *p) {
+	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
 		if((w->getAnchor()&0xf0)==0x50) {
-			float spring = w->getSize().y / totalSpring;
+			float spring = max(1,w->getSize().y) / totalSpring;
 			float s = (p->getSize().y - total) * spring;
 			w->setSize(w->getSize().x, s<0?0:s);
 			// FixMe: rounding errors
@@ -81,13 +95,26 @@ void VerticalLayout::apply(Widget* p) const {
 		slot.y += slot.height + m_space;
 	}
 }
+Point VerticalLayout::getMinimumSize(const Widget* p) const {
+	Point size(0,0);
+	for(Widget* w: getWidgets(p)) {
+		size.y += m_space;
+		if(w->getAnchor() == 0x55 || !w->isVisible()) continue;
+		Point s = w->getPreferredSize();
+		if((w->getAnchor()&0xf) != 5) size.x = max(size.x, s.x);
+		if(w->getAnchor()>>4 != 5) size.y += s.y;
+	}
+	size.y -= m_space;
+	size += m_margin;
+	return size;
+}
 
 // ======================================================================= //
 
 void FlowLayout::apply(Widget* p) const {
 	Rect slot(m_margin, m_margin, 0, 0);
 	int height = 0;
-	for(Widget* w: *p) {
+	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
 		slot.size() = w->getSize();
 		if(slot.right() > p->getSize().x-m_margin && slot.x>m_margin) slot.x=m_margin, slot.y+=height+m_space, height=0;
@@ -97,19 +124,56 @@ void FlowLayout::apply(Widget* p) const {
 	}
 }
 
+Point FlowLayout::getMinimumSize(const Widget* p) const {
+	Point size(0,0);
+	if(getWidgets(p).size() > 0) {
+		int baseWidth = p->getSize().x;
+		int bottom=m_margin, right = m_margin - m_space;
+		for(Widget* w: getWidgets(p)) {
+			if(!w->isVisible()) continue;
+			Point s = w->getPreferredSize();
+			if(right + m_space + s.x < baseWidth) {
+				right += s.x + m_space;
+			}
+			else {
+				bottom = size.y;
+				right = size.x + m_margin;
+			}
+			size.x = max(size.x, right);
+			size.y = max(size.y, bottom + s.y);
+		}
+		size += m_margin;
+	}
+	else size += 2 * m_margin;
+	return size;
+}
+
 // ======================================================================= //
 
 void FixedGridLayout::apply(Widget* p) const {
 	Rect slot(m_margin,m_margin,0,0);
-	for(Widget* w: *p) {
+	for(Widget* w: getWidgets(p)) {
 		slot.width = max(slot.width, w->getSize().x);
 		slot.height = max(slot.height, w->getSize().y);
 	}
-	for(Widget* w: *p) {
+	for(Widget* w: getWidgets(p)) {
 		assignSlot(slot, w);
 		slot.x += slot.width + m_space;
 		if(slot.right() > p->getSize().x-m_margin) slot.x=m_margin, slot.y += slot.height+m_space;
 	}
+}
+Point FixedGridLayout::getMinimumSize(const Widget* p) const {
+	if(getWidgets(p).size() == 0) return Point(m_margin*2, m_margin*2);
+	Point slot;
+	for(Widget* w: getWidgets(p)) {
+		Point s = w->getPreferredSize();
+		slot.x = max(slot.x, s.x);
+		slot.y = max(slot.y, s.y);
+	}
+	int columns = max(1, p->getSize().x - 2*m_margin + m_space / (slot.x + m_space));
+	int rows = getWidgets(p).size() / columns;
+	return Point(columns * slot.x + (columns-1) * m_space + 2 * m_margin,
+				 rows * slot.y + (rows-1) * m_space + 2 * m_margin);
 }
 
 // ======================================================================= //
@@ -157,3 +221,8 @@ void DynamicGridLayout::apply(Widget* p) const {
 	}
 }
 
+Point DynamicGridLayout::getMinimumSize(const Widget* p) const {
+	Point size;
+	// complicated
+	return size;
+}

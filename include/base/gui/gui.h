@@ -112,6 +112,7 @@ class PropertyMap : public base::HashMap<const char*> {
 /** Gui widget base class */
 class Widget {
 	friend class Root;
+	friend class Layout;
 	RTTI_BASE(Widget);
 
 	public:
@@ -135,6 +136,7 @@ class Widget {
 
 	Point getPosition() const;
 	const Point& getSize() const;
+	virtual Point getPreferredSize() const;		// If autoSize, gets the target size
 
 	void setAnchor(int code);			// Set anchor code
 	void setAnchor(const char*);		// Set anchor string

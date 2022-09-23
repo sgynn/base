@@ -46,22 +46,30 @@ void Label::setSize(int w, int h) {
 	Widget::setSize(w, h);
 	if(m_wordWrap) updateWrap();
 }
+Point Label::getPreferredSize() const {
+	if(!isAutosize() || !m_skin || !m_skin->getFont()) return getSize();
+	const char* t = m_caption? m_caption.str(): "XX";
+	int fontSize = m_fontSize? m_fontSize: m_skin->getFontSize();
+	Point size;
+	if(m_wrapValues.empty()) size = m_skin->getFont()->getSize(t, fontSize);
+	else {
+		char* cap = const_cast<char*>((const char*)m_caption); // nasty
+		for(int w: m_wrapValues) cap[w] = '\n';
+		size = m_skin->getFont()->getSize(t, fontSize);
+		for(int w: m_wrapValues) cap[w] = ' ';
+	}
+	Point& offset = m_skin->getState(0).textPos; // Approximate - could have weird effects
+	size += offset + offset;
+	assert(size.x<5000 && size.y<5000);
+	return size;
+}
 void Label::updateAutosize() {
-	if(isAutosize() && m_skin->getFont()) {
-		const char* t = m_caption? m_caption.str(): "XX";
-		int fontSize = m_fontSize? m_fontSize: m_skin->getFontSize();
-		Point size;
-		if(m_wrapValues.empty()) size = m_skin->getFont()->getSize(t, fontSize);
-		else {
-			for(int w: m_wrapValues) m_caption[w] = '\n';
-			size = m_skin->getFont()->getSize(t, fontSize);
-			for(int w: m_wrapValues) m_caption[w] = ' ';
-		}
-		assert(size.x<5000 && size.y<5000);
-		Point& offset = m_skin->getState(0).textPos;
+	if(isAutosize()) {
 		Point lastSize = getSize();
-		setSizeAnchored(Point(size.x + 2*offset.x, size.y + 2*offset.y));
-		// Align dictates direction
+		Point newSize = getPreferredSize();
+		setSizeAnchored(newSize);
+		
+		// Font alignment dictates resize direction
 		int a = m_fontAlign? m_fontAlign: m_skin->getFontAlign();
 		if(a&10) {
 			Point p = getPosition();
@@ -191,10 +199,11 @@ Widget* Icon::clone(const char* nt) const {
 	w->m_iconIndexAlt = m_iconIndexAlt;
 	return w;
 }
-void Icon::updateAutosize() {
+Point Icon::getPreferredSize() const {
 	if(isAutosize() && m_iconList && m_iconIndex>=0) {
-		setSizeAnchored(m_iconList->getIconRect(m_iconIndex).size());
+		return m_iconList->getIconRect(m_iconIndex).size();
 	}
+	return getSize();
 }
 void Icon::draw() const {
 	if(!isVisible() || !m_iconList) return;
@@ -246,11 +255,11 @@ int Image::getImage() const {
 	return m_image;
 }
 
-void Image::updateAutosize() {
+Point Image::getPreferredSize() const {
 	if(isAutosize() && m_image>=0 && m_root) {
-		Point s = m_root->getRenderer()->getImageSize(m_image);
-		setSizeAnchored(s);
+		return m_root->getRenderer()->getImageSize(m_image);
 	}
+	return getSize();
 }
 
 void Image::draw() const {
@@ -313,6 +322,10 @@ void Button::draw() const {
 void Button::onMouseButton(const Point& p, int d, int u) {
 	Widget::onMouseButton(p, d, u);
 	if(hasFocus() && u==1 && eventPressed && m_rect.contains(p)) eventPressed(this);
+}
+Point Button::getPreferredSize() const {
+	if(m_caption) return Label::getPreferredSize();
+	else return Widget::getPreferredSize();
 }
 void Button::updateAutosize() {
 	if(m_caption) Label::updateAutosize();
@@ -836,13 +849,21 @@ void Scrollpane::ensureVisible(const Point& p) {
 	printf("-> Offset %d,%d\n", getOffset().x, getOffset().y);
 }
 
+Point Scrollpane::getPreferredSize() const {
+	return getSize();
+}
+
 void Scrollpane::updateAutosize() {
 	if(this == m_client) return;	// Stop infinite recursion
 	// Autosize pane
 	if(isAutosize()) {
 		// No widgets
 		if(getWidgetCount() == 0) {
-			setPaneSize(0,0);
+			if(m_useFullSize) {
+				Point view = getViewWidget()->getSize();
+				setPaneSize(view.x, view.y);
+			}
+			else setPaneSize(0,0);
 		}
 		else {
 			// Calculate size

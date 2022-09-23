@@ -429,9 +429,42 @@ void Widget::setSizeAnchored(const Point& s) {
 	if(size != getSize()) setSize(size);
 }
 
+Point Widget::getPreferredSize() const { // Minimum size
+	if(isAutosize()) {
+		Point newSize(0, 0);
+		const Point& clientSize = m_client->getSize();
+		if(m_layout) return m_layout->getMinimumSize(this);
+		else {
+			auto setMax = [](int& value, int other) { if(other>value) value=other; };
+			for(Widget* w: m_client->m_children) {
+				if(w->isVisible()) {
+					const Rect r(w->getPosition(), w->getPreferredSize());
+					switch(w->m_anchor&0xf) {
+					case 0: case 1: setMax(newSize.x, r.right()); break;
+					case 2:  setMax(newSize.x, r.width); break;
+					case 4:  setMax(newSize.x, r.width + abs(r.x + r.width/2 - clientSize.x/2)); break;
+					default: setMax(newSize.x, r.x + clientSize.x-r.right()); break;
+					}
+					switch(w->m_anchor>>4) {
+					case 0: case 1: setMax(newSize.y, r.bottom()); break;
+					case 2:  setMax(newSize.y, r.height); break;
+					case 4:  setMax(newSize.y, r.height + abs(r.y + r.height/2 - clientSize.y/2)); break;
+					default: setMax(newSize.y, r.y + clientSize.y-r.bottom()); break;
+					}
+				}
+			}
+			return newSize + getSize() - clientSize;
+		}
+	}
+	return getSize();
+}
+
 void Widget::updateAutosize() {
-	if(m_client->m_children.empty() || !isAutosize()) return;
+	if(!isAutosize()) return;
 	if(m_client != this && m_client->m_anchor != 0x55) return; // client must resize with widget for autosize
+	
+
+	/*
 	const Point& clientSize = m_client->getSize();
 	int margin = getLayout()? getLayout()->getMargin(): 0;
 	Point newSize;
@@ -454,6 +487,9 @@ void Widget::updateAutosize() {
 		}
 	}
 	newSize += getSize() - clientSize;
+	*/
+
+	Point newSize = getPreferredSize();
 	assert(newSize.x<5000 && newSize.y<5000);
 	setSizeAnchored(newSize);
 }

@@ -17,6 +17,7 @@ class Label : public Widget {
 	Label(const Rect&, Skin*, const char* c="");
 	virtual void draw() const override;
 	virtual void setSize(int w, int h) override;
+	virtual Point getPreferredSize() const override;
 	virtual void setCaption(const char*);
 	virtual const char* getCaption() const;
 	virtual void setWordWrap(bool w);
@@ -52,8 +53,8 @@ class Icon : public Widget {
 	float getAngle() const { return m_angle; }
 	void draw() const override;
 	void initialise(const Root*, const PropertyMap&) override;
+	Point getPreferredSize() const override;
 	protected:
-	void updateAutosize() override;
 	virtual Widget* clone(const char*) const override;
 	IconList* m_iconList;
 	int       m_iconIndex;
@@ -88,10 +89,10 @@ class Image : public Widget {
 	void  setAngle(float a) { m_angle=a; }
 	float getAngle() const { return m_angle; }
 	void  draw() const override;
+	Point getPreferredSize() const override;
 	protected:
 	virtual void initialise(const Root*, const PropertyMap&) override;
 	virtual Widget* clone(const char*) const override;
-	void updateAutosize() override;
 	int      m_image;
 	float    m_angle;
 };
@@ -104,6 +105,7 @@ class Button : public Label, public IconInterface {
 	void setCaption(const char*) override;
 	const char* getCaption() const override;
 	void draw() const override;
+	Point getPreferredSize() const override;
 	public: // Events
 	Delegate<void(Button*)> eventPressed;
 	protected:
@@ -321,6 +323,7 @@ class Scrollpane : public Widget {
 	void setPaneSize(int width, int height);	// Set size of scrollable panel
 	void useFullSize(bool m);					// Minimum size of panel is widget size. Also locks size if no scrollbar
 	Widget* clone(const char*) const override;
+	Point getPreferredSize() const;
 	using Widget::add;							// import add funtions from widget
 	void add(Widget* w, unsigned index) override;// Adding child widgets resizes pane if in autosize mode
 	void setSize(int w, int h) override;
