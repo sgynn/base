@@ -267,12 +267,12 @@ Renderer::Batch* Renderer::getBatch(const Rect& box, int image, float line) {
 		}
 	}
 
-	// Overlaps
+	// Do we overlap with any later batches
 	if(result) for(Batch* b = result->next; b&&result; b=b->next) {
 		for(const Rect& r: b->coverage) {
 			if(r.intersects(box)) {
 				result = 0;
-				if(!needScissor) needScissor = 1;
+				if(!needScissor) needScissor = ~0u; // // Keep active scissor
 				break;
 			}
 		}
@@ -297,7 +297,9 @@ Renderer::Batch* Renderer::getBatch(const Rect& box, int image, float line) {
 		}
 		else {
 			m_head->next = result;
-			result->scissor = needScissor? m_scissor[needScissor]: m_head->scissor;
+			if(needScissor == 0) result->scissor = m_head->scissor;
+			else if(needScissor == ~0u) result->scissor = activeScissor;
+			else result->scissor = m_scissor[needScissor];
 			m_head = result;
 		}
 		if(activeIndex<m_active.size()) m_active[activeIndex] = result;
@@ -360,7 +362,7 @@ void Renderer::buildRenderBatches() {
 	size_t index = 0;
 	Batch* previous = m_batches;
 	for(Batch* b = m_batches; b; b=b->next) {
-		if(b->indices.empty()) continue;
+		if(b->indices.empty() || b->scissor.width<=0 || b->scissor.height<=0) continue;
 		if(m_renderData.size() <= index) m_renderData.emplace_back();
 		RenderBatch& r = m_renderData[index++];
 		if(!r.vao) {
@@ -437,7 +439,7 @@ void Renderer::end() {
 	glUniformMatrix4fv(loc, 1, false, transform); // 1 should be the right location. Static though so we could use a buffer
 	float lineWidth = 1;
 	for(const RenderBatch& b: m_renderData) {
-		if(b.size==0) break;
+		if(b.size==0) continue;
 		if(b.scissor.width) glScissor(b.scissor.x*wx/sx, wy - b.scissor.bottom()*wy/sy, b.scissor.width*wx/sx, b.scissor.height*wy/sy);
 		if(b.line && b.line!=lineWidth) lineWidth=b.line, glLineWidth(b.line);
 		glBindVertexArray(b.vao);
