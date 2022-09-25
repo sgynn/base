@@ -79,6 +79,7 @@ class Renderer {
 	virtual void  drawRect(const Rect&, unsigned colour=0xffffffff);
 	virtual void  drawIcon(IconList* list, int index, const Rect& dest, float angle=0, unsigned colour=-1);
 	virtual void  drawImage(int image, const Rect& rect, float angle=0, unsigned colour=0xffffff, float alpha=1.0);
+	virtual void  drawGradient(int image, const Rect&, unsigned c0, unsigned c1, int axis);
 	virtual void  drawLineStrip(int count, const Point* line, float width, const Point& offset, unsigned colour=-1);
 
 	// Clipping
@@ -130,7 +131,7 @@ class Renderer {
 	unsigned createShader();
 	void buildRenderBatches();
 
-	void  drawBox(const Rect& rect, int image, const Rect& src, unsigned colour, float angle=0);
+	void  drawBox(const Rect& rect, int image, const Rect& src, const unsigned* colour, bool gradient=false, float angle=0);
 	void  drawNineSlice(const Rect& rect, int image, const Rect& src, const Skin::Border& border, unsigned colour);
 
 	public:

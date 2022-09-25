@@ -467,8 +467,8 @@ void Renderer::pop() { m_scissor.pop_back(); }
 
 // ==================================================== //
 
-void Renderer::drawBox(const Rect& rect, int image, const Rect& src, unsigned colour, float angle) {
-	if(colour>>24==0) return; // fully transparent
+void Renderer::drawBox(const Rect& rect, int image, const Rect& src, const unsigned* colour, bool gradient, float angle) {
+	if(colour[0]>>24==0 && !gradient) return; // fully transparent
 	Batch* batch = getBatch(rect, image);
 	if(!batch) return;
 	Batch& b = *batch;
@@ -479,10 +479,10 @@ void Renderer::drawBox(const Rect& rect, int image, const Rect& src, unsigned co
 	const float oy = m_images[image].offY;
 
 	unsigned short start = b.vertices.size();
-	b.vertices.emplace_back(rect.x,       rect.y,        src.x*ix+ox+ix/2,       src.y*iy+oy+iy/2,        colour);
-	b.vertices.emplace_back(rect.right(), rect.y,        src.right()*ix+ox-ix/2, src.y*iy+oy+iy/2,        colour);
-	b.vertices.emplace_back(rect.x,       rect.bottom(), src.x*ix+ox+ix/2,       src.bottom()*iy+oy-iy/2, colour);
-	b.vertices.emplace_back(rect.right(), rect.bottom(), src.right()*ix+ox-ix/2, src.bottom()*iy+oy-iy/2, colour);
+	b.vertices.emplace_back(rect.x,       rect.y,        src.x*ix+ox+ix/2,       src.y*iy+oy+iy/2,        colour[0]);
+	b.vertices.emplace_back(rect.right(), rect.y,        src.right()*ix+ox-ix/2, src.y*iy+oy+iy/2,        colour[1&gradient]);
+	b.vertices.emplace_back(rect.x,       rect.bottom(), src.x*ix+ox+ix/2,       src.bottom()*iy+oy-iy/2, colour[2&gradient]);
+	b.vertices.emplace_back(rect.right(), rect.bottom(), src.right()*ix+ox-ix/2, src.bottom()*iy+oy-iy/2, colour[3&gradient]);
 	
 	if(angle != 0) {
 		float sinAngle = sin(angle);
@@ -628,24 +628,31 @@ void Renderer::drawSkin(const Skin* skin, const Rect& r, unsigned colour, int st
 	if(s.border.top || s.border.left || s.border.right || s.border.bottom) {
 		drawNineSlice(r, skin->getImage(), s.rect, s.border, colour); 
 	}
-	else drawBox(r, skin->getImage(), s.rect, colour);
+	else drawBox(r, skin->getImage(), s.rect, &colour);
 	if(text && text[0]) drawText(r, text, 0, skin, state);
 }
 
 void Renderer::drawRect(const Rect& r, uint colour) {
-	drawBox(r, 0, Rect(0,0,1,1), colour);
+	drawBox(r, 0, Rect(0,0,1,1), &colour);
 }
 
 void Renderer::drawImage(int image, const Rect& r, float angle, uint colour, float alpha) {
 	Point s = getImageSize(image);
 	colour |= (int)(alpha*0xff) << 24;
-	drawBox(r, image, Rect(0,0,s.x,s.y), colour, angle);
+	drawBox(r, image, Rect(0,0,s.x,s.y), &colour, 0, angle);
 }
 
 void Renderer::drawIcon(IconList* list, int index, const Rect& r, float angle, unsigned colour) {
 	if(!list || index<0 || index>=list->size()) return;
 	const Rect& src = list->getIconRect(index);
-	drawBox(r, list->getImageIndex(), src, colour, angle);
+	drawBox(r, list->getImageIndex(), src, &colour, 0, angle);
+}
+
+void Renderer::drawGradient(int image, const Rect& r, unsigned c0, unsigned c1, int axis) {
+	unsigned c[4] = {c0,c1,c0,c1};
+	if(axis) c[1]=c0, c[2]=c1;
+	Point s = getImageSize(image);
+	drawBox(r, image, Rect(0,0,s.x,s.y), c, true);
 }
 
 
