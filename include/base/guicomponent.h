@@ -20,13 +20,14 @@ class GUIComponent : public GameStateComponent {
 		else {
 			m_gui->mouseEvent(Point(mouse.x*m_mult, Game::height()-mouse.y*m_mult), mouse.button, wheel);
 		}
+		bool textboxWasFocused = m_gui->getFocusedWidget()->cast<gui::Textbox>();
 		if(Game::LastKey() && !hasComponentFlags(BLOCK_KEYS)) {
 			m_gui->keyEvent(Game::LastKey(), Game::LastChar());
 		}
 		m_gui->update();
 		if(m_gui->getWidgetUnderMouse()) setComponentFlags(BLOCK_MOUSE);
 		if(m_gui->getWheelEventConsumed()) setComponentFlags(BLOCK_WHEEL);
-		if(m_gui->getFocusedWidget()->cast<gui::Textbox>()) setComponentFlags(BLOCK_KEYS);
+		if(textboxWasFocused) setComponentFlags(BLOCK_KEYS);
 	}
 	void draw() override {
 		m_gui->draw(Game::getSize());

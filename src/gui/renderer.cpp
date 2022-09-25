@@ -600,6 +600,7 @@ void Renderer::drawLineStrip(int count, const Point* line, float width, const Po
 	if(count==0) return;
 	Rect rect(line[0].x, line[0].y, 0, 0);
 	for(int i=1; i<count; ++i) rect.include(line[i]);
+	rect.position() += offset;
 	Batch* b = getBatch(rect, 0, width);
 	if(b) {
 		// Split multiple line strips
