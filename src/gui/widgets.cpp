@@ -507,153 +507,88 @@ void ProgressBar::initialise(const Root* r, const PropertyMap& p) {
 
 // ===================================================================================== //
 
-Spinbox::Spinbox(const Rect& r, Skin* s) : Widget(r,s), m_text(0), m_value(0), m_min(0), m_max(100), m_textChanged(false) {}
-void Spinbox::initialise(const Root*, const PropertyMap& p) {
-	if(p.contains("value")) m_value = atoi(p["value"]);
-	if(p.contains("min")) m_min = atoi(p["min"]);
-	if(p.contains("max")) m_max = atoi(p["max"]);
-	m_text = getTemplateWidget("_text")->cast<Textbox>();
-	if(m_text && p.contains("suffix")) m_text->setSuffix(p["suffix"]);
-	Button* inc = getTemplateWidget("_inc")->cast<Button>();
-	Button* dec = getTemplateWidget("_dec")->cast<Button>();
-	if(inc) inc->eventPressed.bind(this, &Spinbox::pressInc);
-	if(dec) dec->eventPressed.bind(this, &Spinbox::pressDec);
-	if(m_text) {
-		m_text->eventChanged.bind(this, &Spinbox::textChanged);
-		m_text->eventSubmit.bind(this, &Spinbox::textSubmit);
-		m_text->eventLostFocus.bind(this, &Spinbox::textLostFocus);
-		m_text->eventMouseWheel.bind(this, &Spinbox::mouseWheel);
-		setValue(m_value);
-	}
+template<typename T> SpinboxT<T>::SpinboxT(const Rect& r, Skin* s, const char* format) 
+	: Widget(r,s), m_text(0), m_value(0), m_min(0), m_max(0), m_buttonStep(1), m_wheelStep(1), m_textChanged(false), m_format(format) {
 }
-int  Spinbox::getValue() const { return m_value; }
-void Spinbox::setValue(int v) {
-	int value = v<m_min? m_min: v>m_max? m_max: v;
-	if(m_text) {
-		char buf[16];
-		sprintf(buf, "%d", value);
-		m_text->setText(buf);
-	}
-
-	if(value != m_value) {
-		m_value = value;
-		if(eventChanged) eventChanged(this, value);
-	}
-}
-void Spinbox::setSuffix(const char* s)   { if(m_text) m_text->setSuffix(s); }
-void Spinbox::setRange(int min, int max) { m_min=min, m_max=max; setValue(m_value); }
-void Spinbox::pressInc(Button*)          { setValue(m_value+1); }
-void Spinbox::pressDec(Button*)          { setValue(m_value-1); }
-void Spinbox::textSubmit(Textbox*)       { parseText(); }
-void Spinbox::textLostFocus(Widget*)     { parseText(); }
-void Spinbox::mouseWheel(Widget*, int w) { parseText(); setValue( m_value + w); }
-void Spinbox::textChanged(Textbox*, const char* text) {
-	// remove any non-numbers
-	int good = true;
-	for(const char* c=text; *c; ++c) {
-		if((*c<'0' || *c > '9') && !(*c == '-' && c==text)) good = false;
-	}
-	// Remove bad characers
-	if(!good) {
-		char buf[32];
-		int i=0;
-		for(const char* c=text; *c; ++c) {
-			if(!(*c<'0' || *c > '9') || (*c == '-' && c==text)) buf[i++]=*c;
-		}
-		buf[i] = 0;
-		m_text->setText(buf);
-	}
-	m_textChanged = true;
-}
-void Spinbox::parseText() {
-	if(m_textChanged) {
-		char* e;
-		const char* text = m_text->getText();
-		int v = strtol(text, &e, 10);
-		if(e!=text) setValue(v);
-		m_textChanged = false;
-	}
-}
-
-// ===================================================================================== //
-
-SpinboxFloat::SpinboxFloat(const Rect& r, Skin* s) : Widget(r,s), m_text(0), m_value(0), m_min(-1e8f), m_max(1e8f), m_buttonStep(1), m_wheelStep(0.1), m_textChanged(false) {}
-void SpinboxFloat::initialise(const Root*, const PropertyMap& p) {
+template<typename T> void SpinboxT<T>::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("value")) m_value = atof(p["value"]);
 	if(p.contains("min")) m_min = atof(p["min"]);
 	if(p.contains("max")) m_max = atof(p["max"]);
-	if(p.contains("step")) m_buttonStep = atof(p["step"]);
+	if(p.contains("step")) m_buttonStep = m_wheelStep = atof(p["step"]);
 	m_text = getTemplateWidget("_text")->cast<Textbox>();
 	if(m_text && p.contains("suffix")) m_text->setSuffix(p["suffix"]);
 	Button* inc = getTemplateWidget("_inc")->cast<Button>();
 	Button* dec = getTemplateWidget("_dec")->cast<Button>();
-	if(inc) inc->eventPressed.bind(this, &SpinboxFloat::pressInc);
-	if(dec) dec->eventPressed.bind(this, &SpinboxFloat::pressDec);
+	if(inc) inc->eventPressed.bind(this, &SpinboxT<T>::pressInc);
+	if(dec) dec->eventPressed.bind(this, &SpinboxT<T>::pressDec);
 	if(m_text) {
-		m_text->eventChanged.bind(this, &SpinboxFloat::textChanged);
-		m_text->eventSubmit.bind(this, &SpinboxFloat::textSubmit);
-		m_text->eventLostFocus.bind(this, &SpinboxFloat::textLostFocus);
-		m_text->eventMouseWheel.bind(this, &SpinboxFloat::mouseWheel);
+		m_text->eventChanged.bind(this, &SpinboxT<T>::textChanged);
+		m_text->eventSubmit.bind(this, &SpinboxT<T>::textSubmit);
+		m_text->eventLostFocus.bind(this, &SpinboxT<T>::textLostFocus);
+		m_text->eventMouseWheel.bind(this, &SpinboxT<T>::mouseWheel);
 		setValue(m_value);
 	}
 }
-float SpinboxFloat::getValue() const { return m_value; }
-void SpinboxFloat::setValue(float v) {
-	float value = v<m_min? m_min: v>m_max? m_max: v;
+template<typename T> void SpinboxT<T>::setStep(T b, T w) { m_buttonStep=b; m_wheelStep=w; }
+template<typename T> T SpinboxT<T>::getValue() const { return m_value; }
+template<typename T> void SpinboxT<T>::setValue(T v, bool event) {
+	T value = v<m_min? m_min: v>m_max? m_max: v;
 	if(m_text) {
+		int n;
 		char buf[16];
-		sprintf(buf, "%g", value);
+		sprintf(buf, m_format, value, &n);
 		m_text->setText(buf);
 	}
 	if(value != m_value) {
 		m_value = value;
-		if(eventChanged) eventChanged(this, value);
+		if(event) fireChanged();
 	}
 }
-void SpinboxFloat::setSuffix(const char* s)   { if(m_text) m_text->setSuffix(s); }
-void SpinboxFloat::setRange(float min, float max) { m_min=min, m_max=max; setValue(m_value); }
-void SpinboxFloat::setStep(float btn, float w) { m_buttonStep=btn; m_wheelStep=w; }
-void SpinboxFloat::pressInc(Button*)          { setValue(m_value+m_buttonStep); }
-void SpinboxFloat::pressDec(Button*)          { setValue(m_value-m_buttonStep); }
-void SpinboxFloat::textSubmit(Textbox*)       { parseText(); }
-void SpinboxFloat::textLostFocus(Widget*)     { parseText(); }
-void SpinboxFloat::mouseWheel(Widget*, int w) {
-	parseText();
-	float value = m_value + w * m_wheelStep;
-	value = floor(value*1e6+0.5)/1e6;
-	setValue( value );
-}
-void SpinboxFloat::textChanged(Textbox*, const char* text) {
-	// remove any non-numbers
-	int good = true;
-	bool decimal = false;
-	for(const char* c=text; *c; ++c) {
-		if((*c<'0' || *c > '9') && !(*c == '-' && c==text) && !(*c=='.'&&!decimal)) good = false;
-		if(*c=='.') decimal = true;
+template<typename T> void SpinboxT<T>::setSuffix(const char* s)   { if(m_text) m_text->setSuffix(s); }
+template<typename T> void SpinboxT<T>::setRange(T min, T max)     { m_min=min, m_max=max; setValue(m_value, true); }
+template<typename T> void SpinboxT<T>::pressInc(Button*)          { setValue(m_value+m_buttonStep, true); }
+template<typename T> void SpinboxT<T>::pressDec(Button*)          { setValue(m_value-m_buttonStep, true); }
+template<typename T> void SpinboxT<T>::textSubmit(Textbox*)       { parseText(true); }
+template<typename T> void SpinboxT<T>::textLostFocus(Widget*)     { parseText(true); }
+template<typename T> void SpinboxT<T>::mouseWheel(Widget*, int w) { parseText(false); setValue(m_value + w * m_wheelStep, true); }
+template<typename T> void SpinboxT<T>::textChanged(Textbox*, const char* text) {
+	// undo if invalid
+	T temp;
+	int len = 0;
+	sscanf(text, m_format, &temp, &len);
+	int tlen = strlen(text);
+	bool valid = false;
+	if(len == tlen) valid = true;
+	else if(tlen<3) { 	// Allow it if appending 0 makes it a valid number
+		char test[4] = {0,0,0,0};
+		strcpy(test, text);
+		test[tlen] = '0';
+		sscanf(test, m_format, &temp, &len);
+		if(len == tlen+1) valid = true;
 	}
-	// Remove bad characers
-	if(!good) {
-		char buf[32];
-		int i=0;
-		decimal = false;
-		for(const char* c=text; *c; ++c) {
-			if(!(*c<'0' || *c > '9') || (*c == '-' && c==text) || (!decimal&&*c=='.')) buf[i++]=*c;
-			if(*c=='.') decimal = true;
-		}
-		buf[i] = 0;
-		m_text->setText(buf);
+	if(valid) {
+		m_textChanged = true;
+		m_previous = text;
 	}
-	m_textChanged = true;
+	else m_text->setText(m_previous);
 }
-void SpinboxFloat::parseText() {
+template<typename T> void SpinboxT<T>::parseText(bool event) {
 	if(m_textChanged) {
-		char* e;
-		const char* text = m_text->getText();
-		float v = strtod(text, &e);
-		if(e!=text) setValue(v);
+		T v = 0;
+		sscanf(m_text->getText(), m_format, &v);
+		setValue(v, event);
 		m_textChanged = false;
 	}
 }
+
+// Make sure these functions actually get created
+template class SpinboxT<int>;
+template class SpinboxT<float>;
+Spinbox::Spinbox(const Rect& r, Skin* s) : SpinboxT(r,s, "%d%n") { setRange(-100000, 100000); }
+SpinboxFloat::SpinboxFloat(const Rect& r, Skin* s) : SpinboxT(r,s, "%g%n") { setRange(-1e6, 1e6); }
+void Spinbox::fireChanged() { if(eventChanged) eventChanged(this, m_value); }
+void SpinboxFloat::fireChanged() { if(eventChanged) eventChanged(this, m_value); }
+
 
 // ===================================================================================== //
 

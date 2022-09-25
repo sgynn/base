@@ -541,6 +541,7 @@ void Widget::notifyChange() {
 }
 
 void Widget::setVisible(bool v) { 
+	if(v == isVisible()) return;
 	m_states = v? m_states|1: m_states&~1;
 	notifyChange();
 	Widget* p = getParent();

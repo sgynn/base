@@ -639,13 +639,13 @@ void Renderer::drawRect(const Rect& r, uint colour) {
 void Renderer::drawImage(int image, const Rect& r, float angle, uint colour, float alpha) {
 	Point s = getImageSize(image);
 	colour |= (int)(alpha*0xff) << 24;
-	drawBox(r, image, Rect(0,0,s.x,s.y), &colour, 0, angle);
+	drawBox(r, image, Rect(0,0,s.x,s.y), &colour, false, angle);
 }
 
 void Renderer::drawIcon(IconList* list, int index, const Rect& r, float angle, unsigned colour) {
 	if(!list || index<0 || index>=list->size()) return;
 	const Rect& src = list->getIconRect(index);
-	drawBox(r, list->getImageIndex(), src, &colour, 0, angle);
+	drawBox(r, list->getImageIndex(), src, &colour, false, angle);
 }
 
 void Renderer::drawGradient(int image, const Rect& r, unsigned c0, unsigned c1, int axis) {

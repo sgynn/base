@@ -219,63 +219,51 @@ class Textbox : public Widget {
 };
 
 /** Spinbox - Editable number with up/down buttons */
-class Spinbox : public Widget {
+template<typename T>
+class SpinboxT : public Widget {
+	public:
+	SpinboxT(const Rect&, Skin*, const char* format);
+	void initialise(const Root*, const PropertyMap&) override;
+	T  getValue() const;
+	void setValue(T value, bool fireChangeEvent=false);
+	void setRange(T min, T max);
+	void setSuffix(const char* s);
+	void setStep(T button, T wheel);
+	protected:
+	void mouseWheel(Widget*, int w);
+	void textChanged(Textbox*, const char*);
+	void textSubmit(Textbox*);
+	void textLostFocus(Widget*);
+	void pressInc(Button*);
+	void pressDec(Button*);
+	void parseText(bool evt);
+	virtual void fireChanged() = 0;
+	protected:
+	Textbox* m_text;
+	T        m_value;
+	T        m_min;
+	T        m_max;
+	T        m_buttonStep;
+	T        m_wheelStep;
+	bool     m_textChanged;
+	String   m_previous;
+	const char* m_format;
+};
+class Spinbox : public SpinboxT<int> {
 	WIDGET_TYPE(Spinbox);
 	Spinbox(const Rect&, Skin*);
-	void initialise(const Root*, const PropertyMap&) override;
-	int  getValue() const;
-	void setValue(int value);
-	void setRange(int min, int max);
-	void setSuffix(const char* s);
-	public:
-	Delegate<void(Spinbox*, int)> eventChanged;
-	protected:
-	void mouseWheel(Widget*, int w);
-	void textChanged(Textbox*, const char*);
-	void textSubmit(Textbox*);
-	void textLostFocus(Widget*);
-	void pressInc(Button*);
-	void pressDec(Button*);
-	void parseText();
-	protected:
-	Textbox* m_text;
-	int      m_value;
-	int      m_min;
-	int      m_max;
-	bool     m_textChanged;
+	Delegate<void(Spinbox*,int)> eventChanged;
+	void fireChanged();
 };
-
-/** SpinboxFloat - Editable number with up/down buttons */
-class SpinboxFloat : public Widget {
+class SpinboxFloat : public SpinboxT<float> {
 	WIDGET_TYPE(SpinboxFloat);
 	SpinboxFloat(const Rect&, Skin*);
-	void initialise(const Root*, const PropertyMap&) override;
-	float  getValue() const;
-	void setValue(float value);
-	void setRange(float min, float max);
-	void setStep(float button, float wheel);
-	void setSuffix(const char* s);
-	public:
-	Delegate<void(SpinboxFloat*, float)> eventChanged;
-	protected:
-	void mouseWheel(Widget*, int w);
-	void textChanged(Textbox*, const char*);
-	void textSubmit(Textbox*);
-	void textLostFocus(Widget*);
-	void pressInc(Button*);
-	void pressDec(Button*);
-	void parseText();
-	protected:
-	Textbox* m_text;
-	float    m_value;
-	float    m_min;
-	float    m_max;
-	float    m_buttonStep;
-	float    m_wheelStep;
-	bool     m_textChanged;
+	Delegate<void(SpinboxFloat*,float)> eventChanged;
+	void fireChanged();
 };
 
-/** Scrollbar virtual base class */
+
+/** Scrollbar - Can also be used for sliders */
 class Scrollbar : public Widget {
 	WIDGET_TYPE(Scrollbar);
 	Scrollbar(const Rect& r, Skin*, int min=0, int max=100);
