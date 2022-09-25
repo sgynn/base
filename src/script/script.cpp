@@ -640,6 +640,16 @@ Variable* parseConstant(const char*& s) {
 		s = start;
 		return 0;
 	}
+	// Hex value
+	else if(*s=='#' || (*s=='0' && s[1]=='x')) {
+		char* e;
+		const char* start = *s=='#'? s+1: s+2;
+		uint value = strtoll(start, &e, 16);
+		if(e>start) {
+			s = e;
+			return createConstant(value);
+		}
+	}
 	// Numeric constant
 	else if(*s=='-' || (*s>='0' && *s<='9')) {
 		char* e;
