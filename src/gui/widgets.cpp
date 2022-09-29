@@ -727,6 +727,7 @@ void Scrollpane::initialise(const Root*, const PropertyMap& p) {
 	if(m_client->getTemplateCount()==0) {
 		Widget* w = new Widget( Rect(0,0,m_rect.width,m_rect.height), 0);
 		w->setAsTemplate();
+		w->setTangible(isTangible());
 		while(getWidgetCount()) w->add(getWidget(0)); // move any children
 		m_client->add(w);
 		m_client = w;
