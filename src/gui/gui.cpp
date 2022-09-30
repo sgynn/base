@@ -181,8 +181,8 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 void Root::keyEvent(int code, wchar_t chr) {
 	if(m_focus && m_focus->isEnabled()) {
 		Widget* focus = m_focus;
-		focus->onKey(code, chr, m_keyMask);
-		if(focus->eventKeyPress) focus->eventKeyPress(m_focus, code, chr, m_keyMask);
+		focus->onKey(code, chr, m_keyMask);	// Note: Can potentialy delete this widget
+		if(focus == m_focus && focus->eventKeyPress) focus->eventKeyPress(m_focus, code, chr, m_keyMask);
 	}
 }
 

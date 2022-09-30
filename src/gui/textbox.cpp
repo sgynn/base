@@ -11,7 +11,7 @@ using namespace gui;
 Textbox::Textbox(const Rect& r, Skin* s) : Widget(r,s)
 	, m_buffer(0), m_length(0), m_cursor(0), m_selectLength(0)
 	, m_multiline(false), m_readOnly(false), m_password(0)
-	, m_offset(0), m_selection(0)
+	, m_held(0), m_offset(0), m_selection(0)
 {
 	int h = s&&s->getFont()? s->getFont()->getSize('x', s->getFontSize()).y: 16;
 	m_selectRect.set(0,0,1,h);
@@ -57,9 +57,9 @@ void Textbox::updateAutosize() {
 }
 
 void Textbox::setPosition(int x, int y) {
-	Point from = m_rect.position();
+	Point rel = m_selectRect.position() - m_rect.position();
 	Widget::setPosition(x, y);
-	m_selectRect.position() += m_rect.position() - from;
+	m_selectRect.position() = m_rect.position() + rel;
 }
 void Textbox::setText(const char* t) {
 	if(!t) t = "";
