@@ -117,6 +117,7 @@ class AnimationController {
 	void setOverride(const AnimationKey&, float frame, float weight=1, bool additive=false);
 	void forceOverride(const AnimationKey&, uint track, float frame, float weight, bool additive=false);
 	bool hasOverride(const AnimationKey&) const;
+	float getOverrideProgress(const AnimationKey&) const;
 	void clearOverrides(bool fade=false);
 
 	void              update(float time, bool finalise=true);

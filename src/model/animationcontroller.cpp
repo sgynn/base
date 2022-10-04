@@ -468,6 +468,16 @@ int AnimationController::findOverride(const AnimationKey& key) const {
 	return -1;
 }
 
+bool AnimationController::hasOverride(const AnimationKey& key) const {
+	return findOverride(key) >= 0;
+}
+
+float AnimationController::getOverrideProgress(const AnimationKey& key) const {
+	int index = findOverride(key);
+	if(index<0) return 0;
+	return m_state->getFrameNormalised(index);
+}
+
 void AnimationController::clearOverrides(bool fade) {
 	for(uint i=0; i<m_meta.size(); ++i) {
 		if(m_meta[i].type >= OVERRIDE) {
