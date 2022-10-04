@@ -190,6 +190,7 @@ namespace base {
 			d->run();
 			d->thread->m_running = false;
 			delete d;
+			return 0;
 		}
 		#else
 		static void* _threadFunc(void* data) {
@@ -199,6 +200,7 @@ namespace base {
 			d->thread->m_running = false;
 			pthread_exit(0);
 			delete d;
+			return 0;
 		}
 		#endif
 
@@ -275,7 +277,7 @@ namespace base {
 			volatile size_t index = m_index;
 			MemoryBarrier();
 			LONG old = _InterlockedExchangeAdd(&m_lockCount, 1);
-			if(old != m_count-1) WaitForSingleObject(m_semaphores[index], INFINITE);
+			if(old != (long)m_count-1) WaitForSingleObject(m_semaphores[index], INFINITE);
 			else {
 				m_index = !index;
 				m_lockCount = 0;

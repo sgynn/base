@@ -237,7 +237,7 @@ void Model::skinMesh(Mesh* in, const Skeleton* s, int* map, Mesh* out) {
 		float* weights = (float*) (skinData + i * stride + wOffset);
 		IndexType* indices = (IndexType*) (skinData + i*stride + iOffset);
 		
-		memset(vertexOut, 0, sizeof(vec3));
+		vertexOut->set(0,0,0);
 		for(int j=0; j<wpv && weights[j]>0; ++j) {
 			*vertexOut += m[ indices[j] ] * *vertexIn * weights[j];
 		}

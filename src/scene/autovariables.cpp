@@ -143,7 +143,7 @@ void AutoVariableSource::setSkinMatrices(int c, const Matrix* m, int* map) {
 			m_skinCapacity = c;
 		}
 		for(int i=0; i<c; ++i) {
-			memcpy( &m_skinMatrixVector[i], &m[ map[i] ], sizeof(Matrix));
+			m_skinMatrixVector[i] = m[map[i]];
 		}
 		m_skinMatrices = m_skinMatrixVector;
 	} else {

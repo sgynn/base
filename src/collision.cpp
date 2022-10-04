@@ -59,7 +59,7 @@ float base::closestPointBetweenLines(const vec3& a1, const vec3& b1, const vec3&
 
 /** Intersection of a ray with Plane (page 177) */
 int base::intersectRayPlane(const vec3& p, const vec3& d,  const vec3& normal, float offset, vec3& result) {
-	float t;
+	float t = 0;
 	int r = intersectRayPlane(p,d, normal,offset, t);
 	result = p + d * t;
 	return r;

@@ -16,7 +16,7 @@ Table::~Table() {
 void Table::initialise(const Root* r, const PropertyMap& p) {
 	m_header = getTemplateWidget("_header");
 	m_headerTemplate = getTemplateWidget("_headeritem");
-	m_dataPanel = getTemplateWidget("_data")->cast<Scrollpane>();
+	m_dataPanel = getTemplateWidget<Scrollpane>("_data");
 	m_dataPanel->getTemplateWidget("_client")->setSkin(0);	// Need a better way of overriding skins
 	m_dataPanel->setSkin(0);
 	m_dataPanel->useFullSize(true);

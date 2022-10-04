@@ -197,7 +197,7 @@ class ShaderPartLoader : public ResourceLoader<ShaderPart> {
 
 ShaderPart* ShaderPartLoader::create(const char* name, Manager* manager) {
 	// Format: 'file|DEFINES' use frag/geom/vert extensions or prefix with FS:/VS:/GS:
-	ShaderType type;
+	ShaderType type = FRAGMENT_SHADER;
 	if(name[1]=='S' && name[2] == ':') switch(name[0]) {
 	case 'F': type = FRAGMENT_SHADER; name+=2; break;
 	case 'V': type = VERTEX_SHADER;   name+=2; break;

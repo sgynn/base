@@ -43,7 +43,7 @@ namespace base {
 			m_size = size * sizeof(T);
 			m_data = new T[size];
 			m_ownsData = true;
-			memcpy(m_data, data, m_size);
+			if(data) memcpy(m_data, data, m_size);
 			if(isBuffer()) writeBuffer();
 		}
 		template<typename T>

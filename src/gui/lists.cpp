@@ -242,7 +242,7 @@ Listbox::Listbox(const Rect& r, Skin* s) : Widget(r, s), m_scrollbar(0), m_multi
 }
 void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	// sub widgets
-	m_scrollbar = getTemplateWidget("_scroll")->cast<Scrollbar>();
+	m_scrollbar = getTemplateWidget<Scrollbar>("_scroll");
 	m_client = getTemplateWidget("_client");
 	if(!m_client) m_client = this;
 	if(m_scrollbar) m_scrollbar->eventChanged.bind(this, &Listbox::scrollChanged);
@@ -444,7 +444,7 @@ Combobox::~Combobox() {
 	}
 }
 void Combobox::initialise(const Root* root, const PropertyMap& p) {
-	m_list = getTemplateWidget("_list")->cast<Listbox>();
+	m_list = getTemplateWidget<Listbox>("_list");
 	if(m_list) {
 		m_list->setMultiSelect(false);
 		m_list->eventSelected.bind(this, &Combobox::changeItem);
@@ -455,11 +455,11 @@ void Combobox::initialise(const Root* root, const PropertyMap& p) {
 
 	// Selected item
 	m_text = getTemplateWidget("_text");
-	m_icon = getTemplateWidget("_icon")->cast<Icon>();
+	m_icon = getTemplateWidget<Icon>("_icon");
 	if(root && p.contains("iconlist")) setIconList( root->getIconList(p["iconlist"]) );
 
 	// Textbox callbacks
-	Textbox* txt = m_text->cast<Textbox>();
+	Textbox* txt = m_text? m_text->cast<Textbox>(): 0;
 	if(txt) {
 		txt->eventChanged.bind(this, &Combobox::textChanged);
 		txt->eventSubmit.bind(this, &Combobox::textSubmit);
@@ -573,29 +573,18 @@ IconList* Combobox::getIconList() const {
 
 
 void Combobox::setText(const char* text) {
-	if(m_client) {
-		// Label
-		Label* lbl = m_text->cast<Label>();
-		if(lbl) lbl->setCaption( text );
-		else {
-			// Textbox
-			Textbox* txt = m_text->cast<Textbox>();
-			if(txt) txt->setText( text );
-		}
+	if(m_client && m_text) {
+		if(Label* lbl = m_text->cast<Label>()) lbl->setCaption(text);
+		else if(Textbox* txt = m_text->cast<Textbox>()) txt->setText(text);
 	}
 }
 
 const char* Combobox::getText() const {
-	if(m_client) {
-		// Label
-		Label* lbl = m_text->cast<Label>();
-		if(lbl) return lbl->getCaption();
-		else {
-			// Textbox
-			Textbox* txt = m_text->cast<Textbox>();
-			if(txt) return txt->getText();
-		}
-	} else return m_list->getSelectedItem();
+	if(!m_client) return m_list->getSelectedItem();
+	else if(m_text) {
+		if(Label* lbl = m_text->cast<Label>()) return lbl->getCaption();
+		else if(Textbox* txt = m_text->cast<Textbox>()) return txt->getText();
+	}
 	return 0;
 }
 
@@ -604,7 +593,8 @@ void Combobox::selectItem(int index) {
 	if(getSelectionSize()) {
 		setText( getSelectedItem() );
 		if(m_icon) m_icon->setIcon( getSelectedIcon() );
-	} else {
+	}
+	else {
 		setText("");
 		if(m_icon) m_icon->setIcon(-1);
 	}

@@ -302,7 +302,7 @@ int Texture::setPixels(int width, int height, Format format, const void* src, in
 }
 
 int Texture::setPixels(int width, int height, int layer, Format format, const void* data, int mip) {
-	if(format != m_format || m_type!=ARRAY2D || m_type!=CUBE) return 0;
+	if(format != m_format || m_type == CUBE) return 0;
 	unsigned target = getTarget();
 	glBindTexture(target, m_unit);
 	unsigned fmt = getInternalFormat(format);

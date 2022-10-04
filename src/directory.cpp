@@ -122,7 +122,7 @@ int Directory::getRelativePath(const char* in, const char* root, char* out, int 
 	if(lim<=0) lim = PATH_MAX;
 	if(!isRelative(in)) {
 		char buffer[PATH_MAX];
-		strncpy(buffer, root, PATH_MAX);
+		strncpy(buffer, root, PATH_MAX-1);
 		// match ...
 		int m=0, up=0;
 		while(buffer[m] == in[m]) ++m;

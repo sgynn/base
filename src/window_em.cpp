@@ -111,7 +111,8 @@ EM_BOOL EMWindow::mouseCallback(int type, const EmscriptenMouseEvent* e, void*) 
 	return 0;
 }
 EM_BOOL EMWindow::wheelCallback(int type, const EmscriptenWheelEvent* e, void*) {
-	Game::input()->m_mouseState.wheel -= e->deltaY / 3.0f;
+	Game::input()->m_mouseState.wheel -= fmin(1,fmax(-1,e->deltaY / 3.0f)); // clamp due to inconsistent browsers
+	//printf("Mouse Wheel %g  %lu\n", e->deltaY, e->deltaMode);
 	return 0;
 }
 

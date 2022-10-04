@@ -253,13 +253,13 @@ class Spinbox : public SpinboxT<int> {
 	WIDGET_TYPE(Spinbox);
 	Spinbox(const Rect&, Skin*);
 	Delegate<void(Spinbox*,int)> eventChanged;
-	void fireChanged();
+	void fireChanged() override;
 };
 class SpinboxFloat : public SpinboxT<float> {
 	WIDGET_TYPE(SpinboxFloat);
 	SpinboxFloat(const Rect&, Skin*);
 	Delegate<void(SpinboxFloat*,float)> eventChanged;
-	void fireChanged();
+	void fireChanged() override;
 };
 
 
@@ -311,7 +311,7 @@ class Scrollpane : public Widget {
 	void setPaneSize(int width, int height);	// Set size of scrollable panel
 	void useFullSize(bool m);					// Minimum size of panel is widget size. Also locks size if no scrollbar
 	Widget* clone(const char*) const override;
-	Point getPreferredSize() const;
+	Point getPreferredSize() const override;
 	using Widget::add;							// import add funtions from widget
 	void add(Widget* w, unsigned index) override;// Adding child widgets resizes pane if in autosize mode
 	void setSize(int w, int h) override;

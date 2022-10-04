@@ -223,7 +223,11 @@ void Input::createMap() {
 void Input::clear() {
 	memset(m_key,	  0, 128 * sizeof(bool));
 	memset(m_keyChange, 0, 128);
-	memset(&m_mouseState, 0, sizeof(Mouse));
+
+	m_mouseState.x = m_mouseState.y = 0;
+	m_mouseState.button = m_mouseState.pressed = m_mouseState.released = 0;
+	m_mouseState.wheel = 0;
+	m_mouseState.delta.set(0,0);
 	m_lastKey = 0;
 	m_lastChar = 0;
 	m_keyMask = 0;

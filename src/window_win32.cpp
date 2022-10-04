@@ -181,7 +181,9 @@ bool Win32Window::createWindow() {
 		m_hRC = wglCreateContext(m_hDC);
 	}
 
-	initialiseOpenGLExtensions();
+	// Need context to be current before initialising extensions
+	makeCurrent();
+	if(!initialiseOpenGLExtensions()) printf("Fatal: Failed to initialise extensions.\n");
 	return true;
 }
 void base::Win32Window::destroyWindow() {

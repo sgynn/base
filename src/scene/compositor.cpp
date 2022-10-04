@@ -299,7 +299,7 @@ Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, int f1
 		if(strcmp(name, b->name)==0) printf("Error: Compositor %s already has a buffer named %s\n", m_name, name);
 	}
 	Buffer* b = new Buffer;
-	strncpy(b->name, name, 64);
+	strncpy(b->name, name, 63);
 	b->width = w;
 	b->height = h;
 	b->relativeWidth = 0;
@@ -769,7 +769,7 @@ bool Workspace::compile(int w, int h) {
 	}
 
 	if(reverseList.size() < compositors.size() - 1) {
-		printf("Warning: Skipped %lu compositors\n", compositors.size() - reverseList.size() - 1);
+		printf("Warning: Skipped %d compositors\n", (int)compositors.size() - (int)reverseList.size() - 1);
 	}
 
 	// Setup passes
