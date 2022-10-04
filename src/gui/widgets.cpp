@@ -273,7 +273,7 @@ void Image::draw() const {
 // ===================================================================================== //
 
 void IconInterface::initialiseIcon(Widget* w, const Root* root, const PropertyMap& p) {
-	m_icon = w->getTemplateWidget("_icon")->cast<Icon>();
+	m_icon = w->getTemplateWidget<Icon>("_icon");
 	if(m_icon) m_icon->initialise(root, p);
 }
 void IconInterface::setIcon(IconList* list, int index, int alt) {
@@ -332,12 +332,12 @@ void Button::updateAutosize() {
 	else Widget::updateAutosize();
 }
 void Button::setCaption(const char* s) {
-	Label* txt = getTemplateWidget("_text")->cast<Label>();
+	Label* txt = getTemplateWidget<Label>("_text");
 	if(txt) txt->setCaption(s);
 	else Label::setCaption(s);
 }
 const char* Button::getCaption() const {
-	Label* txt = getTemplateWidget("_text")->cast<Label>();
+	Label* txt = getTemplateWidget<Label>("_text");
 	return txt? txt->getCaption(): Label::getCaption();
 }
 
@@ -515,10 +515,10 @@ template<typename T> void SpinboxT<T>::initialise(const Root*, const PropertyMap
 	if(p.contains("min")) m_min = atof(p["min"]);
 	if(p.contains("max")) m_max = atof(p["max"]);
 	if(p.contains("step")) m_buttonStep = m_wheelStep = atof(p["step"]);
-	m_text = getTemplateWidget("_text")->cast<Textbox>();
+	m_text = getTemplateWidget<Textbox>("_text");
 	if(m_text && p.contains("suffix")) m_text->setSuffix(p["suffix"]);
-	Button* inc = getTemplateWidget("_inc")->cast<Button>();
-	Button* dec = getTemplateWidget("_dec")->cast<Button>();
+	Button* inc = getTemplateWidget<Button>("_inc");
+	Button* dec = getTemplateWidget<Button>("_dec");
 	if(inc) inc->eventPressed.bind(this, &SpinboxT<T>::pressInc);
 	if(dec) dec->eventPressed.bind(this, &SpinboxT<T>::pressDec);
 	if(m_text) {
@@ -582,8 +582,10 @@ template<typename T> void SpinboxT<T>::parseText(bool event) {
 }
 
 // Make sure these functions actually get created
+namespace gui {
 template class SpinboxT<int>;
 template class SpinboxT<float>;
+}
 Spinbox::Spinbox(const Rect& r, Skin* s) : SpinboxT(r,s, "%d%n") { setRange(-100000, 100000); }
 SpinboxFloat::SpinboxFloat(const Rect& r, Skin* s) : SpinboxT(r,s, "%g%n") { setRange(-1e6, 1e6); }
 void Spinbox::fireChanged() { if(eventChanged) eventChanged(this, m_value); }
@@ -934,7 +936,7 @@ TabbedPane::TabbedPane(const Rect& r, Skin* s) : Widget(r, s), m_buttonTemplate(
 void TabbedPane::initialise(const Root* r, const PropertyMap& p) {
 	m_tabStrip = getTemplateWidget("_tabstrip");
 	m_tabFrame = getTemplateWidget("_client");
-	m_buttonTemplate = getTemplateWidget("_tab")->cast<Button>();
+	m_buttonTemplate = getTemplateWidget<Button>("_tab");
 	if(m_buttonTemplate) m_buttonTemplate->setVisible(false);
 	if(!m_tabFrame) m_tabFrame = this;
 	m_client = m_tabFrame;

@@ -784,14 +784,14 @@ String Variable::toString(int depth, bool quotes, bool multiLine, int indent) co
 		break;
 	case BOOL:   b = i? "true": "false";   break;
 	case INT:    sprintf(buffer, "%d", i); break;
-	case UINT:   sprintf(buffer, "%u", u); break;
+	case UINT:   sprintf(buffer, "%#x", u); break;
 	case FLOAT:  sprintf(buffer, "%g", f); break;
 	case DOUBLE: sprintf(buffer, "%g", d); break;
 	case STRING: if(!quotes) b=s; else return String("\"") + s + "\""; break;
 
 	case LINK|BOOL:   b = *bp? "true": "false";   break;
 	case LINK|INT:    sprintf(buffer, "%d", *ip); break;
-	case LINK|UINT:   sprintf(buffer, "%u", *up); break;
+	case LINK|UINT:   sprintf(buffer, "%#x", *up); break;
 	case LINK|FLOAT:  sprintf(buffer, "%g", *fp); break;
 	case LINK|DOUBLE: sprintf(buffer, "%g", *dp); break;
 	case LINK|STRING: if(!quotes) b=*sp; else return String("\"") + *sp + "\""; break;
