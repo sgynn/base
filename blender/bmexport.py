@@ -104,7 +104,11 @@ def make_colour(col, alpha):
     return (col[0], col[1], col[2], alpha[0])
 
 def construct_mesh(obj, config):
-    if config.apply_modifiers: obj = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    if config.apply_modifiers:
+        armatureModifiers = [m for m in obj.modifiers if m.type == 'ARMATURE' and m.show_viewport]
+        for m in armatureModifiers: m.show_viewport = False
+        obj = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        for m in armatureModifiers: m.show_viewport = True
     m = obj.to_mesh()
 
     # object transform - this is for up axis / coordinate system conversion
@@ -553,7 +557,7 @@ def write_object(node, obj, config):
 
 
 def export_custom_properties(node, obj, name=None):
-    if len(obj.keys()) > 1:
+    if len(obj.keys()) > 0:
         custom = []
         for key in obj.keys():
             if key not in '_RNA_UI':
