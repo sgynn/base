@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-class Point;
+struct Point;
 
 namespace base {
 

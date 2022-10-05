@@ -53,6 +53,25 @@ bool EMWindow::createWindow() {
 	emscripten_set_focus_callback(m_canvas, this, 1, EMWindow::focusCallback);
 	emscripten_set_focusout_callback(m_canvas, this, 1, EMWindow::focusCallback);
 
+	// Fullscreen button - must have id="fullscreen"
+	emscripten_set_click_callback("#fullscreen", this, 1, [](int type, const EmscriptenMouseEvent* e, void* data) {
+		EMWindow* wnd = (EMWindow*)data;
+		EmscriptenFullscreenStrategy s;
+		memset(&s, 0, sizeof(s));
+		s.scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH;
+		s.canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF;
+		s.canvasResizedCallbackUserData = data;
+		s.canvasResizedCallback = [](int t, const void* r, void* data) {
+			Point size;
+			EMWindow* wnd = (EMWindow*)data;
+			emscripten_get_canvas_element_size(wnd->m_canvas, &size.x, &size.y);
+			wnd->notifyResize(std::forward<Point>(size));
+			return 0;
+		};
+		emscripten_request_fullscreen_strategy(wnd->m_canvas, 1, &s);
+		return 0;
+	});
+
 
 	// Init webgl
 	setSize(m_size.x, m_size.y);

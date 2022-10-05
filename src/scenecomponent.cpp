@@ -33,7 +33,8 @@ void SceneComponent::draw() {
 void SceneComponent::resized(const Point& s) {
 	m_workspace->getCamera()->setAspect((float)s.x / s.y);
 	if(m_workspace->getGraph()->requiresTargetSize()) {
-		//m_workspace->compile(s.x, s.y);
+		printf("Window resized to %dx%d - rebuilding compositor targets\n", s.x, s.y);
+		m_workspace->compile(s.x, s.y);
 	}
 }
 
