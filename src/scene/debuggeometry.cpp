@@ -66,19 +66,6 @@ Material* DebugGeometryManager::getDefaultMaterial() {
 	static Material* defaultMaterial = 0;
 	if(!defaultMaterial) {
 		// Create new default material
-		#ifdef EMSCRIPTEN
-		static const char* vs_src =
-		"precision highp float;"
-		"attribute vec4 vertex;"
-		"attribute vec4 colour;"
-		"uniform mat4 transform;"
-		"varying vec4 col;"
-		"void main() { gl_Position=transform*vertex; col=colour; }";
-		static const char fs_src[] = 
-		"precision highp float;"
-		"varying vec4 col;"
-		"void main() { gl_FragColor = col; }";
-		#else
 		static const char* vs_src =
 		"#version 130\n"
 		"in vec4 vertex;\n"
@@ -91,7 +78,6 @@ Material* DebugGeometryManager::getDefaultMaterial() {
 		"in vec4 vColour;\n"
 		"out vec4 fragment;\n"
 		"void main() { fragment = vColour; }\n";
-		#endif
 		ShaderPart* vs = new ShaderPart(VERTEX_SHADER, vs_src);
 		ShaderPart* fs = new ShaderPart(FRAGMENT_SHADER, fs_src);
 		Shader* shader = new Shader();

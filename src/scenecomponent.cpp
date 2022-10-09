@@ -10,7 +10,7 @@ using namespace base;
 
 SceneComponent::SceneComponent(Scene* scene, Camera* camera, CompositorGraph* graph) : GameStateComponent(80), m_scene(scene), m_workspace(0) {
 	m_renderer = new Renderer;
-	DebugGeometryManager::getInstance()->initialise(scene, 1, false);
+	DebugGeometryManager::getInstance()->initialise(scene, 10, false);
 	setCompositor(graph);
 	m_workspace->setCamera(camera);
 }

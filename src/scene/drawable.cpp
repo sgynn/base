@@ -14,6 +14,7 @@ using namespace base;
 Drawable::Drawable(): m_transform(new Matrix), m_sharedTransform(false) {}
 Drawable::~Drawable() {
 	if(!m_sharedTransform) delete m_transform;
+	if(m_binding) glDeleteVertexArrays(1, &m_binding);
 }
 
 void Drawable::shareTransform(Matrix* m) {
@@ -96,7 +97,6 @@ DrawableMesh::DrawableMesh(Mesh* m, Material* mat, int queue)
 	if(m) setMesh(m);
 }
 DrawableMesh::~DrawableMesh() {
-	if(m_binding) glDeleteVertexArrays(1, &m_binding);
 	if(m_instanceBuffer) m_instanceBuffer->dropReference();
 	delete [] m_skinMap;
 }
