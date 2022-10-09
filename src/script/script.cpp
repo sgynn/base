@@ -611,7 +611,17 @@ Variable* parseConstant(const char*& s) {
 		else if(e>s+1) {
 			const char* str = s + 1;
 			s = e + 1;
-			return createConstant( String(str, e-str) );
+			String value(str, e-str);
+			//escape characters
+			char* scan = &value[0];
+			char* end = scan + (e-str);
+			while(char* c=strchr(scan, '\\')) {
+				if(c[1] == 'n') { c[0] = '\n'; memmove(c+1, c+2, end-c); }
+				else if(c[1] == 't') { c[0] = '\t'; memmove(c+1, c+2, end-c); }
+				else if(c[1] == '\\') { memmove(c+1, c+2, end-c); }
+				scan = c + 1;
+			}
+			return createConstant(value);
 		}
 	}
 	// Vector constant
