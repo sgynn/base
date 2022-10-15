@@ -65,7 +65,7 @@ Point HorizontalLayout::getMinimumSize(const Widget* p) const {
 		if(w->getAnchor()>>4 != 5) size.y = max(size.y, s.y);
 	}
 	size.x -= m_space;
-	size += m_margin;
+	size += m_margin + m_margin;
 	return size;
 }
 
@@ -103,7 +103,7 @@ Point VerticalLayout::getMinimumSize(const Widget* p) const {
 		if(w->getAnchor()>>4 != 5) size.y += s.y;
 	}
 	size.y -= m_space;
-	size += m_margin;
+	size += m_margin + m_margin;
 	return size;
 }
 
