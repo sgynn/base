@@ -123,9 +123,9 @@ void DebugGeometryManager::update() {
 	for(DebugGeometry* item: m_deleteList) {
 		it = m_drawables.find(item);
 		if(it!=m_drawables.end()) {
-			m_drawables.erase(it);
 			for(SceneNode* node: m_nodes) node->detach(it->second);
 			delete it->second;
+			m_drawables.erase(it);
 		}
 	}
 

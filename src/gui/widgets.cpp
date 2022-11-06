@@ -534,7 +534,7 @@ template<typename T> T SpinboxT<T>::getValue() const { return m_value; }
 template<typename T> void SpinboxT<T>::setValue(T v, bool event) {
 	T value = v<m_min? m_min: v>m_max? m_max: v;
 	if(m_text) {
-		int n;
+		int n = 0;
 		char buf[16];
 		sprintf(buf, m_format, value, &n);
 		m_text->setText(buf);

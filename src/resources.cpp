@@ -243,7 +243,7 @@ bool ShaderPartLoader::reload(const char* name, ShaderPart* data, Manager* manag
 	ShaderPart* part = create(name, manager);
 	if(part) *data = *part;
 	delete part;
-	return part;
+	return part != 0;
 }
 
 // ----------------------------------------------------------------------------------- //

@@ -12,6 +12,9 @@ class ConsoleComponent : public GameStateComponent {
 		m_console = new Console(font, Point(FrameBuffer::Screen.width(), 400));
 		if(root.isObject()) m_console->root() = root;
 	}
+	~ConsoleComponent() {
+		delete m_console;
+	}
 	void setFont(gui::Font* font, int size) {
 		m_console->setFont(font, size);
 	}
