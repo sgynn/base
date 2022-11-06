@@ -1,9 +1,11 @@
 #include <base/scenecomponent.h>
+#include <base/game.h>
 #include <base/scene.h>
 #include <base/camera.h>
 #include <base/renderer.h>
 #include <base/compositor.h>
 #include <base/framebuffer.h>
+#include <base/autovariables.h>
 #include <base/debuggeometry.h>
 
 using namespace base;
@@ -22,6 +24,7 @@ SceneComponent::~SceneComponent() {
 
 void SceneComponent::update() {
 	m_scene->updateSceneGraph();
+	m_renderer->getState().getVariableSource()->setTime(Game::gameTime());
 }
 
 void SceneComponent::draw() {
