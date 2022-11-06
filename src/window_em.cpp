@@ -1,6 +1,7 @@
 #include "base/window_em.h"
 #include "base/input.h"
 #include "base/game.h"
+#include "base/framebuffer.h"
 
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -27,6 +28,11 @@ static const char *emscripten_result_to_string(EMSCRIPTEN_RESULT result) {
 }
 
 EMWindow::EMWindow(int w, int h, const char* canvas) : Window(w, h), m_context(0), m_canvas(canvas) {
+	// Use size from element if not set
+	if(w<=0 || h<=0) {
+		emscripten_get_canvas_element_size(m_canvas, &m_size.x, &m_size.y);
+		base::FrameBuffer::setScreenSize(m_size.x, m_size.y);
+	}
 }
 
 EMWindow::~EMWindow() {
@@ -34,7 +40,7 @@ EMWindow::~EMWindow() {
 
 void EMWindow::setSize(int w, int h) {
 	m_size.set(w, h);
-	float ratio = emscripten_get_device_pixel_ratio();
+	float ratio = 1; //emscripten_get_device_pixel_ratio();
 	emscripten_set_element_css_size(m_canvas, m_size.x/ratio, m_size.y/ratio);
 	emscripten_set_canvas_element_size(m_canvas, m_size.x, m_size.y);
 }
@@ -64,6 +70,7 @@ bool EMWindow::createWindow() {
 		s.canvasResizedCallback = [](int t, const void* r, void* data) {
 			Point size;
 			EMWindow* wnd = (EMWindow*)data;
+			//float ratio = emscripten_get_device_pixel_ratio();
 			emscripten_get_canvas_element_size(wnd->m_canvas, &size.x, &size.y);
 			wnd->notifyResize(std::forward<Point>(size));
 			return 0;
