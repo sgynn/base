@@ -10,11 +10,17 @@
 #include <base/png.h>
 #include <base/dds.h>
 #include <base/xml.h>
+#include <base/thread.h>
 #include <cstdio>
+#include <list>
 
 using namespace base;
 
 Resources* Resources::s_instance = 0;
+
+// Threading
+Thread resourceThread;
+Mutex resourceMutex;
 
 //// ResourceManagerBase functions ////
 
@@ -108,6 +114,12 @@ class TextureLoader : public ResourceLoader<Texture> {
 	Texture* create(const char*, Manager*) override;
 	bool reload(const char* name, Texture* object, Manager*) override;
 	void destroy(Texture*) override;
+	float update() override;
+	void updateT() override;
+	protected:
+	struct LoadMessage { Texture* target; char* file; PNG png; };
+	std::list<LoadMessage> requests;
+	std::list<LoadMessage> completed;
 };
 
 Texture* TextureLoader::create(const char* name, Manager* manager) {
@@ -142,16 +154,26 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 		}
 	}
 	else if(strcmp(ext, ".png")==0) {
-		PNG png = PNG::load(filename);
-		if(png.data && png.bpp<=32) {
-			bool mipmaps = png.width == png.height;
-			Texture::Format format = (Texture::Format) (png.bpp / 8);
-			Texture tex = Texture::create(png.width, png.height, format, png.data, mipmaps);
-			if(mipmaps) tex.setFilter( Texture::TRILINEAR );
-			return new Texture(tex);
+		// Lets try hacking in a quick threaded image loader
+		if(resourceThread.running()) {
+			uint hex= 0xffffff;
+			Texture* tex = new Texture(Texture::create(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex));
+			MutexLock lock(resourceMutex);
+			requests.push_back({tex, strdup(filename)});
+			return tex;
 		}
 		else {
-			printf("Resource Error: Invalid png file '%s'\n", filename);
+			PNG png = PNG::load(filename);
+			if(png.data && png.bpp<=32) {
+				bool mipmaps = png.width == png.height;
+				Texture::Format format = (Texture::Format) (png.bpp / 8);
+				Texture tex = Texture::create(png.width, png.height, format, png.data, mipmaps);
+				if(mipmaps) tex.setFilter( Texture::TRILINEAR );
+				return new Texture(tex);
+			}
+			else {
+				printf("Resource Error: Invalid png file '%s'\n", filename);
+			}
 		}
 	}
 	else {
@@ -172,6 +194,43 @@ bool TextureLoader::reload(const char* name, Texture* object, Manager* manager) 
 void TextureLoader::destroy(Texture* tex) {
 	tex->destroy();
 	delete tex;
+}
+
+void TextureLoader::updateT() {
+	LoadMessage msg;
+	{
+	MutexLock lock(resourceMutex);
+	if(requests.empty()) return;
+	msg = requests.front();
+	requests.pop_front();
+	}
+
+	printf("Loading %s\n", msg.file);
+	msg.png = PNG::load(msg.file);
+
+	MutexLock lock(resourceMutex);
+	completed.push_back(std::move(msg));
+}
+
+float TextureLoader::update() {
+	MutexLock lock(resourceMutex);
+	for(LoadMessage& msg: completed) {
+		printf("Finished loading %s\n", msg.file);
+		PNG& png = msg.png;
+		if(png.data && png.bpp<=32) {
+			bool mipmaps = png.width == png.height;
+			Texture::Format format = (Texture::Format) (png.bpp / 8);
+			Texture tex = Texture::create(png.width, png.height, format, png.data, mipmaps);
+			if(mipmaps) tex.setFilter( Texture::TRILINEAR );
+			*msg.target = tex;
+		}
+		else {
+			printf("Resource Error: Invalid png file '%s'\n", msg.file);
+		}
+		free(msg.file);
+	}
+	completed.clear();
+	return 1;
 }
 
 
@@ -977,5 +1036,16 @@ Resources::Resources() {
 	shaderParts.setDefaultLoader( new ShaderPartLoader(shaders) );
 	materials.setDefaultLoader( new MaterialLoader(this) );
 	models.setDefaultLoader( new ModelLoader(this));
+}
+
+float Resources::update() {
+	if(!resourceThread.running()) resourceThread.begin([this](int){
+		while(true) {
+			textures.getDefaultLoader()->updateT();
+			Thread::sleep(1);
+		}
+	},0);
+
+	return textures.getDefaultLoader()->update();
 }
 

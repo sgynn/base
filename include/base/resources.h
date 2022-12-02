@@ -35,6 +35,9 @@ namespace base {
 
 		// Add serach path to all managers
 		void addPath(const char* path);
+		
+		// Threaded or deferred loading. returns percentage
+		float update();
 	};
 }
 

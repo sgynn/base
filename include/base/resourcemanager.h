@@ -24,6 +24,8 @@ class ResourceLoader {
 	virtual T* create(const char* name, Manager* manager) = 0;
 	virtual bool reload(const char* name, T* object, Manager* manager) { return false; }
 	virtual void destroy(T* item) = 0;
+	virtual float update() { return 1; }
+	virtual void updateT() {}
 };
 
 template<class T>
