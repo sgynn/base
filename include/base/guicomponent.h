@@ -9,7 +9,15 @@ namespace base {
 
 class GUIComponent : public GameStateComponent {
 	public:
-	GUIComponent(gui::Root* gui, float scale=1) : GameStateComponent(-20, 60, PERSISTENT), m_gui(gui), m_mult(1/scale) {}
+	GUIComponent(gui::Root* gui, float scale=1) : GameStateComponent(-20, 60, PERSISTENT), m_gui(gui), m_mult(1) {
+		setScale(scale);
+	}
+	explicit GUIComponent(const char* file, float scale=1) : GUIComponent(new gui::Root(Game::getSize()), scale) {
+		m_gui->load(file);
+	}
+	~GUIComponent() {
+		delete m_gui;
+	}
 	void update() override {
 		const Mouse& mouse = Game::input()->mouse;
 		m_gui->setKeyMask((gui::KeyMask)Game::input()->getKeyModifier());
