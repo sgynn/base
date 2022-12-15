@@ -388,7 +388,13 @@ float AnimationController::deriveMoveSpeed() const {
 
 
 void AnimationController::setProgress(float p) {
-	if(getState() == ActionState::Action) m_state->setFrameNormalised(p, m_actionTrack);
+	if(getState() == ActionState::Action) { 
+		m_state->setFrameNormalised(p, m_actionTrack);
+		if(m_rootMotion) updateRootOffset(true);
+	}
+}
+void AnimationController::setWeight(float w) {
+	if(getState() == ActionState::Action) m_state->setWeight(w, m_actionTrack);
 }
 void AnimationController::setSpeed(float s) {
 	if(getState() == ActionState::Action) m_state->setSpeed(s, m_actionTrack);

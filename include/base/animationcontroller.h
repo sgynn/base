@@ -109,7 +109,8 @@ class AnimationController {
 	float        getProgress() const;
 	float        getWeight() const;
 
-	void         setProgress(float);	// Set progres of current action.
+	void         setProgress(float);	// Set progress of current action.
+	void         setWeight(float);		// Set weight of currrent action
 	void         setSpeed(float);		// Set speed of current action
 
 	void playOverride(const AnimationKey&, ActionMode=ActionMode::Hold, bool fade=true, bool additive=false);		// Play an override animation
