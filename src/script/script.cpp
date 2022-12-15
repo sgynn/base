@@ -259,11 +259,11 @@ Variable Expression::evaluate(Context&& context) const {
 		case Variable::VEC4:   r = a.operator vec4() + b.operator vec4(); break;
 		case Variable::STRING: r = a.toString() + b.toString(); break;
 		case Variable::ARRAY:
-			r.makeArray();
-			if(a.isArray()) for(Variable& v: a) r.set(r.size(), v);
-			else r.set(r.size(), a);
-			if(b.isArray()) for(Variable& v: b) r.set(r.size(), v);
-			else r.set(r.size(), b);
+			if(a.isArray() && b.isArray()) {
+				r.makeArray();
+				for(Variable& v: a) r.set(r.size(), v);
+				for(Variable& v: b) r.set(r.size(), v);
+			}
 			break;
 		default: break;
 		}

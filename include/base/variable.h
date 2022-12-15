@@ -49,7 +49,7 @@ namespace script {
 	/** Console Variables. Can be stured internally, or a pointer to external data */
 	class Variable {
 		friend class Expression;
-		enum Types { OBJECT=1, ARRAY, BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, STRING, FUNCTION, FIXED=0x20, CONST=0x40, LINK=0x80, EXPLICIT=0x100 };
+		enum Types { OBJECT=1, BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, ARRAY, STRING, FUNCTION, FIXED=0x20, CONST=0x40, LINK=0x80, EXPLICIT=0x100 };
 		struct Object {
 			std::vector<uint8> lookup;		// map of nameID -> item index
 			std::vector<uint> keys;			// list of sub variable names
@@ -191,7 +191,13 @@ namespace script {
 		size_t getObjectHash() const { return isObject() || isVector() || isArray()? (size_t)obj: 0; }
 		
 		// Object iterator
-		struct SubItem { const char* const key; const uint id; Variable& value; };
+		struct SubItem {
+			const char* const key;
+			const uint id;
+			Variable& value;
+			operator Variable&() { return value; }
+			template<typename T> operator T() { return value; }
+		};
 		class iterator {
 			friend class Variable;
 			public:
@@ -235,6 +241,14 @@ namespace script {
 		public:
 		VariableName(const char* = 0);
 		String toString() const;
+		VariableName operator+(uint id) const;
+		VariableName operator+(const char*) const;
+		VariableName operator+(const VariableName&) const;
+		VariableName& operator+=(uint id);
+		VariableName& operator+=(const char*);
+		VariableName& operator+=(const VariableName&);
+		friend VariableName operator+(uint id, const VariableName& name);
+		friend VariableName operator+(const char* first, const VariableName& name);
 		bool operator==(const VariableName&) const;
 		bool operator!=(const VariableName&) const;
 		operator bool() const;
