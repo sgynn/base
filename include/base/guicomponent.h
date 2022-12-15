@@ -1,4 +1,4 @@
-
+#pragma once
 #include <base/game.h>
 #include <base/input.h>
 #include <base/gamestate.h>
