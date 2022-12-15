@@ -8,7 +8,7 @@
 using namespace base;
 
 
-SceneNode::SceneNode(const char* name): m_scale(1,1,1), m_depth(0), m_visible(true), m_name(0), m_scene(0), m_parent(0), m_changed(false) {
+SceneNode::SceneNode(const char* name): m_scale(1,1,1), m_depth(0), m_visible(true), m_name(0), m_scene(0), m_parent(0), m_changed(false), m_updateQueued(false) {
 	if(name) setName(name);
 }
 
@@ -247,11 +247,12 @@ void Scene::notifyAdd(SceneNode* n) {
 
 void Scene::notifyChange(SceneNode* n) {
 	m_changed[n->m_depth].push_back(n);
+	n->m_updateQueued = true;
 }
 
 void Scene::notifyRemove(SceneNode* n) {
-	if(n->m_changed) {
-		n->m_changed = false;
+	if(n->m_updateQueued) {
+		n->m_updateQueued = false;
 		std::vector<SceneNode*>& list = m_changed[n->m_depth];
 		for(size_t i=0; i<list.size(); ++i) {
 			if(list[i] == n) { list[i] = list.back(); list.pop_back(); break; }
@@ -269,6 +270,7 @@ void Scene::updateSceneGraph() {
 				n->createLocalMatrix(tmp);
 				n->m_derived = n->m_parent->m_derived * tmp;
 				n->m_changed = false;
+				n->m_updateQueued = false;
 				// Children
 				for(SceneNode* c: n->children()) c->notifyChange();
 			}

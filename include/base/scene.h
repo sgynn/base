@@ -93,7 +93,8 @@ namespace base {
 		std::vector<Drawable*>  m_drawables;
 
 		private:
-		bool       m_changed;
+		uint8      m_changed:1;			// Derived transform is out of date
+		uint8      m_updateQueued:1;	// Scene has node pointer queued for update
 	};
 
 	/// Scene graph
