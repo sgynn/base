@@ -258,6 +258,13 @@ Variable Expression::evaluate(Context&& context) const {
 		case Variable::VEC3:   r = a.operator vec3() + b.operator vec3(); break;
 		case Variable::VEC4:   r = a.operator vec4() + b.operator vec4(); break;
 		case Variable::STRING: r = a.toString() + b.toString(); break;
+		case Variable::ARRAY:
+			r.makeArray();
+			if(a.isArray()) for(Variable& v: a) r.set(r.size(), v);
+			else r.set(r.size(), a);
+			if(b.isArray()) for(Variable& v: b) r.set(r.size(), v);
+			else r.set(r.size(), b);
+			break;
 		default: break;
 		}
 		break;
@@ -282,6 +289,16 @@ Variable Expression::evaluate(Context&& context) const {
 		case Variable::VEC2:   r = a.operator vec2() * b.operator vec2(); break;
 		case Variable::VEC3:   r = a.operator vec3() * b.operator vec3(); break;
 		case Variable::VEC4:   r = a.operator vec4() * b.operator vec4(); break;
+		case Variable::ARRAY:
+			if(a.isArray() && b.isNumber()) {
+				r.makeArray();
+				for(int n=b; n>0; --n) for(Variable& v: a) r.set(r.size(), v);
+			}
+			else if(a.isNumber() && b.isArray()) {
+				r.makeArray();
+				for(int n=a; n>0; --n) for(Variable& v: b) r.set(r.size(), v);
+			}
+			break;
 		default: break;
 		}
 		break;
@@ -727,6 +744,7 @@ void Script::compoundExpression(Expression** stack, int& front, Expression* expr
 		stack[front] = expr;
 	}
 	else {
+		// FIXME precidence rules for 'a = b = c' are wrong
 		while(front>=0 && stack[front]->op >= precidence) --front;
 		if(front<0) {
 			expr->lhs.expr = stack[0];
@@ -864,7 +882,7 @@ Expression* Script::parseExpression(const char* src, const char*& s, bool allowS
 			for(size_t i=0; i<lines.size(); ++i) array->lines[i] = lines[i];
 			out.type = Expression::EXPRESSION;
 			out.expr = array;
-			Valid(0,ALL);
+			Valid(OP,ALL); // FIXME only + and * operators are valid
 		}
 		// Parentheses
 		else if(*s=='(') {
@@ -914,6 +932,7 @@ Expression* Script::parseExpression(const char* src, const char*& s, bool allowS
 
 			// Valid next token
 			if(oper==Expression::SET) Valid(BLK|VAL|INV|FUNC|ARRAY, OP|SUBTEXT);
+			else if(oper==Expression::ADD || oper==Expression::MUL) Valid(VAL|INV|ARRAY,ALL);
 			else Valid(VAL|INV,ALL);
 		}
 		else break;
