@@ -132,7 +132,10 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 		if(over != m_mouseFocus && !b) {
 			// additional mouse event here as changing focus misses it later
 			if(m_mouseFocus && mup && m_mouseFocus->isEnabled()) m_mouseFocus->onMouseButton(p, 0, mup);
-			if(over) over->setMouseFocus();
+			if(over) {
+				over->setMouseFocus();
+				over->onMouseMove(m_mousePos, p, b);
+			}
 			else if(m_mouseFocus) {
 				m_mouseFocus->onMouseExit();
 				m_mouseFocus = 0;
