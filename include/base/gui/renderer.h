@@ -81,6 +81,7 @@ class Renderer {
 	virtual void  drawImage(int image, const Rect& rect, float angle=0, unsigned colour=0xffffff, float alpha=1.0);
 	virtual void  drawGradient(int image, const Rect&, unsigned c0, unsigned c1, int axis);
 	virtual void  drawLineStrip(int count, const Point* line, float width, const Point& offset, unsigned colour=-1);
+	virtual void  drawPolygon(int size, const Point* points, const Point& offset, unsigned colour=-1);
 
 	// Clipping
 	void  push(const Rect& rect);

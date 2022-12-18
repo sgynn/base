@@ -622,6 +622,23 @@ void Renderer::drawLineStrip(int count, const Point* line, float width, const Po
 	}
 }
 
+void Renderer::drawPolygon(int size, const Point* points, const Point& offset, unsigned colour) {
+	if(size<3) return;
+	Rect rect(points[0].x, points[0].y, 0, 0);
+	for(int i=1; i<size; ++i) rect.include(points[i]);
+	rect.position() += offset;
+	if(Batch* b = getBatch(rect, 0)) {
+		b->vertices.reserve(b->vertices.size() + size);
+		b->indices.reserve(b->indices.size() + (size-2) * 3);
+		unsigned short start = b->vertices.size();
+		for(int i=0; i<size; ++i) b->vertices.emplace_back((float)points[i].x+offset.x, (float)points[i].y+offset.y, 0, 0, colour);
+		for(int i=2; i<size; ++i) {
+			b->indices.push_back(start);
+			b->indices.push_back(start+i-1);
+			b->indices.push_back(start+i);
+		}
+	}
+}
 
 void Renderer::drawSkin(const Skin* skin, const Rect& r, unsigned colour, int state, const char* text) {
 	if(!skin || r.width<=0 || r.height<=0) return;
