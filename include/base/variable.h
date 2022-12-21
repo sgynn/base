@@ -185,7 +185,7 @@ namespace script {
 		String toString(int d=1, bool quotes=false, bool multiLine=true, int indent=0) const;	// Get string representation
 		bool isValid() const;					// Is this a valid variable. Use to check result of get().
 		bool makeObject();						// Turn this variable into an object if not already
-		bool makeArray();						// Turn this variable into an array type
+		bool makeArray(int size=0);				// Turn this variable into an array type
 
 		// A linear value to use as a key in maps
 		size_t getObjectHash() const { return isObject() || isVector() || isArray()? (size_t)obj: 0; }

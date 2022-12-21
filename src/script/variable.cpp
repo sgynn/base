@@ -733,14 +733,16 @@ bool Variable::makeObject() {
 	}
 	return setType(OBJECT);
 }
-bool Variable::makeArray() {
+bool Variable::makeArray(int initialSize) {
 	// Convert object into an array - order may vary
 	if(isObject() && !obj->items.empty() && !(type&(FIXED|CONST))) {
 		obj->lookup.clear();
 		obj->keys.clear();
 		type = ARRAY;
 	}
-	return setType(ARRAY);
+	if(!setType(ARRAY)) return false;
+	if(size() < initialSize) obj->items.resize(initialSize);
+	return true;
 }
 
 void Variable::lock() {
