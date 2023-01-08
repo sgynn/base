@@ -112,6 +112,9 @@ class vec4 {
 	vec4(const float*);
 	vec4& set(float x, float y, float z, float w);
 	vec3 xyz() const;
+	vec2 xy() const { return vec2(x,y); }
+	vec2 xz() const { return vec2(x,z); }
+	vec2 zw() const { return vec2(z,w); }
 	operator float*();
 	operator const float*() const;
 
