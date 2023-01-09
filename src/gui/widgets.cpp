@@ -1438,6 +1438,12 @@ void Window::setMinimumSize(int w, int h) {
 void Window::onMouseButton(const Point& p, int d, int u) {
 	raise();
 	Widget::onMouseButton(p,d,u);
+	if(!m_title) grabHandle(this, p-m_rect.position() ,d);
+}
+
+void Window::onMouseMove(const Point& l, const Point& p, int b) {
+	Widget::onMouseMove(l,p,b);
+	if(!m_title) dragHandle(this, p-m_rect.position(), b);
 }
 
 void Window::pressClose(Button*) {
