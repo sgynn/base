@@ -65,7 +65,7 @@ void Renderer::clearScreen() {
 
 // ============================================================= //
 
-RenderState::RenderState() : m_camera(0), m_activePass(0), m_materialOverride(0), m_materialTechnique(0) {
+RenderState::RenderState() : m_camera(0), m_activePass(0), m_materialOverride(0), m_materialTechnique(0), m_viewport(0,0,0,0) {
 	m_auto = new AutoVariableSource();
 }
 
