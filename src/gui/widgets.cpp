@@ -1396,7 +1396,6 @@ void Window::initialise(const Root* root, const PropertyMap& p) {
 
 	m_client = getTemplateWidget<Widget>("_client");
 	if(!m_client) m_client = this;
-	if(m_client==this) printf("Warning: window has no client\n");
 	m_title = t;
 
 	if(p.contains("caption")) setCaption( p["caption"]);
