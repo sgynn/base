@@ -21,6 +21,7 @@ class Matrix {
 	Matrix&  operator=  (const Matrix&);
 	Matrix&  operator*= (const Matrix& m);
 	Matrix   operator*  (const Matrix&) const;
+	vec4     operator*  (const vec4&) const;
 	vec3     operator*  (const vec3&) const;
 	vec3     rotate     (const vec3&) const;	// Multiply vector by rotation part of matrix
 	vec3     transform  (const vec3&) const;	// Transform a vector - same as matrix * vector
@@ -111,6 +112,14 @@ inline vec3 Matrix::operator*(const vec3& v) const {
 	result.x = m[0]*v.x + m[4]*v.y + m[8]*v.z + m[12];
 	result.y = m[1]*v.x + m[5]*v.y + m[9]*v.z + m[13];
 	result.z = m[2]*v.x + m[6]*v.y + m[10]*v.z + m[14];
+	return result;
+}
+inline vec4 Matrix::operator*(const vec4& v) const {
+	vec4 result;
+	result.x = m[0]*v.x + m[4]*v.y + m[8]*v.z + m[12]*v.w;
+	result.y = m[1]*v.x + m[5]*v.y + m[9]*v.z + m[13]*v.w;
+	result.z = m[2]*v.x + m[6]*v.y + m[10]*v.z + m[14]*v.w;
+	result.w = m[3]*v.x + m[7]*v.y + m[11]*v.z + m[15]*v.w;
 	return result;
 }
 inline vec3 Matrix::rotate(const vec3& v) const {
