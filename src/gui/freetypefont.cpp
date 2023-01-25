@@ -1,13 +1,20 @@
 #include <base/gui/font.h>
+#include <cstring>
 #include <cstdio>
+
+
+gui::FreeTypeFont::FreeTypeFont(const char* file) {
+	strncpy(m_file, file, sizeof(m_file));
+}
+
 
 #ifdef FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TABLES_H
 
-gui::Font* gui::FreeTypeFont::load(const char* file, int size, const gui::GlyphRangeVector& glyphs) {
-	if(glyphs.empty()) return 0;
+bool gui::FreeTypeFont::build(int size) {
+	if(m_glyphs.empty()) return false;
 
 	Font* font = 0;
 	FT_Library  library;
@@ -15,7 +22,7 @@ gui::Font* gui::FreeTypeFont::load(const char* file, int size, const gui::GlyphR
 	int error = 0;
 
 	error = FT_Init_FreeType( &library );
-	if(error) { printf("Error initilising freetype\n"); return 0; }
+	if(error) { printf("Error initilising freetype\n"); return false; }
 
 	error = FT_New_Face(library, file, 0, &face); // Note: 0 is the face index, a file can contain multiple faces
 	if(error) printf("Error: Failed to load font %s\n", file);
@@ -38,22 +45,22 @@ gui::Font* gui::FreeTypeFont::load(const char* file, int size, const gui::GlyphR
 		}
 
 		// Guess a reasonable texture size
-		int count = 0;
-		for(const GlyphRange& range : glyphs) count += range.max - range.min + 1;
-		Point imageSize = selectImageSize(size, count);
+		Point imageSize = selectImageSize(size, countGlyphs());
 		int width = imageSize.x;
 		int height = imageSize.y;
 		count = 0;
 
+		createFace(size, ascent+descent);
+		allocateGlyphs();
+
 		printf("Font metrics: %d : %dx%d %d %d\n", size, width, height, ascent, descent);
-		font = createFontObject(size, ascent + descent);
 		Rect rect(0,0,0,ascent+descent);
 		unsigned char* data = new unsigned char[width * height * 4];
 		unsigned char* end = data + width * height * 4;
 		for(unsigned char* p = data; p<end; p+=4) p[0]=p[1]=p[2]=0xff, p[3]=0;
 
-		for(const GlyphRange& range : glyphs) {
-			for(int glyph=range.min; glyph<=range.max; ++glyph) {
+		for(const Range& range : m_glyphs) {
+			for(int glyph=range.start; glyph<=range.end; ++glyph) {
 				FT_UInt index = FT_Get_Char_Index(face, glyph);
 				if(FT_Load_Glyph(face, index, FT_LOAD_DEFAULT | FT_LOAD_RENDER)==0) {
 					if(face->glyph->bitmap.buffer) {
@@ -87,18 +94,18 @@ gui::Font* gui::FreeTypeFont::load(const char* file, int size, const gui::GlyphR
 				else printf("No glyph for '%c'\n", (char)glyph);
 			}
 		}
-		setFontImage(font, width, height, data);
+		addImage(width, height, data);
 		printf("Loaded font %s %dx%d %d glyphs\n", file, width, height, count);
 		delete [] data;
 	}
 	FT_Done_FreeType(library);
-	return font;
+	return error == 0;
 }
 
 #else
-gui::Font* gui::FreeTypeFont::load(const char* file, int size, const gui::GlyphRangeVector& glyphs) {
+bool gui::FreeTypeFont::build(int size) {
 	printf("Error: Baselib not compiled with freetype\n");
-	return 0;
+	return false;
 }
 #endif
 

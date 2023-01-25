@@ -551,49 +551,26 @@ void Renderer::drawNineSlice(const Rect& rect, int image, const Rect& src, const
 
 Point Renderer::drawText(const Point& pos, const Font* font, int size, unsigned colour, const char* text, uint limit) {
 	if(colour>>24==0) return pos; // fully transparent
-	const Rect rect(pos, font->getSize(text, size));
+	const Rect rect(pos, font->getSize(text, size, limit>0? limit: -1));
 	Batch* batch = getBatch(rect, font->getTexture() | 0x10000);
 	if(!batch) return Point(rect.right(), pos.y);
 
 	uint len = strlen(text);
 	if(limit>0 && limit<len) len = limit;
-	float scale = font->getScale(size);
-	Point ts = font->getTextureSize();
-	float ix = 1.f/ts.x;
-	float iy = 1.f/ts.y;
-	Rect dst = rect;
 	batch->vertices.reserve(batch->vertices.size() + len*4);
 	batch->indices.reserve(batch->vertices.size() + len*5);
-	for(const char* c=text; *c&&len; ++c, --len) {
-		if(*c=='\n') {
-			dst.x = pos.x;
-			dst.y += font->getLineHeight(size);
-			if(dst.y >= m_scissor.back().bottom()) break;
-		}
-		else {
-			const Rect& src = font->getGlyph(*c);
-			if(src.width) {
-				dst.width = src.width * scale;
-				dst.height = src.height * scale;
-				if(m_scissor.back().intersects(dst)) {
-					batch->vertices.emplace_back(dst.x,       dst.y,        src.x*ix,       src.y*iy,       colour);
-					batch->vertices.emplace_back(dst.right(), dst.y,        src.right()*ix, src.y*iy, colour);
-					batch->vertices.emplace_back(dst.x,       dst.bottom(), src.x*ix,       src.bottom()*iy,       colour);
-					batch->vertices.emplace_back(dst.right(), dst.bottom(), src.right()*ix, src.bottom()*iy, colour);
+	int start = batch->vertices.size();
 
-					unsigned short k = batch->vertices.size();
-					batch->indices.push_back(k-4);
-					batch->indices.push_back(k-2);
-					batch->indices.push_back(k-3);
-					batch->indices.push_back(k-3);
-					batch->indices.push_back(k-2);
-					batch->indices.push_back(k-1);
-				}
-				dst.x += dst.width;
-			}
-		}
-	}
-	return dst.position();
+	auto addVx = [batch, colour](float x, float y, float u, float v) {
+		batch->vertices.emplace_back(x, y, u, v, colour);
+	};
+	auto addIx = [batch, start](int ix) {
+		batch->indices.push_back(start + ix);
+	};
+
+	Point p = pos;
+	font->buildVertexArray(text, len, size, p, m_scissor.back(), addVx, addIx);
+	return p;
 }
 
 void Renderer::drawLineStrip(int count, const Point* line, float width, const Point& offset, unsigned colour) {

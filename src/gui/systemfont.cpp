@@ -1,4 +1,5 @@
 #include <base/gui/font.h>
+#include <cstring>
 #include <cstdio>
 
 #ifdef LINUX
@@ -10,29 +11,32 @@
 #include <base/window_win32.h>
 #endif
 
+
+gui::SystemFont::SystemFont(const char* name) {
+	strncpy(m_name, name, sizeof(m_name));
+}
+
+
 #ifdef LINUX	// Linux X11
-gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRangeVector& glyphs) {
-	if(glyphs.empty()) return 0;
-	Font* result = 0;
+bool gui::SystemFont::build(int size) {
+	if(m_glyphs.empty()) return false;
 	bool bold = false;
 	
 	char str[256];
-	sprintf(str, "-*-%s-%s-r-*-*-*-%i-75-75-*-*-*-*", name, bold?"bold":"medium", size*10);
+	sprintf(str, "-*-%s-%s-r-*-*-*-%i-75-75-*-*-*-*", m_name, bold?"bold":"medium", size*10);
 	Display* display = XOpenDisplay(0);
 	XFontStruct* font = XLoadQueryFont(display, str);
 
 	// Error
 	if(!font) {
-		printf("Failed to create font %s - Using fallback\n", name);
+		printf("Failed to create font %s - Using fallback\n", m_name);
 		font = XLoadQueryFont(display, "fixed");
 		size = font->max_bounds.ascent; // fallback font may have a different size
 	}
-	else printf("Created font %s\n", name);
+	else printf("Created font %s\n", m_name);
 
 	// Guess a reasonable texture size
-	int count = 0;
-	for(const GlyphRange& range : glyphs) count += range.max - range.min + 1;
-	Point imageSize = selectImageSize(size, count);
+	Point imageSize = selectImageSize(size, countGlyphs());
 	int width = imageSize.x;
 	int height = imageSize.y;
 
@@ -51,10 +55,11 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 	int x = 0;
 	int y = font->max_bounds.ascent;
 	int h = font->max_bounds.ascent + font->max_bounds.descent;
-	result = createFontObject(size, h);
 	Rect rect;
-	for(const GlyphRange& range : glyphs) {
-		for(unsigned i=range.min; i<=range.max; ++i) {
+	createFace(size, h);
+	allocateGlyphs();
+	for(const Range& range : m_glyphs) {
+		for(int i=range.start; i<=range.end; ++i) {
 			char c = i;
 			int w = XTextWidth(font, &c, 1);
 			if(x + w > width) x=0, y+=h;
@@ -62,7 +67,7 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 			rect.y = y - font->max_bounds.ascent;
 			rect.width = w;
 			rect.height = h;
-			setGlyph(result, i, rect);
+			setGlyph(i, rect);
 			XDrawString(display, pix, gc, x, y, &c, 1);
 			x += w;
 		}
@@ -75,7 +80,7 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 		data[i*4] = data[i*4+1] = data[i*4+2] = 0xff;
 		data[i*4+3] = img->data[i*4];
 	}
-	setFontImage(result, width, height, data);
+	addImage(width, height, data);
 
 	// Cleanup
 	XFreePixmap(display, pix);
@@ -83,7 +88,7 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 	XFreeFont(display, font);
 	XCloseDisplay(display);
 	delete [] data;
-	return result;
+	return true;
 }
 #endif
 
@@ -92,24 +97,22 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 
 
 #ifdef WIN32
-gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRangeVector& glyphs) {
-	if(glyphs.empty()) return 0;
+bool gui::SystemFont::build(int size) {
+	if(m_glyphs.empty()) return false;
 	bool bold = false;
 
 	// Handle unicode
 	#ifdef UNICODE
 	typedef wchar_t char_t;
 	wchar_t fontName[64];
-	mbstowcs(fontName, name, strlen(name));
+	mbstowcs(fontName, m_name, strlen(m_name));
 	#else
 	typedef char char_t;
-	const char* fontName = name;
+	const char* fontName = m_name;
 	#endif
 
 	// Guess a reasonable texture size
-	int count = 0;
-	for(const GlyphRange& range : glyphs) count += range.max - range.min + 1;
-	Point imageSize = selectImageSize(size, count);
+	Point imageSize = selectImageSize(size, countGlyphs());
 	int width = imageSize.x;
 	int height = imageSize.y;
 
@@ -133,15 +136,16 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 	SetTextColor(memDC, 0x00ffffff);
 	
 	// Render font
+	createFace(size, h);
+	allocateGlyphs();
 	Rect rect(0,0,0,metrics.tmHeight);
-	Font* result = createFontObject(size, rect.height);
-	for(const GlyphRange& range : glyphs) {
-		for(unsigned i=range.min; i<=range.max; ++i) {
+	for(const Range& range : m_glyphs) {
+		for(unsigned i=range.start; i<=range.end; ++i) {
 			char_t c = i;
 			GetCharWidth(memDC, c, c, &rect.width);
 			if(rect.right() > width) rect.x=0, rect.y += rect.height;
 			TextOut(memDC, rect.x, rect.y, &c, 1);
-			setGlyph(result, i, rect);
+			setGlyph(i, rect);
 			rect.x += rect.width;
 		}
 	}
@@ -163,13 +167,11 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 			data[i*4] = data[i*4+1] = data[i*4+2] = 0xff;
 			data[i*4+3] = imgData[i*4];
 		}
-		setFontImage(result, width, height, data);
+		addImage(width, height, data);
 		delete [] data;
 	}
 	else {
 		printf("Font fail\n");
-		delete result;
-		result = 0;
 	}
 	
 	// Cleanup
@@ -179,13 +181,13 @@ gui::Font* gui::SystemFont::load(const char* name, int size, const gui::GlyphRan
 	DeleteObject(bmp);
 	DeleteObject(font);
 	DeleteDC(memDC);
-	return result;
+	return true;
 }
 #endif
 
 #if !defined(LINUX) && !defined(WIN32)
-gui::Font* gui::SystemFont::load(const char* file, int size, const gui::GlyphRangeVector& glyphs) {
+gui::Font* gui::SystemFont::build(int size) {
 	printf("Error: No system font availiable\n");
-	return 0;
+	return false;
 }
 #endif

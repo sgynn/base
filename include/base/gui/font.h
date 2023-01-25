@@ -1,83 +1,159 @@
-// New font class thet can tender TTF fonts
-
 #pragma once
 
 #include <base/point.h>
 #include <vector>
 
 namespace gui {
-
 class Font {
 	public:
-	Font(const char* name, int size);
-	Font(const char* name, const char* characters=0);
+	struct Range { unsigned start, end; };
+	using GlyphRangeVector = std::vector<Range>;
+
+	public:
+	Font();
+	Font(const char* source, int size=24);
 	~Font();
+	
+	// Add a new face to this font
+	template<class Loader> bool addFace(Loader& loader, int size);
 
-	/** Render a string to the screen */
-	//const Point& print(int x, int y, const char* text) const { return print(x,y,m_size,text); }
-	//const Point& print(int x, int y, int size, const char* text) const;
-	/** Render a formatted string to the screen */
-	//const Point& printf(int x, int y, const char* format, ... ) const;
-	//const Point& printf(int x, int y, int size, const char* format, ... ) const;
-	/** Get the size in texels of a string */
-	Point getSize(const char* c, int size=0, int len=-1) const;
-	/** Get the size of a character */
-	Point getSize(const char c, int size=0) const;
+	int getFontSize(int closest=0) const;	// get base font size
+	Point getSize(const char* string, int size, int len=-1) const;
+	Point getSize(unsigned character, int size) const;
+	int getLineHeight(int size) const;
 
-	float getScale(int size) const { return size? (float)size/m_size: 1.f; }
-	const Rect& getGlyph(char c) const { return m_glyphs[c>0?c:0]; }
-	int getLineHeight(int size=0) const { return (int)(m_glyphHeight * getScale(size) + 0.5f); }
-
+	template<class VxFunc, class IxFunc>
+	int buildVertexArray(const char* string, int len, float size, Point& pos, const Rect& clip, const VxFunc& vfunc, const IxFunc& ifunc) const;
 	unsigned getTexture() const { return m_texture; }
-	const Point getTextureSize() const { return Point(m_w, m_h); }
 
-
-	private:
-	/** Generate font image from system font */
-	unsigned char* build(const char* name, int size, int width, int height);
-	/** Extract glyph data for a bitmap font */
-	int findGlyphs(char* bmp, int w, int h, int bpp, const char* characters=0);
+	static int readUTF8Character(const char*& text);
 
 	private:
 	friend class FontLoader;
-	Font();
-	unsigned m_texture;	// OpenGL texture unit
-	int m_w, m_h;		// Texture size
-	int m_size;			// Rendered font size
-	int m_glyphHeight; 	// Everything has the same height
-	std::vector<Rect> m_glyphs; // Glyph texture coordinates
+	
+	struct GlyphRange {
+		size_t start;
+		std::vector<Rect> glyphs;
+	};
+	struct Face {
+		int size;
+		int height;
+		std::vector<GlyphRange> groups;
+	};
+	std::vector<Face> m_faces;
+	unsigned m_texture = 0;
+	Point m_textureSize;
+
+	const Face* selectFace(int size) const;
+	const Rect& getGlyph(const Face& face, unsigned character) const;
 };
 
-struct GlyphRange { unsigned min, max; };
-using GlyphRangeVector = std::vector<GlyphRange>;
 
 class FontLoader {
+	public:
+	FontLoader() {}
+	virtual ~FontLoader() {}
+	virtual bool build(int size) = 0;
+	void addRange(int start, int end);
+	bool build(Font* parent, int size);
+	int countGlyphs() const;
 	protected:
-	static Font* createFontObject(int size, int height);
-	static void  setFontSize(Font* font, int size, int height);
-	static void  setFontImage(Font* font, int w, int h, void* data);
-	static Point selectImageSize(int fontSize, int glyphCount);
-	static void  setGlyph(Font* font, unsigned code, const Rect& rect);
+	void createFace(int size, int lineHeight);
+	void addImage(int w, int h, const unsigned char* pixels);
+	bool setGlyph(unsigned code, const Rect& rect);
+	void allocateGlyphs();
+	Point selectImageSize(int size, int count) const;
+	protected:
+	struct Range { int start, end; };
+	std::vector<Range> m_glyphs;
+	private:
+	Font::Face* m_face = 0;
+	Font* m_font = 0;
 };
 
 class SystemFont : public FontLoader {
 	public:
-	static Font* load(const char* name, int size, const GlyphRangeVector& characters={{32,126}});
+	SystemFont(const char* name);
+	bool build(int size) override;
+	protected:
+	char m_name[32];
 };
 
 class FreeTypeFont : public FontLoader {
 	public:
-	static Font* load(const char* name, int size, const GlyphRangeVector& characters={{32,126}});
+	FreeTypeFont(const char* file);
+	bool build(int size) override;
+	protected:
+	char m_file[128];
 };
 
 class BitmapFont : public FontLoader {
 	public:
-	static Font* load(const char* name, const char* characters=0);
+	BitmapFont(const char* file, const char* characters);
+	bool build(int size) override;
+	protected:
+	char m_file[128];
+	char* m_characters;
 };
 
+}
 
+inline int gui::Font::readUTF8Character(const char*& text) {
+	const char* c = text;
+	if((*c&0x80)==0)    { text+=1; return c[0]; }
+	if((*c&0xe0)==0xc0) { text+=2; return (c[0]&0x1f<<6)  | (c[1]&0x3f); }
+	if((*c&0xf0)==0xe0) { text+=3; return (c[0]&0x0f<<12) | (c[1]&0x3f<<6)  | (c[2]&0x3f); }
+	if((*c&0xf8)==0xf0) { text+=4; return (c[0]&0x07<<18) | (c[1]&0x3f<<12) | (c[2]&0x3f<<6) | (c[3]&0x3f); }
+	++text;
+	return 0; // Error: Invalid utf-8 character
+}
 
+template<class Loader> bool gui::Font::addFace(Loader& loader, int size) {
+	return static_cast<FontLoader*>(&loader)->build(this, size);
+}
 
+template<class VxFunc, class IxFunc>
+int gui::Font::buildVertexArray(const char* text, int len, float size, Point& pos, const Rect& rect, const VxFunc& vfunc, const IxFunc& ifunc) const {
+	const Face* face = selectFace(size);
+	if(!face) return 0;
 
+	float scale = (float)size / face->size;
+	float ix = 1.f / m_textureSize.x;
+	float iy = 1.f / m_textureSize.y;
+	Rect dst = pos;
+	unsigned k = 0;
+	unsigned code = 0;
+	if(len<0) len = 1<<24;
+	while(*text && len) {
+		code = readUTF8Character(text);
+		if(code=='\n') {
+			dst.x = pos.x;
+			dst.y += face->height * scale;
+			if(dst.y >= rect.bottom()) break;
+		}
+		else {
+			const Rect& src = getGlyph(*face, code);
+			if(src.width) {
+				dst.width = src.width * scale;
+				dst.height = src.height * scale;
+				if(rect.intersects(dst)) {
+					vfunc(dst.x,       dst.y,        src.x*ix,       src.y*iy);
+					vfunc(dst.right(), dst.y,        src.right()*ix, src.y*iy);
+					vfunc(dst.x,       dst.bottom(), src.x*ix,       src.bottom()*iy);
+					vfunc(dst.right(), dst.bottom(), src.right()*ix, src.bottom()*iy);
+					ifunc(k);
+					ifunc(k+2);
+					ifunc(k+1);
+					ifunc(k+1);
+					ifunc(k+2);
+					ifunc(k+3);
+					k+=4;
+				}
+				dst.x += dst.width;
+			}
+		}
+	}
+	pos = dst.position();
+	return k/4;
 }
 

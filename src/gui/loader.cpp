@@ -100,6 +100,35 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 			// ToDo: Bitmap font support, glyph lists
 			const char* name = i->attribute("name");
 			if((~flags&LoadFlags::REPLACE) && getFont(name)) continue;
+
+			Font* font = new Font();
+			auto loadFontFace = [font](const XMLElement& face) {
+				int size = face.attribute("size", 16);
+				const char* src = face.attribute("source");
+				FontLoader* loader = nullptr;
+				if(strstr(src, ".png")) loader = new BitmapFont(src, face.attribute("characters", nullptr));
+				else if(strstr(src, ".ttf")) loader = new FreeTypeFont(src);
+				else loader = new SystemFont(src);
+				// Code point ranges
+				Point range = parsePoint(face.attribute("range"));
+				if(range.y>0) loader->addRange(range.x, range.y);
+				// Additional ranges
+				for(const XMLElement& r: face) {
+					if(r == "range") loader->addRange(r.attribute("start", 0), r.attribute("end", 0));
+				}
+				// default range if none set
+				if(loader->countGlyphs() == 0) loader->addRange(32, 126);
+				return font->addFace(*loader, size);
+			};
+
+			bool valid = false;
+			if(i->size() == 0) valid = loadFontFace(*i);
+			else for(auto& face: *i) {
+				if(face == "face") valid |= loadFontFace(face);
+			}
+
+
+			/*
 			const char* src = i->attribute("source", name);
 			int baseSize = i->attribute("size", 16);
 			printf("new Font %s (%s, %d)\n", name, src, baseSize);
@@ -107,7 +136,9 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 			if(strstr(src, ".png")) font = BitmapFont::load(src);
 			else if(strstr(src, ".ttf")) font = FreeTypeFont::load(src, baseSize);
 			else font = SystemFont::load(src, baseSize);
-			if(font) addFont(name, font);
+			*/
+			if(valid) addFont(name, font);
+			else delete font;
 		}
 		else if(*i == "skin") {
 			if(~flags&LoadFlags::SKINS) continue;

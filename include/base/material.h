@@ -51,6 +51,18 @@ namespace base {
 		bool      wireframe;	// wireframe polygon mode
 	};
 
+	/// Stencil buffer
+	class StencilState {
+		public:
+		StencilState& operator==(const StencilState&) const;
+		void bind();
+		public:
+		int mode; //?
+		int value;
+		int mask;
+		int test;
+	};
+
 	/** Shader variables */
 	class ShaderVars {
 		public:
