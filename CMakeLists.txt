@@ -207,7 +207,8 @@ install(FILES ${guiheaders} DESTINATION include/base/gui)
 
 
 if(WEB)
-	set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -DFREETYPE -pthread -s USE_PTHREADS=1 -s USE_FREETYPE=1")
+	#set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -DFREETYPE -pthread -s USE_PTHREADS=1 -s USE_FREETYPE=1")
+	set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -DFREETYPE -s USE_FREETYPE=1")
 	install(TARGETS base DESTINATION lib/wasm32-emscripten)
 elseif(MINGW)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32")
