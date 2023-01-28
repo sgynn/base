@@ -553,6 +553,10 @@ Point Renderer::drawText(const Point& pos, const Font* font, int size, unsigned 
 	if(colour>>24==0) return pos; // fully transparent
 	const Rect rect(pos, font->getSize(text, size, limit>0? limit: -1));
 	Batch* batch = getBatch(rect, font->getTexture() | 0x10000);
+	// Special case - if text has no width we still need to return height offset
+	if(rect.width == 0 && rect.height > 0) {
+		return Point(pos.x, rect.bottom() - font->getLineHeight(size));
+	}
 	if(!batch) return Point(rect.right(), pos.y);
 
 	uint len = strlen(text);

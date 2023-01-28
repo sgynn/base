@@ -125,6 +125,7 @@ int gui::Font::buildVertexArray(const char* text, int len, float size, Point& po
 	unsigned code = 0;
 	if(len<0) len = 1<<24;
 	while(*text && len) {
+		--len;
 		code = readUTF8Character(text);
 		if(code=='\n') {
 			dst.x = pos.x;

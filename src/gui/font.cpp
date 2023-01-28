@@ -46,7 +46,9 @@ Point Font::getSize(const char* string, int size, int len) const {
 
 Point Font::getSize(unsigned character, int size) const {
 	if(const Face* face = selectFace(size)) {
-		return getGlyph(*face, character).size();
+		const Rect& r = getGlyph(*face, character);
+		float scale = (float)size / face->size;
+		return Point(r.width * scale, r.height * scale);
 	}
 	return Point();
 }
