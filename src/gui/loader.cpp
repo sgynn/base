@@ -102,9 +102,10 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 			if((~flags&LoadFlags::REPLACE) && getFont(name)) continue;
 
 			Font* font = new Font();
-			auto loadFontFace = [font](const XMLElement& face) {
+			auto loadFontFace = [font](const XMLElement& face, const char* name) {
 				int size = face.attribute("size", 16);
-				const char* src = face.attribute("source");
+				const char* src = face.attribute("source", name);
+				if(!src || size<=0) return false;
 				FontLoader* loader = nullptr;
 				if(strstr(src, ".png")) loader = new BitmapFont(src, face.attribute("characters", nullptr));
 				else if(strstr(src, ".ttf")) loader = new FreeTypeFont(src);
@@ -122,9 +123,9 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 			};
 
 			bool valid = false;
-			if(i->size() == 0) valid = loadFontFace(*i);
+			if(i->size() == 0) valid = loadFontFace(*i, name);
 			else for(auto& face: *i) {
-				if(face == "face") valid |= loadFontFace(face);
+				if(face == "face") valid |= loadFontFace(face, 0);
 			}
 
 
