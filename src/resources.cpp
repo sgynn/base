@@ -114,7 +114,7 @@ class TextureLoader : public ResourceLoader<Texture> {
 	Texture* create(const char*, Manager*) override;
 	bool reload(const char* name, Texture* object, Manager*) override;
 	void destroy(Texture*) override;
-	float update() override;
+	ResourceLoadProgress update() override;
 	void updateT() override;
 	protected:
 	struct LoadMessage { Texture* target; char* file; PNG png; };
@@ -212,7 +212,7 @@ void TextureLoader::updateT() {
 	completed.push_back(std::move(msg));
 }
 
-float TextureLoader::update() {
+ResourceLoadProgress TextureLoader::update() {
 	MutexLock lock(resourceMutex);
 	for(LoadMessage& msg: completed) {
 		printf("Finished loading %s\n", msg.file);
@@ -229,8 +229,9 @@ float TextureLoader::update() {
 		}
 		free(msg.file);
 	}
+	ResourceLoadProgress r { (uint)completed.size(), (uint)requests.size() };
 	completed.clear();
-	return 1;
+	return r;
 }
 
 
@@ -1038,7 +1039,7 @@ Resources::Resources() {
 	models.setDefaultLoader( new ModelLoader(this));
 }
 
-float Resources::update() {
+int Resources::update() {
 	if(!resourceThread.running()) resourceThread.begin([this](int){
 		while(true) {
 			textures.getDefaultLoader()->updateT();
@@ -1046,6 +1047,10 @@ float Resources::update() {
 		}
 	},0);
 
-	return textures.getDefaultLoader()->update();
+	ResourceLoadProgress r = textures.getDefaultLoader()->update();
+	if(r.completed == 0 && r.remaining == 0) m_progress = 0;
+	else if(r.completed && r.remaining == 0) m_progress = 1;
+	else if(r.completed) m_progress += (1-m_progress) * (float)r.completed / (r.completed + r.remaining);
+	return r.completed;
 }
 

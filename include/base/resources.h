@@ -15,6 +15,7 @@ namespace base {
 	/** Singleton class global resource manager */
 	class Resources {
 		static Resources* s_instance;
+		float m_progress = 1.f;
 		public:
 		static Resources* getInstance() { return s_instance; }
 		Resources();
@@ -36,8 +37,9 @@ namespace base {
 		// Add serach path to all managers
 		void addPath(const char* path);
 		
-		// Threaded or deferred loading. returns percentage
-		float update();
+		// Threaded or deferred loading. returns number of items finished this call
+		int update();
+		float getProgress() const { return m_progress; }
 	};
 }
 
