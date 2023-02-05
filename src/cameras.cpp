@@ -8,8 +8,7 @@ using namespace base;
 
 CameraBase::CameraBase(float fov, float aspect, float near, float far) 
 	: Camera(fov,aspect?aspect:Game::aspect(),near,far), m_active(true), m_grabMouse(false),
-	m_moveSpeed(10), m_rotateSpeed(0.004), m_moveAcc(1), m_rotateAcc(1),
-	m_useUpVector(false), m_constraint(-8,8), m_keyBinding{0,1,2,3,~0u,~0u} {}
+	m_useUpVector(false), m_constraint(-8,8), m_binding{0,1,2,3,~0u,~0u,~0u,~0u} {}
 
 void CameraBase::setSpeed(float m, float r) {
 	m_moveSpeed = m;
@@ -36,13 +35,15 @@ void CameraBase::grabMouse(bool g) {
 	m_grabMouse = g;
 }
 
-void CameraBase::setKeys(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down) {
-	m_keyBinding[0] = forward;
-	m_keyBinding[1] = back;
-	m_keyBinding[2] = left;
-	m_keyBinding[3] = right;
-	m_keyBinding[4] = up;
-	m_keyBinding[5] = down;
+void CameraBase::setBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down, unsigned rotate, unsigned pan) {
+	m_binding.forward = forward;
+	m_binding.back = back;
+	m_binding.left = left;
+	m_binding.right = right;
+	m_binding.up = up;
+	m_binding.down = down;
+	m_binding.rotate = rotate;
+	m_binding.pan = pan;
 }
 
 
@@ -57,12 +58,12 @@ void FPSCamera::update(int mask) {
 	// Key Movement
 	if(mask & CU_KEYS) {
 		vec3 move;
-		if(in.check(m_keyBinding[0])) move.z = -1;
-		if(in.check(m_keyBinding[1])) move.z =  1;
-		if(in.check(m_keyBinding[2])) move.x = -1;
-		if(in.check(m_keyBinding[3])) move.x =  1;
-		if(in.check(m_keyBinding[4])) move.y =  1;
-		if(in.check(m_keyBinding[5])) move.y = -1;
+		if(in.check(m_binding.forward)) move.z = -1;
+		if(in.check(m_binding.back))    move.z =  1;
+		if(in.check(m_binding.left))    move.x = -1;
+		if(in.check(m_binding.right))   move.x =  1;
+		if(in.check(m_binding.up))      move.y =  1;
+		if(in.check(m_binding.down))    move.y = -1;
 		m_velocity += move * (m_moveSpeed * m_moveAcc);
 		m_position += m_rotation * m_velocity;
 		if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
@@ -70,7 +71,7 @@ void FPSCamera::update(int mask) {
 	}
 	
 	//Rotation
-	if(m_active && (mask&CU_MOUSE)) {
+	if(m_active && (mask&CU_MOUSE) && (m_binding.rotate==~0u || in.check(m_binding.rotate))) {
 		float dx = in.mouse.delta.x;
 		float dy = in.mouse.delta.y;
 		m_rVelocity -= vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
@@ -107,8 +108,6 @@ void FPSCamera::update(int mask) {
 
 OrbitCamera::OrbitCamera(float f, float a, float near, float far)
 	: CameraBase(f,a,near,far)
-	, m_zoomFactor(0.2)
-	, m_zoomAcc(1)
 	, m_zoomDelta(0)
 {
 	setUpVector( vec3(0,1,0) );
@@ -138,6 +137,14 @@ void OrbitCamera::setZoomLimits(float min, float max) {
 	else if(d>max*max) m_position = m_target - getDirection() * max;
 }
 
+void OrbitCamera::enableMousePan(float d, const vec3& n) {
+	m_panNormal = n;
+	m_panOffset = d;
+}
+void OrbitCamera::disableMousePan() {
+	m_panNormal.set(0,0,0);
+}
+
 void OrbitCamera::update(int mask) {
 	Input& in = *Game::input();
 	float distance = m_position.distance(m_target);
@@ -163,13 +170,12 @@ void OrbitCamera::update(int mask) {
 	// Movement input
 	if(mask & CU_KEYS) {
 		vec3 move;
-		if(in.check(m_keyBinding[0])) move.z = -1;
-		if(in.check(m_keyBinding[1])) move.z =  1;
-		if(in.check(m_keyBinding[2])) move.x = -1;
-		if(in.check(m_keyBinding[3])) move.x =  1;
-		if(in.check(m_keyBinding[4])) move.y =  1;
-		if(in.check(m_keyBinding[5])) move.y = -1;
-
+		if(in.check(m_binding.forward)) move.z = -1;
+		if(in.check(m_binding.back))    move.z =  1;
+		if(in.check(m_binding.left))    move.x = -1;
+		if(in.check(m_binding.right))   move.x =  1;
+		if(in.check(m_binding.up))      move.y =  1;
+		if(in.check(m_binding.down))    move.y = -1;
 		vec3 z = getDirection();
 		vec3 x = m_upVector.cross(z).normalise();
 		z = x.cross(m_upVector);
@@ -182,8 +188,36 @@ void OrbitCamera::update(int mask) {
 	if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
 	else m_velocity.set(0,0,0);
 
+
+	// Mouse grap panning
+	static const vec3 zero(0,0,0);
+	if(m_active && m_panNormal != zero) {
+		if((mask&CU_MOUSE) && in.pressed(m_binding.pan)) {
+			Ray ray = getMouseRay(in.mouse, Game::getSize());
+			if(fabs(ray.direction.dot(m_panNormal)) > 0.1) {
+				float t = (m_panOffset - m_position.dot(m_panNormal)) / ray.direction.dot(m_panNormal);
+				if(t>0) {
+					m_panHold = ray.point(t);
+					mask &= ~CU_MOUSE;
+				}
+			}
+		}
+		else if(in.check(m_binding.pan) && m_panHold != zero) {
+			Ray ray = getMouseRay(in.mouse, Game::getSize());
+			float t = (m_panOffset - m_position.dot(m_panNormal)) / ray.direction.dot(m_panNormal);
+			if(t > 0) {
+				vec3 shift = m_panHold - ray.point(t);
+				m_target += shift;
+				m_position += shift;
+				m_velocity = lerp(m_velocity, shift, m_moveAcc);
+			}
+			mask &= ~CU_MOUSE;
+		}
+		else m_panHold = zero;
+	}
+
 	// Mouse Rotation input
-	if(m_active && (mask&CU_MOUSE)) {
+	if(m_active && (mask&CU_MOUSE) && (m_binding.rotate==~0u || in.check(m_binding.rotate))) {
 		float dx = in.mouse.delta.x;
 		float dy = in.mouse.delta.y;
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);

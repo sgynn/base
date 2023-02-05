@@ -127,7 +127,7 @@ namespace base {
 		/** Update camera */
 		virtual void update(int mask=CU_ALL) = 0;
 		/** Set camera speeds */
-		void setSpeed(float movement=1.0, float rotation=0.004);
+		void setSpeed(float movement, float rotation=0.004);
 		/** Movement smoothing - parameters {0>x>=1}. Lower values are smoother */
 		void setSmooth(float movement, float rotation);
 		/** Up vector - set to null vector if unconstrained */
@@ -135,21 +135,32 @@ namespace base {
 		/** Set pitch constraint */
 		void setPitchLimits(float min=-PI, float max=PI);
 		/** Set key input binding */
-		void setKeys(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down);
+		void setBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up=~0u, unsigned down=~0u, unsigned rotate=~0u, unsigned drag=~0u);
 
 		protected:
+		float m_moveSpeed	= 10;		// Movement speed
+		float m_rotateSpeed	= 0.004;	// Rotation speed from mouse delta
+		float m_moveAcc		= 1.0;		// Movement acceleration for smoothing
+		float m_rotateAcc	= 1.0;		// Rotational acceleration for smoothing
+
 		bool m_active;		// Does the camera update
 		bool m_grabMouse;	// Does this camera lock the mouse position
-		float m_moveSpeed;	// Movement speed
-		float m_rotateSpeed;// Rotation speed
-		float m_moveAcc;	// Movement acceleration for smoothing
-		float m_rotateAcc;	// Rotational acceleration for smoothing
 		vec3 m_velocity;	// Camera velocity
 		vec2 m_rVelocity;	// Rotational velocity
 		bool m_useUpVector;	// Enforce up vector
 		vec3 m_upVector;	// Up vector
 		Range m_constraint;	// Pitch constraints
-		unsigned m_keyBinding[6]; // Keys
+		
+		struct {
+			unsigned forward;	// Move forward
+			unsigned back;		// Move back
+			unsigned left;		// Move left
+			unsigned right;		// Move right
+			unsigned up;		// Move up
+			unsigned down;		// Move down
+			unsigned rotate;	// Mouse rotates when held
+			unsigned pan;		// Mouse pan when held
+		} m_binding;
 	};
 
 
