@@ -414,11 +414,13 @@ void Blend::setFromEnum(BlendMode mode, int& rsc, int& dst) {
 
 // ======================================================================================= //
 
-MacroState::MacroState() : cullMode(CULL_BACK), depthTest(DEPTH_LEQUAL), depthWrite(true), colourMask(MASK_ALL), wireframe(false) {
-}
-
 bool MacroState::operator==(const MacroState& m) const {
-	return cullMode==m.cullMode && depthTest==m.depthTest && depthWrite==m.depthWrite && wireframe==m.wireframe && colourMask==m.colourMask;
+	return cullMode==m.cullMode 
+		&& depthTest==m.depthTest
+		&& depthWrite==m.depthWrite
+		&& wireframe==m.wireframe
+		&& colourMask==m.colourMask
+		&& depthOffset==m.depthOffset;
 }
 void MacroState::bind() const {
 	switch(cullMode) {
@@ -439,6 +441,15 @@ void MacroState::bind() const {
 
 	glDepthMask(depthWrite);
 	glColorMask(colourMask&1, colourMask&2, colourMask&4, colourMask&8);
+
+	if(depthOffset != 0) {
+		glEnable(wireframe? GL_POLYGON_OFFSET_LINE: GL_POLYGON_OFFSET_FILL);
+		glPolygonOffset(depthOffset, 1);
+	}
+	else {
+		glDisable(GL_POLYGON_OFFSET_FILL);
+		glDisable(GL_POLYGON_OFFSET_LINE);
+	}
 
 	#ifndef EMSCRIPTEN
 	glPolygonMode(GL_FRONT_AND_BACK, wireframe? GL_LINE: GL_FILL);

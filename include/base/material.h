@@ -39,16 +39,16 @@ namespace base {
 	/** Material macro state */
 	class MacroState {
 		public:
-		MacroState();
 		bool operator==(const MacroState&) const;
 		void bind() const;
 
 		public:
-		CullMode  cullMode;		// Polygon cull mode
-		DepthTest depthTest;	// Depth test mode
-		bool      depthWrite;	// Do we write to depth buffer
-		char      colourMask;	// RGBA bitset for colour channels to write to
-		bool      wireframe;	// wireframe polygon mode
+		CullMode  cullMode   = CULL_BACK;		// Polygon cull mode
+		DepthTest depthTest  = DEPTH_LEQUAL;	// Depth test mode
+		bool      depthWrite = true;			// Do we write to depth buffer
+		char      colourMask = MASK_ALL;		// RGBA bitset for colour channels to write to
+		bool      wireframe  = false;			// wireframe polygon mode
+		float     depthOffset = 0;				// Polygon depth offset
 	};
 
 	/// Stencil buffer
