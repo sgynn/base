@@ -98,6 +98,19 @@ class String {
 	char* m_data;
 };
 
+class Transform {
+	bool identity = true;
+	float m_v[6] = { 1,0,0,1,0,0 };
+	public:
+	struct Pos { float x, y; };
+	Transform();
+	Pos transform(int x, int y) const;
+	Rect transform(const Rect& r) const;
+	Rect unTransform(const Rect& r) const;
+	Point unTransform(const Point& p) const;
+	float& operator[](int v) { return m[v]; }
+};
+
 
 /** Additional properties from external data - basically extra accessors for a string hashmap */
 class PropertyMap : public base::HashMap<const char*> {
@@ -278,7 +291,7 @@ class Widget {
 
 	Widget* findChildWidget(const char*) const;
 	Widget* findTemplateWidget(const char*) const;
-	virtual Widget* getWidget(const Point&, int mask, bool intangible=false, bool templates=false);
+	virtual Widget* getWidget(const Point&, int mask, bool intangible=false, bool templates=false, bool clip=true);
 };
 
 

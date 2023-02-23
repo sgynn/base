@@ -529,6 +529,17 @@ template<typename T> void SpinboxT<T>::initialise(const Root*, const PropertyMap
 		setValue(m_value);
 	}
 }
+
+template<typename T> Widget* SpinboxT<T>::clone(const char* t) const {
+	Widget* w = Widget::clone(t);
+	if(SpinboxT<T>* s = dynamic_cast<SpinboxT<T>*>(w)) {
+		s->m_value = m_value;
+		s->m_min = m_min;
+		s->m_wheelStep = m_wheelStep;
+		s->m_buttonStep = m_buttonStep;
+	}
+	return w;
+}
 template<typename T> void SpinboxT<T>::setStep(T b, T w) { m_buttonStep=b; m_wheelStep=w; }
 template<typename T> T SpinboxT<T>::getValue() const { return m_value; }
 template<typename T> void SpinboxT<T>::setValue(T v, bool event) {
@@ -1364,8 +1375,8 @@ bool SplitPane::remove(Widget* w) {
 	return Widget::remove(w);
 }
 
-Widget* SplitPane::getWidget(const Point& p, int typeMask, bool intangible, bool templates) {
-	if(!m_rect.contains(p) || !isVisible()) return 0;
+Widget* SplitPane::getWidget(const Point& p, int typeMask, bool intangible, bool templates, bool clip) {
+	if((clip && !m_rect.contains(p)) || !isVisible()) return 0;
 
 	// Override selecting splits outside their size
 	if(templates && typeMask == Widget::staticType()) {
@@ -1540,5 +1551,61 @@ Widget* Popup::addItem(Root* root, const char* tname, const char* name, const ch
 		setSize(getSize().x, bottom + w->getSize().y);
 	}
 	return w;
+}
+
+
+// ===================================================================================== //
+
+ScaleBox::ScaleBox(const Rect& r, Skin* s) : Widget(r, s) {
+	Widget* client = new Widget(r, nullptr);
+	client->setAsTemplate();
+	client->setTangible(Tangible::CHILDREN);
+	add(client, 0, 0);
+	m_client = client;
+}
+
+void ScaleBox::initialise(const Root* root, const PropertyMap& p) {
+	if(p.contains("scale")) setScale(atof(p["scale"]));
+}
+
+void ScaleBox::setScale(float scale) {
+	m_scale = scale;
+	m_client->setSize(m_rect.width / scale, m_rect.height / scale);
+	updateAutosize();
+}
+
+void ScaleBox::setSize(int w, int h) {
+	Widget::setSize(w, h);
+	m_client->setSize(m_rect.width / m_scale, m_rect.height / m_scale);
+}
+
+void ScaleBox::draw() const {
+	if(!isVisible()) return;
+	drawSkin();
+	if(getWidgetCount()) {
+		getRoot()->getRenderer()->push(m_rect);
+		getRoot()->getRenderer()->setScale(m_rect.position(), m_scale);
+		m_client->draw();
+		getRoot()->getRenderer()->setScale(Point(0,0), 1.f);
+		getRoot()->getRenderer()->pop();
+	}
+}
+
+Widget* ScaleBox::getWidget(const Point& p, int typeMask, bool tg, bool tm, bool clip) {
+	if((clip && !m_rect.contains(p)) || !isVisible()) return 0;
+	float inv = 1 / m_scale;
+	Point sp {
+		(int)(inv * p.x + m_rect.x - m_rect.x * inv),
+		(int)(inv * p.y + m_rect.y - m_rect.y * inv),
+	};
+	return Widget::getWidget(sp, typeMask, tg, tm, false);
+}
+
+void ScaleBox::updateAutosize() {
+	m_client->setAutosize(isAutosize());
+	if(!isAutosize()) return;
+	Point s = m_client->getPreferredSize();
+	setSizeAnchored(Point(s.x * m_scale, s.y * m_scale));
+	//setScale(fmin((float)m_rect.width / s.x, (float)m_rect.height / s.y)); // ToDo: AutoScale
 }
 

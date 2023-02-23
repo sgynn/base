@@ -44,6 +44,7 @@ Root::Root(int w, int h, Renderer* renderer) : m_focus(0), m_mouseFocus(0), m_ke
 		registerClass<SplitPane>();
 		registerClass<CollapsePane>();
 		registerClass<Popup>();
+		registerClass<ScaleBox>();
 
 		registerLayout<HorizontalLayout>();
 		registerLayout<VerticalLayout>();
@@ -656,8 +657,8 @@ Widget* Widget::getWidget(size_t index) const {
 	index += m_client->m_skipTemplate;
 	return index<m_client->m_children.size()? m_client->m_children[index]: 0;
 }
-Widget* Widget::getWidget(const Point& p, int typeMask, bool tg, bool tm) {
-	if(!m_rect.contains(p) || !isVisible()) return 0;
+Widget* Widget::getWidget(const Point& p, int typeMask, bool tg, bool tm, bool clip) {
+	if((clip && !m_rect.contains(p)) || !isVisible()) return 0;
 	Widget* client = tm? this: m_client;
 	if(tg || (m_states&8)) {	// child tangible
 		for(int i=client->m_children.size()-1; i>=0; --i) {

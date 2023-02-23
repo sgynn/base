@@ -1,5 +1,4 @@
-#ifndef _GUI_RENDERER_
-#define _GUI_RENDERER_
+#pragma once
 
 #include "gui.h"
 #include "skin.h"
@@ -88,6 +87,8 @@ class Renderer {
 	void  pushNew(const Rect& rect);
 	void  pop();
 
+	void setScale(const Point& origin, float scale);
+
 	protected:
 	int createTexture(int w, int h, int channels, void* data, bool clamp);
 	int createAtlas(int width, int height);
@@ -121,7 +122,13 @@ class Renderer {
 		int size = 0;
 	};
 
+	struct Transform {
+		bool identity = true;
+		float m[9] = {1,0,0,0,1,0,0,0,1};
+	};
+
 	unsigned m_shader = 0;
+	Transform m_transform;
 	std::vector<RenderBatch> m_renderData;
 	std::vector<Rect> m_scissor;
 	std::vector<Batch*> m_active;
@@ -135,11 +142,14 @@ class Renderer {
 	void  drawBox(const Rect& rect, int image, const Rect& src, const unsigned* colour, bool gradient=false, float angle=0);
 	void  drawNineSlice(const Rect& rect, int image, const Rect& src, const Skin::Border& border, unsigned colour);
 
+	private:
+	struct vec2 { float x, y; };
+	vec2 transform(int x, int y) const;
+	Rect transform(const Rect&) const;
+
 	public:
 	Point drawText(const Point& pos, const Font* font, int size, unsigned colour, const char* text, unsigned len=0);
 };
 
 }
-
-#endif
 
