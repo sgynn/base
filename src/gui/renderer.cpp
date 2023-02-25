@@ -225,7 +225,7 @@ Renderer::~Renderer() {
 }
 
 Renderer::Batch* Renderer::getBatch(const Rect& sbox, int image, float line) {
-	Rect box = transform(sbox);
+	Rect box = m_transform.transform(sbox);
 	if(image<0 || !m_scissor.back().intersects(box)) return 0;
 
 	int texture;
@@ -458,28 +458,16 @@ void Renderer::end() {
 
 
 void Renderer::push(const Rect& rect) {
-	if(m_transform.identity) {
-		Rect r = m_scissor.back();
-		r.intersect(rect);
-		m_scissor.push_back(r);
-	}
-	else {
-		Rect r = transform(rect);
-		r.intersect(m_scissor.back());
-		m_scissor.push_back(r);
-	}
+	Rect r = m_transform.transform(rect);
+	r.intersect(m_scissor.back());
+	m_scissor.push_back(r);
 }
 void Renderer::pushNew(const Rect& rect) {
-	if(m_transform.identity) m_scissor.push_back(rect);
-	else {
-		vec2 s = transform(rect.x, rect.y);
-		vec2 t = transform(rect.right(), rect.bottom());
-		Point p((int)s.y, (int)s.y);
-		m_scissor.push_back(Rect(p, ceil(t.x - p.x), ceil(t.y - p.y)));
-	}
+	m_scissor.push_back(m_transform.transform(rect));
 }
 void Renderer::pop() { m_scissor.pop_back(); }
 
+/*
 void Renderer::setScale(const Point& origin, float scale) {
 	m_transform.identity = scale == 1;
 
@@ -493,21 +481,7 @@ void Renderer::setScale(const Point& origin, float scale) {
 	m_transform.m[6] = origin.x - origin.x*scale;
 	m_transform.m[7] = origin.y - origin.y*scale;
 }
-
-inline Renderer::vec2 Renderer::transform(int x, int y) const {
-	if(m_transform.identity) return vec2{(float)x, (float)y};
-	return vec2 {
-		m_transform.m[0]*x + m_transform.m[3]*y + m_transform.m[6],
-		m_transform.m[1]*x + m_transform.m[4]*y + m_transform.m[7],
-	};
-}
-inline Rect Renderer::transform(const Rect& rect) const {
-	if(m_transform.identity) return rect;
-	vec2 s = transform(rect.x, rect.y);
-	vec2 t = transform(rect.right(), rect.bottom());
-	Point p((int)s.x, (int)s.y);
-	return Rect(p, ceil(t.x - p.x), ceil(t.y - p.y));
-}
+*/
 
 // ==================================================== //
 
@@ -522,8 +496,8 @@ void Renderer::drawBox(const Rect& rect, int image, const Rect& src, const unsig
 	const float ox = m_images[image].offX;
 	const float oy = m_images[image].offY;
 
-	vec2 s = transform(rect.x, rect.y);
-	vec2 t = transform(rect.right(), rect.bottom());
+	Transform::Pos s = m_transform.transformf(rect.x, rect.y);
+	Transform::Pos t = m_transform.transformf(rect.right(), rect.bottom());
 
 	unsigned short start = b.vertices.size();
 	b.vertices.emplace_back(s.x, s.y, src.x*ix+ox+ix/2,       src.y*iy+oy+iy/2,        colour[0]);
@@ -532,13 +506,14 @@ void Renderer::drawBox(const Rect& rect, int image, const Rect& src, const unsig
 	b.vertices.emplace_back(t.x, t.y, src.right()*ix+ox-ix/2, src.bottom()*iy+oy-iy/2, colour[3&gradient]);
 	
 	if(angle != 0) {
-		vec2 c = transform(rect.x + rect.width/2, rect.y + rect.width/2);
+		// TODO - just use the base transform, ignore angle
+		Transform::Pos c = m_transform.transformf(rect.x + rect.width/2, rect.y + rect.width/2);
 		float sinAngle = sin(angle);
 		float cosAngle = cos(angle);
-		float xx = sinAngle * rect.width/2 * m_transform.m[0];
-		float xy = cosAngle * rect.width/2 * m_transform.m[4];
-		float yx = cosAngle * rect.height/2 * m_transform.m[0];
-		float yy =-sinAngle * rect.height/2 * m_transform.m[4];
+		float xx = sinAngle * rect.width/2 * m_transform[0];
+		float xy = cosAngle * rect.width/2 * m_transform[4];
+		float yx = cosAngle * rect.height/2 * m_transform[0];
+		float yy =-sinAngle * rect.height/2 * m_transform[4];
 		b.vertices[start  ].x = c.x - xx - yx;
 		b.vertices[start  ].y = c.y - xy - yy;
 		b.vertices[start+1].x = c.x - xx + yx;
@@ -572,11 +547,11 @@ void Renderer::drawNineSlice(const Rect& rect, int image, const Rect& src, const
 	const float ox = m_images[image].offX;
 	const float oy = m_images[image].offY;
 
-	vec2 d[4] = {
-		transform(rect.x, rect.y),
-		transform(rect.x + b.left, rect.y + b.top),
-		transform(rect.right() - b.right, rect.bottom() - b.bottom),
-		transform(rect.right(), rect.bottom())
+	Transform::Pos d[4] = {
+		m_transform.transformf(rect.x, rect.y),
+		m_transform.transformf(rect.x + b.left, rect.y + b.top),
+		m_transform.transformf(rect.right() - b.right, rect.bottom() - b.bottom),
+		m_transform.transformf(rect.right(), rect.bottom())
 	};
 	
 	float sx[4] = { src.x*ix+ox, (src.x + b.left)*ix+ox, (src.right() - b.right)*ix+ox,   src.right()*ix+ox };
@@ -615,7 +590,7 @@ Point Renderer::drawText(const Point& pos, const Font* font, int size, unsigned 
 	int start = batch->vertices.size();
 
 	auto addVx = [this, batch, colour](float x, float y, float u, float v) {
-		vec2 p = transform(x, y);
+		Transform::Pos p = m_transform.transformf(x, y);
 		batch->vertices.emplace_back(p.x, p.y, u, v, colour);
 	};
 	auto addIx = [batch, start](int ix) {
@@ -623,15 +598,23 @@ Point Renderer::drawText(const Point& pos, const Font* font, int size, unsigned 
 	};
 
 	Rect clip = m_scissor.back();
-	if(!m_transform.identity) {
+	if(m_transform[1]==0 && m_transform[2]==0) {
 		// untransform clip rect
 		Point a = clip.position();
 		Point b = clip.bottomRight();
-		a.x = (a.x - m_transform.m[6]) / m_transform.m[0];
-		a.y = (a.y - m_transform.m[7]) / m_transform.m[4];
-		b.x = (b.x - m_transform.m[6]) / m_transform.m[0];
-		b.y = (b.y - m_transform.m[7]) / m_transform.m[4];
+		a.x = (a.x - m_transform[4]) / m_transform[0];
+		a.y = (a.y - m_transform[5]) / m_transform[3];
+		b.x = (b.x - m_transform[4]) / m_transform[0];
+		b.y = (b.y - m_transform[5]) / m_transform[3];
 		clip.set(a.x, a.y, b.x-a.x, b.y-a.y);
+	}
+	else {	// Rotation needs to include all points, and is probably wrong anyway
+		Point a = m_transform.untransform(clip.position());
+		Point b = m_transform.untransform(clip.bottomRight());
+		clip.set(a.x, a.y, 0, 0);
+		clip.include(b);
+		clip.include(a.x, b.y);
+		clip.include(b.x, a.y);
 	}
 
 	Point p = pos;
@@ -648,7 +631,7 @@ void Renderer::drawLineStrip(int count, const Point* line, float width, const Po
 	if(b) {
 		// Split multiple line strips
 		if(!b->vertices.empty()) {
-			vec2 p = transform(line[0].x + offset.x, line[0].y + offset.y);
+			Transform::Pos p = m_transform.transformf(line[0].x + offset.x, line[0].y + offset.y);
 			b->vertices.push_back(b->vertices.back());
 			b->vertices.back().colour = 0;
 			b->vertices.emplace_back(p.x, p.y, 0, 0, 0);
@@ -660,7 +643,7 @@ void Renderer::drawLineStrip(int count, const Point* line, float width, const Po
 		b->indices.reserve(b->indices.size() + count);
 		unsigned short start = b->vertices.size();
 		for(int i=0; i<count; ++i) {
-			vec2 p = transform(line[i].x + offset.x, line[i].y + offset.y);
+			Transform::Pos p = m_transform.transformf(line[i].x + offset.x, line[i].y + offset.y);
 			b->vertices.emplace_back(p.x, p.y, 0, 0, colour);
 			b->indices.push_back(start+i);
 		}
@@ -677,7 +660,7 @@ void Renderer::drawPolygon(int size, const Point* points, const Point& offset, u
 		b->indices.reserve(b->indices.size() + (size-2) * 3);
 		unsigned short start = b->vertices.size();
 		for(int i=0; i<size; ++i) {
-			vec2 p = transform(points[i].x + offset.x, points[i].y + offset.y);
+			Transform::Pos p = m_transform.transformf(points[i].x + offset.x, points[i].y + offset.y);
 			b->vertices.emplace_back(p.x, p.y, 0, 0, colour);
 		}
 		for(int i=2; i<size; ++i) {

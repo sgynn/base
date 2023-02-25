@@ -250,7 +250,7 @@ bool TreeView::onMouseWheel(int w) {
 void TreeView::onMouseButton(const Point& p, int d, int u) {
 	if(m_needsUpdating) updateCache();
 	// Single selection for now. ToDo: mutli selection modes
-	Point m = p - m_client->getAbsolutePosition();
+	Point m = p;
 	m.y -= m_cacheOffset;
 	m_zip = 0;
 	int index = m.y / m_itemHeight;
@@ -262,7 +262,7 @@ void TreeView::onMouseButton(const Point& p, int d, int u) {
 
 		// Expand button
 		if(d==1) {
-			if(m_expand && node->size()>0 && Rect(m_expand->getPosition(), m_expand->getSize()).contains(m)) {
+			if(m_expand && node->size()>0 && m_expand->getRect().contains(m)) {
 				node->expand( !node->isExpanded() );
 				if(eventExpanded && node->isExpanded()) eventExpanded(this, node);
 				else if(eventCollapsed && !node->isExpanded()) eventCollapsed(this, node);
@@ -276,7 +276,9 @@ void TreeView::onMouseButton(const Point& p, int d, int u) {
 		}
 
 		// Generic clicked event
-		if(d && eventPressed) eventPressed(this, node, d);
+		if(d && eventPressed && (!m_expand || !m_expand->getRect().contains(m))) {
+			eventPressed(this, node, d);
+		}
 
 	}
 	else if(m_selectedNode && d==1) {
@@ -288,7 +290,7 @@ void TreeView::onMouseButton(const Point& p, int d, int u) {
 
 void TreeView::onMouseMove(const Point& a, const Point& p, int b) {
 	if(m_zip) {
-		Point m = p - m_client->getAbsolutePosition();
+		Point m = p;
 		m.y -= m_cacheOffset;
 		int index = m.y / m_itemHeight;
 		if(index >= 0 && index < (int)m_drawCache.size()) {
@@ -298,7 +300,7 @@ void TreeView::onMouseMove(const Point& a, const Point& p, int b) {
 				m.y -= (m.y/m_itemHeight)*m_itemHeight;
 				m.x -= node->m_depth * m_indent;
 				if(m_hideRootNode) m.x += m_indent;
-				if(Rect(m_expand->getPosition(), m_expand->getSize()).contains(m)) {
+				if(m_expand->getRect().contains(m)) {
 					node->expand(expand);
 					if(eventExpanded && node->isExpanded()) eventExpanded(this, node);
 					else if(eventCollapsed && !node->isExpanded()) eventCollapsed(this, node);
@@ -560,7 +562,7 @@ void TreeView::draw() const {
 
 	// Set up item rect
 	Renderer* renderer = m_root->getRenderer();
-	Rect r(m_client->getAbsolutePosition(), m_client->getSize());
+	Rect r = m_client->getRect();
 	renderer->push(r);
 	r.height = m_itemHeight;
 	r.y += m_cacheOffset;

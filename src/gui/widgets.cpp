@@ -321,7 +321,7 @@ void Button::draw() const {
 }
 void Button::onMouseButton(const Point& p, int d, int u) {
 	Widget::onMouseButton(p, d, u);
-	if(hasFocus() && u==1 && eventPressed && m_rect.contains(p)) eventPressed(this);
+	if(hasFocus() && u==1 && eventPressed && contains(p)) eventPressed(this);
 }
 Point Button::getPreferredSize() const {
 	if(m_caption) return Label::getPreferredSize();
@@ -357,7 +357,7 @@ Widget* Checkbox::clone(const char* type) const {
 }
 
 void Checkbox::onMouseButton(const Point& p, int d, int u) {
-	if((hasFocus() && u==1 && !m_dragMode) || (d==1 && m_dragMode)) {
+	if((hasFocus() && u==1 && !m_dragMode && contains(p)) || (d==1 && m_dragMode)) {
 		m_states ^= 0x10; // Selected
 		if(eventChanged) eventChanged(this);
 	}
@@ -371,13 +371,18 @@ void Checkbox::onKey(int code, wchar_t, KeyMask) {
 }
 void Checkbox::onMouseMove(const Point& last, const Point& pos, int b) {
 	Widget::onMouseMove(last, pos, b);
-	if(m_dragMode && b && !m_rect.contains(pos)) {
-		Widget* parent = getParent();
-		while(parent->getParent() && !((int)parent->isTangible()&1)) parent = parent->getParent();
-		Checkbox* w = parent->getWidget<Checkbox>(pos);
-		if(w && w->isChecked() != isChecked()) {
-			w->setChecked(isChecked());
-			if(w->eventChanged) w->eventChanged(w);
+	if(m_dragMode && b && !contains(pos)) {
+		Point global = m_derivedTransform.transform(pos);
+		if(Checkbox* target = getRoot()->getRootWidget()->getWidget<Checkbox>(global, false, true)) {
+			if(target->isChecked() != isChecked()) {
+				Widget* p0 = m_parent;
+				Widget* p1 = target->getParent();
+				if(p0 != p1) { p0=p0->getParent(); p1=p1->getParent(); }
+				if(p0 == p1) {
+					target->setChecked(isChecked());
+					if(target->eventChanged) target->eventChanged(target);
+				}
+			}
 		}
 	}
 }
@@ -402,12 +407,12 @@ Widget* DragHandle::clone(const char* t) const {
 
 void DragHandle::onMouseButton(const Point& p, int d, int u) {
 	Widget::onMouseButton(p,d,u);
-	if(d) m_held = p - getAbsolutePosition();
+	if(d) m_held = p;
 }
 
 void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 	if(!b || !hasMouseFocus()) return;
-	Point delta = m_held - (pos - getAbsolutePosition());
+	Point delta = m_held - pos;
 	Widget* target = getParent();
 	const Point& view = target->getParent()->getSize();
 	if(m_mode == MOVE) {
@@ -423,7 +428,7 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 	else {
 		Point p = target->getPosition();
 		Point size = target->getSize();
-		const Rect& targetRect = target->getAbsoluteRect();
+		const Rect& targetRect = target->getRect();
 		int anchor[2] = { m_anchor&0xf, m_anchor>>4 };
 		auto resize = [&](int axis) {
 			if(anchor[axis] == 1) { // Size min
@@ -1376,14 +1381,15 @@ bool SplitPane::remove(Widget* w) {
 }
 
 Widget* SplitPane::getWidget(const Point& p, int typeMask, bool intangible, bool templates, bool clip) {
-	if((clip && !m_rect.contains(p)) || !isVisible()) return 0;
+	if(clip && !contains(p)) return nullptr;
+	if(m_children.empty()) return nullptr;
 
 	// Override selecting splits outside their size
 	if(templates && typeMask == Widget::staticType()) {
 		int hitSize = 4;
 		int count = getWidgetCount() - 1;
 		for(int i=0; i<count; ++i) {
-			const Rect& r = getTemplateWidget(i)->getAbsoluteRect();
+			const Rect& r = getTemplateWidget(i)->getRect();
 			Point s(r.x+r.width/2, r.y+r.height/2);
 			if(i<count-1 && p[m_mode] > getTemplateWidget(i+1)->getAbsoluteRect().position()[m_mode]) continue;
 			if(abs(s[m_mode]-p[m_mode]) < hitSize) return getTemplateWidget(i);
@@ -1448,12 +1454,12 @@ void Window::setMinimumSize(int w, int h) {
 void Window::onMouseButton(const Point& p, int d, int u) {
 	raise();
 	Widget::onMouseButton(p,d,u);
-	if(!m_title) grabHandle(this, p-m_rect.position() ,d);
+	if(!m_title) grabHandle(this, p ,d);
 }
 
 void Window::onMouseMove(const Point& l, const Point& p, int b) {
 	Widget::onMouseMove(l,p,b);
-	if(!m_title) dragHandle(this, p-m_rect.position(), b);
+	if(!m_title) dragHandle(this, p, b);
 }
 
 void Window::pressClose(Button*) {
@@ -1568,10 +1574,24 @@ void ScaleBox::initialise(const Root* root, const PropertyMap& p) {
 	if(p.contains("scale")) setScale(atof(p["scale"]));
 }
 
+void ScaleBox::updateTransforms() {
+	if(!m_parent) return;
+	m_derivedTransform = m_parent->getDerivedTransform();
+	m_derivedTransform.translate(m_rect.x, m_rect.y);
+	m_derivedTransform.scale(m_scale);
+	updateChildTransforms();
+}
+
 void ScaleBox::setScale(float scale) {
 	m_scale = scale;
 	m_client->setSize(m_rect.width / scale, m_rect.height / scale);
 	updateAutosize();
+	updateTransforms();
+}
+
+void ScaleBox::setPosition(int x, int y) {
+	Widget::setPosition(x, y);
+	updateTransforms();
 }
 
 void ScaleBox::setSize(int w, int h) {
@@ -1579,26 +1599,14 @@ void ScaleBox::setSize(int w, int h) {
 	m_client->setSize(m_rect.width / m_scale, m_rect.height / m_scale);
 }
 
-void ScaleBox::draw() const {
-	if(!isVisible()) return;
-	drawSkin();
-	if(getWidgetCount()) {
-		getRoot()->getRenderer()->push(m_rect);
-		getRoot()->getRenderer()->setScale(m_rect.position(), m_scale);
-		m_client->draw();
-		getRoot()->getRenderer()->setScale(Point(0,0), 1.f);
-		getRoot()->getRenderer()->pop();
-	}
-}
-
 Widget* ScaleBox::getWidget(const Point& p, int typeMask, bool tg, bool tm, bool clip) {
 	if((clip && !m_rect.contains(p)) || !isVisible()) return 0;
-	float inv = 1 / m_scale;
-	Point sp {
-		(int)(inv * p.x + m_rect.x - m_rect.x * inv),
-		(int)(inv * p.y + m_rect.y - m_rect.y * inv),
-	};
-	return Widget::getWidget(sp, typeMask, tg, tm, false);
+	// Widget::getWidget assumes transform is merely translation
+	
+	Point local = p;
+	local.x /= m_scale;
+	local.y /= m_scale;
+	return Widget::getWidget(local, typeMask, tg, tm, false);
 }
 
 void ScaleBox::updateAutosize() {

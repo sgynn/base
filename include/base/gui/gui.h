@@ -1,12 +1,13 @@
-#ifndef _GUI_
-#define _GUI_
+#pragma once
 
 #include <base/hashmap.h>
 #include <base/point.h>
 #include "delegate.h"
+#include "transform.h"
 #include <vector>
 
 #include <cstdio>
+#include <cmath>
 #include <typeinfo>
 
 namespace base { class XMLElement; }
@@ -58,9 +59,6 @@ inline LoadFlags operator|(LoadFlags a, LoadFlags b) { return (LoadFlags)((int)a
 #define WIDGET_TYPE(name) RTTI_DERIVED(name);
 
 
-
-
-
 /** Gui string class - basically a cstring wrapper */
 class String {
 	public:
@@ -98,20 +96,6 @@ class String {
 	char* m_data;
 };
 
-class Transform {
-	bool identity = true;
-	float m_v[6] = { 1,0,0,1,0,0 };
-	public:
-	struct Pos { float x, y; };
-	Transform();
-	Pos transform(int x, int y) const;
-	Rect transform(const Rect& r) const;
-	Rect unTransform(const Rect& r) const;
-	Point unTransform(const Point& p) const;
-	float& operator[](int v) { return m[v]; }
-};
-
-
 /** Additional properties from external data - basically extra accessors for a string hashmap */
 class PropertyMap : public base::HashMap<const char*> {
 	public:
@@ -147,7 +131,7 @@ class Widget {
 	void setPositionFloat(float x, float y, float w, float h);
 	void useRelativePositioning(bool);
 
-	Point getPosition() const;
+	const Point& getPosition() const;
 	const Point& getSize() const;
 	virtual Point getPreferredSize() const;		// If autoSize, gets the target size
 
@@ -189,7 +173,7 @@ class Widget {
 	int     getTemplateIndex() const;
 	int     getTemplateCount() const { return m_skipTemplate; }
 	Widget* getTemplateWidget(size_t index) { return index<(size_t)m_skipTemplate? m_children[index]: 0; }
-	Widget* getParent() const;
+	Widget* getParent(bool includeTemplates=false) const;
 	Widget* getWidget(size_t index) const;
 	template<class T=Widget> T* getWidget(size_t index) const {
 		Widget* w = getWidget(index); return w? w->cast<T>(): 0;
@@ -206,18 +190,19 @@ class Widget {
 	std::vector<Widget*>::iterator begin() const { return m_client->m_children.begin() + m_client->m_skipTemplate; }
 	std::vector<Widget*>::iterator end() const   { return m_client->m_children.end(); }
 
-	virtual Widget* clone(const char* newType=0) const;				// Clone widget and children. newType can override widget class
-	virtual void    initialise(const Root*, const PropertyMap&);
-	const Point&    getAbsolutePosition() const { return m_rect.position(); }
-	const Rect&     getAbsoluteRect() const { return m_rect; }
-	const Rect&     getAbsoluteClientRect() const { return m_client->m_rect; }
-	Rect            getClientRect() const { return Rect(m_client->getAbsolutePosition()-getAbsolutePosition(), m_client->getSize()); }
-	Rect            getRect() const { return Rect( getPosition(), getSize() ); }
-	const Widget*	getClientWidget() const { return m_client; }
-	const String&   getName() const { return m_name; }
-	Skin*           getSkin() const;
-	void            setSkin(Skin*);
-	void            setName(const char* name);
+	virtual Widget*  clone(const char* newType=0) const;				// Clone widget and children. newType can override widget class
+	virtual void     initialise(const Root*, const PropertyMap&);
+	const Transform& getDerivedTransform() const { return m_derivedTransform; }
+	Rect             getAbsoluteRect() const;
+	Rect             getAbsoluteClientRect() const { return m_client->getAbsoluteRect(); }
+	Point            getAbsolutePosition() const { return getAbsoluteRect().position(); }
+	Rect             getClientRect() const;
+	const Rect&      getRect() const { return m_rect; }
+	const Widget*    getClientWidget() const { return m_client; }
+	const String&    getName() const { return m_name; }
+	Skin*            getSkin() const;
+	void             setSkin(Skin*);
+	void             setName(const char* name);
 
 	// Child widgets
 	void add(Widget* w);
@@ -265,6 +250,7 @@ class Widget {
 	Root*    m_root;			// Gui manager class
 	String   m_name;			// Widget name for lookups.
 	String   m_tip;				// Tool tip data
+	Transform m_derivedTransform; // Full transform to draw childrem
 
 	std::vector<Widget*>  m_children;
 
@@ -287,6 +273,10 @@ class Widget {
 	void setRoot(Root*);
 	void notifyChange();
 	void updateRelativeFromRect();
+	void shiftTransforms(float x, float y);
+	void updateChildTransforms();
+	virtual void updateTransforms();
+	inline bool contains(const Point& local) const { return local.x>=0 && local.y>=0 && local.x<=m_rect.width && local.y<=m_rect.height; }
 	static unsigned deriveColour(unsigned base, unsigned custom, short flags);
 
 	Widget* findChildWidget(const char*) const;
@@ -425,6 +415,4 @@ template<class T> inline T* Widget::createChild(const char* type, const char* na
 }
 
 }
-
-#endif
 

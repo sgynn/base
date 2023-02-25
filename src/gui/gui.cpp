@@ -9,6 +9,8 @@
 
 using namespace gui;
 
+
+
 /** Static definitions */
 base::HashMap<Widget*(*)(const Rect&, Skin*)> Root::s_constuct;
 base::HashMap<Layout*(*)(int,int)> Root::s_layouts;
@@ -123,19 +125,32 @@ void Root::resize(int w, int h) {
 void Root::mouseEvent(const Point& p, int b, int w) {
 	int mdown = b&~m_mouseState;
 	int mup   = m_mouseState&~b;
+	Point last = m_mousePos;
+
+	// Remember state
+	m_mousePos = p;
+	m_mouseState = b;
+
 
 	// Mouse moved
-	bool moved = p!=m_mousePos;
+	bool moved = p != last;
 	if(moved || m_changed) {
-		if(moved && m_mouseFocus && m_mouseFocus->isEnabled()) m_mouseFocus->onMouseMove(m_mousePos, p, b);
+		if(moved && m_mouseFocus && m_mouseFocus->isEnabled()) {
+			Point localLast = m_mouseFocus->m_derivedTransform.untransform(last);
+			Point localPos = m_mouseFocus->m_derivedTransform.untransform(p);
+			m_mouseFocus->onMouseMove(localLast, localPos, b);
+		}
 		Widget* over = m_root->getWidget(p, false, true);
 		// Has it changed?
 		if(over != m_mouseFocus && !b) {
 			// additional mouse event here as changing focus misses it later
-			if(m_mouseFocus && mup && m_mouseFocus->isEnabled()) m_mouseFocus->onMouseButton(p, 0, mup);
+			if(m_mouseFocus && mup && m_mouseFocus->isEnabled()) {
+				m_mouseFocus->onMouseButton(m_mouseFocus->m_derivedTransform.untransform(p), 0, mup);
+			}
 			if(over) {
+				const Transform& t = over->m_derivedTransform;
 				over->setMouseFocus();
-				over->onMouseMove(m_mousePos, p, b);
+				over->onMouseMove(t.untransform(last), t.untransform(p), b);
 			}
 			else if(m_mouseFocus) {
 				m_mouseFocus->onMouseExit();
@@ -167,13 +182,9 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 
 	// Mouse event
 	if(m_mouseFocus && m_mouseFocus->isEnabled() && (mdown || mup))  {
-		m_mouseFocus->onMouseButton(p, mdown, mup);
+		m_mouseFocus->onMouseButton(m_mouseFocus->m_derivedTransform.untransform(p), mdown, mup);
 	}
 	
-	// Remember state
-	m_mousePos = p;
-	m_mouseState = b;
-
 	// Mouseup may change mouse focus if outside widget
 	if(mup && !b && m_mouseFocus && !m_mouseFocus->m_rect.contains(p)) {
 		Widget* over = m_root->getWidget(p, false, true);
@@ -340,49 +351,76 @@ void Widget::initialise(const Root*, const PropertyMap&) {
 	if(!m_client) m_client = this;
 }
 
-Point Widget::getPosition() const {
-	return m_parent? m_rect.position()-m_parent->m_rect.position(): m_rect.position();
+Rect Widget::getAbsoluteRect() const {
+	if(m_parent) return m_parent->m_derivedTransform.transform(m_rect);
+	else return m_rect;
 }
+
+Rect Widget::getClientRect() const {
+	Rect r = m_client->m_rect;
+	for(Widget* w = m_client->m_parent; w && w!=this; w=w->m_parent) {
+		r.position() += w->m_rect.position();
+	}
+	return r;
+}
+
+const Point& Widget::getPosition() const {
+	return m_rect.position();	
+}
+
 const Point& Widget::getSize() const {
 	return m_rect.size();
 }
 
+void Widget::updateChildTransforms() {
+	for(Widget* w: m_children) w->updateTransforms();
+}
+void Widget::updateTransforms() {
+	m_derivedTransform = m_parent->m_derivedTransform;
+	m_derivedTransform.translate(m_rect.x, m_rect.y);
+	updateChildTransforms();
+}
+void Widget::shiftTransforms(float x, float y) {
+	m_derivedTransform[4] += x;
+	m_derivedTransform[5] += y;
+	for(Widget* w: m_children) w->shiftTransforms(x, y);
+}
+
 void Widget::setPosition(int x, int y) {
-	if(m_parent) x += m_parent->m_rect.x, y += m_parent->m_rect.y;
-	int dx = x-m_rect.x, dy = y-m_rect.y;
-	if(dx==0 && dy==0) return; // No change
+	if(x == m_rect.x && y == m_rect.y) return; // No change
 	
 	bool layoutPaused = isLayoutPaused();
 	pauseLayout();
 
-	for(uint i=0; i<m_children.size(); ++i) {
-		Widget* c = m_children[i];
-		Point p = c->getPosition();
-		c->setPosition( p.x+dx, p.y+dy );
-	}
+	float sx = m_derivedTransform[4], sy = m_derivedTransform[5];
+	m_derivedTransform = m_parent? m_parent->m_derivedTransform: Transform();
+	m_derivedTransform.translate(x, y);
+	sx = m_derivedTransform[4] - sx;
+	sy = m_derivedTransform[5] - sy;
+	for(Widget* w: m_children) w->shiftTransforms(sx, sy);
 
 	if(!layoutPaused) resumeLayout(false);
 
 	m_rect.x = x;
 	m_rect.y = y;
-	if(m_parent) m_parent->onChildChanged(this);
+	if(m_parent) {
+		m_parent->onChildChanged(this);
+	}
 	notifyChange();
 }
 void Widget::setSize(int w, int h) {
 	if(w==m_rect.width && h==m_rect.height) return;
 
 	// Update children positions and sizes
-	if(!m_layout) for(uint i=0; i<m_children.size(); ++i) {
-		Widget* c = m_children[i];
+	if(!m_layout) for(Widget* c : m_children) {
 		if(c->m_relative) {
 			float* r = c->m_relative;
 			c->setPosition(r[0] * w, r[1] * h);
 			c->setSize(r[2] * w, r[3] * h);
-		} else if(c->m_anchor) {
+		}
+		else if(c->m_anchor) {
 			char a = c->m_anchor;
 			Rect r = c->m_rect;
-			r.x -= m_rect.x;
-			r.y -= m_rect.y;
 			// x axis
 			switch(a&0xf) {
 			case 2: r.x += w/2 - m_rect.width/2; break;
@@ -466,33 +504,6 @@ Point Widget::getPreferredSize() const { // Minimum size
 void Widget::updateAutosize() {
 	if(!isAutosize()) return;
 	if(m_client != this && m_client->m_anchor != 0x55) return; // client must resize with widget for autosize
-	
-
-	/*
-	const Point& clientSize = m_client->getSize();
-	int margin = getLayout()? getLayout()->getMargin(): 0;
-	Point newSize;
-	auto setMax = [](int& value, int other) { if(other>value) value=other; };
-	for(Widget* w: m_client->m_children) {
-		if(w->isVisible()) {
-			const Rect r = w->getRect();
-			switch(w->m_anchor&0xf) {
-			case 0: case 1: setMax(newSize.x, r.right() + margin); break;
-			case 2: setMax(newSize.x, r.width + 2*margin); break;
-			case 4: setMax(newSize.x, r.width + clientSize.x - r.right() + margin); break;
-			default: setMax(newSize.x, clientSize.x); break;
-			}
-			switch(w->m_anchor>>4) {
-			case 0: case 1: setMax(newSize.y, r.bottom() + margin); break;
-			case 2: setMax(newSize.y, r.height + 2*margin); break;
-			case 4: setMax(newSize.y, r.height + clientSize.y - r.bottom() + margin); break;
-			default: setMax(newSize.y, clientSize.y); break;
-			}
-		}
-	}
-	newSize += getSize() - clientSize;
-	*/
-
 	Point newSize = getPreferredSize();
 	assert(newSize.x<5000 && newSize.y<5000);
 	setSizeAnchored(newSize);
@@ -658,18 +669,30 @@ Widget* Widget::getWidget(size_t index) const {
 	return index<m_client->m_children.size()? m_client->m_children[index]: 0;
 }
 Widget* Widget::getWidget(const Point& p, int typeMask, bool tg, bool tm, bool clip) {
-	if((clip && !m_rect.contains(p)) || !isVisible()) return 0;
+	if(clip && !contains(p)) return nullptr;
+	if(m_children.empty()) return nullptr;
 	Widget* client = tm? this: m_client;
-	if(tg || (m_states&8)) {	// child tangible
-		for(int i=client->m_children.size()-1; i>=0; --i) {
-			Widget* w = client->m_children[i]->getWidget( p, typeMask, tg, tm );
-			if(w) return w;
+	Point clientOffset(0,0);
+	for(Widget* w = client; w!=this; w=w->m_parent) clientOffset += w->m_rect.position();
+	for(int i=client->m_children.size()-1; i>=0; --i) {
+		Widget* child = client->m_children[i];
+		if(child->isVisible() && (tg || child->isTangible()!=Tangible::NONE)) {
+			Point local = p - clientOffset - child->m_rect.position();
+			if(child->contains(local)) {
+				if(tg || (child->m_states&8)) {
+					Widget* w = child->getWidget(local, typeMask, tg, tm, false);
+					if(w) return w;
+				}
+
+				// Filtering
+				if(child->isTemplate() && !tm) continue;
+				if(!(child->m_states&4) && !tg) continue;
+				if(typeMask!=Widget::staticType() && !child->isType(typeMask)) continue;
+				return child;
+			}
 		}
 	}
-	if(isTemplate() && !tm) return 0;
-	if(!(m_states&4) && !tg) return 0;	// self tangible
-	if(typeMask!=Widget::staticType() && !isType(typeMask)) return 0;
-	return this;
+	return nullptr;
 }
 
 Widget* Widget::findChildWidget(const char* name) const {
@@ -735,6 +758,7 @@ void Widget::add(Widget* w, unsigned index) {
 		if(w->m_relative[2] == 0 && w->m_relative[3]==0) w->updateRelativeFromRect();
 		else w->setPositionFloat(w->m_relative[0], w->m_relative[1], w->m_relative[2], w->m_relative[3]);
 	}
+	w->updateTransforms();
 	w->onAdded();
 	onChildChanged(w);
 	notifyChange();
@@ -817,9 +841,9 @@ int Widget::getTemplateIndex() const {
 	return -1;
 }
 
-Widget* Widget::getParent() const {
+Widget* Widget::getParent(bool includeTemplates) const {
 	if(!m_parent) return 0;
-	if(isTemplate()) return m_parent;
+	if(isTemplate() || includeTemplates) return m_parent;
 	// Get root widget of parent template
 	Widget* p = m_parent;
 	while(p && p->isTemplate()) p = p->m_parent;
@@ -862,12 +886,12 @@ void Widget::resumeLayout(bool update) {
 
 void Widget::onMouseButton(const Point& p, int d, int u) {
 	if(hasFocus()) {
-		if(d && eventMouseDown)  eventMouseDown(this, p-m_rect.position(), d);
-		if(u && eventMouseUp)    eventMouseUp(this, p-m_rect.position(), u);
+		if(d && eventMouseDown)  eventMouseDown(this, p, d);
+		if(u && eventMouseUp)    eventMouseUp(this, p, u);
 	}
 }
 void Widget::onMouseMove(const Point& lp, const Point& p, int b) {
-	if(eventMouseMove) eventMouseMove(this, p-m_rect.position(), b);
+	if(eventMouseMove) eventMouseMove(this, p, b);
 }
 bool Widget::onMouseWheel(int w) {
 	if(eventMouseWheel) eventMouseWheel(this, w);
@@ -926,9 +950,11 @@ void Widget::drawSkin() const {
 void Widget::drawChildren() const {
 	if(!m_children.empty()) {
 		m_root->getRenderer()->push(m_rect);
+		m_root->getRenderer()->setTransform(m_derivedTransform);
 		for(unsigned i=0; i<m_children.size(); ++i) {
 			m_children[i]->draw();
 		}
+		if(m_parent) m_root->getRenderer()->setTransform(m_parent->m_derivedTransform);
 		m_root->getRenderer()->pop();
 	}
 }

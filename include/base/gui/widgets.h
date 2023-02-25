@@ -477,13 +477,14 @@ class ScaleBox : public Widget {
 	ScaleBox(const Rect& r, Skin*);
 	void initialise(const Root*, const PropertyMap&) override;
 	Point getPreferredSize() const { return getSize(); }
+	void setPosition(int x, int y) override;
 	void setSize(int w, int h) override;
 	void updateAutosize() override;
-	void draw() const override;
 	void setScale(float scale);
 	float getScale() const { return m_scale; }
 	protected:
 	Widget* getWidget(const Point&, int mask, bool intangible, bool templates, bool clip) override;
+	void updateTransforms() override;
 	float m_scale = 1;
 };
 

@@ -306,7 +306,7 @@ void Listbox::ensureVisible(int index) {
 void Listbox::onMouseButton(const Point& p, int d, int u) {
 	if(d==1) {
 		int offset = m_scrollbar? m_scrollbar->getValue(): 0;
-		int index = (p.y + offset - m_client->getAbsolutePosition().y) / m_itemHeight;
+		int index = (p.y + offset) / m_itemHeight;
 		if(index >=0 && index < (int)getItemCount()) {
 			if(isItemSelected(index) && m_multiSelect) {
 				deselectItem(index);
@@ -337,7 +337,7 @@ void Listbox::draw() const {
 	if(end >= (int)getItemCount()) end = getItemCount()-1;
 
 	// Set up item rect
-	Rect r(m_client->getAbsolutePosition(), m_client->getSize());
+	Rect r = m_client->getRect();
 	m_root->getRenderer()->push(r);
 	r.height = m_itemHeight;
 	r.y += start * m_itemHeight - offset;

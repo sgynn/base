@@ -284,12 +284,12 @@ int Textbox::indexAt(const Point& pos) const {
 	return m_length;
 }
 void Textbox::onMouseButton(const Point& p, int b, int u) {
-	if(b==1) select( indexAt(p-m_rect.position()) ), m_held=m_cursor;
+	if(b==1) select( indexAt(p) ), m_held=m_cursor;
 	Widget::onMouseButton(p, b, u);
 }
 void Textbox::onMouseMove(const Point&, const Point& p, int b) {
 	if(b==1) {
-		int i = indexAt(p-m_rect.position());
+		int i = indexAt(p);
 		select(i, m_held-i);
 		updateOffset(i>m_held);
 	}

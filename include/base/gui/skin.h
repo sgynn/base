@@ -1,5 +1,4 @@
-#ifndef _GUI_SKIN_
-#define _GUI_SKIN_
+#pragma once
 
 #include <base/point.h>
 #include <vector>
@@ -87,5 +86,4 @@ class IconList {
 
 }
 
-#endif
 

@@ -87,7 +87,7 @@ class Renderer {
 	void  pushNew(const Rect& rect);
 	void  pop();
 
-	void setScale(const Point& origin, float scale);
+	void setTransform(const Transform& t) { m_transform=t; }
 
 	protected:
 	int createTexture(int w, int h, int channels, void* data, bool clamp);
@@ -120,11 +120,6 @@ class Renderer {
 		unsigned vx = 0;
 		unsigned ix = 0;
 		int size = 0;
-	};
-
-	struct Transform {
-		bool identity = true;
-		float m[9] = {1,0,0,0,1,0,0,0,1};
 	};
 
 	unsigned m_shader = 0;

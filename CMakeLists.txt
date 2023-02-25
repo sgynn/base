@@ -179,6 +179,7 @@ set(guiheaders
 	include/base/gui/renderer.h
 	include/base/gui/skin.h
 	include/base/gui/tree.h
+	include/base/gui/transform.h
 	include/base/gui/widgets.h
 )
 
