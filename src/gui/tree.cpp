@@ -381,9 +381,8 @@ void TreeView::updateCache() const {
 	if(m_hideRootNode) {
 		for(uint i=0, h=0; i<m_rootNode->size(); ++i)
 			h += buildCache(m_rootNode->at(i), h, offset, offset + height);
-	} else {
-		buildCache(m_rootNode, 0, offset, offset + height);
 	}
+	else buildCache(m_rootNode, 0, offset, offset + height);
 	m_cacheOffset = (offset / m_itemHeight) * m_itemHeight - offset;
 
 	// Cache widgets
@@ -562,7 +561,9 @@ void TreeView::draw() const {
 
 	// Set up item rect
 	Renderer* renderer = m_root->getRenderer();
+	Transform parentTransform = renderer->getTransform();
 	Rect r = m_client->getRect();
+	renderer->setTransform(m_derivedTransform);
 	renderer->push(r);
 	r.height = m_itemHeight;
 	r.y += m_cacheOffset;
@@ -613,7 +614,7 @@ void TreeView::draw() const {
 	if(m_itemWidgets.empty()) {
 		// Item text
 		static const String emptyString;
-		Rect exp(0,0,getAbsoluteClientRect().width, m_itemHeight);
+		Rect exp(0, 0, m_rect.width, m_itemHeight);
 		for(uint i=0; i<m_drawCache.size(); ++i) {
 			const char* text = m_drawCache[i].node->getText(0);
 			if(text) {
@@ -625,6 +626,7 @@ void TreeView::draw() const {
 		}
 	}
 	renderer->pop();
+	renderer->setTransform(parentTransform);
 
 
 	drawChildren();

@@ -358,8 +358,8 @@ Rect Widget::getAbsoluteRect() const {
 
 Rect Widget::getClientRect() const {
 	Rect r = m_client->m_rect;
-	for(Widget* w = m_client->m_parent; w && w!=this; w=w->m_parent) {
-		r.position() += w->m_rect.position();
+	if(m_client != this) {
+		for(Widget* w = m_client->m_parent; w && w!=this; w=w->m_parent) r.position() += w->m_rect.position();
 	}
 	return r;
 }

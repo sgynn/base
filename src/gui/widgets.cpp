@@ -434,17 +434,15 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 			if(anchor[axis] == 1) { // Size min
 				size[axis] -= delta[axis];
 				p[axis] += delta[axis];
-
-				int minSize = m_rect.position()[axis] + m_rect.size()[axis] - targetRect.position()[axis];
-				int maxSize = p[axis] + size[axis];
+				int minSize = m_rect.position()[axis] + m_rect.size()[axis];
+				int maxSize = targetRect.position()[axis] + targetRect.size()[axis];
 				if(size[axis] < minSize) { p[axis] += size[axis] - minSize; size[axis] = minSize; }
 				if(m_clamp && size[axis] > maxSize) { p[axis] += size[axis] - maxSize; size[axis] = maxSize; }
 			}
 			else if(anchor[axis]==4) { // Size max
 				size[axis] -= delta[axis];
-
-				int minSize = targetRect.position()[axis] + targetRect.size()[axis] - m_rect.position()[axis];
-				int maxSize = view[axis] - p[axis];
+				int minSize = targetRect.size()[axis] - getPosition()[axis];
+				int maxSize = view[axis] - targetRect.position()[axis];
 				if(size[axis] < minSize) size[axis] = minSize;
 				if(m_clamp && size[axis] > maxSize) size[axis] = maxSize;
 			}
@@ -861,6 +859,7 @@ void Scrollpane::setPaneSize(int w, int h) {
 	}
 
 	Point client(w, h);
+	if(m_client->getSize() == client) return;
 	m_client->setSize(w, h);
 	
 	bool restoreAutoSize = isAutosize();

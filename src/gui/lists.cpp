@@ -337,7 +337,8 @@ void Listbox::draw() const {
 	if(end >= (int)getItemCount()) end = getItemCount()-1;
 
 	// Set up item rect
-	Rect r = m_client->getRect();
+	Rect r(0,0,m_client->getSize());
+	m_root->getRenderer()->setTransform(m_client->getDerivedTransform());
 	m_root->getRenderer()->push(r);
 	r.height = m_itemHeight;
 	r.y += start * m_itemHeight - offset;
@@ -355,7 +356,6 @@ void Listbox::draw() const {
 	// Draw checkboxes
 	if(m_check) {
 		Rect cr(m_check->getPosition(), m_check->getSize());
-		cr.x += r.x;
 		cr.y += startY;
 		for(int i=start; i<=end; ++i) {
 			m_root->getRenderer()->drawSkin(m_check->getSkin(), cr, m_check->getColourARGB(), getItemChecked(i)? 4: 0);
@@ -366,7 +366,6 @@ void Listbox::draw() const {
 	// Draw icons
 	if(m_icon) {
 		Rect cr(m_icon->getPosition(), m_icon->getSize());
-		cr.x += r.x;
 		cr.y += startY;
 		for(int i=start; i<=end; ++i) {
 			m_root->getRenderer()->drawIcon(m_icon->getIconList(), getItemIcon(i), cr);
@@ -377,7 +376,6 @@ void Listbox::draw() const {
 	// Draw item backgrounds
 	if(m_text) {
 		Rect cr(m_text->getPosition(), m_text->getSize());
-		cr.x += r.x;
 		cr.y += startY;
 		for(int i=start; i<=end; ++i) {
 			m_root->getRenderer()->drawSkin(m_text->getSkin(), cr, m_text->getColourARGB(), cache[i-start]);

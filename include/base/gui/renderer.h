@@ -88,6 +88,7 @@ class Renderer {
 	void  pop();
 
 	void setTransform(const Transform& t) { m_transform=t; }
+	const Transform& getTransform() const { return m_transform; }
 
 	protected:
 	int createTexture(int w, int h, int channels, void* data, bool clamp);
