@@ -388,6 +388,8 @@ void Listbox::draw() const {
 			cr.y += m_itemHeight;
 		}
 	}
+
+	if(m_parent) m_root->getRenderer()->setTransform(m_parent->getDerivedTransform());
 	m_root->getRenderer()->pop();
 }
 int Listbox::getItemState(uint item, const Rect& r) const {

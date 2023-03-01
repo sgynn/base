@@ -131,7 +131,6 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 	m_mousePos = p;
 	m_mouseState = b;
 
-
 	// Mouse moved
 	bool moved = p != last;
 	if(moved || m_changed) {
