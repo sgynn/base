@@ -135,7 +135,7 @@ class Renderer {
 	unsigned createShader();
 	void buildRenderBatches();
 
-	void  drawBox(const Rect& rect, int image, const Rect& src, const unsigned* colour, bool gradient=false, float angle=0);
+	void  drawBox(const Rect& rect, int image, const Rect& src, const unsigned* colour, bool gradient=false);
 	void  drawNineSlice(const Rect& rect, int image, const Rect& src, const Skin::Border& border, unsigned colour);
 
 	private:

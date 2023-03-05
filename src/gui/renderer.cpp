@@ -485,7 +485,7 @@ void Renderer::setScale(const Point& origin, float scale) {
 
 // ==================================================== //
 
-void Renderer::drawBox(const Rect& rect, int image, const Rect& src, const unsigned* colour, bool gradient, float angle) {
+void Renderer::drawBox(const Rect& rect, int image, const Rect& src, const unsigned* colour, bool gradient) {
 	if(colour[0]>>24==0 && !gradient) return; // fully transparent
 	Batch* batch = getBatch(rect, image);
 	if(!batch) return;
@@ -496,34 +496,19 @@ void Renderer::drawBox(const Rect& rect, int image, const Rect& src, const unsig
 	const float ox = m_images[image].offX;
 	const float oy = m_images[image].offY;
 
-	Transform::Pos s = m_transform.transformf(rect.x, rect.y);
-	Transform::Pos t = m_transform.transformf(rect.right(), rect.bottom());
-
-	unsigned short start = b.vertices.size();
-	b.vertices.emplace_back(s.x, s.y, src.x*ix+ox+ix/2,       src.y*iy+oy+iy/2,        colour[0]);
-	b.vertices.emplace_back(t.x, s.y, src.right()*ix+ox-ix/2, src.y*iy+oy+iy/2,        colour[1&gradient]);
-	b.vertices.emplace_back(s.x, t.y, src.x*ix+ox+ix/2,       src.bottom()*iy+oy-iy/2, colour[2&gradient]);
-	b.vertices.emplace_back(t.x, t.y, src.right()*ix+ox-ix/2, src.bottom()*iy+oy-iy/2, colour[3&gradient]);
+	Transform::Pos v[4] = {
+		m_transform.transformf(rect.x, rect.y),
+		m_transform.transformf(rect.right(), rect.y),
+		m_transform.transformf(rect.x, rect.bottom()),
+		m_transform.transformf(rect.right(), rect.bottom()),
+	};
 	
-	if(angle != 0) {
-		// TODO - just use the base transform, ignore angle
-		Transform::Pos c = m_transform.transformf(rect.x + rect.width/2, rect.y + rect.width/2);
-		float sinAngle = sin(angle);
-		float cosAngle = cos(angle);
-		float xx = sinAngle * rect.width/2 * m_transform[0];
-		float xy = cosAngle * rect.width/2 * m_transform[4];
-		float yx = cosAngle * rect.height/2 * m_transform[0];
-		float yy =-sinAngle * rect.height/2 * m_transform[4];
-		b.vertices[start  ].x = c.x - xx - yx;
-		b.vertices[start  ].y = c.y - xy - yy;
-		b.vertices[start+1].x = c.x - xx + yx;
-		b.vertices[start+1].y = c.y - xy + yy;
-		b.vertices[start+2].x = c.x + xx - yx;
-		b.vertices[start+2].y = c.y + xy - yy;
-		b.vertices[start+3].x = c.x + xx + yx;
-		b.vertices[start+3].y = c.y + xy + yy;
-	}
-
+	unsigned short start = b.vertices.size();
+	b.vertices.emplace_back(v[0].x, v[0].y, src.x*ix+ox+ix/2,       src.y*iy+oy+iy/2,        colour[0]);
+	b.vertices.emplace_back(v[1].x, v[1].y, src.right()*ix+ox-ix/2, src.y*iy+oy+iy/2,        colour[1&gradient]);
+	b.vertices.emplace_back(v[2].x, v[2].y, src.x*ix+ox+ix/2,       src.bottom()*iy+oy-iy/2, colour[2&gradient]);
+	b.vertices.emplace_back(v[3].x, v[3].y, src.right()*ix+ox-ix/2, src.bottom()*iy+oy-iy/2, colour[3&gradient]);
+	
 	b.indices.push_back(start);
 	b.indices.push_back(start+2);
 	b.indices.push_back(start+1);
@@ -688,13 +673,25 @@ void Renderer::drawRect(const Rect& r, uint colour) {
 void Renderer::drawImage(int image, const Rect& r, float angle, uint colour, float alpha) {
 	Point s = getImageSize(image);
 	colour |= (int)(alpha*0xff) << 24;
-	drawBox(r, image, Rect(0,0,s.x,s.y), &colour, false, angle);
+	if(angle==0) drawBox(r, image, Rect(0,0,s.x,s.y), &colour, false);
+	else {
+		Transform t = m_transform;
+		m_transform.rotate(angle, r.x+r.width/2, r.y+r.width/2);
+		drawBox(r, image, Rect(0,0,s.x,s.y), &colour, false);
+		m_transform = t;
+	}
 }
 
 void Renderer::drawIcon(IconList* list, int index, const Rect& r, float angle, unsigned colour) {
 	if(!list || index<0 || index>=list->size()) return;
 	const Rect& src = list->getIconRect(index);
-	drawBox(r, list->getImageIndex(), src, &colour, false, angle);
+	if(angle==0) drawBox(r, list->getImageIndex(), src, &colour, false);
+	else {
+		Transform t = m_transform;
+		m_transform.rotate(angle, r.x+r.width/2, r.y+r.width/2);
+		drawBox(r, list->getImageIndex(), src, &colour, false);
+		m_transform = t;
+	}
 }
 
 void Renderer::drawGradient(int image, const Rect& r, unsigned c0, unsigned c1, int axis) {
