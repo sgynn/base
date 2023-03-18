@@ -927,32 +927,57 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 }
 
 CompositorGraph* XMLResourceLoader::loadGraph(const XMLElement& e) {
-	// TODO: aliasing for multiple instances of a composior
+	constexpr size_t nope = ~0ull;
 	CompositorGraph* chain = new CompositorGraph();
+
+	HashMap<size_t> lookup;
+	auto getCompositor = [this, chain, &lookup] (const char* name) {
+		size_t r = lookup.get(name, nope);
+		if(r == nope) {
+			if(Compositor* c = resources.compositors.getIfExists(name)) {
+				lookup[name] = r = chain->add(c);
+			}
+		}
+		return r;
+	};
+	
 	const char* out = e.attribute("output", "out");
+	lookup[out] = chain->add(Compositor::Output);
+
 	for(const XMLElement& i: e) {
 		if(i=="link") {
 			const char* a = i.attribute("a");
 			const char* b = i.attribute("b");
-			Compositor* ca = resources.compositors.getIfExists(a);
-			Compositor* cb = resources.compositors.getIfExists(b);
-			if(strcmp(b, out)==0) cb = Compositor::Output;
-			if(!ca || !cb) printf("Error: Missing compositor %s\n", ca? b: a);
-			else {
+			size_t ia = getCompositor(a);
+			size_t ib = getCompositor(b);
+
+			if(ia==nope) printf("Error: Missing compositor %s\n", a);
+			if(ib==nope) printf("Error: Missing compositor %s\n", b);
+
+			if(ia!=nope && ib!=nope) {
 				const char* key = i.attribute("key");
 				const char* sa = i.attribute("sa");
 				const char* sb = i.attribute("sb");
+				const Compositor* ca = chain->getCompositor(ia);
+				const Compositor* cb = chain->getCompositor(ib);
 				if(sa[0] && sb[0]) {
 					if(ca->getOutput(sa)<0) printf("Error: Compositor %s has no output %s\n", a, sa);
 					if(cb->getInput(sb)<0) printf("Error: Compositor %s has no input %s\n", b, sb);
-					chain->link(ca, cb, sa, sb);
+					chain->link(ia, ib, sa, sb);
 				}
 				else if(key[0]) {
 					if(ca->getOutput(key)<0) printf("Error: Compositor %s has no output %s\n", a, key);
 					if(cb->getInput(key)<0) printf("Error: Compositor %s has no input %s\n", b, key);
-					chain->link(ca, cb, key);
+					chain->link(ia, ib, key);
 				}
-				else chain->link(ca, cb);
+				else chain->link(ia, ib);
+			}
+		}
+		else if(i=="alias") {
+			const char* name = i.attribute("name");
+			const char* target = i.attribute("compositor");
+			if(Compositor* c = resources.compositors.getIfExists(target)) {
+				lookup[name] = chain->add(c);
 			}
 		}
 	}
