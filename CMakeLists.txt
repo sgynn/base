@@ -56,6 +56,7 @@ set(gui
 	src/gui/textbox.cpp
 	src/gui/tree.cpp
 	src/gui/widgets.cpp
+	src/gui/colourpicker.cpp
 
 	src/gui/systemfont.cpp
 	src/gui/bitmapfont.cpp
@@ -181,6 +182,7 @@ set(guiheaders
 	include/base/gui/tree.h
 	include/base/gui/transform.h
 	include/base/gui/widgets.h
+	include/base/gui/colourpicker.h
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
