@@ -2,6 +2,7 @@
 #include <base/gui/widgets.h>
 #include <base/gui/renderer.h>
 #include <base/gui/skin.h>
+#include <algorithm>
 #include <cstdio>
 
 using namespace gui;
@@ -81,9 +82,6 @@ void ItemList::selectionChanged() {
 }
 
 void ItemList::clearItems() {
-	for(uint i=0; i<m_items->size(); ++i) {
-		free(m_items->at(i).name);
-	}
 	m_items->clear();
 	m_selected->clear();
 	countChanged();
@@ -91,7 +89,7 @@ void ItemList::clearItems() {
 
 void ItemList::addItem(const char* name, const Any& data, int icon) {
 	m_items->push_back( Item() );
-	m_items->back().name = name? strdup(name): 0;
+	m_items->back().name = name;
 	m_items->back().data = data;
 	m_items->back().icon = icon;
 	m_items->back().selected = false;
@@ -101,7 +99,7 @@ void ItemList::addItem(const char* name, const Any& data, int icon) {
 
 void ItemList::insertItem(uint index, const char* name, const Any& data, int icon) {
 	Item itm;
-	itm.name = name? strdup(name): 0;
+	itm.name = name;
 	itm.data = data;
 	itm.icon = icon;
 	itm.selected = false;
@@ -112,7 +110,6 @@ void ItemList::insertItem(uint index, const char* name, const Any& data, int ico
 
 void ItemList::removeItem(uint index) {
 	if(index < m_items->size()) {
-		free(m_items->at(index).name);
 		m_items->erase( m_items->begin() + index );
 		// Update selection list
 		uint erase = ~0u;
@@ -127,8 +124,7 @@ void ItemList::removeItem(uint index) {
 
 void ItemList::setItemName(uint index, const char* name) {
 	if(index < m_items->size()) {
-		free(m_items->at(index).name);
-		m_items->at(index).name = strdup(name);
+		m_items->at(index).name = name;
 	}
 }
 void ItemList::setItemData(uint index, const Any& data) {
@@ -154,7 +150,7 @@ uint ItemList::getItemCount() const {
 }
 
 const char* ItemList::getItem(uint index) const {
-	return index<m_items->size()? m_items->at(index).name: 0;
+	return index<m_items->size()? (const char*)m_items->at(index).name: 0;
 }
 const Any& ItemList::getItemData(uint index) const {
 	static const Any NullAny;
@@ -172,6 +168,31 @@ int ItemList::findItem(const char* name) const {
 		if(strcmp(m_items->at(i).name, name)==0) return i;
 	}
 	return -1;
+}
+
+void ItemList::sortItems(int flags) {
+	if(flags & IGNORE_CASE) {
+		bool inv = flags & INVERSE;
+		std::sort(m_items->begin(), m_items->end(), [inv](const Item& a, const Item& b) {
+			const char* sa = a.name;
+			const char* sb = b.name;
+			constexpr int shift = 'a' - 'A';
+			while(*sa && *sb) {
+				char u = *sa>'a'? *sa - shift: *sa;
+				char v = *sa>'a'? *sa - shift: *sa;
+				if((u<v) != inv) return false;
+				++sa;
+				++sb;
+			}
+			return (*sa < *sb) != inv;
+		});
+	}
+	else {
+		int inv = flags & INVERSE? -1: 1;
+		std::sort(m_items->begin(), m_items->end(), [inv](const Item& a, const Item& b) {
+			return strcmp(a.name, b.name) * inv < 0;
+		});
+	}
 }
 
 

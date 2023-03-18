@@ -23,6 +23,9 @@ class ItemList {
 	void removeItem(uint index);											// Remove an item
 	uint getItemCount() const;												// Number of items
 
+	enum SortFlags { INVERSE=1, IGNORE_CASE=2 };
+	void sortItems(int sortFlags = 0);
+
 	template<class T> void setItemData(uint index, const T& v) { setItemData(index, Any(v)); }
 	template<class T> void addItem(const char* name, const T& data, int icon=0) { addItem(name, Any(data), icon); }
 	template<class T> void insertItem(uint index, const char* name, const T& data, int icon=0) { insertItem(index, name, Any(data),icon); }
@@ -49,7 +52,7 @@ class ItemList {
 	virtual void itemCountChanged() {}
 	virtual void itemSelectionChanged() {}
 	struct Item {
-		char* name;
+		String name;
 		Any data;
 		int icon;
 		bool selected;
