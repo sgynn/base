@@ -655,7 +655,7 @@ Shader* XMLResourceLoader::loadShader(const XMLElement& e) {
 			if(type<0) printf("Invalid shader attachment type %s\n", i.attribute("type"));
 			else if(!file) printf("Error: Shader file not found: %s\n", filename);
 			else {
-				ShaderPart* ss = new ShaderPart((ShaderType)type, file, i.attribute("defines"));
+				ShaderPart* ss = new ShaderPart((ShaderType)type, file, i.attribute("defines", defines));
 				s->attach(ss);
 			}
 		}
@@ -839,7 +839,9 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				ih = i.attribute("last", ih);
 				const char* material = i.attribute("material", nullString);
 				const char* technique = i.attribute("technique", nullString);
-				c->addPass(target, new CompositorPassScene(iw, ih, material, technique));
+				CompositorPassScene* pass = new CompositorPassScene(iw, ih, material, technique);
+				pass->setCamera(i.attribute("camera", nullptr));
+				c->addPass(target, pass);
 			}
 			else if(strcmp(type, "quad")==0) {
 				const char* material = i.attribute("material");

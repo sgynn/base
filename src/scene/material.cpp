@@ -7,24 +7,24 @@
 
 using namespace base;
 
-enum VarType {	VT_AUTO, VT_FLOAT, VT_INT, VT_MATRIX };
 
 ShaderVars::ShaderVars() : m_nextIndex(0) {}
 ShaderVars::~ShaderVars() {
-	for(HashMap<SVar>::iterator i=m_variables.begin(); i!=m_variables.end(); ++i) setType(i->value, 0, 0, 0);
+	for(HashMap<SVar>::iterator i=m_variables.begin(); i!=m_variables.end(); ++i) setType(i->value, VT_AUTO, 0, 0);
 }
 
-void ShaderVars::setType(SVar& v, int type, int elements, int array) {
+void ShaderVars::setType(SVar& v, ShaderVarType type, int elements, int array) {
 	if(v.elements==0) v.index = m_nextIndex++;
 	if(v.type != type || v.elements != elements || v.array != array) {
 		// delete old data
-		if(v.type==VT_INT && v.elements*v.array>1) delete [] v.ip;
-		else if(v.type==VT_FLOAT && v.elements*v.array>1) delete [] v.fp;
-		else if(v.type==VT_MATRIX) delete [] v.fp;
+		if(v.type!=VT_AUTO && v.elements * v.array > 1) {
+			if(v.type == VT_INT || v.type==VT_SAMPLER) delete [] v.ip;
+			else delete [] v.fp;
+		}
 
 		// Allocate new data
-		if(type!=VT_AUTO && elements*array>1) {
-			if(type==VT_INT) v.ip = new int[ elements*array ];
+		if(type!=VT_AUTO && elements * array > 1) {
+			if(type==VT_INT || type==VT_SAMPLER) v.ip = new int[ elements*array ];
 			else v.fp = new float[ elements*array ];
 		}
 
@@ -42,6 +42,12 @@ void ShaderVars::set(const char* name, float x, float y, float z, float w) { flo
 void ShaderVars::set(const char* name, const vec2& v) { set(name, 2, 1, v); }
 void ShaderVars::set(const char* name, const vec3& v) { set(name, 3, 1, v); }
 void ShaderVars::set(const char* name, const vec4& v) { set(name, 4, 1, v); }
+
+void ShaderVars::setSampler(const char* name, int index) {
+	SVar& var = m_variables[name];
+	setType(var, VT_SAMPLER, 1, 1);
+	var.i = index;
+}
 
 void ShaderVars::set(const char* name, int c, int a, const int* v) {
 	SVar& var = m_variables[name];
@@ -65,7 +71,7 @@ void ShaderVars::setMatrix(const char* name, float* v) {
 
 void ShaderVars::unset(const char* name) {
 	if(m_variables.contains(name)) {
-		setType(m_variables[name], 0, 0, 0);
+		setType(m_variables[name], VT_AUTO, 0, 0);
 		m_variables.erase(name);
 	}
 }
@@ -83,6 +89,7 @@ int ShaderVars::setFrom(const ShaderVars* s) {
 		bool single = i->value.array * i->value.elements == 1;
 		switch(i->value.type) {
 		case VT_AUTO:   setAuto(i->key, i->value.i); break;
+		case VT_SAMPLER:
 		case VT_INT:    set(i->key, i->value.elements, i->value.array, single? &i->value.i: i->value.ip); break;
 		case VT_FLOAT:  set(i->key, i->value.elements, i->value.array, single? &i->value.f: i->value.fp); break;
 		case VT_MATRIX: set(i->key, i->value.elements, i->value.array, single? &i->value.f: i->value.fp); break;
@@ -102,35 +109,23 @@ int  ShaderVars::getElements(const char* name) const {
 	if(i->value.type == VT_AUTO) return 0;	// unknown
 	return i->value.elements * i->value.array;
 }
-int* ShaderVars::getIntPointer(const char* name) {
-	if(!contains(name)) return 0;
-	SVar& v = m_variables[name];
-	if(v.type != VT_INT) return 0; // wrong type
-	if(v.elements * v.array == 1) return &v.i;
-	else return v.ip;
+template<typename T> const T* ShaderVars::getPointer(const SVar& var) const {
+	bool array = var.elements * var.array > 1;
+	if(var.type==VT_INT || var.type==VT_SAMPLER) return (const T*)(array? var.ip: &var.i);
+	else return (const T*)(array? var.fp: &var.f);
 }
-float* ShaderVars::getFloatPointer(const char* name) {
-	if(!contains(name)) return 0;
-	SVar& v = m_variables[name];
-	if(v.type != VT_FLOAT && v.type != VT_MATRIX) return 0; // wrong type
-	if(v.elements * v.array == 1) return &v.f;
-	else return v.fp;
+template<typename T> const T* ShaderVars::getPointer(const char* name, int typeMask) const {
+	auto v = m_variables.find(name);
+	if(v!=m_variables.end() && ((1<<v->value.type)&typeMask)) return getPointer<T>(v->value);
+	return 0;
 }
+int* ShaderVars::getIntPointer(const char* name) { return const_cast<int*>(getPointer<int>(name, 1<<VT_INT)); }
+int* ShaderVars::getSamplerPointer(const char* name) { return const_cast<int*>(getPointer<int>(name, 1<<VT_SAMPLER)); }
+float* ShaderVars::getFloatPointer(const char* name) { return const_cast<float*>(getPointer<float>(name, 1<<VT_FLOAT | 1<<VT_MATRIX)); }
 
-const int* ShaderVars::getIntPointer(const char* name) const {
-	if(!contains(name)) return 0;
-	const SVar& v = m_variables[name];
-	if(v.type != VT_INT) return 0; // wrong type
-	if(v.elements * v.array == 1) return &v.i;
-	else return v.ip;
-}
-const float* ShaderVars::getFloatPointer(const char* name) const {
-	if(!contains(name)) return 0;
-	const SVar& v = m_variables[name];
-	if(v.type != VT_FLOAT && v.type != VT_MATRIX) return 0; // wrong type
-	if(v.elements * v.array == 1) return &v.f;
-	else return v.fp;
-}
+const int* ShaderVars::getIntPointer(const char* name) const{ return getPointer<int>(name, 1<<VT_INT); }
+const int* ShaderVars::getSamplerPointer(const char* name) const { return getPointer<int>(name, 1<<VT_SAMPLER); }
+const float* ShaderVars::getFloatPointer(const char* name) const{ return getPointer<float>(name, 1<<VT_FLOAT | 1<<VT_MATRIX); }
 
 
 // ============================================================================== //
@@ -169,7 +164,7 @@ int ShaderVars::bindVariables(const Shader* s, int* map, int size, AutoVariableS
 			const float* fp = var->array==1 && var->elements==1? &var->f: var->fp;
 			if(autos && var->type==VT_AUTO) {
 				int e, a;
-				tmp.type = autos->getData(i->value.i, e, a, fp);
+				tmp.type = (ShaderVarType)autos->getData(i->value.i, e, a, fp);
 				tmp.elements = e;
 				tmp.array = a;
 				tmp.fp = 0;
@@ -187,6 +182,7 @@ int ShaderVars::bindVariables(const Shader* s, int* map, int size, AutoVariableS
 				else --count;
 				break;
 			case VT_INT:
+			case VT_SAMPLER:
 				if(var->elements==1) s->setUniform1(loc, var->array, var->array>1? var->ip: &var->i);
 				else if(var->elements==2) s->setUniform2(loc, var->array, var->ip);
 				else if(var->elements==3) s->setUniform2(loc, var->array, var->ip);
@@ -265,32 +261,44 @@ bool Pass::hasShared(const ShaderVars* s) const {
 	return false;
 }
 
+size_t Pass::getTextureSlot(const char* name) const {
+	if(const int* p = m_ownedVariables.getSamplerPointer(name)) return *p;
+	for(size_t i=m_variableData.size()-1; i>0; --i) {
+		if(const int* p = m_variableData[i].vars->getSamplerPointer(name)) return *p;
+	}
+	return m_textures.size();
+}
+
 void Pass::setTexture(const char* name, const Texture* tex) {
-	// Does this texture already have a slot set
-	// FIXME: problem if multiple variables use this texture and we only want to change one of them
-	// Need to keep track of which int params are texture samplers. Perhaps a VT_SAMPLER vatriable type
-	for(size_t i=0; i<m_variableData.size(); ++i) {
-		const int* p = m_variableData[i].vars->getIntPointer(name);
-		if(p) {
-			setTexture(*p, 0, tex);
-			return;
-		}
+	size_t slot = m_textures.size();
+	// Texture already bound - reuse slot
+	for(; slot<m_textures.size(); ++slot) {
+		if(m_textures[slot].texture == tex) break; 
 	}
-	size_t index = m_textures.size();
-	for(size_t i=0; i<m_textures.size(); ++i) {
-		if(m_textures[i] == tex) { index=i; break; }
-		else if(!m_textures[i]) index = i;
-	}
-	setTexture(index, name, tex);
+
+	// Reuse existing binding unless bound to multiple variables
+	size_t boundSlot = getTextureSlot(name);
+	if(boundSlot < m_textures.size() && m_textures[boundSlot].uses < 2) slot = boundSlot;
+
+	setTexture(slot, name, tex);
 }
 void Pass::setTexture(size_t slot, const char* name, const base::Texture* tex) {
-	if(m_textures.size()<slot+1) m_textures.resize(slot+1, 0);
-	m_textures[slot] = tex;
-	if(name) m_ownedVariables.set(name, (int)slot);
+	if(m_textures.size()<slot+1) m_textures.resize(slot+1);
+	m_textures[slot].texture = tex;
+	if(name) {
+		size_t lastSlot = getTextureSlot(name);
+		if(lastSlot < m_textures.size()) --m_textures[lastSlot].uses;
+		++m_textures[slot].uses;
+		m_ownedVariables.setSampler(name, (int)slot);
+	}
 }
 const Texture* Pass::getTexture(const char* name) const {
-	const int* ix = m_ownedVariables.getIntPointer(name);
-	return ix? m_textures[*ix]: 0;
+	for(auto& data: m_variableData) {
+		if(const int* ix = data.vars->getSamplerPointer(name)) {
+			return m_textures[*ix].texture;
+		}
+	}
+	return 0;
 }
 
 // -------------------------------- //
@@ -345,7 +353,7 @@ void Pass::bind(AutoVariableSource* autos) {
 void Pass::bindTextures() const {
 	for(size_t i=0; i<m_textures.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
-		if(m_textures[i]) m_textures[i]->bind();
+		if(m_textures[i].texture) m_textures[i].texture->bind();
 	}
 	if(m_textures.size()>1) glActiveTexture(GL_TEXTURE0);
 }

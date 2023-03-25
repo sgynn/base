@@ -1,4 +1,5 @@
 #include <base/autovariables.h>
+#include <base/material.h>
 #include <base/camera.h>
 #include <base/opengl.h>
 #include <assert.h>
@@ -35,22 +36,22 @@ const char* AutoVariableSource::getKeyString(int key) {
 }
 
 int AutoVariableSource::getData(int key, int& e, int& a, const float*& data) {
-	#define return_matrix(m) e=16; a=1; data=&m[0]; return 3;
-	#define return_float(f) e=1; a=1; data=&f; return 1;
+	#define return_matrix(m) e=16; a=1; data=&m[0]; return VT_MATRIX;
+	#define return_float(f) e=1; a=1; data=&f; return VT_FLOAT;
 
 	switch(key) {
 	case AUTO_TIME:       return_float(m_time);
 	case AUTO_FRAME_TIME: return_float(m_frameTime);
 	case AUTO_NEAR_CLIP:  return_float(m_near);
 	case AUTO_FAR_CLIP:   return_float(m_far);
-	case AUTO_VIEWPORT_SIZE: e=4; a=1; data=m_viewportSize; return 1;
+	case AUTO_VIEWPORT_SIZE: e=4; a=1; data=m_viewportSize; return VT_FLOAT;
 
 	case AUTO_MODEL_MATRIX:      return_matrix(m_modelMatrix);
 	case AUTO_VIEW_MATRIX:       return_matrix(m_viewMatrix);
 	case AUTO_PROJECTION_MATRIX: return_matrix(m_projection);
 
-	case AUTO_CAMERA_POSITION:   e=3; a=1; data=m_cameraPosition; return 1;
-	case AUTO_CAMERA_DIRECTION:  e=3; a=1; data=m_cameraDirection; return 1;
+	case AUTO_CAMERA_POSITION:   e=3; a=1; data=m_cameraPosition; return VT_FLOAT;
+	case AUTO_CAMERA_DIRECTION:  e=3; a=1; data=m_cameraDirection; return VT_FLOAT;
 
 	// derived matrices
 	case AUTO_MODEL_VIEW_MATRIX:
@@ -65,10 +66,10 @@ int AutoVariableSource::getData(int key, int& e, int& a, const float*& data) {
 		return_matrix( deriveMatrix(key) );
 	
 	// skin data
-	case AUTO_SKIN_MATRICES: e=16; a=m_skinSize; data=m_skinMatrices[0]; return 3;
+	case AUTO_SKIN_MATRICES: e=16; a=m_skinSize; data=m_skinMatrices[0]; return VT_MATRIX;
 
 	// Custom data
-	case AUTO_CUSTOM: e=4; a=1; data=m_custom; return 1;
+	case AUTO_CUSTOM: e=4; a=1; data=m_custom; return VT_FLOAT;
 	default: return 0;
 	}
 }

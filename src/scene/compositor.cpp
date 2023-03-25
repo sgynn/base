@@ -149,25 +149,31 @@ void CompositorPassQuad::createGeometry() {
 
 // ================================================================================ //
 
-CompositorPassScene::CompositorPassScene(uint8 q, const char* tech) : mFirst(q), mLast(q), mMaterialName(0), mTechnique(0), mCamera(0), mMaterial(0) {
+CompositorPassScene::CompositorPassScene(uint8 q, const char* tech) : mFirst(q), mLast(q), mMaterialName(0), mTechnique(0), mCameraName(0), mMaterial(0) {
 	mTechnique = Material::getPassID(tech);
 }
-CompositorPassScene::CompositorPassScene(uint8 a, uint8 b, const char* tech) : mFirst(a), mLast(b), mMaterialName(0), mTechnique(0), mCamera(0), mMaterial(0) {
+CompositorPassScene::CompositorPassScene(uint8 a, uint8 b, const char* tech) : mFirst(a), mLast(b), mMaterialName(0), mTechnique(0), mCameraName(0), mMaterial(0) {
 	mTechnique = Material::getPassID(tech);
 }
 
-CompositorPassScene::CompositorPassScene(uint8 a, uint8 b, const char* material, const char* tech) : mFirst(a), mLast(b), mMaterialName(0), mTechnique(0), mCamera(0), mMaterial(0) {
+CompositorPassScene::CompositorPassScene(uint8 a, uint8 b, const char* material, const char* tech) : mFirst(a), mLast(b), mMaterialName(0), mTechnique(0), mCameraName(0), mMaterial(0) {
 	mMaterialName = material? strdup(material): 0;
 	mTechnique = Material::getPassID(tech);
 }
 
-CompositorPassScene::CompositorPassScene(uint8 a, uint8 b, Material* material, const char* tech) : mFirst(a), mLast(b), mMaterialName(0), mTechnique(0), mCamera(0), mMaterial(material) {
+CompositorPassScene::CompositorPassScene(uint8 a, uint8 b, Material* material, const char* tech) : mFirst(a), mLast(b), mMaterialName(0), mTechnique(0), mCameraName(0), mMaterial(material) {
 	mMaterial = material;
 	mTechnique = Material::getPassID(tech);
 }
 
 CompositorPassScene::~CompositorPassScene() {
 	free(mMaterialName);
+	free(mCameraName);
+}
+
+void CompositorPassScene::setCamera(const char* camera) {
+	if(mCameraName) free(mCameraName);
+	mCameraName = camera? strdup(camera): 0;
 }
 
 void CompositorPassScene::resolveExternals(MaterialResolver* r) {

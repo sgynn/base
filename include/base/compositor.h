@@ -50,11 +50,11 @@ namespace base {
 		virtual const char* getCamera() const { return 0; }
 	};
 	/// Clear target buffer
-	class CompositorPassClear : public CompositorPass {
+	class CompositorPassClear final : public CompositorPass {
 		public:
 		CompositorPassClear(char clearBits=3, uint colour=0, float depth=1);
 		CompositorPassClear(char clearBits, const float* colour, float depth=1);
-		virtual void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const;
+		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
 		void setColour(float r, float g, float b, float a=1) { mColour[0]=r; mColour[1]=g; mColour[2]=b; mColour[3]=a; }
 		void setDepth(float value) { mDepth=value; }
 		void setBits(unsigned bits) { mBits=bits; }
@@ -67,13 +67,13 @@ namespace base {
 		unsigned mBits;
 	};
 	/// Draw a fullscreen quad
-	class CompositorPassQuad : public CompositorPass {
+	class CompositorPassQuad final : public CompositorPass {
 		public:
 		CompositorPassQuad(const char* material, const char* tech=0);
 		CompositorPassQuad(Material* material=0, const char* tech=0);
 		~CompositorPassQuad();
-		virtual void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const;
-		virtual void resolveExternals(MaterialResolver*);			// Resolve texture and material  classes from resource names
+		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
+		void resolveExternals(MaterialResolver*) override;			// Resolve texture and material  classes from resource names
 		void setMaterial(Material*, const char* tech=0, bool isInstance=false);	// Set material. isInstance specifies it is a material instance owned by this pass
 		void setTexture(const char* name, const base::Texture*, bool compile=true);	// Set texture
 		void setTexture(const char* name, const char* source);		// Set texture by name to be resolved later
@@ -93,7 +93,7 @@ namespace base {
 		static void createGeometry();
 	};
 	/// Draw scene items
-	class CompositorPassScene : public CompositorPass {
+	class CompositorPassScene final : public CompositorPass {
 		public:
 		CompositorPassScene(uint8 queue, const char* technique=0);
 		CompositorPassScene(uint8 first, uint8 last, const char* technique=0);
@@ -105,22 +105,22 @@ namespace base {
 		void setCamera(const char* camera);
 		void setMaterial(Material* m) { mMaterial=m; }
 
-		virtual void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const;
-		virtual const char* getCamera() const { return mCamera; }
-		virtual void resolveExternals(MaterialResolver*);
+		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
+		const char* getCamera() const override { return mCameraName; }
+		void resolveExternals(MaterialResolver*) override;
 
 		protected:
 		uint8     mFirst, mLast;	// Render queues to draw
 		char*     mMaterialName;	// Override material name
 		size_t    mTechnique;		// Material technique to use
-		char*     mCamera;			// Camera name
+		char*     mCameraName;		// Camera name
 		Material* mMaterial;		// Resolved material - how to set this ?? 
 	};
 	/// Copy a texture
-	class CompositorPassCopy : public CompositorPass {
+	class CompositorPassCopy final : public CompositorPass {
 		public:
 		CompositorPassCopy(const char* source, int index=0);
-		virtual void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const;
+		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
 		protected:
 		size_t mSource;
 		int    mSourceIndex;

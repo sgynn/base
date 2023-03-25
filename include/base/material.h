@@ -1,5 +1,4 @@
-#ifndef _SCENE_MATERIAL_
-#define _SCENE_MATERIAL_
+#pragma once
 
 #include <base/hashmap.h>
 #include <base/vec.h>
@@ -63,6 +62,8 @@ namespace base {
 		int test;
 	};
 
+	enum ShaderVarType { VT_AUTO, VT_FLOAT, VT_INT, VT_SAMPLER, VT_MATRIX };
+
 	/** Shader variables */
 	class ShaderVars {
 		public:
@@ -79,13 +80,16 @@ namespace base {
 		void set(const char* name, const vec4& v);							// set vec3 value
 		void set(const char* name, int elements, int array, const int* v);	// set int data from pointer
 		void set(const char* name, int elements, int array, const float* v);// set float data from pointer
+		void setSampler(const char* name, int index);						// Set texture (same as int)
 		void setMatrix(const char* name, float* m);							// set matrix (4x4)
 		void setAuto(const char* name, int key);							// set automatic variable
 		void unset(const char* name);										// unset a variable
 
 		int*   getIntPointer(const char* name);					// get int pointer for direct memory access
+		int*   getSamplerPointer(const char* name);				// get int pointer for direct memory access
 		float* getFloatPointer(const char* name);				// get float pointer for direct memory access
 		const int*   getIntPointer(const char* name) const;		// get int pointer for reading
+		const int*   getSamplerPointer(const char* name) const;	// get int pointer for direct memory access
 		const float* getFloatPointer(const char* name) const;	// get float pointer for reading
 		int    getElements(const char* name) const;				// get the number of values stored
 		bool   contains(const char* name) const;				// is a variable defined
@@ -97,13 +101,15 @@ namespace base {
 		protected:
 		// ToDo: change this to use GL_UNIFORM_BUFFER ?
 		struct SVar {
-			char type;		// Variable base type
+			ShaderVarType type; // Data type
 			char elements;	// Elements in variable (eg vec2 = 2)
 			short array;	// Array size
 			int index;		// Index for binding map
 			union { float f; int i; float* fp; int* ip; };
 		};
-		void setType(SVar&, int, int, int);
+		void setType(SVar&, ShaderVarType, int e, int a);
+		template<typename T> const T* getPointer(const SVar& var) const;
+		template<typename T> const T* getPointer(const char* name, int typeMask) const;
 		base::HashMap<SVar>  m_variables;	// shader variables
 		int m_nextIndex;
 	};
@@ -136,11 +142,14 @@ namespace base {
 		void                 setTexture(const char* name, const base::Texture*);
 		void                 setTexture(size_t slot, const char* name, const base::Texture*);
 		const base::Texture* getTexture(const char* name) const;
-		const base::Texture* getTexture(size_t index) { return m_textures[index]; }
+		const base::Texture* getTexture(size_t index) { return m_textures[index].texture; }
 		size_t               getTextureCount() const { return m_textures.size(); }
 
 		const char* getName() const;
 		void setName(const char*);
+
+		protected:
+		size_t getTextureSlot(const char* name) const;
 
 		protected:
 		struct VariableData {
@@ -149,9 +158,14 @@ namespace base {
 			int               size;
 		};
 
-		ShaderVars m_ownedVariables;					// variables owned by this pass
-		std::vector<const base::Texture*> m_textures;	// Textures
-		std::vector<VariableData> m_variableData;		// List of shared shader variables
+		struct TextureSlot {
+			const base::Texture* texture = nullptr;
+			int uses = 0;
+		};
+
+		ShaderVars m_ownedVariables;				// variables owned by this pass
+		std::vector<TextureSlot> m_textures;		// Textures
+		std::vector<VariableData> m_variableData;	// List of shared shader variables
 		Material* m_material;
 		Shader*   m_shader;
 		bool      m_changed;
@@ -184,11 +198,13 @@ namespace base {
 		std::vector<Pass*>::const_iterator begin() { return m_passes.begin(); }
 		std::vector<Pass*>::const_iterator end() { return m_passes.end(); }
 
+
+		// Will set a texture for all passes that have the variable
+		void setTexture(const char* name, Texture* texture);
+
 		protected:
 		std::vector<Pass*> m_passes;
 	};
 
 }
-
-#endif
 
