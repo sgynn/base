@@ -159,10 +159,10 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 			auto suffix = [filename, ext](const char* s, int n) { // /.*[\._- ]n(:?orm(?:al)).png/
 				if(ext - n - 1 <= filename) return false;
 				char separator = ext[-n-1];
-				if(separator != '.' || separator != '-' || separator != '_' || separator != ' ') return false;
+				if(separator != '.' && separator != '-' && separator != '_' && separator != ' ') return false;
 				return strncmp(ext - n, s, n)==0;
 			};
-			uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0x8080ff: 0xffffff;
+			uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0xff8080: 0xffffff;
 			Texture* tex = new Texture(Texture::create(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex));
 			MutexLock lock(resourceMutex);
 			requests.push_back({tex, strdup(filename)});
