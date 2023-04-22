@@ -276,6 +276,31 @@ int Shader::getSupportedVersion() {
 
 // ----------------------------------------------------------------------------------------- //
 
+Shader* Shader::create(const char* vsrc, const char* fsrc) {
+	if(!vsrc || !fsrc) return 0;
+	ShaderPart* vs = new ShaderPart(VERTEX_SHADER, vsrc);
+	ShaderPart* fs = new ShaderPart(FRAGMENT_SHADER, fsrc);
+	Shader* shader = new Shader();
+	shader->attach(vs);
+	shader->attach(fs);
+	shader->bindAttributeLocation( "vertex",   0 );
+	shader->bindAttributeLocation( "normal",   1 );
+	shader->bindAttributeLocation( "tangent",  2 );
+	shader->bindAttributeLocation( "texCoord", 3 );
+	shader->bindAttributeLocation( "colour",   4 );
+	shader->compile();
+	if(!shader->isCompiled()) {
+		char buf[2048];
+		shader->getLog(buf, 2048);
+		puts("Error: Failed to compile internal shader:\n");
+		puts(buf);
+	}
+	return shader;
+
+}
+
+// ----------------------------------------------------------------------------------------- //
+
 Shader::Shader() : m_entry{0,0,0,0,0}, m_object(0), m_linked(0), m_changed(0) {
 }
 Shader::Shader(Shader&& s) : m_shaders(s.m_shaders), m_object(s.m_object), m_linked(s.m_linked), m_changed(s.m_changed) {

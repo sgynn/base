@@ -52,6 +52,9 @@ class Shader {
 	static const Shader& current() { return *s_currentShader; }
 	static const Shader Null;
 
+	// Quick shader creation
+	static Shader* create(const char* vertexShaderSrc, const char* fragmentShaderSrc);
+
 	public:
 	Shader();
 	~Shader();
