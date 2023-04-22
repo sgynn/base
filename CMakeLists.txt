@@ -40,6 +40,7 @@ set(src
 	src/model/bmloader.cpp
 	src/model/mesh.cpp
 	src/model/model.cpp
+	src/model/primitives.cpp
 	src/model/skeleton.cpp
 	src/model/wavefront.cpp
 )
