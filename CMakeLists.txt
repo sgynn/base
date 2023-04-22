@@ -132,7 +132,6 @@ set(headers
 	include/base/framebuffer.h
 	include/base/game.h
 	include/base/gamestate.h
-	include/base/genmesh.h
 	include/base/hardwarebuffer.h
 	include/base/hashmap.h
 	include/base/inifile.h
@@ -148,6 +147,7 @@ set(headers
 	include/base/parse.h
 	include/base/png.h
 	include/base/point.h
+	include/base/primitives.h
 	include/base/quaternion.h
 	include/base/renderer.h
 	include/base/resources.h

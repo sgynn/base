@@ -1,7 +1,9 @@
-#include <base/genmesh.h>
+#include <base/primitives.h>
 #include <base/hardwarebuffer.h>
 #include <base/mesh.h>
 #include <base/vec.h>
+#include <unordered_map>
+
 namespace base {
 
 static Mesh* createMesh(int vsize, float* vx, int isize, uint16* ix, PolygonMode mode=PolygonMode::TRIANGLES) {
@@ -204,7 +206,91 @@ Mesh* createCylinder(float radius, float length, int seg) {
 	return createMesh(vcount, vx, k, ix, PolygonMode::TRIANGLE_STRIP);
 }
 
+// ----------------------------------------------------------------------------- //
+Mesh* createIcoSphere(float radius, int divisions) {
+	if(divisions > 6) asm("int $3\nnop"); // Division limit for 16bit indices
+	std::vector<vec3> vertices;
+	std::vector<uint16> indices;
 
+	auto addVertex = [&](const vec3& p) {
+		vec3 n = p.normalised();
+		vertices.push_back(n*radius);
+		vertices.push_back(n);
+	};
+	
+	// Base icosahedron
+	float t = (1.f + sqrt(5.f)) / 2.f;
+	addVertex(vec3(-1,  t,  0));
+	addVertex(vec3( 1,  t,  0));
+	addVertex(vec3(-1, -t,  0));
+	addVertex(vec3( 1, -t,  0));
+	addVertex(vec3( 0, -1,  t));
+	addVertex(vec3( 0,  1,  t));
+	addVertex(vec3( 0, -1, -t));
+	addVertex(vec3( 0,  1, -t));
+	addVertex(vec3( t,  0, -1));
+	addVertex(vec3( t,  0,  1));
+	addVertex(vec3(-t,  0, -1));
+	addVertex(vec3(-t,  0,  1));
 
+	static const int cix[] = {  0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11,
+								1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
+								3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9,
+								4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1 };
+
+	std::unordered_map<uint32, uint16> midpoints;
+	auto mid = [&](int a, int b)->uint16 {
+		uint32 key = a<b? a|b<<16: b|a<<16;
+		auto it = midpoints.find(key);
+		if(it!=midpoints.end()) return it->second;
+		addVertex((vertices[a*2] + vertices[b*2]) * 0.5f);
+		midpoints[key] = vertices.size() / 2 - 1;
+		return vertices.size() / 2 - 1;
+	};
+	
+	indices.assign(cix, cix+20*3);
+	for(int i=0; i<divisions; ++i) {
+		std::vector<uint16> next;
+		next.reserve(indices.size()*4);
+		for(uint i=0; i<indices.size(); i+=3) {
+			uint16 a = mid(indices[i+0], indices[i+1]);
+			uint16 b = mid(indices[i+1], indices[i+2]);
+			uint16 c = mid(indices[i+2], indices[i+0]);
+
+			next.push_back(indices[i]);
+			next.push_back(a);
+			next.push_back(c);
+
+			next.push_back(indices[i+1]);
+			next.push_back(b);
+			next.push_back(a);
+
+			next.push_back(indices[i+2]);
+			next.push_back(c);
+			next.push_back(b);
+
+			next.push_back(a);
+			next.push_back(b);
+			next.push_back(c);
+		}
+		indices.swap(next);
+	}
+
+	// ToDo: Figure out UVs
+
+	// Construct mesh
+	HardwareVertexBuffer* vbuffer = new HardwareVertexBuffer();
+	vbuffer->copyData(&vertices[0], vertices.size()/2, 2*sizeof(vec3));
+	vbuffer->attributes.add(VA_VERTEX, VA_FLOAT3);
+	vbuffer->attributes.add(VA_NORMAL, VA_FLOAT3);
+
+	HardwareIndexBuffer* ibuffer = new HardwareIndexBuffer(IndexSize::I16);
+	ibuffer->copyData(&indices[0], indices.size());
+
+	Mesh* mesh = new Mesh();
+	mesh->setVertexBuffer(vbuffer);
+	mesh->setIndexBuffer(ibuffer);
+	return mesh;
+}
 }
 
