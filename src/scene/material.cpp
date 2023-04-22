@@ -526,3 +526,13 @@ size_t Material::getPassID(const char* name) {
 		return id;
 	}
 }
+
+
+void Material::setTexture(const char* name, Texture* texture) {
+	for(Pass* pass: m_passes) {
+		if(pass->getTextureSlot(name) < pass->getTextureCount()) {
+			pass->setTexture(name, texture);
+		}
+	}
+}
+
