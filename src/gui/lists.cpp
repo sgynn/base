@@ -227,7 +227,7 @@ uint ItemList::getSelectionSize() const {
 }
 
 const char* ItemList::getSelectedItem(uint s) const {
-	return s<m_selected->size()? m_items->at( m_selected->at(s) ).name: 0;
+	return s<m_selected->size()? m_items->at( m_selected->at(s) ).name.str(): nullptr;
 }
 const Any& ItemList::getSelectedData(uint s) const {
 	static const Any NullAny;
@@ -369,8 +369,9 @@ void Listbox::draw() const {
 	// cache states
 	static std::vector<int> cache;
 	if((int)cache.size() <= end-start) cache.resize(end-start+1);
+	Point mouse = m_derivedTransform.untransform(m_root->getMousePos());
 	for(int i=start; i<=end; ++i) {
-		cache[i-start] = getItemState(i, r);
+		cache[i-start] = getItemState(i, r, mouse);
 		r.y += m_itemHeight;
 	}
 
@@ -413,9 +414,9 @@ void Listbox::draw() const {
 	if(m_parent) m_root->getRenderer()->setTransform(m_parent->getDerivedTransform());
 	m_root->getRenderer()->pop();
 }
-int Listbox::getItemState(uint item, const Rect& r) const {
+int Listbox::getItemState(uint item, const Rect& r, const Point& mouse) const {
 	int state = getState() & 3;
-	if((state == 1 || state == 2) && !r.contains(m_root->getMousePos())) state = 0;
+	if((state == 1 || state == 2) && !r.contains(mouse)) state = 0;
 	if(isItemSelected(item)) state |= 4;
 	return state;
 }

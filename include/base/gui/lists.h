@@ -93,7 +93,7 @@ class Listbox : public Widget, public ItemList {
 	void itemCountChanged() override;
 	void onMouseButton(const Point&, int, int) override;
 	bool onMouseWheel(int) override;
-	int getItemState(uint, const Rect&) const;
+	int getItemState(uint, const Rect&, const Point& mouse) const;
 	Scrollbar* m_scrollbar;
 	bool m_multiSelect;
 	int m_itemHeight;
