@@ -991,7 +991,7 @@ Widget* TabbedPane::addTab(const char* name, Widget* frame, int index) {
 		m_tabStrip->add(b, index);
 		if(m_autoSizeTabs) {
 			int size = b->getSkin()->getFontSize();
-			int w = b->getSkin()->getFont()->getSize(name, size).x + 6;
+			int w = b->getSkin()->getFont()->getSize(name? name: "X", size).x + 6;
 			b->setSize(w, b->getSize().y);
 		}
 		layoutTabs();
