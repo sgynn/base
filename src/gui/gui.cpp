@@ -715,7 +715,7 @@ Widget* Widget::findTemplateWidget(const char* name) const {
 		for(Widget* w: queue[i]->m_children) {
 			if(w->isTemplate()) {
 				if(name == w->m_name) return w;
-				queue.push_back(w);
+				queue.push_back(w->m_client);
 			}
 			else break;
 		}
