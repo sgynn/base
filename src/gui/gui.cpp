@@ -785,6 +785,7 @@ bool Widget::remove(Widget* w) {
 
 void Widget::removeFromParent() {
 	Widget* parent = getParent();
+	if(parent && parent->m_client != m_parent) parent = m_parent;
 	if(parent) parent->remove(this);
 }
 
