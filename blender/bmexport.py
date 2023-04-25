@@ -608,7 +608,8 @@ def export(context, config):
                     for c in obj.constraints:
                         if c.type == 'CHILD_OF' and c.target and c.target.type == 'ARMATURE': arm = c.target
                 if arm and arm not in exportList:
-                    exportList.append(arm)
+                    if type(exportList) is set: exportList.add(arm)
+                    else: exportList.append(arm)
 
     xml = create_document("model")
     xml.firstChild.setAttribute("version", "2.0");
