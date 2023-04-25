@@ -733,7 +733,6 @@ void Scrollpane::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("showscrollbars")) m_alwaysShowScrollbars = atoi(p["showscrollbars"]);
 	if(p.contains("fullsize")) m_useFullSize = atoi(p["fullsize"]);
 	// sub widgets
-	m_client = this;
 	m_vScroll = getTemplateWidget<Scrollbar>("_vscroll");
 	m_hScroll = getTemplateWidget<Scrollbar>("_hscroll");
 	m_client = getTemplateWidget<Widget>("_client");
@@ -745,6 +744,8 @@ void Scrollpane::initialise(const Root*, const PropertyMap& p) {
 		w->setAsTemplate();
 		w->setTangible(isTangible());
 		while(getWidgetCount()) w->add(getWidget(0)); // move any children
+		w->setLayout(m_client->getLayout());
+		m_client->setLayout(nullptr);
 		m_client->add(w);
 		m_client = w;
 	} 
