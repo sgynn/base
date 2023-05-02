@@ -45,6 +45,7 @@ using namespace base;
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	//Use clicked window close button
 	if(message==WM_CLOSE) PostQuitMessage(0);
+	else if(message==WM_SIZE) PostMessageW(hwnd, WM_SIZE, wParam, lParam); // Forward as message
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
@@ -97,12 +98,16 @@ bool Win32Window::createWindow() {
 	crect.right = crect.left + m_size.x;
 	crect.bottom = crect.top + m_size.y;
 	
+	unsigned windowStyle = WS_OVERLAPPEDWINDOW;
+	//unsigned windowStyle = WS_CAPTION | WS_POPUPWINDOW;
+
+	
 	//adjust the window rect so the client size is correct
-	if (!m_fullScreen) AdjustWindowRect(&crect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
+	if (!m_fullScreen) AdjustWindowRect(&crect, windowStyle | WS_VISIBLE, false);
 	
 	//create the window
 	m_hWnd = CreateWindow(	"basegame", "",
-				((m_fullScreen) ? 0 : WS_CAPTION) | WS_POPUPWINDOW | WS_VISIBLE,
+				((m_fullScreen) ? 0 : windowStyle) | WS_POPUPWINDOW | WS_VISIBLE,
 				((m_fullScreen) ? 0 : m_position.x),
 				((m_fullScreen) ? 0 : m_position.y),
 				crect.right-crect.left,
@@ -275,6 +280,7 @@ uint Win32Window::pumpEvents(Input* input) {
 		case WM_QUIT:
 			return 0x100; //Exit signal
 		case WM_SIZE: //Window resized
+		case WM_EXITSIZEMOVE:
 			notifyResize(Point(msg.lParam & 0xffff, msg.lParam >> 16));
 			break;
 		case WM_SETFOCUS:
