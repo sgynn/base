@@ -79,7 +79,7 @@ String::operator const char*() const {
 const char* String::str() const {
 	return s? s: "";
 }
-inline String String::cat(const char* a, const char* b) {
+String String::cat(const char* a, const char* b) {
 	assert(a && b);
 	int length = strlen(a) + strlen(b);
 	String n;
@@ -597,7 +597,7 @@ inline Variable& Variable::_set(uint id, const Variable& var) {
 	obj->keys.push_back(id);
 	// Vector resize breaks linked variables as that is lost when using operator=
 	// So here is a horrible solution to resize the vector using memcpy() instead
-	// Vector uses operator=() so not really a way around this
+	// Vector uses operator=() so not really a way around this - Actually, move semantics can work
 	if(!obj->items.empty() && obj->items.size() == obj->items.capacity()) {
 		std::vector<Variable> temp;
 		temp.swap(obj->items);

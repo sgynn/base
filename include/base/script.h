@@ -1,5 +1,4 @@
-#ifndef _SCRIPT_
-#define _SCRIPT_
+#pragma once
 
 #include <base/math.h>
 #include "variable.h"
@@ -178,12 +177,12 @@ namespace script {
 		bool		run(Variable& context);
 		public:
 		static Function*   parseFunction(const char* src);
-		static Function*   parseFunction(const char* src, int argc=0, const char* argn[]=0);
-		static Function*   createFunction(Expression* expr, int argc=0, const char* argn[]=0);
+		static Function*   parseFunction(const char* src, int argc=0, const char* const argn[]=0);
+		static Function*   createFunction(Expression* expr, int argc=0, const char* const argn[]=0);
 		static Expression* parseExpression(const char* source, bool set=false);
 
-		template<int N> Function* parseFunction(const char* src, const char* const (&args)[N]) { return parseFunction(src, N, args); }
-		template<int N> Function* createFunction(Expression* e, const char* const (&args)[N]) { return createFunction(e, N, args); }
+		template<int N> static Function* parseFunction(const char* src, const char* const (&args)[N]) { return parseFunction(src, N, args); }
+		template<int N> static Function* createFunction(Expression* e, const char* const (&args)[N]) { return createFunction(e, N, args); }
 
 		protected:
 		static Block*      parseBlock(const char* src, const char*& s, bool set, bool control, bool braces);
@@ -198,4 +197,3 @@ namespace script {
 
 }
 
-#endif

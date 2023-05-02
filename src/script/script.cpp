@@ -196,16 +196,16 @@ Variable& Expression::opVariableRef(const Operand& o, Context&& context) {
 	return Variable().get_const(-1); // nullVar
 }
 
+template<typename T> inline int compareT(T x, T y) { return x<y? -1: x>y? 1: 0; }
 int Expression::compare(const Variable& a, const Variable& b) {
-	#define CMP(x,y) (x<y? -1: x>y? 1: 0)
 	int t = (a.type&0xf) > (b.type&0xf)? (a.type&0xf): (b.type&0xf);
-	if(a.isNull() || b.isNull()) return t==0? 0: 2;
 	switch(t) {
-	case Variable::BOOL:    return CMP((bool)a,   (bool)b);
-	case Variable::INT:     return CMP((int)a,    (int)b);
-	case Variable::UINT:    return CMP((uint)a,   (uint)b);
-	case Variable::FLOAT:   return CMP((float)a,  (float)b);
-	case Variable::DOUBLE:  return CMP((double)a, (double)b);
+	case 0: return 0; // Both null
+	case Variable::BOOL:    return compareT<bool>(a,b);
+	case Variable::INT:     return compareT<int>(a,b);
+	case Variable::UINT:    return compareT<uint>(a,b);
+	case Variable::FLOAT:   return compareT<float>(a,b);
+	case Variable::DOUBLE:  return compareT<double>(a,b);
 	case Variable::VEC2: { vec2 va=a, vb=b; return va==vb? 0: 2; }
 	case Variable::VEC3: { vec3 va=a, vb=b; return va==vb? 0: 2; }
 	case Variable::VEC4: { vec4 va=a, vb=b; return va==vb? 0: 2; }
@@ -238,8 +238,8 @@ Variable Expression::evaluate(Context&& context) const {
 	int rt = (a.type&0xf) > (b.type&0xf)? (a.type&0xf): (b.type&0xf);
 	switch(op) {
 	case NIL: case NOT: case NEG: break;
-	case EQ: r = compare(a, b)==0; break;
-	case NE: r = compare(a, b)!=0; break;
+	case EQ: r = a.isNull()==b.isNull() && compare(a, b)==0; break;
+	case NE: r = !(a.isNull()==b.isNull() && compare(a, b)==0); break;
 	case GT: r = compare(a, b)==1; break;
 	case GE: r = compare(a, b)>=0; break;
 	case LT: r = compare(a, b)< 0; break;
@@ -420,7 +420,7 @@ String Function::toString(bool body) const {
 }
 
 // To make a function from an expression
-Function* Script::createFunction(Expression* expr, int argc, const char* argn[]) {
+Function* Script::createFunction(Expression* expr, int argc, const char* const argn[]) {
 	Function* f = new Function();
 	f->argc = argc;
 	if(argc>0) {
@@ -1065,7 +1065,7 @@ Function* Script::parseFunction(const char* source) {
 	return parseFunction(source, s);
 }
 
-Function* Script::parseFunction(const char* source, int argc, const char* argv[]) {
+Function* Script::parseFunction(const char* source, int argc, const char* const argv[]) {
 	if(!source || !source[0]) return nullptr;
 	const char* s = source;
 	Block* block = parseBlock(source, s, true, false, false);
@@ -1076,7 +1076,7 @@ Function* Script::parseFunction(const char* source, int argc, const char* argv[]
 		for(int i=0; i<argc; ++i) func->argn[i] = Variable::lookupName(argv[i]);
 		func->length = block->length;
 		func->lines = block->lines;
-		func->signal = block->signal;
+		func->signal = Context::RETURN;
 		block->lines = 0;
 		block->length = 0;
 		delete block;
