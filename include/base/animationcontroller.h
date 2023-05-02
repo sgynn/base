@@ -104,10 +104,11 @@ class AnimationController {
 	void endAction();												// End current action
 	void clear();													// Immediatly terminate all actions
 
+	AnimationKey getIdle() const;		// Get the assigned idle animation (may not be playing)
 	ActionState  getState() const;
-	AnimationKey getAction() const;
-	float        getProgress() const;
-	float        getWeight() const;
+	AnimationKey getAction() const;		// Get the active action - It may have ended.
+	float        getProgress() const;	// 0-1 value through active animation
+	float        getWeight() const;		// Weight of active action
 
 	void         setProgress(float);	// Set progress of current action.
 	void         setWeight(float);		// Set weight of currrent action

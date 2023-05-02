@@ -368,6 +368,9 @@ ActionState AnimationController::getState() const {
 AnimationKey AnimationController::getAction() const {
 	return m_action;
 }
+AnimationKey AnimationController::getIdle() const {
+	return m_idle;
+}
 float AnimationController::getProgress() const {
 	if(m_lastAction<0) return 0;
 	return m_state->getFrameNormalised(m_lastAction);
@@ -410,19 +413,15 @@ void AnimationController::setOverrideStartTrack(int newStart) {
 	int shift = newStart - m_overrideStart;
 	if(shift < 0) {
 		for(int i=m_overrideStart; i<lastIndex; ++i) {
-			if(m_meta[i].animation) {
-				m_meta[i+shift] = m_meta[i];
-				m_state->swapTracks(i, i+shift);
-			}
+			m_meta[i+shift] = m_meta[i];
+			m_state->swapTracks(i, i+shift);
 		}
 	}
 	else {
 		setMeta(lastIndex+shift, 0, ACTION, ActionMode::Hold);
 		for(int i=lastIndex; i>=m_overrideStart; --i) {
-			if(m_meta[i].animation) {
-				m_meta[i+shift] = m_meta[i];
-				m_state->swapTracks(i, i+shift);
-			}
+			m_meta[i+shift] = m_meta[i];
+			m_state->swapTracks(i, i+shift);
 		}
 	}
 	m_overrideStart = newStart;
