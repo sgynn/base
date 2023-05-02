@@ -298,7 +298,10 @@ ShaderPart* ShaderPartLoader::create(const char* name, Manager* manager) {
 	}
 
 	ResourceFile file(name, &m_shaders);
-	if(!file) return 0;
+	if(!file) {
+		printf("Error: Missing shader file: '%s'\n", name);
+		return 0;
+	}
 
 	// Create shader
 	ShaderPart* part = new ShaderPart(type, file, defines);
@@ -935,7 +938,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 }
 
 CompositorGraph* XMLResourceLoader::loadGraph(const XMLElement& e) {
-	constexpr size_t nope = ~0ull;
+	static const size_t nope = -1;
 	CompositorGraph* chain = new CompositorGraph();
 
 	HashMap<size_t> lookup;

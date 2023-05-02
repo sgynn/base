@@ -16,7 +16,6 @@ gui::FreeTypeFont::FreeTypeFont(const char* file) {
 bool gui::FreeTypeFont::build(int size) {
 	if(m_glyphs.empty()) return false;
 
-	Font* font = 0;
 	FT_Library  library;
 	FT_Face     face;
 	int error = 0;
@@ -24,15 +23,15 @@ bool gui::FreeTypeFont::build(int size) {
 	error = FT_Init_FreeType( &library );
 	if(error) { printf("Error initilising freetype\n"); return false; }
 
-	error = FT_New_Face(library, file, 0, &face); // Note: 0 is the face index, a file can contain multiple faces
-	if(error) printf("Error: Failed to load font %s\n", file);
+	error = FT_New_Face(library, m_file, 0, &face); // Note: 0 is the face index, a file can contain multiple faces
+	if(error) printf("Error: Failed to load font %s\n", m_file);
 	else {
 		// Set font size
 		if(face->face_flags & FT_FACE_FLAG_SCALABLE) {
 			FT_F26Dot6 ftSize = (FT_F26Dot6)(size*0.75) << 6;
 			FT_Set_Char_Size(face, ftSize, 0, 100, 100);
 		}
-		else printf("Error: Font %s not scalable\n", file);
+		else printf("Error: Font %s not scalable\n", m_file);
 
 		int ascent = face->size->metrics.ascender >> 6;
 		int descent = face->size->metrics.descender >> 6;
@@ -48,7 +47,7 @@ bool gui::FreeTypeFont::build(int size) {
 		Point imageSize = selectImageSize(size, countGlyphs());
 		int width = imageSize.x;
 		int height = imageSize.y;
-		count = 0;
+		int count = 0;
 
 		createFace(size, ascent+descent);
 		allocateGlyphs();
@@ -88,14 +87,14 @@ bool gui::FreeTypeFont::build(int size) {
 						// Space has no bitmap data
 						rect.width = face->glyph->metrics.horiAdvance >> 6;
 					}
-					setGlyph(font, glyph, rect);
+					setGlyph(glyph, rect);
 					rect.x += rect.width;
 				}
 				else printf("No glyph for '%c'\n", (char)glyph);
 			}
 		}
 		addImage(width, height, data);
-		printf("Loaded font %s %dx%d %d glyphs\n", file, width, height, count);
+		printf("Loaded font %s %dx%d %d glyphs\n", m_file, width, height, count);
 		delete [] data;
 	}
 	FT_Done_FreeType(library);

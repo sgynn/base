@@ -16,7 +16,7 @@ class ResourceManagerBase {
 	std::vector<char*> m_paths;
 };
 
-struct ResourceLoadProgress { uint completed; uint remaining; };
+struct ResourceLoadProgress { unsigned completed; unsigned remaining; };
 
 template<class T> class ResourceManager;
 template<class T>

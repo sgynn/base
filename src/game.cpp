@@ -125,6 +125,10 @@ uint64 Game::getTickFrequency() {
 #ifdef EMSCRIPTEN
 EM_BOOL emscriptenUpdate(double totalTime, void* data) {
 	GameStateManager* state = (GameStateManager*)data;
+	static double lastTime = totalTime;
+	float deltaTime = (totalTime - lastTime) / 1000.0; // totalTime is in milliseconds
+	lastTime = totalTime;
+	Game::setFrameTime(deltaTime);
 	state->update();
 	state->draw();
 	Game::input()->update();

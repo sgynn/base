@@ -136,11 +136,11 @@ bool gui::SystemFont::build(int size) {
 	SetTextColor(memDC, 0x00ffffff);
 	
 	// Render font
-	createFace(size, h);
+	createFace(size, metrics.tmHeight);
 	allocateGlyphs();
 	Rect rect(0,0,0,metrics.tmHeight);
 	for(const Range& range : m_glyphs) {
-		for(unsigned i=range.start; i<=range.end; ++i) {
+		for(int i=range.start; i<=range.end; ++i) {
 			char_t c = i;
 			GetCharWidth(memDC, c, c, &rect.width);
 			if(rect.right() > width) rect.x=0, rect.y += rect.height;
@@ -186,7 +186,7 @@ bool gui::SystemFont::build(int size) {
 #endif
 
 #if !defined(LINUX) && !defined(WIN32)
-gui::Font* gui::SystemFont::build(int size) {
+bool gui::SystemFont::build(int size) {
 	printf("Error: No system font availiable\n");
 	return false;
 }

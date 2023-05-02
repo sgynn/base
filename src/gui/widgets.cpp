@@ -83,11 +83,12 @@ void Label::updateAutosize() {
 }
 void Label::setWordWrap(bool w) {
 	m_wordWrap = w;
-	updateWrap();
+	if(w) updateWrap();
+	else m_wrapValues.clear();
 }
 void Label::updateWrap() {
 	m_wrapValues.clear();
-	if(!m_caption) return;
+	if(!m_caption || !m_skin->getFont()) return;
 	int size = m_fontSize? m_fontSize: m_skin->getFontSize();
 	int length = m_caption.length();
 	Point full = m_skin->getFont()->getSize(m_caption, size, length);

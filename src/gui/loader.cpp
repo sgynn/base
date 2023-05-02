@@ -128,16 +128,7 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 				if(face == "face") valid |= loadFontFace(face, 0);
 			}
 
-
-			/*
-			const char* src = i->attribute("source", name);
-			int baseSize = i->attribute("size", 16);
-			printf("new Font %s (%s, %d)\n", name, src, baseSize);
-			Font* font = 0;
-			if(strstr(src, ".png")) font = BitmapFont::load(src);
-			else if(strstr(src, ".ttf")) font = FreeTypeFont::load(src, baseSize);
-			else font = SystemFont::load(src, baseSize);
-			*/
+			if(!valid) printf("Error: Font '%s' has no valid faces\n", name);
 			if(valid) addFont(name, font);
 			else delete font;
 		}

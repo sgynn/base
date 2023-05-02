@@ -208,7 +208,7 @@ Mesh* createCylinder(float radius, float length, int seg) {
 
 // ----------------------------------------------------------------------------- //
 Mesh* createIcoSphere(float radius, int divisions) {
-	if(divisions > 6) asm("int $3\nnop"); // Division limit for 16bit indices
+	if(divisions > 6) divisions=6; // Division limit for 16bit indices
 	std::vector<vec3> vertices;
 	std::vector<uint16> indices;
 

@@ -456,7 +456,9 @@ void MacroState::bind() const {
 	}
 	else {
 		glDisable(GL_POLYGON_OFFSET_FILL);
+		#ifndef EMSCRIPTEN
 		glDisable(GL_POLYGON_OFFSET_LINE);
+		#endif
 	}
 
 	#ifndef EMSCRIPTEN
