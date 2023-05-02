@@ -20,6 +20,12 @@ namespace base {
 
 		static void registerExtension(const char* key, ModelExtension*(*)(const XMLElement& e));
 
+		// Shorthand for registering extensions that take XMLElement in constructor
+		template<class T>
+		static void registerExtension(const char* key) {
+			registerExtension(key, [](const XMLElement& e)->ModelExtension*{return new T(e); });
+		}
+
 		private:
 		BMLoader() {}
 
