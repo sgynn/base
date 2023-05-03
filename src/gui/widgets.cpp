@@ -1082,7 +1082,7 @@ int TabbedPane::getTabIndex(const char* name) const {
 
 // ===================================================================================== //
 
-CollapsePane::CollapsePane(const Rect& r, Skin* s) : Widget(r,s), m_collapsed(false), m_moveable(false) {}
+CollapsePane::CollapsePane(const Rect& r, Skin* s) : Widget(r,s), m_collapsed(false), m_moveable(false), m_expandAnchor(0) {}
 void CollapsePane::initialise(const Root* root, const PropertyMap& p) {
 	if(p.contains("moveable")) m_moveable = atoi(p["moveable"]);
 
@@ -1096,11 +1096,13 @@ void CollapsePane::initialise(const Root* root, const PropertyMap& p) {
 	const char* caption = p["caption"];
 	if(caption) setCaption(caption);
 	m_collapsed = p.getValue("collapsed", 0);
+	m_expandAnchor = m_anchor;
 	expand(!m_collapsed);
 }
 Widget* CollapsePane::clone(const char* type) const {
 	Widget* w = Widget::clone(type);
 	if(CollapsePane* c = w->cast<CollapsePane>()) {
+		c->m_expandAnchor = m_expandAnchor;
 		c->setCaption(getCaption());
 		c->expand(isExpanded());
 	}
@@ -1121,12 +1123,15 @@ void CollapsePane::expand(bool e) {
 		m_client->setAnchor(0);
 		setSize(getClientRect().bottomRight());
 		m_client->setAnchor(0x55);
+		if(m_expandAnchor) m_anchor = m_expandAnchor;
 	}
 	else if(m_header) {
 		m_client->setAnchor(0);
 		Point collapsedSize = m_header->getSize() + m_header->getPosition();
-		if((getAnchor()&0x0f) == 0x05) collapsedSize.x = getSize().x;
-		if((getAnchor()&0xf0) == 0x50) collapsedSize.y = getSize().y;
+		m_expandAnchor = m_anchor;
+		if(getAnchor() == 0x55) m_anchor = 0x15; // tlrb is invalid when collapsed. Assumes vertical !
+		if((getAnchor()&0x0f) == 0x05) collapsedSize.x = getSize().x; // lr
+		if((getAnchor()&0xf0) == 0x50) collapsedSize.y = getSize().y; // tb
 		setSize(collapsedSize);
 	}
 	m_client->setVisible(e);

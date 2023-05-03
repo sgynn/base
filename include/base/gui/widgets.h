@@ -390,6 +390,7 @@ class CollapsePane : public Widget {
 	bool m_collapsed;
 	bool m_moveable;
 	Point m_held;
+	char m_expandAnchor;
 };
 
 /** SplitPane */
