@@ -40,6 +40,7 @@ class Icon : public Widget {
 	WIDGET_TYPE(Icon);
 	Icon(const Rect& r, Skin*);
 	IconList* getIconList() const;							// Get icon set
+	void setIcon(IconList* list, const char* name, const char* alt=0);
 	void setIcon(IconList* list, int index, int alt=-1);	// Set iconSet and index
 	void setIcon(const char* name);							// Set icon index by name
 	void setIcon(int index);								// Set icon index

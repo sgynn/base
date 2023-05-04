@@ -340,7 +340,7 @@ Widget::Widget(const Rect& r, Skin* s): m_rect(r), m_skin(s), m_colour(-1), m_an
 
 Widget::~Widget() {
 	if(m_relative) delete [] m_relative;
-	if(m_name && m_root && m_root->m_widgets[m_name]==this) m_root->m_widgets.erase(m_name);
+	if(m_parent && m_parent->getRoot()) removeFromParent();
 	for(uint i=0; i<m_children.size(); ++i) delete m_children[i];
 	if(m_layout && --m_layout->ref<=0) delete m_layout;
 }
@@ -804,16 +804,16 @@ int Widget::deleteChildWidgets() {
 void Widget::setRoot(Root* r) {
 	if(m_root && m_root->m_focus==this) m_root->m_focus = 0;
 	if(m_root && m_root->m_mouseFocus==this) m_root->m_mouseFocus = 0;
-	bool addEvent = r && !m_root;
+	bool added = r && r != m_root;
 
 	// Register name
 	if(m_name && !isTemplate()) {
-		if(m_root && m_root->m_widgets.get(m_name, 0)==this) m_root->m_widgets.erase(m_name);
-		if(r) r->m_widgets[m_name] = this;
+		if(m_root && m_root!=r && m_root->m_widgets.get(m_name, 0) == this) m_root->m_widgets.erase(m_name);
+		if(added) r->m_widgets[m_name] = this;
 	}
 
 	m_root = r;
-	if(addEvent) onAdded();
+	if(added) onAdded();
 	for(uint i=0; i<m_children.size(); ++i) m_children[i]->setRoot(r);
 }
 

@@ -150,6 +150,11 @@ Icon::Icon(const Rect& r, Skin* s) : Widget(r, s), m_iconList(0), m_iconIndex(0)
 IconList* Icon::getIconList() const { return m_iconList; }
 int Icon::getIcon() const { return m_iconIndex; }
 int Icon::getAltIcon() const { return m_iconIndexAlt; }
+void Icon::setIcon(IconList* list, const char* name, const char* alt) {
+	int icon = list->getIconIndex(name);
+	int altIcon = alt? list->getIconIndex(alt): -1;
+	setIcon(list, icon, altIcon);
+}
 void Icon::setIcon(IconList* list, int index, int alt) {
 	m_iconList = list;
 	m_iconIndex = index;

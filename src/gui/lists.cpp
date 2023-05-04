@@ -2,6 +2,7 @@
 #include <base/gui/widgets.h>
 #include <base/gui/renderer.h>
 #include <base/gui/skin.h>
+#include <base/gui/font.h>
 #include <algorithm>
 #include <cstdio>
 
@@ -10,7 +11,7 @@ using namespace gui;
 // --------------------------------------------------------------------------------------------------- //
 
 ItemList::ItemList() {
-	m_items = new std::vector<Item>;
+	m_items = new std::vector<ListItem>;
 	m_selected = new std::vector<uint>;
 	m_shared = 0;
 }
@@ -42,7 +43,7 @@ void ItemList::shareList(ItemList* src) {
 	}
 	// Recreate own list
 	else {
-		m_items = new std::vector<Item>;
+		m_items = new std::vector<ListItem>;
 		m_selected = new std::vector<uint>;
 	}
 	countChanged();
@@ -87,24 +88,13 @@ void ItemList::clearItems() {
 	countChanged();
 }
 
-void ItemList::addItem(const char* name, const Any& data, int icon) {
-	m_items->push_back( Item() );
-	m_items->back().name = name;
-	m_items->back().data = data;
-	m_items->back().icon = icon;
-	m_items->back().selected = false;
-	m_items->back().checked = false;
+void ItemList::addItem(const ListItem& item) {
+	m_items->push_back(item);
 	countChanged();
 }
-
-void ItemList::insertItem(uint index, const char* name, const Any& data, int icon) {
-	Item itm;
-	itm.name = name;
-	itm.data = data;
-	itm.icon = icon;
-	itm.selected = false;
-	itm.checked = false;
-	m_items->insert( m_items->begin() + index, itm );
+void ItemList::insertItem(uint index, const ListItem& item) {
+	if(index>=m_items->size()) m_items->push_back(item);
+	else m_items->insert(m_items->begin() + index, item);
 	countChanged();
 }
 
@@ -122,50 +112,20 @@ void ItemList::removeItem(uint index) {
 	}
 }
 
-void ItemList::setItemName(uint index, const char* name) {
-	if(index < m_items->size()) {
-		m_items->at(index).name = name;
-	}
-}
-void ItemList::setItemData(uint index, const Any& data) {
-	if(index < m_items->size()) {
-		m_items->at(index).data = data;
-	}
-}
-
-void ItemList::setItemChecked(uint index, bool c) {
-	if(index < m_items->size()) {
-		m_items->at(index).checked = c;
-	}
-}
-
-void ItemList::setItemIcon(uint index, int icon) {
-	if(index < m_items->size()) {
-		m_items->at(index).icon = index;
-	}
-}
-
 uint ItemList::getItemCount() const {
 	return m_items->size();
 }
-
-const char* ItemList::getItem(uint index) const {
-	return index<m_items->size()? (const char*)m_items->at(index).name: 0;
+const ListItem& ItemList::getItem(uint index) const {
+	return m_items->at(index);
 }
-const Any& ItemList::getItemData(uint index) const {
-	static const Any NullAny;
-	return index<m_items->size()? m_items->at(index).data: NullAny;
-}
-bool ItemList::getItemChecked(uint index) const {
-	return index<m_items->size()? m_items->at(index).checked: false;
-}
-int ItemList::getItemIcon(uint index) const {
-	return index<m_items->size()? m_items->at(index).icon: -1;
+ListItem& ItemList::getItem(uint index) {
+	return m_items->at(index);
 }
 
 int ItemList::findItem(const char* name) const {
 	for(uint i=0; i<m_items->size(); ++i) {
-		if(strcmp(m_items->at(i).name, name)==0) return i;
+		const char* text = m_items->at(i).getText();
+		if(text && strcmp(text, name)==0) return i;
 	}
 	return -1;
 }
@@ -173,9 +133,9 @@ int ItemList::findItem(const char* name) const {
 void ItemList::sortItems(int flags) {
 	if(flags & IGNORE_CASE) {
 		bool inv = flags & INVERSE;
-		std::sort(m_items->begin(), m_items->end(), [inv](const Item& a, const Item& b) {
-			const char* sa = a.name;
-			const char* sb = b.name;
+		std::sort(m_items->begin(), m_items->end(), [inv](const ListItem& a, const ListItem& b) {
+			const char* sa = a.getText(); if(!sa) sa="";
+			const char* sb = b.getText(); if(!sb) sb="";
 			constexpr int shift = 'a' - 'A';
 			while(*sa && *sb) {
 				char u = *sa>'a'? *sa - shift: *sa;
@@ -189,57 +149,43 @@ void ItemList::sortItems(int flags) {
 	}
 	else {
 		int inv = flags & INVERSE? -1: 1;
-		std::sort(m_items->begin(), m_items->end(), [inv](const Item& a, const Item& b) {
-			return strcmp(a.name, b.name) * inv < 0;
+		std::sort(m_items->begin(), m_items->end(), [inv](const ListItem& a, const ListItem& b) {
+			const char* sa = a.getText(); if(!sa) sa="";
+			const char* sb = b.getText(); if(!sb) sb="";
+			return strcmp(sa, sb) * inv < 0;
 		});
 	}
 }
 
 
 void ItemList::clearSelection() {
-	for(uint i=0; i<m_selected->size(); ++i) m_items->at( m_selected->at(i) ).selected = false;
 	m_selected->clear();
+	selectionChanged();
 }
 void ItemList::selectItem(uint index, bool only) {
 	if(only) clearSelection();
-	if(index>=m_items->size() || isItemSelected(index)) return;
-	m_items->at(index).selected = true;
-	m_selected->push_back(index);
+	if(index < getItemCount() && !isItemSelected(index)) m_selected->push_back(index);
+	selectionChanged();
 }
 void ItemList::deselectItem(uint index) {
-	if(index<m_items->size() && m_items->at(index).selected) {
-		m_items->at(index).selected = false;
-		for(uint i=0; i<m_selected->size(); ++i) {
-			if(m_selected->at(i) == index) {
-				m_selected->erase(m_selected->begin()+i);
-				break;
-			}
+	for(size_t i=0; i<m_selected->size(); ++i) {
+		if(m_selected->at(i) == index) {
+			m_selected->erase(m_selected->begin()+i);
+			selectionChanged();
+			break;
 		}
 	}
 }
 
 bool ItemList::isItemSelected(uint index) const {
-	return index < m_items->size() && m_items->at(index).selected;
+	if(index >= m_items->size() || m_selected->empty()) return false;
+	for(uint i: *m_selected) if(i==index) return true;
+	return false;
 }
 
 uint ItemList::getSelectionSize() const {
 	return m_selected->size();
 }
-
-const char* ItemList::getSelectedItem(uint s) const {
-	return s<m_selected->size()? m_items->at( m_selected->at(s) ).name.str(): nullptr;
-}
-const Any& ItemList::getSelectedData(uint s) const {
-	static const Any NullAny;
-	return s<m_selected->size()? m_items->at( m_selected->at(s) ).data: NullAny;
-}
-int ItemList::getSelectedIndex(uint s) const {
-	return s<m_selected->size()? m_selected->at(s): -1;
-}
-int ItemList::getSelectedIcon(uint s) const {
-	return s<m_selected->size()? m_items->at( m_selected->at(s) ).icon: -1;
-}
-
 
 void ItemList::initialise(const PropertyMap& p) {
 	// Read items from propertymap
@@ -253,6 +199,24 @@ void ItemList::initialise(const PropertyMap& p) {
 	}
 }
 
+// ------------------------------- //
+
+const char* ListItem::getText(uint index) const {
+	String* str = getData(index).cast<String>();
+	return str? str->str(): 0;
+}
+const Any& ListItem::getData(uint index) const {
+	const Any null;
+	return index<m_data.size()? m_data[index]: null;
+}
+void ListItem::setValue(uint index, const Any& value) {
+	while(index >= m_data.size()) m_data.emplace_back();
+	m_data[index] = value;
+}
+void ListItem::setValue(uint index, const char* value) { 
+	setValue(index, Any(String(value)));
+}
+
 
 // --------------------------------------------------------------------------------------------------- //
 
@@ -260,6 +224,9 @@ void ItemList::initialise(const PropertyMap& p) {
 
 
 Listbox::Listbox(const Rect& r, Skin* s) : Widget(r, s), m_scrollbar(0), m_multiSelect(false), m_itemHeight(20) {
+}
+Listbox::~Listbox() {
+	if(m_itemWidget && !m_itemWidget->getParent(true)) delete m_itemWidget;
 }
 void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	// sub widgets
@@ -269,49 +236,41 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	if(m_scrollbar) m_scrollbar->eventChanged.bind(this, &Listbox::scrollChanged);
 	if(m_client!=this) m_client->setTangible(Tangible::CHILDREN);
 	
-	// Get item template widgets
-	m_check = getTemplateWidget("_check");
-	m_icon = getTemplateWidget<Icon>("_icon");
-	m_text = getTemplateWidget("_text");
-	if(m_icon && m_icon->getParent()!=this && m_icon->getParent()!=m_client) m_icon = 0; // Hacky fix for scrollbar icons
-	if(m_check) m_check->setVisible(false);
-	if(m_icon) m_icon->setVisible(false);
-	if(m_text) m_text->setVisible(false);
-
-	// IconList
-	if(root && p.contains("iconlist")) setIconList( root->getIconList(p["iconlist"]) );
-
-	// Set item height
-	m_itemHeight = 0;
-	if(m_check) {
-		int h = m_check->getPosition().y + m_check->getSize().y;
-		if(h>m_itemHeight) m_itemHeight = h;
+	// Get item widget
+	Widget* item = getWidget("_item");
+	if(!item) item = getTemplateWidget("_item");
+	if(item) {
+		item->setVisible(false);
+		m_itemHeight = item->getSize().y;
+		// Wrong place?
+		if(item->getParent(true) != m_client) {
+			item = item->clone();
+			add(item);
+		}
+		bindEvents(item);
 	}
-	if(m_icon) {
-		int h = m_icon->getPosition().y + m_icon->getSize().y;
-		if(h>m_itemHeight) m_itemHeight = h;
-	}
-	if(m_text) {
-		int h = m_text->getPosition().y + m_text->getSize().y;
-		if(h>m_itemHeight) m_itemHeight = h;
-	}
-	if(m_itemHeight==0) m_itemHeight = 20;	// Fallback
+	else m_itemHeight = getSkin()->getFont()->getLineHeight(getSkin()->getFontSize());
+	if(item && !m_itemWidget) m_itemWidget = item;
 
 	// Read items
 	ItemList::initialise(p);
 	updateBounds();
 }
 
+void Listbox::setItemWidget(Widget* w) {
+	if(!m_itemWidget->getParent()) delete m_itemWidget;
+	for(Widget* w: m_cache) delete w;
+	m_itemWidget = w;
+	updateCache(true);
+}
+Widget* Listbox::getItemWidget() {
+	return m_itemWidget;
+}
+
 void Listbox::setSize(int w, int h) {
 	Widget::setSize(w, h);
 	updateBounds();
-}
-
-IconList* Listbox::getIconList() const {
-	return m_icon? m_icon->getIconList(): 0;
-}
-void Listbox::setIconList(IconList* l) {
-	if(m_icon) m_icon->setIcon(l, 0);
+	updateCache(false);
 }
 
 void Listbox::ensureVisible(int index) {
@@ -322,6 +281,127 @@ void Listbox::ensureVisible(int index) {
 		if(p-offset < 0) m_scrollbar->setValue(p);
 		else if(p-offset > max) m_scrollbar->setValue(p-max);
 	}
+}
+
+inline int listItemSubWidgetIndex(Widget* w) {
+	if(w->getName()[0]=='_' && w->getName()[1]>='0' && w->getName()[2]==0) return w->getName()[1]-'0';
+	else return -1;
+}
+
+template<class T>
+void Listbox::fireCustomEventEvent(Widget* w, T data) {
+	while(w->getParent(true) != m_client) w = w->getParent();
+	uint index = w->getIndex() + m_cacheOffset;
+	if(index < getItemCount()) {
+		ListItem& item = getItem(index);
+		if(!eventCacheItem && listItemSubWidgetIndex(w) >= 0) {
+			item.setValue(listItemSubWidgetIndex(w), data);
+		}
+		if(eventCustom) eventCustom(this, index, w);
+	}
+}
+
+void Listbox::bindEvents(Widget* item) {
+	if(Button* b = item->cast<Button>()) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
+	if(Checkbox* c = item->cast<Checkbox>()) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
+	if(Textbox* t = item->cast<Textbox>()) t->eventSubmit.bind([this](Textbox* t) { fireCustomEventEvent(t, t->getText()); });
+	for(Widget* w: *item) bindEvents(w);
+}
+
+void Listbox::cacheItem(ListItem& item, Widget* w) const {
+	if(eventCacheItem) eventCacheItem(item, w);
+	else {
+		// Automatic version.
+		auto setFromData = [&item](Widget* w, const Any& value) {
+			if(value.isNull()) return;
+			if(Checkbox* c = w->cast<Checkbox>()) c->setSelected(value.getValue(false));
+			else if(const String* text = value.cast<String>()) {
+				if(Label* l = w->cast<Label>()) l->setCaption(*text);
+				else if(Textbox* t = w->cast<Textbox>()) t->setText(*text);
+				else if(Icon* i = w->cast<Icon>()) i->setIcon(*text);
+			}
+			else if(Icon* i = w->cast<Icon>()) i->setIcon(value.getValue<int>(-1));
+		};
+
+		if(w->getWidgetCount() == 0 && w->getTemplateCount() == 0) {
+			setFromData(w, item.getData());
+		}
+		else {
+			for(Widget* c: *w) {
+				int subItem = listItemSubWidgetIndex(c);
+				if(subItem>=0) setFromData(c, item.getData(subItem));
+			}
+			for(int i=0; i<w->getTemplateCount(); ++i) {
+				int subItem = listItemSubWidgetIndex(w->getTemplateWidget(i));
+				if(subItem>=0) setFromData(w->getTemplateWidget(i), item.getData(subItem));
+			}
+		}
+	}
+}
+
+void Listbox::updateCache(bool full) {
+	if(!m_itemWidget) return;
+	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
+	uint first = offset / m_itemHeight;
+	uint last = std::min((offset + m_rect.height) / m_itemHeight+1, (int)getItemCount());
+	
+	uint requiredCount = last - first;
+	if(requiredCount != m_cacheSize || first != m_cacheFirst || full) {
+		// Resize item cache - Cache is a circular buffer, so need to add them in the right place
+		if(m_cache.size() < requiredCount) {
+			int count = requiredCount - m_cache.size();
+			m_cache.insert(m_cache.begin() + m_cacheOffset, count, nullptr);
+			for(int i=0; i<count; ++i) {
+				m_cache[m_cacheOffset+i] = m_itemWidget->clone();
+				add(m_cache[m_cacheOffset+i]);
+			}
+			m_cacheOffset += count;
+		}
+
+		if(full) m_cacheSize = 0;
+		if(requiredCount) {
+			// Before
+			int cacheIndex = m_cacheOffset - (m_cacheFirst - first);
+			if(cacheIndex < 0) cacheIndex += m_cache.size();
+			for(uint i=first; i<m_cacheFirst; ++i, ++cacheIndex) {
+				Widget* itemWidget = m_cache[cacheIndex % m_cache.size()];
+				if(!itemWidget->getParent()) add(itemWidget);
+				itemWidget->setPosition(0, i * m_itemHeight);
+				cacheItem(getItem(i), itemWidget);
+			}
+
+			// After
+			cacheIndex = (m_cacheOffset + m_cacheSize) % m_cache.size();
+			for(uint i=m_cacheFirst + m_cacheSize; i<last; ++i, ++cacheIndex) {
+				Widget* itemWidget = m_cache[cacheIndex % m_cache.size()];
+				if(!itemWidget->getParent()) add(itemWidget);
+				itemWidget->setPosition(0, i * m_itemHeight);
+				cacheItem(getItem(i), itemWidget);
+			}
+
+			m_cacheOffset = (m_cacheOffset + (first - m_cacheFirst) + m_cache.size()) % m_cache.size();
+			m_cacheFirst = first;
+			m_cacheSize = requiredCount;
+		}
+		else m_cacheOffset = m_cacheSize = m_cacheFirst = 0;
+		
+		// Remove surplus
+		for(size_t i=m_cacheSize; i<m_cache.size(); ++i) {
+			m_cache[(i + m_cacheOffset) % m_cache.size()]->removeFromParent();
+		}
+	}
+
+	// Set positions and states
+	for(uint i=first, c=m_cacheOffset; i<last; ++i, ++c) {
+		Widget* itemWidget = m_cache[c%m_cache.size()];
+		itemWidget->setPosition(0, i * m_itemHeight - offset);
+		itemWidget->setVisible(true);
+		itemWidget->setSelected(isItemSelected(i));
+	}
+}
+
+void Listbox::itemSelectionChanged() {
+	updateCache(false);
 }
 
 void Listbox::onMouseButton(const Point& p, int d, int u) {
@@ -349,70 +429,33 @@ bool Listbox::onMouseWheel(int w) {
 
 void Listbox::draw() const {
 	if(!isVisible()) return;
-	Widget::draw();
-	// Items
-	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
-	int height = m_client->getSize().y;
-	int start = offset / m_itemHeight;
-	int end   = (offset+height-1) / m_itemHeight;
-	if(end >= (int)getItemCount()) end = getItemCount()-1;
+	drawSkin();
 
-	// Set up item rect
-	Rect r(0,0,m_client->getSize());
-	m_root->getRenderer()->setTransform(m_client->getDerivedTransform());
-	m_root->getRenderer()->push(r);
-	r.height = m_itemHeight;
-	r.y += start * m_itemHeight - offset;
-	int startY = r.y;
+	// Item Text, if no item widgets used
+	if(!m_itemWidget && getItemCount()) {
+		int offset = m_scrollbar? m_scrollbar->getValue(): 0;
+		Renderer* renderer = getRoot()->getRenderer();
+		renderer->push(m_rect);
+		Transform parentTransform = renderer->getTransform();
+		renderer->setTransform(m_client->getDerivedTransform());
+		int first = offset / m_itemHeight;
 
+		// Item text
+		uint selColour = (getSkin()->getState(4).foreColour & 0xffffff) | 0x30000000;
+		Point mouse = m_derivedTransform.untransform(getRoot()->getMousePos());
+		Rect box(0, first * m_itemHeight - offset, m_rect.width, m_itemHeight);
+		for(uint index=first; index<getItemCount() && box.y<m_rect.height; box.y+=m_itemHeight, ++index) {
+			const char* text = getItem(index).getText();
+			int state = getItemState(index, box, mouse);
+			if(state&4) renderer->drawRect(box, selColour);
+			if(text) renderer->drawText(box.position(), text, 0, getSkin(), state);
+		}
 
-	// cache states
-	static std::vector<int> cache;
-	if((int)cache.size() <= end-start) cache.resize(end-start+1);
-	Point mouse = m_derivedTransform.untransform(m_root->getMousePos());
-	for(int i=start; i<=end; ++i) {
-		cache[i-start] = getItemState(i, r, mouse);
-		r.y += m_itemHeight;
+		renderer->pop();
+		renderer->setTransform(parentTransform);
 	}
 
-	// Draw checkboxes
-	if(m_check) {
-		Rect cr(m_check->getPosition(), m_check->getSize());
-		cr.y += startY;
-		for(int i=start; i<=end; ++i) {
-			m_root->getRenderer()->drawSkin(m_check->getSkin(), cr, m_check->getColourARGB(), getItemChecked(i)? 4: 0);
-			cr.y += m_itemHeight;
-		}
-	}
-
-	// Draw icons
-	if(m_icon) {
-		Rect cr(m_icon->getPosition(), m_icon->getSize());
-		cr.y += startY;
-		for(int i=start; i<=end; ++i) {
-			m_root->getRenderer()->drawIcon(m_icon->getIconList(), getItemIcon(i), cr);
-			cr.y += m_itemHeight;
-		}
-	}
-
-	// Draw item backgrounds
-	if(m_text) {
-		Rect cr(m_text->getPosition(), m_text->getSize());
-		cr.y += startY;
-		for(int i=start; i<=end; ++i) {
-			m_root->getRenderer()->drawSkin(m_text->getSkin(), cr, m_text->getColourARGB(), cache[i-start]);
-			cr.y += m_itemHeight;
-		}
-		// Draw item text
-		cr.y = startY + m_text->getPosition().y;
-		for(int i=start; i<=end; ++i) {
-			m_root->getRenderer()->drawText(cr.position(), getItem(i), 0, m_text->getSkin(), cache[i-start]);
-			cr.y += m_itemHeight;
-		}
-	}
-
-	if(m_parent) m_root->getRenderer()->setTransform(m_parent->getDerivedTransform());
-	m_root->getRenderer()->pop();
+	drawChildren();
 }
 int Listbox::getItemState(uint item, const Rect& r, const Point& mouse) const {
 	int state = getState() & 3;
@@ -426,7 +469,9 @@ void Listbox::setMultiSelect(bool on) {
 }
 
 void Listbox::scrollChanged(Scrollbar* s, int v) {
+	updateCache(false);
 }
+
 void Listbox::scrollToItem(uint index) {
 	if(!m_scrollbar) return;
 	int top = index * m_itemHeight;
@@ -436,6 +481,7 @@ void Listbox::scrollToItem(uint index) {
 	if(top < offset) m_scrollbar->setValue(top);
 	else if(btm - height > offset) m_scrollbar->setValue(btm - height);
 }
+
 void Listbox::updateBounds() {
 	if(!m_scrollbar) return;
 	int h = m_client->getSize().y;
@@ -446,6 +492,7 @@ void Listbox::updateBounds() {
 
 void Listbox::itemCountChanged() {
 	updateBounds();
+	updateCache(true);
 }
 
 int Listbox::getItemHeight() const {
@@ -477,8 +524,6 @@ void Combobox::initialise(const Root* root, const PropertyMap& p) {
 
 	// Selected item
 	m_text = getTemplateWidget("_text");
-	m_icon = getTemplateWidget<Icon>("_icon");
-	if(root && p.contains("iconlist")) setIconList( root->getIconList(p["iconlist"]) );
 
 	// Textbox callbacks
 	Textbox* txt = m_text? m_text->cast<Textbox>(): 0;
@@ -503,9 +548,7 @@ Widget* Combobox::clone(const char* ws) const {
 	Widget* w = Widget::clone(ws);
 	Combobox* c = w->cast<Combobox>();
 	if(c && getItemCount()) {
-		for(uint i=0; i<getItemCount(); ++i) {
-			c->addItem(getItem(i), getItemData(i), getItemIcon(i));
-		}
+		for(const ListItem& i: items()) c->addItem(i);
 	}
 	return w;
 }
@@ -583,17 +626,6 @@ void Combobox::hideList() {
 	}
 }
 
-void Combobox::setIconList(IconList* l) {
-	if(m_icon) m_icon->setIcon(l, 0);
-	if(m_list) m_list->setIconList(l);
-}
-IconList* Combobox::getIconList() const {
-	if(m_icon) return m_icon->getIconList();
-	else if(m_list) return m_list->getIconList();
-	else return 0;
-}
-
-
 void Combobox::setText(const char* text) {
 	if(m_client && m_text) {
 		if(Label* lbl = m_text->cast<Label>()) lbl->setCaption(text);
@@ -602,23 +634,19 @@ void Combobox::setText(const char* text) {
 }
 
 const char* Combobox::getText() const {
-	if(!m_client) return m_list->getSelectedItem();
-	else if(m_text) {
+	if(m_text) {
 		if(Label* lbl = m_text->cast<Label>()) return lbl->getCaption();
 		else if(Textbox* txt = m_text->cast<Textbox>()) return txt->getText();
+	}
+	if(const ListItem* selected = getSelectedItem()) {
+		return selected->getText();
 	}
 	return 0;
 }
 
 void Combobox::selectItem(int index) {
 	ItemList::selectItem(index);
-	if(getSelectionSize()) {
-		setText( getSelectedItem() );
-		if(m_icon) m_icon->setIcon( getSelectedIcon() );
-	}
-	else {
-		setText("");
-		if(m_icon) m_icon->setIcon(-1);
-	}
+	if(const ListItem* selected = getSelectedItem()) setText(selected->getText());
+	else setText("");
 }
 

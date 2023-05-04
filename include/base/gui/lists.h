@@ -1,66 +1,108 @@
-#ifndef _GUI_LISTS_
-#define _GUI_LISTS_
+#pragma once
 
 #include "widgets.h"
 #include "any.h"
 
 namespace gui {
 
-/** Basic list management for list based widgets */
+// Item in a list box
+class ListItem {
+	public:
+	const char* getText(uint index=0) const;
+	const Any& getData(uint index=0) const;
+	void setValue(uint index, const Any& value);
+	void setValue(uint index, const char* value);
+	void setValue(uint index, char* value) { setValue(index, (const char*)value); }
+	template<class T> void setValue(uint index, const T& value) { setValue(index, Any(value)); }
+	template<class T> void setValue(const T& value) { setValue(0, value); }
+	template<class T> const T& getValue(int index, const T& fallback) const { return getData(index).getValue(fallback); }
+	size_t size() const { return m_data.size(); }
+	operator const char*() const { return getText(); }
+	private:
+	std::vector<Any> m_data;
+};
+
+
+/// Shared list management interface
 class ItemList {
 	public:
 	ItemList();
 	virtual ~ItemList();
 	void shareList(ItemList*);									// Use the list data from another list
 
-	void clearItems();														// Clear all items
-	void addItem(const char* name, const Any& data=Any(), int icon=0);					// Add a item to the list
-	void insertItem(uint index, const char* name, const Any& data=Any(), int icon=0);	// Insert an item at an index
-	void setItemName(uint index, const char* name);							// Change existing item text
-	void setItemData(uint index, const Any& data);							// Change existing item data
-	void setItemChecked(uint index, bool check);							// Set check state
-	void setItemIcon(uint index, int icon);									// set item icon index
-	void removeItem(uint index);											// Remove an item
-	uint getItemCount() const;												// Number of items
+	void clearItems();											// Clear all items
+	void removeItem(uint index);								// Remove an item
+	uint getItemCount() const;									// Number of items
 
 	enum SortFlags { INVERSE=1, IGNORE_CASE=2 };
 	void sortItems(int sortFlags = 0);
 
-	template<class T> void setItemData(uint index, const T& v) { setItemData(index, Any(v)); }
-	template<class T> void addItem(const char* name, const T& data, int icon=0) { addItem(name, Any(data), icon); }
-	template<class T> void insertItem(uint index, const char* name, const T& data, int icon=0) { insertItem(index, name, Any(data),icon); }
+	template<class ...T>
+	void addItem(T...t) { insertItem(m_items->size(), t...); }
+	template<class ...T>
+	void insertItem(uint index, T...t) {
+		m_items->insert(m_items->begin()+index, ListItem());
+		addItemData(m_items->at(index), t...);
+		countChanged();
+	}
 
-	const char* getItem(uint index) const;							// Get item text
-	const Any&  getItemData(uint index) const;						// get item data
-	bool        getItemChecked(uint index) const;					// is item checked
-	int         getItemIcon(uint index) const;						// get item icon
-
-	int         findItem(const char* name) const;					// Find the index of an item by name
+	template<class T>
+	void setItemData(uint index, uint property, const T&& data) {
+		if(index < m_items->size()) getItem(index).setValue(property, data);
+	}
 
 	void clearSelection();										// Deselect all
 	void selectItem(uint index, bool only=true);				// select an item. if !only, add to selection
 	void deselectItem(uint index);								// deselect specific item
 	bool isItemSelected(uint index) const;						// is an item selected
 	uint getSelectionSize() const;								// Number of selected items
-	const char* getSelectedItem(uint sIndex=0) const;			// get selected item text. Use index if multiple
-	const Any&  getSelectedData(uint sIndex=0) const;			// Get selected item data
-	int         getSelectedIcon(uint sIndex=0) const;			// Get selected item icon
-	int         getSelectedIndex(uint sIndex=0) const;			// Get selected item index
+	int findItem(const char* name) const;						// Find the index of an item by name
+	
+
+	class SelectionIterator {
+		std::vector<ListItem>& list;
+		std::vector<uint>::const_iterator it;
+		public:
+		SelectionIterator(std::vector<ListItem>& list, const std::vector<uint>::const_iterator& it) : list(list), it(it) {}
+		SelectionIterator& operator++() { ++it; return *this; }
+		SelectionIterator operator++(int) { SelectionIterator r(list,it); ++it; return r; }
+		ListItem& operator*() { return list[*it]; }
+		bool operator==(const SelectionIterator& s) { return it==s.it; }
+	};
+	class SelectionIterable {
+		ItemList* list;
+		public:
+		SelectionIterable(ItemList* l) : list(l) {}
+		SelectionIterator begin() { return SelectionIterator(*list->m_items, list->m_selected->cbegin()); }
+		SelectionIterator end() { return SelectionIterator(*list->m_items, list->m_selected->cend()); }
+		size_t size() const { return list->m_selected->size(); }
+		ListItem& operator[](size_t i) { return list->m_items->at(list->m_selected->at(i)); }
+	};
+
+
+	// For iteration
+	const std::vector<ListItem>& items() const { return *m_items; };
+	SelectionIterable selectedItems() { return SelectionIterable(this); }
+	const ListItem* getSelectedItem() const { return getSelectionSize()? &m_items->at(m_selected->at(0)): 0; }
+	int getSelectedIndex() const { return getSelectionSize()? m_selected->at(0): -1; }
+	const ListItem& getItem(uint index) const;
+	ListItem& getItem(uint index);
+	void addItem(const ListItem& item);
+	void insertItem(uint index, const ListItem& item);
 
 	protected:
 	void initialise(const PropertyMap&);
 	virtual void itemCountChanged() {}
 	virtual void itemSelectionChanged() {}
-	struct Item {
-		String name;
-		Any data;
-		int icon;
-		bool selected;
-		bool checked;
-	};
+	
+	void addItemData(ListItem& item) {}
+	template<class T, class ...R> void addItemData(ListItem& item, const T& value,  R...more) {
+		item.setValue(item.size(), value);
+		addItemData(item, more...);
+	}
 
 	private:
-	std::vector<Item>* m_items;
+	std::vector<ListItem>* m_items;
 	std::vector<uint>* m_selected;
 	std::vector<ItemList*>* m_shared;
 	void dropList();
@@ -73,6 +115,7 @@ class ItemList {
 class Listbox : public Widget, public ItemList {
 	WIDGET_TYPE(Listbox);
 	Listbox(const Rect& r, Skin*);
+	~Listbox();
 	void setMultiSelect(bool);
 	void scrollToItem(uint index);
 	void draw() const override;
@@ -84,22 +127,35 @@ class Listbox : public Widget, public ItemList {
 	int       getItemHeight() const;
 	void      ensureVisible(int index);
 
+	Widget*  getItemWidget(); // This may be in use by an item, or just be a template. Can be null.
+	void     setItemWidget(Widget*);
+
 	public:
+	Delegate<void(Listbox*, int)> eventPressed;
 	Delegate<void(Listbox*, int)> eventSelected;
+	Delegate<void(Listbox*, int, Widget*)> eventCustom;
+	Delegate<void(const ListItem&, Widget*)> eventCacheItem;
 
 	private:
 	void initialise(const Root*, const PropertyMap&) override;
 	void scrollChanged(Scrollbar*, int);
 	void itemCountChanged() override;
+	void itemSelectionChanged() override;
 	void onMouseButton(const Point&, int, int) override;
 	bool onMouseWheel(int) override;
+	void bindEvents(Widget* itemWidget);
+	void updateCache(bool full);
+	void cacheItem(ListItem& item, Widget* w) const;
+	template<class T> void fireCustomEventEvent(Widget* w, T data);
 	int getItemState(uint, const Rect&, const Point& mouse) const;
 	Scrollbar* m_scrollbar;
 	bool m_multiSelect;
 	int m_itemHeight;
-	Widget* m_text;
-	Widget* m_check;
-	Icon*   m_icon;
+	Widget* m_itemWidget = nullptr;
+	std::vector<Widget*> m_cache;
+	uint m_cacheOffset = 0;
+	uint m_cacheFirst = 0;
+	uint m_cacheSize = 0;
 };
 
 /** Dropdown list */
@@ -110,18 +166,16 @@ class Combobox : public Widget, public ItemList {
 
 	Widget* clone(const char*) const override;
 	void setPosition(int x, int y) override;
+	void setVisible(bool) override;
 	void setText(const char* text);
 	const char* getText() const;
 	void selectItem(int index);
 
-	IconList* getIconList() const;
-	void      setIconList(IconList*);
-
-	void setVisible(bool) override;
 	public:
-	Delegate<void(Combobox*, int)>         eventSelected;
-	Delegate<void(Combobox*, const char*)> eventTextChanged;
-	Delegate<void(Combobox*)>              eventSubmit;
+	Delegate<void(Combobox*, int)>           eventSelected;
+	Delegate<void(Combobox*, const char*)>   eventTextChanged;
+	Delegate<void(Combobox*)>                eventSubmit;
+	Delegate<void(const ListItem&, Widget*)> eventCacheItem;
 
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;
@@ -138,7 +192,6 @@ class Combobox : public Widget, public ItemList {
 
 	protected:
 	Listbox* m_list;
-	Icon*    m_icon;
 	Widget*  m_text;
 	
 };
@@ -241,9 +294,5 @@ class Table : public Widget {
 };
 
 
-
 }
-
-
-#endif
 
