@@ -346,10 +346,10 @@ void Table::cacheItem(uint row, uint column) {
 			w->setSize(col.width, m_rowHeight);
 			w->setPosition(col.pos, ypos);
 
-			if(w->cast<Checkbox>()) w->cast<Checkbox>()->eventChanged.bind(this, &Table::buttonEvent);
-			else if(w->cast<Button>()) w->cast<Button>()->eventPressed.bind(this, &Table::buttonEvent);
-			else if(w->cast<Textbox>()) w->cast<Textbox>()->eventSubmit.bind(this, &Table::textEvent);
-			else if(w->cast<Combobox>()) w->cast<Combobox>()->eventSelected.bind(this, &Table::listEvent);
+			if(Checkbox* c=w->cast<Checkbox>()) c->eventChanged.bind([this](Button* b){fireCustomEvent(b); });
+			else if(Button* b=w->cast<Button>()) b->eventPressed.bind([this](Button* b){fireCustomEvent(b); });
+			else if(Textbox* t=w->cast<Textbox>()) t->eventSubmit.bind([this](Textbox* t){fireCustomEvent(t); });
+			else if(Combobox* l=w->cast<Combobox>()) l->eventSelected.bind([this](Combobox* c, ListItem&){fireCustomEvent(c); });
 		}
 		if(!w) w = new Label(Rect(col.pos, ypos, col.width, m_rowHeight), m_skin);
 		m_dataPanel->add(w);

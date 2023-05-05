@@ -73,6 +73,10 @@ void ItemList::dropList() {
 	m_selected = 0;
 }
 
+void ItemList::updateItemIndices(uint from) {
+	for(size_t i=from; i<m_items->size(); ++i) m_items->at(i).m_index=i;
+}
+
 void ItemList::countChanged() {
 	if(m_shared) for(size_t i=0; i<m_shared->size(); ++i) m_shared->at(i)->itemCountChanged();
 	else itemCountChanged();
@@ -90,11 +94,13 @@ void ItemList::clearItems() {
 
 void ItemList::addItem(const ListItem& item) {
 	m_items->push_back(item);
+	updateItemIndices(getItemCount()-1);
 	countChanged();
 }
 void ItemList::insertItem(uint index, const ListItem& item) {
 	if(index>=m_items->size()) m_items->push_back(item);
 	else m_items->insert(m_items->begin() + index, item);
+	updateItemIndices(index);
 	countChanged();
 }
 
@@ -108,6 +114,7 @@ void ItemList::removeItem(uint index) {
 			else if(m_selected->at(i) == index) erase = i;
 		}
 		if(erase < m_selected->size()) m_selected->erase( m_selected->begin() + erase );
+		updateItemIndices(index);
 		countChanged();
 	}
 }
@@ -120,14 +127,6 @@ const ListItem& ItemList::getItem(uint index) const {
 }
 ListItem& ItemList::getItem(uint index) {
 	return m_items->at(index);
-}
-
-int ItemList::findItem(const char* name) const {
-	for(uint i=0; i<m_items->size(); ++i) {
-		const char* text = m_items->at(i).getText();
-		if(text && strcmp(text, name)==0) return i;
-	}
-	return -1;
 }
 
 void ItemList::sortItems(int flags) {
@@ -155,6 +154,8 @@ void ItemList::sortItems(int flags) {
 			return strcmp(sa, sb) * inv < 0;
 		});
 	}
+	updateItemIndices();
+	countChanged();
 }
 
 
@@ -162,10 +163,11 @@ void ItemList::clearSelection() {
 	m_selected->clear();
 	selectionChanged();
 }
-void ItemList::selectItem(uint index, bool only) {
-	if(only) clearSelection();
-	if(index < getItemCount() && !isItemSelected(index)) m_selected->push_back(index);
-	selectionChanged();
+void ItemList::selectItem(uint index) {
+	if(index < getItemCount() && !isItemSelected(index)) {
+		m_selected->push_back(index);
+		selectionChanged();
+	}
 }
 void ItemList::deselectItem(uint index) {
 	for(size_t i=0; i<m_selected->size(); ++i) {
@@ -283,6 +285,15 @@ void Listbox::ensureVisible(int index) {
 	}
 }
 
+void Listbox::selectItem(uint index, bool events) {
+	if(index >= getItemCount()) clearSelection();
+	else if(!isItemSelected(index)) {
+		if(!m_multiSelect) clearSelection();
+		ItemList::selectItem(index);
+		if(events && eventSelected) eventSelected(this, getItem(index));
+	}
+}
+
 inline int listItemSubWidgetIndex(Widget* w) {
 	if(w->getName()[0]=='_' && w->getName()[1]>='0' && w->getName()[2]==0) return w->getName()[1]-'0';
 	else return -1;
@@ -297,7 +308,7 @@ void Listbox::fireCustomEventEvent(Widget* w, T data) {
 		if(!eventCacheItem && listItemSubWidgetIndex(w) >= 0) {
 			item.setValue(listItemSubWidgetIndex(w), data);
 		}
-		if(eventCustom) eventCustom(this, index, w);
+		if(eventCustom) eventCustom(this, getItem(index), w);
 	}
 }
 
@@ -409,14 +420,20 @@ void Listbox::onMouseButton(const Point& p, int d, int u) {
 		int offset = m_scrollbar? m_scrollbar->getValue(): 0;
 		int index = (p.y + offset) / m_itemHeight;
 		if(index >=0 && index < (int)getItemCount()) {
-			if(isItemSelected(index) && m_multiSelect) {
+			if(!isItemSelected(index)) {
+				if(!m_multiSelect) clearSelection();
+				selectItem(index);
+				if(eventSelected) eventSelected(this, getItem(index));
+			}
+			else if(m_multiSelect) {
 				deselectItem(index);
-				if(eventSelected) eventSelected(this, index);
 			}
-			else {
-				selectItem(index, !m_multiSelect);
-				if(eventSelected) eventSelected(this, index);
-			}
+			if(eventPressed) eventPressed(this, getItem(index));
+		}
+		else if(!m_multiSelect) {
+			clearSelection();
+			static ListItem nope;
+			if(eventPressed) eventPressed(this, nope);
 		}
 	}
 	Widget::onMouseButton(p, u, d);
@@ -567,9 +584,9 @@ void Combobox::itemCountChanged() {
 	if(m_list) m_list->updateBounds();
 }
 
-void Combobox::changeItem(Listbox*, int index) {
-	selectItem(index);
-	if(eventSelected) eventSelected(this, index);
+void Combobox::changeItem(Listbox*, ListItem& item) {
+	selectItem(item.getIndex());
+	if(eventSelected) eventSelected(this, item);
 }
 
 void Combobox::buttonPress(Widget*, const Point&, int) {
@@ -644,9 +661,11 @@ const char* Combobox::getText() const {
 	return 0;
 }
 
-void Combobox::selectItem(int index) {
+void Combobox::selectItem(int index, bool events) {
+	clearSelection();
 	ItemList::selectItem(index);
 	if(const ListItem* selected = getSelectedItem()) setText(selected->getText());
 	else setText("");
+	if(events && eventSelected && index>=0 && index<(int)getItemCount()) eventSelected(this, getItem(index));
 }
 

@@ -16,10 +16,15 @@ class ListItem {
 	template<class T> void setValue(uint index, const T& value) { setValue(index, Any(value)); }
 	template<class T> void setValue(const T& value) { setValue(0, value); }
 	template<class T> const T& getValue(int index, const T& fallback) const { return getData(index).getValue(fallback); }
+	template<class T> const T& findValue(const T& fallback=0) const { for(const Any& i: m_data) if(i.isType<T>()) return i.getValue(fallback); return fallback; }
 	size_t size() const { return m_data.size(); }
+	uint getIndex() const { return m_index; }
 	operator const char*() const { return getText(); }
+	bool isValid() const { return m_index != (uint)-1; }
 	private:
+	friend class ItemList;
 	std::vector<Any> m_data;
+	uint m_index = -1;
 };
 
 
@@ -43,6 +48,7 @@ class ItemList {
 	void insertItem(uint index, T...t) {
 		m_items->insert(m_items->begin()+index, ListItem());
 		addItemData(m_items->at(index), t...);
+		updateItemIndices(index);
 		countChanged();
 	}
 
@@ -51,13 +57,18 @@ class ItemList {
 		if(index < m_items->size()) getItem(index).setValue(property, data);
 	}
 
-	void clearSelection();										// Deselect all
-	void selectItem(uint index, bool only=true);				// select an item. if !only, add to selection
-	void deselectItem(uint index);								// deselect specific item
-	bool isItemSelected(uint index) const;						// is an item selected
-	uint getSelectionSize() const;								// Number of selected items
-	int findItem(const char* name) const;						// Find the index of an item by name
-	
+	void clearSelection();					// Deselect all
+	void selectItem(uint index);			// Add item to selected list
+	void deselectItem(uint index);			// deselect specific item
+	bool isItemSelected(uint index) const;	// is an item selected
+	uint getSelectionSize() const;			// Number of selected items
+
+
+	template<class F> ListItem* findItem(const F& predicate) {
+		for(ListItem& i: *m_items) if(predicate(i)) return &i;
+		return nullptr;
+	}
+
 
 	class SelectionIterator {
 		std::vector<ListItem>& list;
@@ -67,7 +78,8 @@ class ItemList {
 		SelectionIterator& operator++() { ++it; return *this; }
 		SelectionIterator operator++(int) { SelectionIterator r(list,it); ++it; return r; }
 		ListItem& operator*() { return list[*it]; }
-		bool operator==(const SelectionIterator& s) { return it==s.it; }
+		bool operator==(const SelectionIterator& s) const { return it==s.it; }
+		bool operator!=(const SelectionIterator& s) const { return it!=s.it; }
 	};
 	class SelectionIterable {
 		ItemList* list;
@@ -76,12 +88,27 @@ class ItemList {
 		SelectionIterator begin() { return SelectionIterator(*list->m_items, list->m_selected->cbegin()); }
 		SelectionIterator end() { return SelectionIterator(*list->m_items, list->m_selected->cend()); }
 		size_t size() const { return list->m_selected->size(); }
+		bool empty() const { return list->m_selected->empty(); }
 		ListItem& operator[](size_t i) { return list->m_items->at(list->m_selected->at(i)); }
 	};
+	template<class List, class Item, class Iterator>
+	class IterableType {
+		List& list;
+		public:
+		IterableType(List& list) : list(list) {};
+		Iterator begin() { return list.begin(); }
+		Iterator end() { return list.end(); }
+		Item& operator[](uint i) { return list[i]; }
+		size_t size() const { return list.size(); }
+		bool empty() const { return list.empty(); }
+	};
+	using Iterable = IterableType<std::vector<ListItem>, ListItem, std::vector<ListItem>::iterator>;
+	using ConstIterable = IterableType<const std::vector<ListItem>, const ListItem, std::vector<ListItem>::const_iterator>;
 
 
 	// For iteration
-	const std::vector<ListItem>& items() const { return *m_items; };
+	Iterable items() { return Iterable(*m_items); }
+	ConstIterable items() const { return ConstIterable(*m_items); }
 	SelectionIterable selectedItems() { return SelectionIterable(this); }
 	const ListItem* getSelectedItem() const { return getSelectionSize()? &m_items->at(m_selected->at(0)): 0; }
 	int getSelectedIndex() const { return getSelectionSize()? m_selected->at(0): -1; }
@@ -92,6 +119,7 @@ class ItemList {
 
 	protected:
 	void initialise(const PropertyMap&);
+	void updateItemIndices(uint from=0);
 	virtual void itemCountChanged() {}
 	virtual void itemSelectionChanged() {}
 	
@@ -126,14 +154,16 @@ class Listbox : public Widget, public ItemList {
 	void      setIconList(IconList*);
 	int       getItemHeight() const;
 	void      ensureVisible(int index);
+	void      selectItem(uint index, bool events=false);
 
 	Widget*  getItemWidget(); // This may be in use by an item, or just be a template. Can be null.
 	void     setItemWidget(Widget*);
+	void     refresh() { updateCache(true); }
 
 	public:
-	Delegate<void(Listbox*, int)> eventPressed;
-	Delegate<void(Listbox*, int)> eventSelected;
-	Delegate<void(Listbox*, int, Widget*)> eventCustom;
+	Delegate<void(Listbox*, ListItem&)> eventPressed;
+	Delegate<void(Listbox*, ListItem&)> eventSelected;
+	Delegate<void(Listbox*, ListItem&, Widget*)> eventCustom;
 	Delegate<void(const ListItem&, Widget*)> eventCacheItem;
 
 	private:
@@ -169,10 +199,10 @@ class Combobox : public Widget, public ItemList {
 	void setVisible(bool) override;
 	void setText(const char* text);
 	const char* getText() const;
-	void selectItem(int index);
+	void selectItem(int index, bool fireEvents=false);
 
 	public:
-	Delegate<void(Combobox*, int)>           eventSelected;
+	Delegate<void(Combobox*, ListItem&)>     eventSelected;
 	Delegate<void(Combobox*, const char*)>   eventTextChanged;
 	Delegate<void(Combobox*)>                eventSubmit;
 	Delegate<void(const ListItem&, Widget*)> eventCacheItem;
@@ -181,7 +211,7 @@ class Combobox : public Widget, public ItemList {
 	void initialise(const Root*, const PropertyMap&) override;
 	void itemCountChanged() override;
 	void buttonPress(Widget*, const Point&, int);
-	void changeItem(Listbox*, int);
+	void changeItem(Listbox*, ListItem&);
 	void popupClicked(Widget*, const Point&, int);
 	void popupLostFocus(Widget*);
 	void textChanged(Textbox*, const char*);
@@ -259,10 +289,6 @@ class Table : public Widget {
 	void scrollChanged(Scrollbar*, int);
 	void onMouseButton(const Point&, int, int) override;
 	void onAdded() override;
-
-	void textEvent(Textbox* t)	     { fireCustomEvent(t); }
-	void buttonEvent(Button* b)      { fireCustomEvent(b); }
-	void listEvent(Combobox* c, int) { fireCustomEvent(c); }
 	void columnPressed(Button*);
 	void fireCustomEvent(Widget*);
 
