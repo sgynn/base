@@ -103,6 +103,7 @@ class PropertyMap : public base::HashMap<const char*> {
 	bool readValue(const char* key, float& value) const   { if(const char* s=get(key,0)) { value = atof(s); return true; } return false; }
 	int   getValue(const char* key, int fallback) const   { if(const char* s=get(key,0)) return atoi(s); return fallback; }
 	float getValue(const char* key, float fallback) const { if(const char* s=get(key,0)) return atof(s); return fallback; }
+	bool  getValue(const char* key, bool fallback) const  { return getValue(key, fallback? 1: 0); }
 };
 
 

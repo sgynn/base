@@ -64,7 +64,13 @@ class ItemList {
 	uint getSelectionSize() const;			// Number of selected items
 
 
-	template<class F> ListItem* findItem(const F& predicate) {
+	ListItem* findItem(const char* text);
+	const ListItem* findItem(const char* text) const;
+	template<class F> ListItem* findItem(const F&& predicate) {
+		for(ListItem& i: *m_items) if(predicate(i)) return &i;
+		return nullptr;
+	}
+	template<class F> const ListItem* findItem(const F&& predicate) const {
 		for(ListItem& i: *m_items) if(predicate(i)) return &i;
 		return nullptr;
 	}
@@ -144,6 +150,7 @@ class Listbox : public Widget, public ItemList {
 	WIDGET_TYPE(Listbox);
 	Listbox(const Rect& r, Skin*);
 	~Listbox();
+	Widget* clone(const char* t) const override;
 	void setMultiSelect(bool);
 	void scrollToItem(uint index);
 	void draw() const override;

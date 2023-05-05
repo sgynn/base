@@ -129,6 +129,13 @@ ListItem& ItemList::getItem(uint index) {
 	return m_items->at(index);
 }
 
+ListItem* ItemList::findItem(const char* text) {
+	return findItem([text](const ListItem& i) { return strcmp(text, i.getText())==0; });
+}
+const ListItem* ItemList::findItem(const char* text) const {
+	return findItem([text](const ListItem& i) { return strcmp(text, i.getText())==0; });
+}
+
 void ItemList::sortItems(int flags) {
 	if(flags & IGNORE_CASE) {
 		bool inv = flags & INVERSE;
@@ -237,6 +244,7 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	if(!m_client) m_client = this;
 	if(m_scrollbar) m_scrollbar->eventChanged.bind(this, &Listbox::scrollChanged);
 	if(m_client!=this) m_client->setTangible(Tangible::CHILDREN);
+	m_multiSelect = p.getValue("multi", m_multiSelect);
 	
 	// Get item widget
 	Widget* item = getWidget("_item");
@@ -257,6 +265,15 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	// Read items
 	ItemList::initialise(p);
 	updateBounds();
+}
+
+Widget* Listbox::clone(const char* ws) const {
+	Widget* w = Widget::clone(ws);
+	if(Listbox* list = w->cast<Listbox>()) {
+		if(getItemCount()) for(const ListItem& i: items()) list->addItem(i);
+		list->m_multiSelect = m_multiSelect;
+	}
+	return w;
 }
 
 void Listbox::setItemWidget(Widget* w) {
@@ -301,8 +318,11 @@ inline int listItemSubWidgetIndex(Widget* w) {
 
 template<class T>
 void Listbox::fireCustomEventEvent(Widget* w, T data) {
-	while(w->getParent(true) != m_client) w = w->getParent();
-	uint index = w->getIndex() + m_cacheOffset;
+	Widget* base = w;
+	while(base->getParent(true) != m_client) base = base->getParent();
+	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
+	uint index = (base->getPosition().y + offset) / m_itemHeight;
+
 	if(index < getItemCount()) {
 		ListItem& item = getItem(index);
 		if(!eventCacheItem && listItemSubWidgetIndex(w) >= 0) {
@@ -363,8 +383,10 @@ void Listbox::updateCache(bool full) {
 			int count = requiredCount - m_cache.size();
 			m_cache.insert(m_cache.begin() + m_cacheOffset, count, nullptr);
 			for(int i=0; i<count; ++i) {
-				m_cache[m_cacheOffset+i] = m_itemWidget->clone();
-				add(m_cache[m_cacheOffset+i]);
+				Widget* itemWidget = m_itemWidget->clone();
+				bindEvents(itemWidget);
+				m_cache[m_cacheOffset+i] = itemWidget;
+				add(itemWidget);
 			}
 			m_cacheOffset += count;
 		}
@@ -421,7 +443,7 @@ void Listbox::onMouseButton(const Point& p, int d, int u) {
 		int index = (p.y + offset) / m_itemHeight;
 		if(index >=0 && index < (int)getItemCount()) {
 			if(!isItemSelected(index)) {
-				if(!m_multiSelect) clearSelection();
+				if(!m_multiSelect || getRoot()->getKeyMask()!=KeyMask::Shift) clearSelection();
 				selectItem(index);
 				if(eventSelected) eventSelected(this, getItem(index));
 			}
@@ -431,9 +453,10 @@ void Listbox::onMouseButton(const Point& p, int d, int u) {
 			if(eventPressed) eventPressed(this, getItem(index));
 		}
 		else if(!m_multiSelect) {
+			bool sel = getSelectionSize();
 			clearSelection();
 			static ListItem nope;
-			if(eventPressed) eventPressed(this, nope);
+			if(eventSelected) if(eventSelected && sel) eventSelected(this, nope);
 		}
 	}
 	Widget::onMouseButton(p, u, d);
@@ -504,7 +527,7 @@ void Listbox::updateBounds() {
 	int h = m_client->getSize().y;
 	int t = m_itemHeight * getItemCount();
 	m_scrollbar->setRange(0, t>h? t-h: 0, 16);
-	m_scrollbar->setBlockSize((float)h / t);
+	m_scrollbar->setBlockSize(t>0? (float)h / t: 1);
 }
 
 void Listbox::itemCountChanged() {
