@@ -215,7 +215,7 @@ const char* ListItem::getText(uint index) const {
 	return str? str->str(): 0;
 }
 const Any& ListItem::getData(uint index) const {
-	const Any null;
+	static const Any null;
 	return index<m_data.size()? m_data[index]: null;
 }
 void ListItem::setValue(uint index, const Any& value) {
@@ -337,6 +337,7 @@ void Listbox::bindEvents(Widget* item) {
 	if(Checkbox* c = item->cast<Checkbox>()) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
 	if(Textbox* t = item->cast<Textbox>()) t->eventSubmit.bind([this](Textbox* t) { fireCustomEventEvent(t, t->getText()); });
 	for(Widget* w: *item) bindEvents(w);
+	for(int i=0; i<item->getTemplateCount(); ++i) bindEvents(item->getTemplateWidget(i));
 }
 
 void Listbox::cacheItem(ListItem& item, Widget* w) const {
