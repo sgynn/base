@@ -571,10 +571,11 @@ static int floatArray(const char* s, float* array, int max) {
 	return count;
 }
 
-static int enumValue(const char* value, int size, const char** strings) {
-	for(int i=0; i<size; ++i) if(strcmp(value, strings[i])==0) return i;
+template<class E=int>
+static E enumValue(const char* value, int size, const char** strings) {
+	for(int i=0; i<size; ++i) if(strcmp(value, strings[i])==0) return (E)i;
 	if(value && value[0]) printf("Error: Invalid resource enum value '%s'\n", value);
-	return -1;
+	return (E)-1;
 }
 template<typename T> T enumValueT(const char* value, int size, const char** strings, T defaultValue) {
 	int r = enumValue(value, size, strings);
@@ -822,11 +823,12 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 			if(n==0) printf("Error: Invalid compositor buffer size for %s in %s\n", name, e.attribute("name"));
 			else if(n==1) fh = fw, ih = iw;
 
-			int f1 = enumValue(i.attribute("format1", i.attribute("format")), 24, formats);
-			int f2 = enumValue(i.attribute("format2"), 24, formats);
-			int f3 = enumValue(i.attribute("format3"), 24, formats);
-			int f4 = enumValue(i.attribute("format4"), 24, formats);
-			int fd = enumValue(i.attribute("depth"), 24, formats);
+			using Fmt = Texture::Format;
+			Fmt f1 = enumValue<Fmt>(i.attribute("format1", i.attribute("format")), 24, formats);
+			Fmt f2 = enumValue<Fmt>(i.attribute("format2"), 24, formats);
+			Fmt f3 = enumValue<Fmt>(i.attribute("format3"), 24, formats);
+			Fmt f4 = enumValue<Fmt>(i.attribute("format4"), 24, formats);
+			Fmt fd = enumValue<Fmt>(i.attribute("depth"), 24, formats);
 
 			if((rel&&(fw==0||fh==0)) || (!rel&&(iw==0||ih==0))) printf("Error: Invalid resolution for buffer %s of %s\n", name, e.attribute("name"));
 			if(f1<0 || (f1==0 && fd==0)) printf("Error: Invalid format for buffer %s if %s\n", name, e.attribute("name"));

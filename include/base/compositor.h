@@ -133,6 +133,7 @@ namespace base {
 		public:
 		Compositor(const char* name=0);
 		~Compositor();
+		using Format = Texture::Format;
 
 
 		// Frame buffer definition
@@ -140,8 +141,8 @@ namespace base {
 			char  name[64];
 			int   width, height;
 			float relativeWidth, relativeHeight; // use these if nonzero
-			int   format[4];
-			int   depthFormat;
+			Format format[4];
+			Format depthFormat;
 			bool  unique; // Non-unique buffers are re-used where possible
 			base::Texture* texture; // use this instead - read only
 		};
@@ -154,15 +155,15 @@ namespace base {
 		/// Add pass to this compositor
 		void addPass(const char* target, CompositorPass*);
 
-		Buffer* addBuffer(const char* name, int w, int h, int format, int depth=0, bool unique=false);
-		Buffer* addBuffer(const char* name, int w, int h, int f1, int f2, int depth, bool unique=false);
-		Buffer* addBuffer(const char* name, int w, int h, int f1, int f2, int f3, int depth, bool unique=false);
-		Buffer* addBuffer(const char* name, int w, int h, int f1, int f2, int f3, int f4, int depth, bool unique=false);
+		Buffer* addBuffer(const char* name, int w, int h, Format format, Format depth=Format::NONE, bool unique=false);
+		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format depth, bool unique=false);
+		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format depth, bool unique=false);
+		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format f4, Format depth, bool unique=false);
 
-		Buffer* addBuffer(const char* name, float w, float h, int format, int depth=0, bool unique=false);
-		Buffer* addBuffer(const char* name, float w, float h, int f1, int f2, int depth, bool unique=false);
-		Buffer* addBuffer(const char* name, float w, float h, int f1, int f2, int f3, int depth, bool unique=false);
-		Buffer* addBuffer(const char* name, float w, float h, int f1, int f2, int f3, int f4, int depth, bool unique=false);
+		Buffer* addBuffer(const char* name, float w, float h, Format format, Format depth=Format::NONE, bool unique=false);
+		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format depth, bool unique=false);
+		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format depth, bool unique=false);
+		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format f4, Format depth, bool unique=false);
 
 		Buffer* addTexture(const char* name, base::Texture*);
 

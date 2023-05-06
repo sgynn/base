@@ -300,7 +300,7 @@ void Compositor::addPass(const char* target, CompositorPass* pass) {
 	m_passes.push_back(cp);
 }
 
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, int f1, int f2, int f3, int f4, int dfmt, bool unique) {
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format f4, Format dfmt, bool unique) {
 	for(Buffer* b: m_buffers) {
 		if(strcmp(name, b->name)==0) printf("Error: Compositor %s already has a buffer named %s\n", m_name, name);
 	}
@@ -320,13 +320,13 @@ Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, int f1
 	m_buffers.push_back(b);
 	return b;
 }
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, int f1, int dfmt, bool unique)                 { return addBuffer(name,w,h,f1,0,0,0,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, int f1, int f2, int dfmt, bool unique)         { return addBuffer(name,w,h,f1,f2,0,0,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, int f1, int f2, int f3, int dfmt, bool unique) { return addBuffer(name,w,h,f1,f2,f3,0,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, int f1, int dfmt, bool unique)                 { return addBuffer(name,w,h,f1,0,0,0,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, int f1, int f2, int dfmt, bool unique)         { return addBuffer(name,w,h,f1,f2,0,0,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, int f1, int f2, int f3, int dfmt, bool unique) { return addBuffer(name,w,h,f1,f2,f3,0,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, int f1, int f2, int f3, int f4, int dfmt, bool unique) {
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format dfmt, bool unique)                 { return addBuffer(name,w,h,f1,Format::NONE,Format::NONE,Format::NONE,dfmt,unique); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format dfmt, bool unique)         { return addBuffer(name,w,h,f1,f2,Format::NONE,Format::NONE,dfmt,unique); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format dfmt, bool unique) { return addBuffer(name,w,h,f1,f2,f3,Format::NONE,dfmt,unique); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format dfmt, bool unique)                 { return addBuffer(name,w,h,f1,Format::NONE,Format::NONE,Format::NONE,dfmt,unique); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format dfmt, bool unique)         { return addBuffer(name,w,h,f1,f2,Format::NONE,Format::NONE,dfmt,unique); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format dfmt, bool unique) { return addBuffer(name,w,h,f1,f2,f3,Format::NONE,dfmt,unique); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format f4, Format dfmt, bool unique) {
 	Buffer* b = addBuffer(name, 0,0,f1,f2,f3,f4,dfmt,unique);
 	b->relativeHeight = h;
 	b->relativeWidth = w;
@@ -334,7 +334,8 @@ Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, in
 }
 
 Compositor::Buffer* Compositor::addTexture(const char* name, Texture* texture) {
-	Buffer* buf = addBuffer(name, texture->width(), texture->height(), 0,0,0,0,0,true);
+	Format O = Format::NONE;
+	Buffer* buf = addBuffer(name, texture->width(), texture->height(), O,O,O,O,O,true);
 	buf->texture = texture;
 	return buf;
 }
