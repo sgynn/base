@@ -291,6 +291,11 @@ namespace base {
 		HashMap<uint> m_names;
 		struct Binding { uint button:8; uint type:2; uint mask:6; }; // 16 bits
 		std::vector< std::vector<Binding> > m_binding;
+
+		// Need additonal data to track joystick axis threshold bindings
+		struct AxisBinding { uint8 js; uint8 axis; char threshold; bool last; };
+		bool checkJoystickThreshold(const AxisBinding& binding) const;
+		std::vector<AxisBinding> m_axisBinding;
 	};
 };
 

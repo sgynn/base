@@ -41,6 +41,7 @@ void Input::update() {
 	m_mouseState.wheel = 0;
 	m_mouseDelta.set(0,0);
 	// Joysticks
+	for(AxisBinding& b: m_axisBinding) b.last = checkJoystickThreshold(b);
 	updateJoysticks();
 }
 
@@ -263,12 +264,25 @@ void Input::bindJoystick(uint action, uint js, uint button) {
 	m_binding[action].push_back(Binding{button, 2, js});
 }
 
+void Input::bindJoystick(uint action, uint js, uint axis, float threshold) {
+	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
+	m_binding[action].push_back(Binding{(uint)m_axisBinding.size(), 3, js});
+	m_axisBinding.push_back({(uint8)js, (uint8)axis, (char)(threshold*127), 0});
+}
+
 void Input::unbind(uint action) {
 	if(action < m_binding.size()) m_binding[action].clear();
 }
 
 void Input::unbindAll() {
 	for(auto& action: m_binding) action.clear();
+}
+
+inline bool Input::checkJoystickThreshold(const AxisBinding& binding) const {
+	char value = joystick(binding.js).axis(binding.axis) * 127;
+	if(binding.threshold > 0 && value > binding.threshold) return true;
+	if(binding.threshold < 0 && value < binding.threshold) return true;
+	return false;
 }
 
 bool Input::check(uint action) const {
@@ -278,6 +292,7 @@ bool Input::check(uint action) const {
 		case 0: if(key(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask>>8))) return true; break;
 		case 1: if(mouse.button & 1<<b.button) return true; break;
 		case 2: if(joystick(b.mask).button(b.button)) return true; break;
+		case 3: if(checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
 		}
 	}
 	return false;
@@ -290,6 +305,7 @@ bool Input::pressed(uint action) const {
 		case 0: if(keyPressed(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask>>8))) return true; break;
 		case 1: if(mouse.pressed & 1<<b.button) return true; break;
 		case 2: if(joystick(b.mask).pressed(b.button)) return true; break;
+		case 3: if(!m_axisBinding[b.button].last && checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
 		}
 	}
 	return false;
@@ -302,6 +318,7 @@ bool Input::released(uint action) const {
 		case 0: if(keyReleased(b.button)) return true; break;
 		case 1: if(mouse.released & 1<<b.button) return true; break;
 		case 2: if(joystick(b.mask).pressed(b.button)) return true; break;
+		case 3: if(m_axisBinding[b.button].last && !checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
 		}
 	}
 	return false;
