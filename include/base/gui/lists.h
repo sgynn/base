@@ -74,6 +74,11 @@ class ItemList {
 		for(ListItem& i: *m_items) if(predicate(i)) return &i;
 		return nullptr;
 	}
+	template<class T>
+	ListItem* findItem(uint subIndex, const T& value) { 
+		for(ListItem& i: *m_items) if(i.getData(subIndex)==value) return &i;
+		return nullptr;
+	}
 
 
 	class SelectionIterator {
@@ -116,6 +121,7 @@ class ItemList {
 	Iterable items() { return Iterable(*m_items); }
 	ConstIterable items() const { return ConstIterable(*m_items); }
 	SelectionIterable selectedItems() { return SelectionIterable(this); }
+	ListItem* getSelectedItem() { return getSelectionSize()? &m_items->at(m_selected->at(0)): 0; }
 	const ListItem* getSelectedItem() const { return getSelectionSize()? &m_items->at(m_selected->at(0)): 0; }
 	int getSelectedIndex() const { return getSelectionSize()? m_selected->at(0): -1; }
 	const ListItem& getItem(uint index) const;
