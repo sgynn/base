@@ -285,6 +285,9 @@ void IconInterface::initialiseIcon(Widget* w, const Root* root, const PropertyMa
 void IconInterface::setIcon(IconList* list, int index, int alt) {
 	if(m_icon) m_icon->setIcon(list, index, alt);
 }
+void IconInterface::setIcon(IconList* list, const char* name, const char* alt) {
+	if(m_icon) m_icon->setIcon(list, name, alt);
+}
 void IconInterface::setIcon(int index) {
 	if(m_icon) m_icon->setIcon(index);
 }
@@ -1315,6 +1318,10 @@ void SplitPane::validateLayout() {
 		min = p[m_mode] + sashSize;
 		max += sashSize;
 	}
+}
+
+Orientation SplitPane::getOrientation() const {
+	return m_mode;
 }
 
 void SplitPane::setSize(int w, int h) {

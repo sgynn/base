@@ -67,6 +67,7 @@ class IconInterface {
 	public:
 	void initialiseIcon(Widget*, const Root*, const PropertyMap&);
 	void setIcon(IconList* list, int index, int alt=-1);
+	void setIcon(IconList* list, const char* name, const char* alt=0);
 	void setIcon(const char* name);
 	void setIcon(int index);
 	int  getIcon() const;

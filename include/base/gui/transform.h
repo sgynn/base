@@ -18,6 +18,10 @@ class Transform {
 			m[1]*x + m[3]*y + m[5],
 		};
 	}
+	template<typename T>
+	inline Pos transformf(const T& p) const {
+		return transformf(p.x, p.y);
+	}
 
 	inline Point transform(int x, int y) const {
 		Pos p = transformf(x, y);
