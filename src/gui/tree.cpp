@@ -15,25 +15,35 @@ TreeNode::~TreeNode() {
 	if(m_treeView && m_cached) m_treeView->removeCache(this);
 	for(uint i=0; i<m_children.size(); ++i) delete m_children[i];
 }
+
+//----- -------- Data access --------------//
+
+const char* TreeNode::getText(uint index) const {
+	String* str = getData(index).cast<String>();
+	return str? str->str(): 0;
+}
+const Any& TreeNode::getData(uint index) const {
+	static const Any null;
+	return index<m_data.size()? m_data[index]: null;
+}
+void TreeNode::setValue(uint index, const Any& value) {
+	while(index >= m_data.size()) m_data.emplace_back();
+	m_data[index] = value;
+}
+void TreeNode::setValue(uint index, const char* value) { 
+	setValue(index, Any(String(value)));
+}
+
+// ----------- Item list functions ---------------- //
+
 size_t TreeNode::size() const { return m_children.size(); }
 TreeNode* TreeNode::getParent() const { return m_parent; }
-TreeNode* TreeNode::operator[](int i) { return m_children[i]; }
-TreeNode* TreeNode::at(int i) { return m_children.at(i); }
+TreeNode* TreeNode::operator[](uint i) { return m_children[i]; }
+TreeNode* TreeNode::at(uint i) { return m_children.at(i); }
 TreeNode* TreeNode::back() { return m_children.empty()? 0: m_children.back(); }
-TreeNode* TreeNode::add( const char* text, const Any& data ) {
-	TreeNode* node = add(new TreeNode( String(text) ));
-	if(!data.isNull()) node->setData(1, data);
-	return node;
-}
-TreeNode* TreeNode::add( TreeNode* node ) {
+TreeNode* TreeNode::insert(uint index, TreeNode* node) {
 	node->setParentNode(this);
-	m_children.push_back(node);
-	if(m_expanded) changeDisplayed(m_displayed + node->m_displayed);
-	return node;
-}
-TreeNode* TreeNode::insert(int index, const char* text) { return insert(index, new TreeNode( String(text) )); }
-TreeNode* TreeNode::insert(int index, TreeNode* node) {
-	node->setParentNode(this);
+	if(index > m_children.size()) index = m_children.size();
 	m_children.insert(m_children.begin() + index, node);
 	if(m_expanded) changeDisplayed(m_displayed + node->m_displayed);
 	return node;
@@ -47,8 +57,8 @@ void TreeNode::setParentNode(TreeNode* parent) {
 	for(uint i=0; i<m_children.size(); ++i) m_children[i]->setParentNode(this);
 	if(m_treeView) m_treeView->m_needsUpdating = true;
 }
-TreeNode* TreeNode::remove(int index) {
-	if(index<0 || index>=(int)m_children.size()) return 0;
+TreeNode* TreeNode::remove(uint index) {
+	if(index >= m_children.size()) return 0;
 	TreeNode* node = m_children[index];
 	if(m_expanded) changeDisplayed(m_displayed - node->m_displayed);
 	if(m_treeView->m_selectedNode == node) m_treeView->m_selectedNode = 0;
@@ -86,6 +96,8 @@ void TreeNode::clear() {
 		m_treeView->m_selectedNode = 0;
 	}
 }
+
+// ------------- Display ---------------- //
 
 void TreeNode::changeDisplayed(int display) {
 	for(TreeNode* n = m_parent; n; n=n->m_parent) {
@@ -128,26 +140,6 @@ void TreeNode::ensureVisible() {
 }
 bool TreeNode::isExpanded() const { return m_expanded; }
 bool TreeNode::isSelected() const { return m_selected; }
-const Any& TreeNode::getData(size_t i) const {
-	if(i<m_data.size()) return m_data[i];
-	static const Any nothing;
-	return nothing;
-}
-void TreeNode::setData(size_t i, const Any& data) {
-	if(m_data.size() <= i) m_data.resize(i+1, Any());
-	m_data[i] = data;
-}
-void TreeNode::setData(const Any& data) { setData(0, data); }
-void TreeNode::setText(const char* text) { setData(0, String(text)); }
-const char* TreeNode::getText(size_t index) const {
-	static const String emptyString;
-	const Any& value = getData(index);
-	const char* text = value.getValue<const char*>(0);
-	if(!text) text = value.getValue<char*>(0);
-	if(!text) text = value.getValue(emptyString);
-	return text;
-}
-
 void TreeNode::refresh() {
 	if(m_cached) m_treeView->cacheItem(this, m_cached);
 }
@@ -520,12 +512,7 @@ void TreeView::removeCache(TreeNode* node) {
 	}
 }
 
-void TreeView::bindEvents(Widget* item) {
-	if(item->cast<Button>()) item->cast<Button>()->eventPressed.bind(this, &TreeView::buttonEvent);
-	if(item->cast<Checkbox>()) item->cast<Checkbox>()->eventChanged.bind(this, &TreeView::buttonEvent);
-	if(item->cast<Textbox>()) item->cast<Textbox>()->eventSubmit.bind(this, &TreeView::textEvent);
-	for(Widget* w: *item) bindEvents(w);
-}
+// --------- Custom widget Events ----------------- //
 
 TreeNode* TreeView::findNode(Widget* w) {
 	while(w->getParent() != this && w->getParent() != getClientWidget()) w = w->getParent();
@@ -533,24 +520,43 @@ TreeNode* TreeView::findNode(Widget* w) {
 		if(i.widget == w) return i.node;
 	return 0;
 }
-void TreeView::buttonEvent(Button* b) {
-	TreeNode* node = findNode(b);
-	if(node) {
-		if(!eventCacheItem && b->cast<Checkbox>() && treeItemSubWidgetIndex(b)>=0 ) {
-			node->setData(treeItemSubWidgetIndex(b), b->cast<Checkbox>()->isChecked());
+
+template<class T>
+void TreeView::fireCustomEventEvent(Widget* w, T data) {
+	if(TreeNode* node = findNode(w)) {
+		if(!eventCacheItem && treeItemSubWidgetIndex(w) >= 0) {
+			node->setValue(treeItemSubWidgetIndex(w), data);
 		}
-		if(eventCustom) eventCustom(this, node, b);
+		if(eventCustom) eventCustom(this, node, w);
 	}
 }
-void TreeView::textEvent(Textbox* t) {
-	TreeNode* node = findNode(t);
-	if(node) {
-		if(!eventCacheItem && treeItemSubWidgetIndex(t)>=0 ) {
-			node->setData(treeItemSubWidgetIndex(t), String(t->getText()));
-		}
-		if(eventCustom) eventCustom(this, node, t);
+
+void TreeView::bindEvents(Widget* item) {
+	if(Button* b = item->cast<Button>()) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
+	if(Checkbox* c = item->cast<Checkbox>()) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
+	if(Spinbox* s = item->cast<Spinbox>()) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
+	if(SpinboxFloat* s = item->cast<SpinboxFloat>()) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
+	if(Textbox* t = item->cast<Textbox>()) {
+		t->eventSubmit.bind([this](Textbox* t) {
+			t->getParent()->setFocus();
+		});
+		t->eventGainedFocus.bind([this](Widget* w) {
+			TreeNode* node = findNode(w);
+			if(node) node->select();
+		});
+		t->eventLostFocus.bind([this](Widget* w) {
+			Textbox* t = w->cast<Textbox>();
+			fireCustomEventEvent(t, t->getText());
+			t->select(0);
+		});
+	}
+	for(Widget* w: *item) bindEvents(w);
+	if(item->getType() == Widget::staticType()) {
+		for(int i=0; i<item->getTemplateCount(); ++i) bindEvents(item->getTemplateWidget(i));
 	}
 }
+
+// --------------- Draw -------------------- //
 
 void TreeView::draw() const {
 	if(!isVisible()) return;

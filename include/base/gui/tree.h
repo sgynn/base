@@ -1,5 +1,4 @@
-#ifndef _GUI_TREE_
-#define _GUI_TREE_
+#pragma once
 
 #include "gui.h"
 #include "any.h"
@@ -31,19 +30,34 @@ class TreeNode {
 
 	public:
 	size_t size() const;						// Get number of children
-	TreeNode* operator[](int);					// get child node
-	TreeNode* at(int);							// Get child node
+	TreeNode* operator[](uint);					// get child node
+	TreeNode* at(uint);							// Get child node
 	TreeNode* back();							// Get last child node
 	TreeNode* add(TreeNode*);					// Add child node
-	TreeNode* add(const char*, const Any& d=Any());	// Add child node
-	TreeNode* insert(int index, TreeNode*);		// Insert child node at index
-	TreeNode* insert(int index, const char*);	// Insert child node at index
-	TreeNode* remove(int index);				// Remove child node
+	TreeNode* insert(uint index, TreeNode*);		// Insert child node at index
+	TreeNode* remove(uint index);				// Remove child node
 	TreeNode* remove(TreeNode*);				// Remove child node
 	TreeNode* remove();							// Remove this node
 	TreeNode* getParent() const;				// Get parent node
 	int       getIndex() const;					// Get node index
 	void      clear();							// Delete all child nodes
+
+
+	// Fun templatey add() and insert() functions where you can specify arbitrary data
+	template<class ...T>
+	TreeNode* add(T...values) { return insert(size(), values...); }
+	template<class ...T>
+	TreeNode* insert(uint index, T...values) {
+		TreeNode* node = new TreeNode();
+		addNodeData(node, values...);
+		return insert(index, node);
+	}
+	private:
+	void addNodeData(TreeNode*) {}
+	template<class T, class ...R> void addNodeData(TreeNode* node, const T& value,  R...more) {
+		node->setValue(node->m_data.size(), value);
+		addNodeData(node, more...);
+	}
 
 	public:
 	void refresh();				// Update cached widgets from node data
@@ -53,18 +67,19 @@ class TreeNode {
 	void ensureVisible();		// Expand all ancestor nodes
 	bool isExpanded() const;	// Is this node expanded
 	bool isSelected() const;	// Is this node selected
-	const Any&  getData(size_t sub=0) const;	// Get node data
-	void setText(const char*);
-	const char* getText(size_t index=0) const;
-	void setData(const Any& data);			// Set node data
-	void setData(size_t, const Any& data);	// Set node data
 	std::vector<TreeNode*>::const_iterator begin()const;			// Iterator begin
 	std::vector<TreeNode*>::const_iterator end() const;				// Iterator end
 
-	// implicit Any interface
-	template<class T> void setData(const T& v) { setData(Any(v)); }
-	template<class T> void setData(size_t i, const T& v) { setData(i, Any(v)); }
-	template<class T> TreeNode* add(const char* n, const T& d) { return add(n, Any(d)); }
+	// Data access - Same as Listbox
+	const char* getText(uint index=0) const;
+	const Any& getData(uint index=0) const;
+	void setValue(uint index, const Any& value);
+	void setValue(uint index, const char* value);
+	void setValue(uint index, char* value) { setValue(index, (const char*)value); }
+	template<class T> void setValue(uint index, const T& value) { setValue(index, Any(value)); }
+	template<class T> void setValue(const T& value) { setValue(0, value); }
+	template<class T> const T& getValue(int index, const T& fallback) const { return getData(index).getValue(fallback); }
+	template<class T> const T& findValue(const T& fallback=0) const { for(const Any& i: m_data) if(i.isType<T>()) return i.getValue(fallback); return fallback; }
 };
 
 /** TreeView - Heirachical listbox */
@@ -129,14 +144,11 @@ class TreeView : public Widget {
 	int                             buildCache(TreeNode* n, int y, int top, int bottom) const;
 
 	protected:
-	void buttonEvent(class Button*);
-	void textEvent(class Textbox*);
 	void bindEvents(Widget* item);
 	TreeNode* findNode(Widget* w);
+	template<class T> void fireCustomEventEvent(Widget* w, T data);
 };
 
 }
 
-
-#endif
 
