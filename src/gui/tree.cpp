@@ -41,6 +41,7 @@ TreeNode* TreeNode::getParent() const { return m_parent; }
 TreeNode* TreeNode::operator[](uint i) { return m_children[i]; }
 TreeNode* TreeNode::at(uint i) { return m_children.at(i); }
 TreeNode* TreeNode::back() { return m_children.empty()? 0: m_children.back(); }
+TreeNode* TreeNode::add(TreeNode* node) { return insert(size(), node); }
 TreeNode* TreeNode::insert(uint index, TreeNode* node) {
 	node->setParentNode(this);
 	if(index > m_children.size()) index = m_children.size();
