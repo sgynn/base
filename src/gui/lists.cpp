@@ -313,16 +313,19 @@ void Listbox::selectItem(uint index, bool events) {
 
 inline int listItemSubWidgetIndex(Widget* w) {
 	if(w->getName()[0]=='_' && w->getName()[1]>='0' && w->getName()[2]==0) return w->getName()[1]-'0';
+	else if(strcmp(w->getName(), "_item")==0) return 0;
 	else return -1;
+}
+
+uint Listbox::getItemIndexFromWidget(const Widget* w) const {
+	while(w->getParent(true) != m_client) w = w->getParent();
+	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
+	return (w->getPosition().y + offset) / m_itemHeight;
 }
 
 template<class T>
 void Listbox::fireCustomEventEvent(Widget* w, T data) {
-	Widget* base = w;
-	while(base->getParent(true) != m_client) base = base->getParent();
-	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
-	uint index = (base->getPosition().y + offset) / m_itemHeight;
-
+	uint index = getItemIndexFromWidget(w);
 	if(index < getItemCount()) {
 		ListItem& item = getItem(index);
 		if(!eventCacheItem && listItemSubWidgetIndex(w) >= 0) {
@@ -335,7 +338,20 @@ void Listbox::fireCustomEventEvent(Widget* w, T data) {
 void Listbox::bindEvents(Widget* item) {
 	if(Button* b = item->cast<Button>()) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
 	if(Checkbox* c = item->cast<Checkbox>()) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
-	if(Textbox* t = item->cast<Textbox>()) t->eventSubmit.bind([this](Textbox* t) { fireCustomEventEvent(t, t->getText()); });
+	if(Textbox* t = item->cast<Textbox>()) {
+		t->eventSubmit.bind([this](Textbox* t) {
+			t->getParent()->setFocus();
+		});
+		t->eventGainedFocus.bind([this](Widget* w) {
+			uint index = getItemIndexFromWidget(w);
+			selectItem(index, true);
+		});
+		t->eventLostFocus.bind([this](Widget* w) {
+			Textbox* t = w->cast<Textbox>();
+			fireCustomEventEvent(t, t->getText());
+			t->select(0);
+		});
+	}
 	for(Widget* w: *item) bindEvents(w);
 	for(int i=0; i<item->getTemplateCount(); ++i) bindEvents(item->getTemplateWidget(i));
 }

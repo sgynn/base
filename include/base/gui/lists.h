@@ -191,6 +191,7 @@ class Listbox : public Widget, public ItemList {
 	void cacheItem(ListItem& item, Widget* w) const;
 	template<class T> void fireCustomEventEvent(Widget* w, T data);
 	int getItemState(uint, const Rect&, const Point& mouse) const;
+	uint getItemIndexFromWidget(const Widget* w) const;
 	Scrollbar* m_scrollbar;
 	bool m_multiSelect;
 	int m_itemHeight;
