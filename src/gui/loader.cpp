@@ -119,7 +119,9 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 				}
 				// default range if none set
 				if(loader->countGlyphs() == 0) loader->addRange(32, 126);
-				return font->addFace(*loader, size);
+				bool success = font->addFace(*loader, size);
+				delete loader;
+				return success;
 			};
 
 			bool valid = false;

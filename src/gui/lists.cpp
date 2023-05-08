@@ -23,8 +23,6 @@ void ItemList::shareList(ItemList* src) {
 	if(src && src->m_items == m_items) return;	// Already sharing
 	if(!src && !m_shared) return;
 
-	std::vector<ItemList*>* oldShare = m_shared && m_shared->size()>1? m_shared: 0;
-
 	// Delete existing list
 	dropList();
 
@@ -34,8 +32,7 @@ void ItemList::shareList(ItemList* src) {
 		m_selected = src->m_selected;
 		
 		if(!src->m_shared) {
-			src->m_shared = new std::vector<ItemList*>;
-			src->m_shared->push_back(src);
+			src->m_shared = new std::vector<ItemList*>({src});
 		}
 
 		m_shared = src->m_shared;
@@ -48,29 +45,27 @@ void ItemList::shareList(ItemList* src) {
 	}
 	countChanged();
 	selectionChanged();
-
-	// if already sharing, change them all (recursive)
-	if(oldShare) oldShare->at(0)->shareList(src);
-
 }
 
 void ItemList::dropList() {
-	if(!m_shared || m_shared->size()==1) {
+	// Remove this from shared
+	if(m_shared) for(size_t i=0; i<m_shared->size(); ++i) {
+		if(m_shared->at(i) == this) {
+			m_shared->erase(m_shared->begin()+i);
+			break;
+		}
+	}
+
+	if(!m_shared || m_shared->empty()) {
 		clearItems();
 		delete m_items;
 		delete m_selected;
 		delete m_shared;
-	} else {
-		for(size_t i=0; i<m_shared->size(); ++i) {
-			if(m_shared->at(i) == this) {
-				m_shared->erase(m_shared->begin()+i);
-				break;
-			}
-		}
 	}
-	m_shared = 0;
-	m_items = 0;
-	m_selected = 0;
+
+	m_items = nullptr;
+	m_selected = nullptr;
+	m_shared = nullptr;
 }
 
 void ItemList::updateItemIndices(uint from) {
@@ -338,6 +333,8 @@ void Listbox::fireCustomEventEvent(Widget* w, T data) {
 void Listbox::bindEvents(Widget* item) {
 	if(Button* b = item->cast<Button>()) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
 	if(Checkbox* c = item->cast<Checkbox>()) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
+	if(Spinbox* s = item->cast<Spinbox>()) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
+	if(SpinboxFloat* s = item->cast<SpinboxFloat>()) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
 	if(Textbox* t = item->cast<Textbox>()) {
 		t->eventSubmit.bind([this](Textbox* t) {
 			t->getParent()->setFocus();
@@ -353,7 +350,9 @@ void Listbox::bindEvents(Widget* item) {
 		});
 	}
 	for(Widget* w: *item) bindEvents(w);
-	for(int i=0; i<item->getTemplateCount(); ++i) bindEvents(item->getTemplateWidget(i));
+	if(item->getType() == Widget::staticType()) {
+		for(int i=0; i<item->getTemplateCount(); ++i) bindEvents(item->getTemplateWidget(i));
+	}
 }
 
 void Listbox::cacheItem(ListItem& item, Widget* w) const {
@@ -369,6 +368,8 @@ void Listbox::cacheItem(ListItem& item, Widget* w) const {
 				else if(Icon* i = w->cast<Icon>()) i->setIcon(*text);
 			}
 			else if(Icon* i = w->cast<Icon>()) i->setIcon(value.getValue<int>(-1));
+			else if(Spinbox* s = w->cast<Spinbox>()) s->setValue(value.getValue<int>(0));
+			else if(SpinboxFloat* s = w->cast<SpinboxFloat>()) s->setValue(value.getValue<float>(0));
 		};
 
 		if(w->getWidgetCount() == 0 && w->getTemplateCount() == 0) {
