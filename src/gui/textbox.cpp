@@ -231,6 +231,17 @@ void Textbox::updateLineData() {
 	}
 }
 
+int Textbox::getLineNumber(uint characterIndex) const {
+	if(!m_multiline || m_lines.empty()) return 0;
+	// Binary search
+	uint start=0, end=m_lines.size();;
+	while(start<end) {
+		uint c = (start+end)/2;
+		if(characterIndex >= (uint)m_lines[c]) start = c+1; else end=c;
+	}
+	return start;
+}
+
 void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 	if(code == base::KEY_ENTER && !m_multiline) {
 		if(eventSubmit) eventSubmit(this);
@@ -239,8 +250,16 @@ void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 	else if(code == base::KEY_RIGHT) select(m_cursor+1, 0, mask==KeyMask::Shift);
 	else if(code == base::KEY_UP && m_multiline) select(indexAt(Point(m_selectRect.x-m_rect.x, m_selectRect.y-m_rect.y-2)), 0, mask==KeyMask::Shift);
 	else if(code == base::KEY_DOWN && m_multiline) select(indexAt(Point(m_selectRect.x-m_rect.x, m_selectRect.bottom()-m_rect.y+2)), 0, mask==KeyMask::Shift);
-	else if(code == base::KEY_HOME)  select(0,          0, mask==KeyMask::Shift);
-	else if(code == base::KEY_END)   select(m_length,   0, mask==KeyMask::Shift);
+	else if(code == base::KEY_HOME) {
+		uint line = getLineNumber(m_cursor);
+		int home = line > 0? m_lines[line-1]: 0;
+		select(home, 0, mask==KeyMask::Shift);
+	}
+	else if(code == base::KEY_END) {
+		uint line = getLineNumber(m_cursor);
+		int end = line < m_lines.size()? m_lines[line] - 1: m_length;
+		select(end,   0, mask==KeyMask::Shift);
+	}
 	else if(code == base::KEY_BACKSPACE) {
 		if(m_selectLength!=0) insertText("");
 		else if(m_cursor>0 && !m_readOnly) {

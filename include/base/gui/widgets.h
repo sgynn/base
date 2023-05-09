@@ -178,6 +178,7 @@ class Textbox : public Widget {
 	const char* getText() const { return m_text; }
 	const char* getSelectedText() const;
 	int getLineCount() const;
+	int getLineNumber(uint characterIndex) const;
 	void setText(const char*);
 	void insertText(const char*);
 	void select(int start, int len=0, bool shift=false);
