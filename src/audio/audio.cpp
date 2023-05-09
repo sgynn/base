@@ -409,7 +409,7 @@ bool audio::processAudioMessages() {
 		while(time >= data->m_endEvents.front().time) {
 			Object* o = data->m_endEvents.front().object;
 			if(o) o->onEndEvent(data->m_endEvents.front());
-			data->m_endEvents.pop_front();
+			data->m_endEvents.erase(data->m_endEvents.begin());
 			if(data->m_endEvents.empty()) break;
 		}
 	}

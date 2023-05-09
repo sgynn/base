@@ -35,7 +35,14 @@ void Mixer::addInstance(Object* o, int i) {
 }
 void Mixer::removeInstance(Object* o, int i) {
 	unsigned key = o->id | i<<18;
-	instances.removeFast(key);
+	// Remove from instances list, order not preserved
+	for(size_t i=0; i<instances.size(); ++i) {
+		if(instances[i] == key) {
+			instances[i] = instances.back();
+			instances.pop_back();
+			break;
+		}
+	}
 }
 
 
@@ -162,7 +169,7 @@ void Object::insertEndEvent(unsigned index) {
 	Data::EndEvent e { playing[index].endTime, this, index };
 	vector<Data::EndEvent>& list = Data::instance->m_endEvents;
 	if(list.empty()) list.push_back(e);
-	else if(e.time <= list.front().time) list.push_front(e);
+	else if(e.time <= list.front().time) list.insert(list.begin(), e);
 	else if(e.time >= list.back().time) list.push_back(e);
 	else {
 		size_t a = 0;
@@ -172,7 +179,8 @@ void Object::insertEndEvent(unsigned index) {
 			if(e.time < list[c].time) b = c;
 			else a = c;
 		}
-		list.insert(e, a==b? b+1: b);
+		size_t index = a=b? b+1: b;
+		list.insert(list.begin()+index, e);
 	}
 }
 

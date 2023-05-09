@@ -2,11 +2,12 @@
 
 #include <base/audio.h>
 #include <base/hashmap.h>
-#include "vector.h"
+#include <vector>
 
 namespace audio {
 	class Source;
 	struct Object;
+	using std::vector;
 
 	static const objectID INVALID = -1;
 
