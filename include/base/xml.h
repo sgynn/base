@@ -84,6 +84,8 @@ class XMLElement {
 	std::vector<XMLElement>::const_iterator begin() const { return m_children.begin(); }
 	/** Child node iterator end */
 	std::vector<XMLElement>::const_iterator end() const { return m_children.end(); }
+	std::vector<XMLElement>::iterator begin() { return m_children.begin(); }
+	std::vector<XMLElement>::iterator end() { return m_children.end(); }
 	/** Get The number of child elements */
 	unsigned int size() const { return m_children.size(); }
 	const XMLElement& child(unsigned int i) const { return m_children.at(i); }

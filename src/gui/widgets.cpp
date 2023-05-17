@@ -1535,7 +1535,7 @@ void Popup::popup(Widget* owner, Side side) {
 	Point pos = r.position();
 	switch(side) {
 	case LEFT: pos.x -= getSize().x; break;
-	case RIGHT: pos.x += r.height; break;
+	case RIGHT: pos.x += r.width; break;
 	case ABOVE: pos.y -= getSize().y; break;
 	case BELOW: pos.y += r.height; break;
 	}

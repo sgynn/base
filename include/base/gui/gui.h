@@ -415,5 +415,8 @@ template<class T> inline T* Widget::createChild(const char* type, const char* na
 	return w;
 }
 
+inline std::vector<Widget*>::iterator begin(Widget* w) { return w->begin(); }
+inline std::vector<Widget*>::iterator end(Widget* w) { return w->end(); }
+
 }
 

@@ -67,8 +67,10 @@ class TreeNode {
 	void ensureVisible();		// Expand all ancestor nodes
 	bool isExpanded() const;	// Is this node expanded
 	bool isSelected() const;	// Is this node selected
-	std::vector<TreeNode*>::const_iterator begin()const;			// Iterator begin
+	std::vector<TreeNode*>::const_iterator begin() const;			// Iterator begin
 	std::vector<TreeNode*>::const_iterator end() const;				// Iterator end
+	std::vector<TreeNode*>::iterator begin();
+	std::vector<TreeNode*>::iterator end();
 
 	// Data access - Same as Listbox
 	const char* getText(uint index=0) const;
@@ -105,6 +107,7 @@ class TreeView : public Widget {
 	public:
 	TreeNode* getSelectedNode();
 	TreeNode* getRootNode();
+	TreeNode* getNodeAt(const Point& localPos);
 	void      setRootNode(TreeNode* n);
 	void      clearSelection();
 	void      expandAll();

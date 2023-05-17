@@ -147,6 +147,8 @@ void TreeNode::refresh() {
 
 std::vector<TreeNode*>::const_iterator TreeNode::begin() const { return m_children.begin(); }
 std::vector<TreeNode*>::const_iterator TreeNode::end() const { return m_children.end(); }
+std::vector<TreeNode*>::iterator TreeNode::begin() { return m_children.begin(); }
+std::vector<TreeNode*>::iterator TreeNode::end() { return m_children.end(); }
 
 // --------------------------------------------------------------------------------------------------- //
 
@@ -230,6 +232,14 @@ Widget* TreeView::clone(const char* type) const {
 		t->m_hideRootNode = m_hideRootNode;
 	}
 	return w;
+}
+
+TreeNode* TreeView::getNodeAt(const Point& localPos) {
+	Point m = localPos;
+	m.y -= m_cacheOffset;
+	int index = m.y / m_itemHeight;
+	if(index >= 0 && index < (int)m_drawCache.size()) return m_drawCache[index].node;
+	return nullptr;
 }
 
 bool TreeView::onMouseWheel(int w) {

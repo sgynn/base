@@ -298,7 +298,11 @@ void Listbox::ensureVisible(int index) {
 }
 
 void Listbox::selectItem(uint index, bool events) {
-	if(index >= getItemCount()) clearSelection();
+	if(index >= getItemCount()) {
+		clearSelection();
+		static ListItem invalid;
+		if(events && eventSelected) eventSelected(this, invalid);
+	}
 	else if(!isItemSelected(index)) {
 		if(!m_multiSelect) clearSelection();
 		ItemList::selectItem(index);
