@@ -134,7 +134,7 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 	// Mouse moved
 	bool moved = p != last;
 	if(moved || m_changed) {
-		if(moved && m_mouseFocus && m_mouseFocus->isEnabled()) {
+		if(moved && m_mouseFocus && m_mouseFocus->isEnabled() && m_mouseFocus->isParentEnabled()) {
 			Point localLast = m_mouseFocus->m_derivedTransform.untransform(last);
 			Point localPos = m_mouseFocus->m_derivedTransform.untransform(p);
 			m_mouseFocus->onMouseMove(localLast, localPos, b);
@@ -143,7 +143,7 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 		// Has it changed?
 		if(over != m_mouseFocus && !b) {
 			// additional mouse event here as changing focus misses it later
-			if(m_mouseFocus && mup && m_mouseFocus->isEnabled()) {
+			if(m_mouseFocus && mup && m_mouseFocus->isEnabled() && m_mouseFocus->isParentEnabled()) {
 				m_mouseFocus->onMouseButton(m_mouseFocus->m_derivedTransform.untransform(p), 0, mup);
 			}
 			if(over) {
@@ -175,12 +175,12 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 	// Mouse wheel
 	if(w) {
 		Widget* focus = m_mouseFocus;
-		while(focus && focus->isEnabled() && !focus->onMouseWheel(w)) focus = focus->m_parent;
+		while(focus && focus->isEnabled() && focus->isParentEnabled() && !focus->onMouseWheel(w)) focus = focus->m_parent;
 		m_wheelUsed = focus!=0;
 	}
 
 	// Mouse event
-	if(m_mouseFocus && m_mouseFocus->isEnabled() && (mdown || mup))  {
+	if(m_mouseFocus && m_mouseFocus->isEnabled() && m_mouseFocus->isParentEnabled() && (mdown || mup))  {
 		m_mouseFocus->onMouseButton(m_mouseFocus->m_derivedTransform.untransform(p), mdown, mup);
 	}
 	
@@ -193,7 +193,7 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 }
 
 void Root::keyEvent(int code, wchar_t chr) {
-	if(m_focus && m_focus->isEnabled()) {
+	if(m_focus && m_focus->isEnabled() && m_focus->isParentEnabled()) {
 		Widget* focus = m_focus;
 		focus->onKey(code, chr, m_keyMask);	// Note: Can potentialy delete this widget
 		if(focus == m_focus && focus->eventKeyPress) focus->eventKeyPress(m_focus, code, chr, m_keyMask);
