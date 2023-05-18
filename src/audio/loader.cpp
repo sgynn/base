@@ -53,7 +53,11 @@ namespace audio {
 		if(e.hasAttribute("variable")) {				// Variable link
 			Data* data = Data::instance;
 			const char* name = e.attribute("variable");
-			if(name) v.variable = data->declare( name, data->m_variableMap, data->m_variables );
+			if(name) {
+				size_t was = data->m_variables.size();
+				v.variable = data->declare( name, data->m_variableMap, data->m_variables );
+				if(data->m_variables.size() > was) data->m_variables[v.variable].value = v.value;
+			}
 		}
 		return v;
 	}
