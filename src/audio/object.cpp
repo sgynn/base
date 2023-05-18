@@ -299,6 +299,7 @@ int Object::setEnum(unsigned id, int value) {
 float Object::getValue(const Value& var) const {
 	if(var.variable != INVALID) {
 		for(const VariableValue& v: variables) if(v.id == var.variable) return v.value;
+		return Data::instance->m_variables[var.variable].value;
 	}
 	return var.value;
 }
