@@ -4,25 +4,19 @@
 #include <cstdio>
 
 namespace audio {
-	// Generic constructors
-	template<typename T> void initialiseObject(T& d) { memset(&d, 0, sizeof(T)); }
-	template<> void initialiseObject(audio::Enum& d) { d.value = 0; }
-	template<> void initialiseObject(audio::EventList&) { }
-
 	// Declare a named audio structure
 	template<typename T>
-	int Data::declare(const char* name, LookupMap& map, vector<T>& list) {
-		if(name==0 || name[0]==0) return 0;
+	objectID Data::declare(const char* name, LookupMap& map, vector<T>& list) {
+		if(name==0 || name[0]==0) return INVALID;
 		LookupMap::iterator it = map.find(name);
 		if(it!=map.end()) return it->value;
-		int ix = list.size();
+		uint ix = list.size();
 		list.push_back( T() );
-		initialiseObject( list.back() );
 		map[name] = ix;
 		return ix;
 	}
 	// Declare a sound or group - returns local id
-	int Data::declareSound(SoundBank* bank, const char* name) {
+	objectID Data::declareSound(SoundBank* bank, const char* name) {
 		if(name[0]) {
 			LookupMap::iterator it = m_soundMap.find(name);
 			if(it!=m_soundMap.end()) return it->value;
@@ -55,6 +49,7 @@ namespace audio {
 		Value v;
 		v.value = e.attribute("value", 1.0f);			// initial value
 		v.variance = e.attribute("variance", 0.0f);		// Random variance
+		v.variable = INVALID;
 		if(e.hasAttribute("variable")) {				// Variable link
 			Data* data = Data::instance;
 			const char* name = e.attribute("variable");
@@ -217,7 +212,6 @@ namespace audio {
 		bank->file = file;
 		printf("Loading '%s' as soundbank %u\n", file, bank->id);
 		Sound soundTemplate;
-		memset(&soundTemplate, 0, sizeof(Sound));
 		audio::loadGroup(bank, 0, 0, xml.getRoot(), soundTemplate);
 		if(bank->id == m_banks.size()) m_banks.push_back(bank);
 		else m_banks[ bank->id ] = bank;

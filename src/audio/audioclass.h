@@ -15,37 +15,37 @@ namespace audio {
 	typedef base::HashMap<unsigned> LookupMap;
 
 	/** Variables */
-	struct Variable { float value, min, max; };
-	struct Enum { int value; LookupMap names; };
+	struct Variable { float value=0, min=0, max=1; };
+	struct Enum { int value=0; LookupMap names; };
 
 	/** Value that can be attached to a variable */
-	struct Value { float value; objectID variable; float variance; };
+	struct Value { float value=0; objectID variable=INVALID; float variance=0; };
 
 	enum SoundFlags { LOOP=1, TYPE_3D=2, STREAM=4 };
 	enum SoundType  { SOUND=1, GROUP, RANDOM, SEQUENCE, SWITCH };
 
 	/** Abstract base class for sounds and sound groups */
 	struct SoundBase {
-		int type;	// SoundType enum
-		int loop;	// Loop count
+		int type = 0;	// SoundType enum
+		int loop = 0;	// count, 0=infinite
 	};
 
 	/** Sound definition */
 	struct Sound : public SoundBase {
-		Source* source;
+		Source* source = nullptr;
 		char    file[64];
-		soundID attenuationID;
-		soundID targetID;
+		soundID attenuationID = INVALID;
+		soundID targetID = 0;
 		Value   gain;
 		Value   pitch;
-		int     flags;
-		float   fadeIn, fadeOut;
+		int     flags = 0;
+		float   fadeIn = 0, fadeOut = 0;
 	};
 
 	/** Sound groups can cause sounds to play differetly */
 	struct Group : public SoundBase {
-		unsigned switchID;			// Switch runtime ID if type==SWITCH
-		vector<unsigned> sounds;	// Can be a sound or a group - must be from in current soundbank
+		unsigned switchID = INVALID;	// Switch runtime ID if type==SWITCH
+		vector<unsigned> sounds;		// Can be a sound or a group - must be from in current soundbank
 	};
 
 
@@ -66,8 +66,8 @@ namespace audio {
 
 	// Attenuation object
 	struct Attenuation {
-		float falloff;
-		float distance;
+		float falloff = 0;
+		float distance = 0;
 	};
 
 	/** Soundbanks hold sound data */
@@ -79,9 +79,9 @@ namespace audio {
 
 	/** Events can make multiple changes in a single call */
 	struct Event {
-		int type;	// Play, Stop, Set
-		int target;	// SoundID or variableID
-		float value;// Value to set if type==set
+		int type = 0;			// Play, Stop, Set
+		int target = INVALID;	// SoundID or variableID
+		float value = 0;		// Value to set if type==set
 	};
 	typedef vector<Event> EventList;
 
@@ -111,8 +111,8 @@ namespace audio {
 		void unloadSource(Sound*);
 
 		static Data* instance;
-		template<typename T> int declare(const char* name, LookupMap& map, vector<T>& list);
-		int declareSound(SoundBank* bank, const char* name);
+		template<typename T> objectID declare(const char* name, LookupMap& map, vector<T>& list);
+		objectID declareSound(SoundBank* bank, const char* name);
 
 		static soundID   getSoundID(unsigned local, const SoundBank* bank) { return local | bank->id<<20; }
 		static unsigned  getLocalIndex(soundID id) { return id&0xfffff; }
@@ -176,7 +176,7 @@ namespace audio {
 		void  stopAll();
 		int   setEnum(unsigned id, int value);
 		int   setVar(unsigned id, float value);
-		float getValue(unsigned id) const;
+		float getValue(const Value& v) const;
 		void  setPosition(const float* pos);
 		void  updateVolume(SoundInstance&, float);
 		void  onEndEvent(const Data::EndEvent&);

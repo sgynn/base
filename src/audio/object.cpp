@@ -131,17 +131,19 @@ int Object::play(soundID id) {
 	}
 	
 	// Attenuation
-	if(inst.sound->attenuationID > 0) {
+	if(inst.sound->attenuationID != INVALID) {
 		// TODO
 	}
 
+	volume *= 1.f + getValue(inst.sound->gain);
+	float pitch = 1.f + getValue(inst.sound->pitch);
 	
 	// We should have a sound instance to start playing at this point
 	//printf("Playing %s\n", inst.sound->file);
 	if(!inst.source) alGenSources(1, &inst.source);
 	alSourcei(inst.source, AL_BUFFER, inst.sound->source->buffers[0]);
 	alSourcef(inst.source, AL_GAIN, volume);
-	alSourcef(inst.source, AL_PITCH, 1.0);
+	alSourcef(inst.source, AL_PITCH, pitch);
 	alSourcefv(inst.source, AL_POSITION, position);
 	alSourcefv(inst.source, AL_VELOCITY, velocity);
 	
@@ -281,6 +283,13 @@ int Object::setVar(unsigned id, float value) {
 	variables.push_back(v);
 	// Affect any playing sounds
 	return 0;
+}
+
+float Object::getValue(const Value& var) const {
+	if(var.variable != INVALID) {
+		for(const VariableValue& v: variables) if(v.id == var.variable) return v.value;
+	}
+	return var.value;
 }
 
 int Object::setEnum(unsigned id, int value) {

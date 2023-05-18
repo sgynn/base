@@ -55,8 +55,6 @@ int audio::initialise(bool threaded) {
 	Data::instance->m_mixers[0].volume.variable = 0;
 	Data::instance->m_mixers[0].targetID = 0;
 	Data::instance->m_mixerMap["master"] = 0;
-	Data::instance->m_attenuations.push_back( Attenuation() );	// index 0 is invalid
-	Data::instance->m_variables.push_back( Variable() );
 	if(threaded) mainThread.begin(audioMainLoop, 0);
 	else setupAudioSystem();
 	singleThreadedMode = !threaded;
