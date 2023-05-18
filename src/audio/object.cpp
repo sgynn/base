@@ -123,12 +123,9 @@ int Object::play(soundID id) {
 	if(index < playing.size()) inst.source = playing[index].source;
 	
 	// Get mixer
-	float volume = 1.0;
-	if(inst.sound->targetID>0) {
-		Mixer& mixer = Data::instance->m_mixers[ inst.sound->targetID ];
-		mixer.addInstance(this, index);
-		volume = mixer.getVolume();
-	}
+	Mixer& mixer = Data::instance->m_mixers[ inst.sound->targetID ];
+	mixer.addInstance(this, index);
+	float volume = mixer.getVolume();
 	
 	// Attenuation
 	if(inst.sound->attenuationID != INVALID) {
@@ -269,19 +266,33 @@ void Object::updateVolume(SoundInstance& s, float volume) {
 	alSourcef(s.source, AL_GAIN, volume);
 }
 
-int Object::setVar(unsigned id, float value) {
-	for(size_t i=0; i<variables.size(); ++i) {
-		if(variables[i].id == id) {
-			variables[i].value = value;
-			// Affect any playing sounds - gain / pitch
-			return 0;
+template<class List, class Type> inline void setAudioVariable(List& list, Type value) {
+	for(Type& var: list) {
+		if(var.id == value.id) {
+			var.value = value.value;
+			return;
 		}
 	}
-	VariableValue v;
-	v.id = id;
-	v.value=value;
-	variables.push_back(v);
+	list.push_back(value);
+}
+
+int Object::setVar(unsigned id, float value) {
+	setAudioVariable(variables, VariableValue{id, value});
 	// Affect any playing sounds
+	for(SoundInstance& inst: playing) {
+		if(inst.sound->pitch.variable == id) alSourcef(inst.source, AL_PITCH, value);
+		if(inst.sound->gain.variable == id) {
+			Mixer& mixer = Data::instance->m_mixers[ inst.sound->targetID ];
+			float volume = mixer.getVolume() * (1+value);
+			alSourcef(inst.source, AL_GAIN, volume);
+		}
+	}
+	return 0;
+}
+
+int Object::setEnum(unsigned id, int value) {
+	setAudioVariable(enums, EnumValue{id, value});
+	// Affect any playing sounds - possibly call a switch to another sound ?
 	return 0;
 }
 
@@ -290,22 +301,6 @@ float Object::getValue(const Value& var) const {
 		for(const VariableValue& v: variables) if(v.id == var.variable) return v.value;
 	}
 	return var.value;
-}
-
-int Object::setEnum(unsigned id, int value) {
-	for(size_t i=0; i<enums.size(); ++i) {
-		if(enums[i].id == id) {
-			enums[i].value = value;
-			// Affect any playing sounds - possibly call a switch to another sound
-			return 0;
-		}
-	}
-	EnumValue e;
-	e.id = id;
-	e.value=value;
-	enums.push_back(e);
-	// Affect any playing sounds
-	return 0;
 }
 
 
