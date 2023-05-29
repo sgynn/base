@@ -15,7 +15,7 @@ namespace audio {
 		STOP, STOP_ALL, EVENT, SHUTDOWN
 	};
 	struct Message {
-		int type;
+		MessageType type;
 		objectID object;
 		objectID target;
 		char* string;
@@ -74,9 +74,8 @@ int audio::shutdown() {
 	return 0;
 }
 void audio::pushMessage(const Message& m) {
-	audio::mutex.lock();
+	base::MutexLock lock(audio::mutex);
 	audio::messages.push_back(m);
-	audio::mutex.unlock();
 }
 
 //// MAIN INTERFACE ////
@@ -318,6 +317,9 @@ bool audio::processAudioMessages() {
 		case LISTENER_POS:	// Listener position
 			alListenerfv(AL_POSITION, m.vecValue);
 			break;
+		case LISTENER_ROT:	// Listener forward vector, and up vector. Must be orthogonal FIXME
+			alListenerfv(AL_ORIENTATION, m.vecValue);
+			break;
 
 		case GLOBAL_VALUE:	// Mixer variables ?
 			m.target = Data::lookup( m.string, Data::instance->m_variableMap );
@@ -337,7 +339,6 @@ bool audio::processAudioMessages() {
 			m.target = Data::lookup( m.string, Data::instance->m_variableMap );
 			if(m.target==INVALID) printf("Error: variable %s not found\n", m.string);
 			if(object && m.target!=INVALID) object->setVar(m.target, m.floatValue);
-			free(m.string);
 			break;
 			
 		case SET_ENUM:
@@ -360,6 +361,8 @@ bool audio::processAudioMessages() {
 			object = data->getObject(m.object);
 			if(!object) printf("Error: Object %d does not exist\n", m.object);
 			if(object) object->setPosition(m.vecValue);
+			break;
+		case SET_VELOCITY: // TODO
 			break;
 
 		case PLAY:
