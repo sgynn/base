@@ -869,7 +869,7 @@ void Scrollpane::setPaneSize(int w, int h) {
 	}
 
 	Point client(w, h);
-	if(m_client->getSize() == client) return;
+	Point oldSize = m_client->getSize();
 	m_client->setSize(w, h);
 	
 	bool restoreAutoSize = isAutosize();
@@ -891,7 +891,7 @@ void Scrollpane::setPaneSize(int w, int h) {
 					scroll[o]->setSize(size);
 				}
 				// Move if scrollbar happens to be the other side
-				if(scroll[i]->getAbsolutePosition()[o] <= viewport->getAbsolutePosition()[o]) {
+				if(scroll[i]->getPosition()[o] <= viewport->getPosition()[o]) {
 					Point pos = viewport->getPosition();
 					pos[o] += change;
 					viewport->setPosition(pos);
@@ -910,13 +910,19 @@ void Scrollpane::setPaneSize(int w, int h) {
 		}
 	}
 	if(restoreAutoSize && !isAutosize()) setAutosize(true); // Autosize disabled to prevent event chaining
-	scrollChanged(0,0);
+	if(oldSize != m_client->getSize()) scrollChanged(0,0);
 }
 void Scrollpane::useFullSize(bool f) {
 	m_useFullSize = f;
 	if(isAutosize()) updateAutosize();
 	else setPaneSize( getPaneSize().x, getPaneSize().y );
 }
+
+void Scrollpane::alwaysShowScrollbars(bool a) {
+	m_alwaysShowScrollbars = a;
+	useFullSize(m_useFullSize);
+}
+
 bool Scrollpane::onMouseWheel(int w) {
 	if(!Widget::onMouseWheel(w)) {
 		Point view = getViewWidget()->getSize();

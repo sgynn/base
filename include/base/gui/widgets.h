@@ -313,6 +313,7 @@ class Scrollpane : public Widget {
 	const Point& getPaneSize() const;			// Get size of scrollable panel
 	void setPaneSize(int width, int height);	// Set size of scrollable panel
 	void useFullSize(bool m);					// Minimum size of panel is widget size. Also locks size if no scrollbar
+	void alwaysShowScrollbars(bool s);				// Always show scrollbars. False only shows them when needed.
 	Widget* clone(const char*) const override;
 	Point getPreferredSize() const override;
 	using Widget::add;							// import add funtions from widget
