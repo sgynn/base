@@ -504,6 +504,8 @@ void Widget::updateAutosize() {
 	if(m_client != this && m_client->m_anchor != 0x33) return; // client must resize with widget for autosize
 	Point newSize = getPreferredSize();
 	assert(newSize.x<5000 && newSize.y<5000);
+	if((m_anchor&0xf)==3) newSize.x = m_rect.width;
+	if((m_anchor>>4)==3) newSize.y = m_rect.height;
 	setSizeAnchored(newSize);
 }
 

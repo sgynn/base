@@ -466,7 +466,7 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 		const Rect& targetRect = target->getRect();
 		int anchor[2] = { m_anchor&0xf, m_anchor>>4 };
 		auto resize = [&](int axis) {
-			if(anchor[axis] == 1) { // Size min
+			if(anchor[axis] == 0) { // Size min
 				size[axis] -= delta[axis];
 				p[axis] += delta[axis];
 				int minSize = m_rect.position()[axis] + m_rect.size()[axis];
@@ -474,7 +474,7 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 				if(size[axis] < minSize) { p[axis] += size[axis] - minSize; size[axis] = minSize; }
 				if(m_clamp && size[axis] > maxSize) { p[axis] += size[axis] - maxSize; size[axis] = maxSize; }
 			}
-			else if(anchor[axis]==4) { // Size max
+			else if(anchor[axis]==1) { // Size max
 				size[axis] -= delta[axis];
 				int minSize = targetRect.size()[axis] - getPosition()[axis];
 				int maxSize = view[axis] - targetRect.position()[axis];
@@ -1158,10 +1158,14 @@ bool CollapsePane::isExpanded() const { return !m_collapsed; }
 void CollapsePane::expand(bool e) {
 	m_collapsed = !e;
 	if(m_client == this) return; // Invalid setup
+	m_client->pauseLayout();
 	
 	if(e) {
 		m_client->setAnchor(0);
-		setSize(getClientRect().bottomRight());
+		Point expandedSize = getClientRect().bottomRight();
+		if((m_expandAnchor&0xf)==3) expandedSize.x = getSize().x;
+		if((m_expandAnchor>>4)==3) expandedSize.y = getSize().y;
+		setSize(expandedSize);
 		m_client->setAnchor(0x33);
 		if(m_expandAnchor) m_anchor = m_expandAnchor;
 	}
@@ -1169,12 +1173,14 @@ void CollapsePane::expand(bool e) {
 		m_client->setAnchor(0);
 		Point collapsedSize = m_header->getSize() + m_header->getPosition();
 		m_expandAnchor = m_anchor;
-		if(getAnchor() == 0x33) m_anchor = 0x13; // tlrb is invalid when collapsed. Assumes vertical !
-		if((getAnchor()&0x0f) == 0x03) collapsedSize.x = getSize().x; // lr
-		if((getAnchor()&0xf0) == 0x30) collapsedSize.y = getSize().y; // tb
+		// Manage anchor if set to expand
+		if(m_anchor == 0x33) m_anchor = 0x03; // tlrb is invalid when collapsed. Assumes vertical !
+		if((m_anchor&0x0f) == 0x03) { collapsedSize.x = getSize().x; m_client->setAnchor(0x03); }
+		if((m_anchor&0xf0) == 0x30) { collapsedSize.y = getSize().y; m_client->setAnchor(0x30); }
 		setSize(collapsedSize);
 	}
 	m_client->setVisible(e);
+	m_client->resumeLayout();
 	
 	Widget* state = getTemplateWidget("_state");
 	if(state) state->setSelected(e);
