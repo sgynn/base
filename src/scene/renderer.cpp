@@ -74,7 +74,7 @@ RenderState::~RenderState() {
 }
 
 void RenderState::setCamera(Camera* c) {
-	if(c && c != m_camera) m_auto->setCamera(c);
+	if(c) m_auto->setCamera(c);
 	m_camera = c;
 }
 
