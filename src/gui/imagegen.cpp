@@ -167,7 +167,7 @@ static GeneratedImagePixels generateGlyphImage(int size) {
 
 	// Arrows
 	int w = size / 2 - 1;
-	int b = w / 3;
+	int b = w / 2 + 1;
 	Point ctr[glyphCount];
 	for(int i=0; i<glyphCount; ++i) {
 		ctr[i].x = glyph[i].x + size/2;
@@ -227,11 +227,18 @@ static GeneratedImagePixels generateGlyphImage(int size) {
 
 	// Cross
 	int s = max(2, size / 2 - 3);
+	int t = max(1, size / 6);
 	for(int i=0; i<s; ++i) {
-		paint(ctr[5].x+i, ctr[5].y+i, 0xffffffff);
-		paint(ctr[5].x-i, ctr[5].y+i, 0xffffffff);
-		paint(ctr[5].x+i, ctr[5].y-i, 0xffffffff);
-		paint(ctr[5].x-i, ctr[5].y-i, 0xffffffff);
+		for(int j=0; j<t; ++j) {
+			paint(ctr[5].x+i-j, ctr[5].y+i, 0xffffffff);
+			paint(ctr[5].x+i, ctr[5].y+i-j, 0xffffffff);
+			paint(ctr[5].x-i+j, ctr[5].y+i, 0xffffffff);
+			paint(ctr[5].x-i, ctr[5].y+i-j, 0xffffffff);
+			paint(ctr[5].x+i-j, ctr[5].y-i, 0xffffffff);
+			paint(ctr[5].x+i, ctr[5].y-i+j, 0xffffffff);
+			paint(ctr[5].x-i+j, ctr[5].y-i, 0xffffffff);
+			paint(ctr[5].x-i, ctr[5].y-i+j, 0xffffffff);
+		}
 	}
 
 	return image;

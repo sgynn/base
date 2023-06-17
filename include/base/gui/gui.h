@@ -241,7 +241,7 @@ class Widget {
 	Rect     m_rect;			// Position and size (absolute)
 	Skin*    m_skin;			// Skin - used for rendering
 	unsigned m_colour;			// Widget colour ARGB
-	char     m_anchor;			// left, centre, right,  top, middle, bottom. for automatic resizing.
+	char     m_anchor;			// { Left, Right, Middle, Both} { Top, Bottom, Centre, Both }
 	Layout*  m_layout;			// Automatic layouts
 	float*   m_relative;		// alternative coordinates as multiple of parent
 	short    m_states;			// Visible, Enabled, Tangible[2], Selected, Template, InheritState, Autosize, OverrideColour[2], LayoutPaused

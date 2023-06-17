@@ -207,6 +207,18 @@ Widget* Icon::clone(const char* nt) const {
 }
 Point Icon::getPreferredSize() const {
 	if(isAutosize() && m_iconList && m_iconIndex>=0) {
+		if(m_anchor!=0x33) {
+			if((m_anchor&0xf) == 3) {
+				Point s = m_iconList->getIconRect(m_iconIndex).size();
+				s.y = s.y * m_rect.width / s.x;
+				return s;
+			}
+			if((m_anchor>>4) == 3) {
+				Point s = m_iconList->getIconRect(m_iconIndex).size();
+				s.x = s.x * m_rect.height / s.y;
+				return s;
+			}
+		}
 		return m_iconList->getIconRect(m_iconIndex).size();
 	}
 	return getSize();
@@ -263,6 +275,20 @@ int Image::getImage() const {
 
 Point Image::getPreferredSize() const {
 	if(isAutosize() && m_image>=0 && m_root) {
+		// Maintain aspect ratio
+		if(m_anchor!=0x33) {
+			if((m_anchor&0xf) == 3) {
+				Point s = m_root->getRenderer()->getImageSize(m_image);
+				s.y = s.y * m_rect.width / s.x;
+				return s;
+			}
+			if((m_anchor>>4) == 3) {
+				Point s = m_root->getRenderer()->getImageSize(m_image);
+				s.x = s.x * m_rect.height / s.y;
+				return s;
+			}
+		}
+
 		return m_root->getRenderer()->getImageSize(m_image);
 	}
 	return getSize();
@@ -992,7 +1018,7 @@ Widget* TabbedPane::addTab(const char* name, Widget* frame, int index) {
 	else Widget::add(frame, index);
 	frame->setPosition(0,0);
 	frame->setSize(m_tabFrame->getSize().x, m_tabFrame->getSize().y);
-	frame->setAnchor(0x55);
+	frame->setAnchor(0x33);
 	frame->setName(name);
 	frame->setVisible( frame->getIndex() == m_currentTab );
 	// Add button
@@ -1136,16 +1162,16 @@ void CollapsePane::expand(bool e) {
 	if(e) {
 		m_client->setAnchor(0);
 		setSize(getClientRect().bottomRight());
-		m_client->setAnchor(0x55);
+		m_client->setAnchor(0x33);
 		if(m_expandAnchor) m_anchor = m_expandAnchor;
 	}
 	else if(m_header) {
 		m_client->setAnchor(0);
 		Point collapsedSize = m_header->getSize() + m_header->getPosition();
 		m_expandAnchor = m_anchor;
-		if(getAnchor() == 0x55) m_anchor = 0x15; // tlrb is invalid when collapsed. Assumes vertical !
-		if((getAnchor()&0x0f) == 0x05) collapsedSize.x = getSize().x; // lr
-		if((getAnchor()&0xf0) == 0x50) collapsedSize.y = getSize().y; // tb
+		if(getAnchor() == 0x33) m_anchor = 0x13; // tlrb is invalid when collapsed. Assumes vertical !
+		if((getAnchor()&0x0f) == 0x03) collapsedSize.x = getSize().x; // lr
+		if((getAnchor()&0xf0) == 0x30) collapsedSize.y = getSize().y; // tb
 		setSize(collapsedSize);
 	}
 	m_client->setVisible(e);

@@ -421,7 +421,7 @@ void TreeView::updateCache() const {
 			n->m_cached->setVisible(true);
 			n->m_cached->setSelected(n->m_selected);
 			if(m_hideRootNode) indent -= m_indent;
-			if((n->m_cached->getAnchor() & 0xf) == 0x5)
+			if((n->m_cached->getAnchor() & 0xf) == 0x3)
 				n->m_cached->setSize(getAbsoluteClientRect().width - indent, m_itemHeight);
 			cacheItem(n, n->m_cached);
 			++availiable;

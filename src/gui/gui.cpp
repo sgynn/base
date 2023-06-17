@@ -410,6 +410,9 @@ void Widget::setPosition(int x, int y) {
 void Widget::setSize(int w, int h) {
 	if(w==m_rect.width && h==m_rect.height) return;
 
+	bool layoutPaused = isLayoutPaused();
+	pauseLayout();
+
 	// Update children positions and sizes
 	if(!m_layout) for(Widget* c : m_children) {
 		if(c->m_relative) {
@@ -422,19 +425,17 @@ void Widget::setSize(int w, int h) {
 			Rect r = c->m_rect;
 			// x axis
 			switch(a&0xf) {
-			case 2: r.x += w/2 - m_rect.width/2; break;
-			case 3: r.width += w/2 - m_rect.width/2; break;
-			case 4: r.x += w-m_rect.width; break;
-			case 5: r.width += w-m_rect.width; break;
-			case 6: r.x += w/2-m_rect.width/2; r.width += w/2-m_rect.width/2; break;
+			case 0: break; // Left
+			case 1: r.x += w - m_rect.width; break; // Right
+			case 2: r.x += w/2 - m_rect.width/2; break; // Centre
+			case 3: r.width += w - m_rect.width; break; // Both
 			}
 			// y axis
 			switch((a>>4)&0xf) {
-			case 2: r.y += h/2 - m_rect.height/2; break;
-			case 3: r.height += h/2 - m_rect.height/2; break;
-			case 4: r.y += h-m_rect.height; break;
-			case 5: r.height += h-m_rect.height; break;
-			case 6: r.y += h/2-m_rect.height/2; r.height += h/2-m_rect.height/2; break;
+			case 0: break; // Top
+			case 1: r.y += h-m_rect.height; break; // Bottom
+			case 2: r.y += h/2 - m_rect.height/2; break; // Centre
+			case 3: r.height += h - m_rect.height; break; // Both
 			}
 			c->setPosition(r.x, r.y);
 			c->setSize(r.width, r.height);
@@ -442,7 +443,7 @@ void Widget::setSize(int w, int h) {
 	}
 	m_rect.width = w;
 	m_rect.height = h;
-	if(!isLayoutPaused()) refreshLayout();
+	if(!layoutPaused) resumeLayout(true);
 	if(Widget* parent=getParent()) parent->onChildChanged(this);
 	notifyChange();
 	if(eventResized) eventResized(this);
@@ -452,22 +453,20 @@ void Widget::setSizeAnchored(const Point& s) {
 	Point size = s;
 	Point pos = getPosition();
 	switch(m_anchor&0xf) {
-	case 2: pos.x -= (s.x-m_rect.width)/2; break; // centre
-	case 4: pos.x -= (s.x-m_rect.width); break;	  // right
-	case 3:
-	case 5:
-	case 7: size.x = m_rect.width; break; // span - no change
+	case 0: break; /// Left
+	case 1: pos.x -= (s.x - m_rect.width); break;	  // Right
+	case 2: pos.x -= (s.x - m_rect.width) / 2; break; // Centre
+	case 3: size.x = m_rect.width; break; // span - no change
 	}
 
 	switch((m_anchor>>4) & 0xf) {
-	case 2: pos.y -= (s.y-m_rect.height)/2; break; 
-	case 4: pos.y -= s.y-m_rect.height; break;
-	case 3:
-	case 5:
-	case 7: size.y = m_rect.height; break;
+	case 0: break; // Top
+	case 1: pos.y -= s.y - m_rect.height; break;	// Bottom
+	case 2: pos.y -= (s.y - m_rect.height) / 2; break; // Centre
+	case 3: size.y = m_rect.height; break;	// Span - no change
 	}
-	if(pos!=getPosition()) setPosition(pos);
-	if(size != getSize()) setSize(size);
+	setPosition(pos);
+	setSize(size);
 }
 
 Point Widget::getPreferredSize() const { // Minimum size
@@ -481,16 +480,16 @@ Point Widget::getPreferredSize() const { // Minimum size
 				if(w->isVisible()) {
 					const Rect r(w->getPosition(), w->getPreferredSize());
 					switch(w->m_anchor&0xf) {
-					case 0: case 1: setMax(newSize.x, r.right()); break;
-					case 2:  setMax(newSize.x, r.width); break;
-					case 4:  setMax(newSize.x, r.width + abs(r.x + r.width/2 - clientSize.x/2)); break;
-					default: setMax(newSize.x, r.x + clientSize.x-r.right()); break;
+					case 0: setMax(newSize.x, r.right()); break; // Left
+					case 1: setMax(newSize.x, clientSize.x - r.x); break;	// Right
+					case 2: setMax(newSize.x, (r.width/2 + abs(r.x+r.width/2 - clientSize.x/2)) * 2); break; // Centre
+					case 3: setMax(newSize.x, r.x + clientSize.x - r.right()); break; // Span
 					}
 					switch(w->m_anchor>>4) {
-					case 0: case 1: setMax(newSize.y, r.bottom()); break;
-					case 2:  setMax(newSize.y, r.height); break;
-					case 4:  setMax(newSize.y, r.height + abs(r.y + r.height/2 - clientSize.y/2)); break;
-					default: setMax(newSize.y, r.y + clientSize.y-r.bottom()); break;
+					case 0: setMax(newSize.y, r.bottom()); break; // Top
+					case 1: setMax(newSize.y, clientSize.y - r.y); break;	// Bottom
+					case 2: setMax(newSize.y, (r.height/2 + abs(r.y+r.height/2 - clientSize.y/2)) * 2); break; // Centre
+					case 3: setMax(newSize.y, r.y + clientSize.y - r.bottom()); break; // Span
 					}
 				}
 			}
@@ -502,7 +501,7 @@ Point Widget::getPreferredSize() const { // Minimum size
 
 void Widget::updateAutosize() {
 	if(!isAutosize()) return;
-	if(m_client != this && m_client->m_anchor != 0x55) return; // client must resize with widget for autosize
+	if(m_client != this && m_client->m_anchor != 0x33) return; // client must resize with widget for autosize
 	Point newSize = getPreferredSize();
 	assert(newSize.x<5000 && newSize.y<5000);
 	setSizeAnchored(newSize);
@@ -588,14 +587,29 @@ void Widget::setAnchor(int a) {
 }
 void Widget::setAnchor(const char* anchor) {
 	m_anchor = 0;
-	if(anchor) for(;*anchor; ++anchor) {
-		switch(*anchor) {
-		case 'l': m_anchor |= 0x01; break;
-		case 'c': m_anchor |= 0x02; break;
-		case 'r': m_anchor |= 0x04; break;
-		case 't': m_anchor |= 0x10; break;
-		case 'm': m_anchor |= 0x20; break;
-		case 'b': m_anchor |= 0x40; break;
+	if(anchor) {
+		int a[2] = {0, 0};
+		for(const char* c = anchor; *c; ++c) {
+			switch(*c) {
+			case 'l': a[0] |= 0x1; break;
+			case 'c': a[0] |= 0x2; break;
+			case 'r': a[0] |= 0x4; break;
+			case 't': a[1] |= 0x1; break;
+			case 'm': a[1] |= 0x2; break;
+			case 'b': a[1] |= 0x4; break;
+			default: printf("Invalid anchor %s\n", anchor); return;
+			}
+		}
+		for(int s: {0,1}) {
+			int part = 0;
+			switch(a[s]) {
+			case 0: case 1: break;
+			case 2: part = 2; break; // Centre
+			case 4: part = 1; break; // Right
+			case 5: part = 3; break; // span
+			default: printf("Invalid anchor %s\n", anchor); return;
+			}
+			m_anchor |= part << (s*4);
 		}
 	}
 	if(!isLayoutPaused()) updateAutosize();
@@ -603,9 +617,11 @@ void Widget::setAnchor(const char* anchor) {
 }
 int Widget::getAnchor(char* s) const {
 	if(s) {
-		const char* code = "lcr_tmb";
-		for(int i=0; i<7; ++i)
-			if(m_anchor&(1<<i)) *(s++) = code[i];
+		const char* code = "lrcltbmt";
+		*(s++) = code[m_anchor&0x0f];
+		if((m_anchor&0x0f) == 3) *(s++) = code[1];
+		*(s++) = code[(m_anchor>>4) + 4];
+		if((m_anchor&0xf0) == 0x30) *(s++) = code[5];
 		*s = 0;
 	}
 	return m_anchor;

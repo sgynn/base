@@ -8,20 +8,22 @@ using namespace gui;
 void Layout::assignSlot(const Rect& slot, Widget* w) const {
 	// ToDo: Use anchor to determine how the slot is used
 	Point p = slot.position();
-	Point s = slot.size();
+	Point s = w->getSize();
 	int a = w->getAnchor();
 
 	// x axis
 	switch(a&0xf) {
-	case 1: s.x = w->getSize().x; break; // Align left;
-	case 2: s.x = w->getSize().x; p.x = slot.width/2 - s.x/2; break; // align centre
-	case 4: s.x = w->getSize().x; p.x = slot.right() - s.x; break; // Align right
+	case 0: break; // Align left;
+	case 1: p.x = slot.right() - s.x; break; // Align right
+	case 2: p.x = slot.width/2 - s.x/2; break; // align centre
+	case 3: s.x = slot.width; break; // Span
 	}
 	// y axis
 	switch((a>>4)&0xf) {
-	case 1: s.y = w->getSize().y; break; // Align top;
-	case 2: s.y = w->getSize().y; p.y = slot.height/2 - s.y/2; break; // align middle
-	case 4: s.y = w->getSize().y; p.y = slot.bottom() - s.y; break; // Align bottom
+	case 0: break; // Align top
+	case 1: p.y = slot.bottom() - s.y; break; // Align bottom
+	case 2: p.y = slot.height/2 - s.y/2; break; // align middle
+	case 3: s.y = slot.height; break; // Span
 	}
 
 	w->setPosition(p);
@@ -38,12 +40,12 @@ void HorizontalLayout::apply(Widget* p) const {
 	float totalSpring = 0;
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf)==0x5) totalSpring += w->isRelative()? getRelativeValues(w)[2]: 1.f; // lr
+		if((w->getAnchor()&0xf)==0x3) totalSpring += w->isRelative()? getRelativeValues(w)[2]: 1.f; // lr
 		else total += w->getSize().x;
 	}
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf)==0x5) {
+		if((w->getAnchor()&0xf)==0x3) {
 			if(totalSpring==0) totalSpring = 1;
 			float amount = (w->isRelative()? getRelativeValues(w)[2]: 1.f) / totalSpring;
 			float s = (p->getSize().x - total) * amount;
@@ -59,10 +61,10 @@ Point HorizontalLayout::getMinimumSize(const Widget* p) const {
 	Point size(0,0);
 	for(Widget* w: getWidgets(p)) {
 		size.x += m_space;
-		if(w->getAnchor() == 0x55 || !w->isVisible()) continue;
+		if(w->getAnchor() == 0x33 || !w->isVisible()) continue;
 		Point s = w->getPreferredSize();
-		if((w->getAnchor()&0xf) != 5) size.x += s.x;
-		if(w->getAnchor()>>4 != 5) size.y = max(size.y, s.y);
+		if((w->getAnchor()&0xf) != 3) size.x += s.x;
+		if(w->getAnchor()>>4 != 3) size.y = max(size.y, s.y);
 	}
 	size.x -= m_space;
 	size += m_margin + m_margin;
@@ -77,12 +79,12 @@ void VerticalLayout::apply(Widget* p) const {
 	float totalSpring = 0;
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf0)==0x50) totalSpring += w->isRelative()? getRelativeValues(w)[3]: 1.f; // tb
+		if((w->getAnchor()&0xf0)==0x30) totalSpring += w->isRelative()? getRelativeValues(w)[3]: 1.f; // tb
 		else total += w->getSize().y;
 	}
 	for(Widget* w: getWidgets(p)) {
 		if(!w->isVisible()) continue;
-		if((w->getAnchor()&0xf0)==0x50) {
+		if((w->getAnchor()&0xf0)==0x30) {
 			if(totalSpring==0) totalSpring = 1;
 			float amount = (w->isRelative()? getRelativeValues(w)[3]: 1.f) / totalSpring;
 			float s = (p->getSize().y - total) * amount;
@@ -97,10 +99,10 @@ Point VerticalLayout::getMinimumSize(const Widget* p) const {
 	Point size(0,0);
 	for(Widget* w: getWidgets(p)) {
 		size.y += m_space;
-		if(w->getAnchor() == 0x55 || !w->isVisible()) continue;
+		if(w->getAnchor() == 0x33 || !w->isVisible()) continue;
 		Point s = w->getPreferredSize();
-		if((w->getAnchor()&0xf) != 5) size.x = max(size.x, s.x);
-		if(w->getAnchor()>>4 != 5) size.y += s.y;
+		if((w->getAnchor()&0xf) != 3) size.x = max(size.x, s.x);
+		if(w->getAnchor()>>4 != 3) size.y += s.y;
 	}
 	size.y -= m_space;
 	size += m_margin + m_margin;
