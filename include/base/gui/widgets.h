@@ -40,15 +40,12 @@ class Icon : public Widget {
 	WIDGET_TYPE(Icon);
 	Icon(const Rect& r, Skin*);
 	IconList* getIconList() const;							// Get icon set
-	void setIcon(IconList* list, const char* name, const char* alt=0);
-	void setIcon(IconList* list, int index, int alt=-1);	// Set iconSet and index
+	void setIcon(IconList* list, const char* name);			// Set icon by name
+	void setIcon(IconList* list, int index);				// Set iconSet and index
 	void setIcon(const char* name);							// Set icon index by name
 	void setIcon(int index);								// Set icon index
 	int  getIcon() const;									// Get icon index
 	const char* getIconName() const;
-	void setAltIcon(int index);
-	void setAltIcon(const char* name);
-	int  getAltIcon() const;								// Get icon index for alternate icon (when selected)
 	void  setAngle(float a) { m_angle=a; }
 	float getAngle() const { return m_angle; }
 	void draw() const override;
@@ -58,7 +55,6 @@ class Icon : public Widget {
 	virtual Widget* clone(const char*) const override;
 	IconList* m_iconList;
 	int       m_iconIndex;
-	int       m_iconIndexAlt;
 	float     m_angle;
 };
 
@@ -66,15 +62,12 @@ class Icon : public Widget {
 class IconInterface {
 	public:
 	void initialiseIcon(Widget*, const Root*, const PropertyMap&);
-	void setIcon(IconList* list, int index, int alt=-1);
-	void setIcon(IconList* list, const char* name, const char* alt=0);
+	void setIcon(IconList* list, int index);
+	void setIcon(IconList* list, const char* name);
 	void setIcon(const char* name);
 	void setIcon(int index);
 	int  getIcon() const;
 	const char* getIconName() const;
-	void setAltIcon(const char* name);
-	void setAltIcon(int index);
-	int  getAltIcon() const;
 	void setIconColour(unsigned rgb, float a=1);
 	private:
 	Icon* m_icon = nullptr;
@@ -119,8 +112,11 @@ class Button : public Label, public IconInterface {
 class Checkbox : public Button {
 	WIDGET_TYPE(Checkbox);
 	Checkbox(const Rect& r, Skin* s, const char* t="") : Button(r, s, t) {}
+	void setSelected(bool) override;
 	bool isChecked() const { return isSelected(); }
 	void setChecked(bool c) { setSelected(c); }
+	void setIcon(IconList* list, int checked, int unchecked=-1);
+	void setIcon(IconList* list, const char* checked, const char* unchecked=0);
 	public:
 	Delegate<void(Button*)> eventChanged;
 	protected:
@@ -131,6 +127,8 @@ class Checkbox : public Button {
 	Widget* clone(const char*) const override;
 	protected:
 	bool m_dragMode = false;
+	int m_checkedIcon = -1;
+	int m_uncheckedIcon = -1;
 };
 
 /** Drag / resize handle component */

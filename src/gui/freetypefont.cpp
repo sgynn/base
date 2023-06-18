@@ -103,7 +103,6 @@ bool gui::FreeTypeFont::build(int size) {
 
 #else
 bool gui::FreeTypeFont::build(int size) {
-	printf("Error: Baselib not compiled with freetype\n");
 	return false;
 }
 #endif

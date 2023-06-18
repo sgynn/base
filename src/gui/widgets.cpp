@@ -34,7 +34,7 @@ Widget* Label::clone(const char* nt) const {
 	w->m_wordWrap = m_wordWrap;
 	w->m_fontSize = m_fontSize;
 	w->m_fontAlign = m_fontAlign;
-	w->setCaption( m_caption );
+	w->m_caption = m_caption;
 	return w;
 }
 void Label::setCaption( const char* c) {
@@ -144,29 +144,23 @@ void Label::draw() const {
 
 // ===================================================================================== //
 
-Icon::Icon(const Rect& r, Skin* s) : Widget(r, s), m_iconList(0), m_iconIndex(0), m_iconIndexAlt(-1), m_angle(0) {
+Icon::Icon(const Rect& r, Skin* s) : Widget(r, s), m_iconList(0), m_iconIndex(0), m_angle(0) {
 	m_states = 0x43; // intangible, inherit state
 }
 IconList* Icon::getIconList() const { return m_iconList; }
 int Icon::getIcon() const { return m_iconIndex; }
-int Icon::getAltIcon() const { return m_iconIndexAlt; }
-void Icon::setIcon(IconList* list, const char* name, const char* alt) {
+void Icon::setIcon(IconList* list, const char* name) {
 	int icon = list->getIconIndex(name);
-	int altIcon = alt? list->getIconIndex(alt): -1;
-	setIcon(list, icon, altIcon);
+	setIcon(list, icon);
 }
-void Icon::setIcon(IconList* list, int index, int alt) {
+void Icon::setIcon(IconList* list, int index) {
 	m_iconList = list;
 	m_iconIndex = index;
-	m_iconIndexAlt = alt;
 	updateAutosize();
 }
 void Icon::setIcon(int index) {
 	m_iconIndex = index;
 	updateAutosize();
-}
-void Icon::setAltIcon(int index) {
-	m_iconIndexAlt = index;
 }
 void Icon::setIcon(const char* name) {
 	if(m_iconList) {
@@ -178,22 +172,12 @@ void Icon::setIcon(const char* name) {
 const char* Icon::getIconName() const {
 	return m_iconList? m_iconList->getIconName(m_iconIndex): 0;
 }
-void Icon::setAltIcon(const char* name) {
-	if(m_iconList) {
-		m_iconIndexAlt = m_iconList->getIconIndex(name);
-		if(m_iconIndexAlt<0 && name[0]) printf("Error: Icon %s not found\n", name);
-	}
-}
 void Icon::initialise(const Root* root, const PropertyMap& p) {
 	if(root && p.contains("iconlist")) m_iconList = root->getIconList( p["iconlist"]);
 	char* e;
 	if(const char* icon = p.get("icon", 0)) {
 		m_iconIndex = strtol(icon, &e, 10);
 		if(e==icon) setIcon(icon);
-	}
-	if(const char* icon = p.get("selicon", 0)) {
-		m_iconIndexAlt = strtol(icon, &e, 10);
-		if(e==icon) setAltIcon(icon);
 	}
 	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
 	updateAutosize();
@@ -202,7 +186,6 @@ Widget* Icon::clone(const char* nt) const {
 	Icon* w = Widget::clone(nt)->cast<Icon>();
 	w->m_iconList = m_iconList;
 	w->m_iconIndex = m_iconIndex;
-	w->m_iconIndexAlt = m_iconIndexAlt;
 	return w;
 }
 Point Icon::getPreferredSize() const {
@@ -233,9 +216,7 @@ void Icon::draw() const {
 		r.position() += state.textPos;
 		colour = deriveColour(state.foreColour, m_colour, m_states);
 	}
-	int icon = m_iconIndex;
-	if(m_iconIndexAlt>=0 && stateIndex>=4) icon = m_iconIndexAlt;
-	m_root->getRenderer()->drawIcon(m_iconList, icon, r, m_angle, colour);
+	m_root->getRenderer()->drawIcon(m_iconList, m_iconIndex, r, m_angle, colour);
 	drawChildren();
 }
 
@@ -308,11 +289,11 @@ void IconInterface::initialiseIcon(Widget* w, const Root* root, const PropertyMa
 	m_icon = w->getTemplateWidget<Icon>("_icon");
 	if(m_icon) m_icon->initialise(root, p);
 }
-void IconInterface::setIcon(IconList* list, int index, int alt) {
-	if(m_icon) m_icon->setIcon(list, index, alt);
+void IconInterface::setIcon(IconList* list, int index) {
+	if(m_icon) m_icon->setIcon(list, index);
 }
-void IconInterface::setIcon(IconList* list, const char* name, const char* alt) {
-	if(m_icon) m_icon->setIcon(list, name, alt);
+void IconInterface::setIcon(IconList* list, const char* name) {
+	if(m_icon) m_icon->setIcon(list, name);
 }
 void IconInterface::setIcon(int index) {
 	if(m_icon) m_icon->setIcon(index);
@@ -325,15 +306,6 @@ int IconInterface::getIcon() const {
 }
 const char* IconInterface::getIconName() const {
 	return m_icon? m_icon->getIconName(): 0;
-}
-void IconInterface::setAltIcon(int index) {
-	if(m_icon) m_icon->setAltIcon(index);
-}
-void IconInterface::setAltIcon(const char* name) {
-	if(m_icon) m_icon->setAltIcon(name);
-}
-int IconInterface::getAltIcon() const {
-	return m_icon? m_icon->getAltIcon(): 0;
 }
 void IconInterface::setIconColour(unsigned rgb, float a) {
 	if(m_icon) m_icon->setColour(rgb, a);
@@ -381,26 +353,49 @@ const char* Button::getCaption() const {
 
 void Checkbox::initialise(const Root* root, const PropertyMap& p) {
 	Button::initialise(root, p);
-	if(p.contains("checked") && atoi(p["checked"])) setChecked(true);
-	if(p.contains("drag") && atoi(p["drag"])) m_dragMode = true;
+	p.readValue("icon", m_checkedIcon);
+	p.readValue("nicon", m_uncheckedIcon);
+	p.readValue("drag", m_dragMode);
+	setChecked(p.getValue("checked", isChecked()));
 }
 Widget* Checkbox::clone(const char* type) const {
-	Widget* w = Widget::clone(type);
-	Checkbox* c = w->cast<Checkbox>();
-	if(c) c->m_dragMode =m_dragMode;
+	Widget* w = Super::clone(type);
+	if(Checkbox* c = w->cast<Checkbox>()) {
+		c->m_dragMode = m_dragMode;
+		c->m_checkedIcon = m_checkedIcon;
+		c->m_uncheckedIcon = m_uncheckedIcon;
+	}
 	return w;
+}
+
+void Checkbox::setSelected(bool s) {
+	Button::setIcon(s? m_checkedIcon: m_uncheckedIcon);
+	Button::setSelected(s);
+}
+
+void Checkbox::setIcon(IconList* list, int checked, int unchecked) {
+	setIcon(list, isSelected()? checked: unchecked);
+	m_checkedIcon = checked;
+	m_uncheckedIcon = unchecked;
+}
+void Checkbox::setIcon(IconList* list, const char* checked, const char* unchecked) {
+	if(list) {
+		m_checkedIcon = list->getIconIndex(checked);
+		m_uncheckedIcon = list->getIconIndex(unchecked);
+	}
+	setIcon(list, checked, unchecked);
 }
 
 void Checkbox::onMouseButton(const Point& p, int d, int u) {
 	if((hasFocus() && u==1 && !m_dragMode && contains(p)) || (d==1 && m_dragMode)) {
-		m_states ^= 0x10; // Selected
+		setChecked(!isChecked());
 		if(eventChanged) eventChanged(this);
 	}
 	Widget::onMouseButton(p, d, u);
 }
 void Checkbox::onKey(int code, wchar_t, KeyMask) {
 	if(hasFocus() && code==base::KEY_SPACE) {
-		m_states ^= 0x10; // Selected
+		setChecked(!isChecked());
 		if(eventChanged) eventChanged(this);
 	}
 }

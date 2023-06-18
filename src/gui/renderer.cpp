@@ -16,6 +16,7 @@ int IconList::addIcon(const char* name, const Rect& r) {
 	return m_icons.size() - 1;
 }
 int IconList::getIconIndex(const char* name) const {
+	if(!name) return -1;
 	for(uint i=0; i<m_icons.size(); ++i)
 		if(strcmp(m_icons[i].name, name)==0) return i;
 	return -1;

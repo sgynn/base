@@ -42,7 +42,7 @@ inline LoadFlags operator|(LoadFlags a, LoadFlags b) { return (LoadFlags)((int)a
 	static const char* staticName() { return #name; } \
 
 #define RTTI_BASE(name) public: RTTI_TYPE(name); \
-	typedef name BaseType; \
+	typedef name ThisType; \
 	virtual bool isType(int t) const { return t==staticType(); } \
 	virtual int getType() const { return staticType(); } \
 	virtual const char* getTypeName() const { return staticName(); } \
@@ -50,9 +50,9 @@ inline LoadFlags operator|(LoadFlags a, LoadFlags b) { return (LoadFlags)((int)a
 	template<class T> const T* cast() const { size_t ptr=(size_t)this; return ptr && isType(T::staticType())? static_cast<const T*>(this): 0; }
 
 #define RTTI_DERIVED(name) public: RTTI_TYPE(name); \
-	typedef BaseType Base; \
-	typedef name BaseType; \
-	virtual bool isType(int t) const override { return t==staticType() || Base::isType(t); }; \
+	typedef ThisType Super; \
+	typedef name ThisType; \
+	virtual bool isType(int t) const override { return t==staticType() || Super::isType(t); }; \
 	virtual int getType() const override { return staticType(); } \
 	virtual const char* getTypeName() const override { return staticName(); } \
 
@@ -99,6 +99,7 @@ class String {
 /** Additional properties from external data - basically extra accessors for a string hashmap */
 class PropertyMap : public base::HashMap<const char*> {
 	public:
+	bool readValue(const char* key, bool& value) const    { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
 	bool readValue(const char* key, int& value) const     { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
 	bool readValue(const char* key, float& value) const   { if(const char* s=get(key,0)) { value = atof(s); return true; } return false; }
 	int   getValue(const char* key, int fallback) const   { if(const char* s=get(key,0)) return atoi(s); return fallback; }
