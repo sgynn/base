@@ -68,6 +68,7 @@ class IconInterface {
 	void setIcon(int index);
 	int  getIcon() const;
 	const char* getIconName() const;
+	IconList* getIconList() const;
 	void setIconColour(unsigned rgb, float a=1);
 	private:
 	Icon* m_icon = nullptr;
@@ -117,6 +118,8 @@ class Checkbox : public Button {
 	void setChecked(bool c) { setSelected(c); }
 	void setIcon(IconList* list, int checked, int unchecked=-1);
 	void setIcon(IconList* list, const char* checked, const char* unchecked=0);
+	void setIcon(int checked, int unchecked=-1) { setIcon(getIconList(), checked, unchecked); }
+	void setIcon(const char* checked, const char* unchecked=0) { setIcon(getIconList(), checked, unchecked); }
 	public:
 	Delegate<void(Button*)> eventChanged;
 	protected:

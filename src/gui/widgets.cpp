@@ -307,6 +307,9 @@ int IconInterface::getIcon() const {
 const char* IconInterface::getIconName() const {
 	return m_icon? m_icon->getIconName(): 0;
 }
+IconList* IconInterface::getIconList() const {
+	return m_icon? m_icon->getIconList(): 0;
+}
 void IconInterface::setIconColour(unsigned rgb, float a) {
 	if(m_icon) m_icon->setColour(rgb, a);
 }
@@ -374,7 +377,7 @@ void Checkbox::setSelected(bool s) {
 }
 
 void Checkbox::setIcon(IconList* list, int checked, int unchecked) {
-	setIcon(list, isSelected()? checked: unchecked);
+	Button::setIcon(list, isSelected()? checked: unchecked);
 	m_checkedIcon = checked;
 	m_uncheckedIcon = unchecked;
 }
