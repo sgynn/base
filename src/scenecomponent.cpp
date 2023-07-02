@@ -42,6 +42,7 @@ void SceneComponent::resized(const Point& s) {
 }
 
 bool SceneComponent::setCompositor(CompositorGraph* graph) {
+	Camera* cam = m_workspace? m_workspace->getCamera(): nullptr;
 	if(graph) {
 		Workspace* workspace = new Workspace(graph);
 		if(workspace->compile(FrameBuffer::Screen.width(), FrameBuffer::Screen.height())) {
@@ -51,11 +52,14 @@ bool SceneComponent::setCompositor(CompositorGraph* graph) {
 		}
 		else printf("Error: Failed to compile compositor graph");
 	}
-	else if(m_workspace != getDefaultCompositor()) {
+	else {
 		delete m_workspace;
-		m_workspace = 0;
+		m_workspace = nullptr;
 	}
-	if(!m_workspace) m_workspace = getDefaultCompositor();
+	if(!m_workspace) {
+		m_workspace = createDefaultWorkspace();
+		if(cam) m_workspace->setCamera(cam);
+	}
 	return !graph;
 }
 

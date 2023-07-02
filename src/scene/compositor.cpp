@@ -926,17 +926,22 @@ FrameBuffer* Workspace::createBuffer(Compositor::Buffer* b, int sw, int sh) {
 
 // ============================================================ //
 
-Workspace* base::getDefaultCompositor() {
-	static Workspace* instance = 0;
-	if(instance) return instance;
+CompositorGraph* base::getDefaultCompositor() {
+	static CompositorGraph* graph = 0;
+	if(graph) return graph;
 	Compositor* c = new Compositor();
 	c->addPass("0", new CompositorPassClear(3, 0x000020, 1) );
 	c->addPass("0", new CompositorPassScene(0,255) );
 	c->addOutput("0");
-	CompositorGraph* chain = new CompositorGraph;
-	chain->link(c, Compositor::Output);
-	instance = new Workspace(chain);
-	instance->compile(0,0); // params irrelevant if no relative buffers created
-	return instance;
+	graph = new CompositorGraph;
+	graph->link(c, Compositor::Output);
+	return graph;
 }
+
+Workspace* base::createDefaultWorkspace() {
+	Workspace* workspace = new Workspace(getDefaultCompositor());
+	workspace->compile(0,0); // params irrelevant if no relative buffers created
+	return workspace;
+}
+
 

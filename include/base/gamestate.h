@@ -14,6 +14,8 @@ class GameState;
 /** Game state component base class
  * These are encapsulated update/draw plugins that can be added to the game state
  * Persistent components will automatically be added to the new state
+ * Update / draw calls occur in numeric order, (ie updateOrder -10 will happen before +10)
+ * Uf the order is the same, newly added components will take precidence
  */
 class GameStateComponent {
 	friend class GameState;
@@ -38,7 +40,7 @@ class GameStateComponent {
 	unsigned getComponentFlags() const;
 
 	private:
-	GameState* m_gameState;
+	GameState* m_gameState = nullptr;
 	StateMode m_mode;
 	int m_references = 0;
 	int m_updateOrder;

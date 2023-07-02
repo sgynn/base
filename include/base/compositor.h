@@ -284,7 +284,8 @@ namespace base {
 	};
 
 	// Create basic compositor instance
-	Workspace* getDefaultCompositor();
+	CompositorGraph* getDefaultCompositor();
+	Workspace* createDefaultWorkspace();
 
 	// ===================================================================================================== //
 
