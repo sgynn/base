@@ -170,10 +170,8 @@ namespace base {
 
 	/// Joystick class --------------------------------------------------------------
 	class Joystick { 
-		friend class Input;
-		Joystick(int axes, int buttons);
 		public:
-		~Joystick();
+		virtual ~Joystick();
 		bool  button(uint) const;					/// Get state of a button
 		bool  pressed(uint) const;					/// Was this button pressed this frame
 		bool  released(uint) const;					/// Was this button released this frame
@@ -183,9 +181,12 @@ namespace base {
 		void  setDeadzone(float);					/// Set axis deadzone
 		void  getCalibration(uint, int*) const;		/// Get axis calibration
 		void  setCalibration(uint, const int*);		/// Set axis calibration
-		private:
-		bool update();
-		private:
+		virtual void vibrate(uint duration, float amplitude, float frequency) {}		/// Trigger a haptic pulse. Duration in microseconds
+		protected:
+		friend class Input;
+		Joystick(int axes, int buttons);
+		virtual bool update();
+		protected:
 		int  m_index;
 		char m_name[128];
 		// State
@@ -240,6 +241,7 @@ namespace base {
 		Joystick& joystick(uint id=0) const;
 		/** Initialise joysticks - returns number found */
 		int initialiseJoysticks();
+		int addJoystick(Joystick*, int forceId=-1);
 
 		/// Binding
 		uint getAction(const char* name);	// Will create it if it does not exist

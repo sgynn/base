@@ -56,14 +56,26 @@ void Joystick::setCalibration(uint n, const int* data) {
 // ================================================================= //
 
 void Input::updateJoysticks() {
-	for(size_t i=0; i<m_joysticks.size(); ++i) m_joysticks[i]->update();
+	for(Joystick* j: m_joysticks) if(j) j->update();
 }
 Joystick& Input::joystick(uint i) const {
-	if(i<m_joysticks.size()) return *m_joysticks[i];
+	if(i<m_joysticks.size() && m_joysticks[i]) return *m_joysticks[i];
 	static Joystick dummy(0,0);
 	return dummy;
 }
 
+int Input::addJoystick(Joystick* j, int forceId) {
+	if(forceId < 0) {
+		m_joysticks.push_back(j);
+		return m_joysticks.size() - 1;
+	}
+	else {
+		while(forceId >= (int)m_joysticks.size()) m_joysticks.push_back(nullptr);
+		if(m_joysticks[forceId]) delete m_joysticks[forceId];
+		m_joysticks[forceId] = j;
+		return forceId;
+	}
+}
 
 // ================================================================= //
 
