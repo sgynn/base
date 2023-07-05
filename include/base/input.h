@@ -172,6 +172,7 @@ namespace base {
 	class Joystick { 
 		public:
 		virtual ~Joystick();
+		uint  getIndex() const { return m_index; }	/// Get joystick index
 		bool  button(uint) const;					/// Get state of a button
 		bool  pressed(uint) const;					/// Was this button pressed this frame
 		bool  released(uint) const;					/// Was this button released this frame
@@ -187,7 +188,7 @@ namespace base {
 		Joystick(int axes, int buttons);
 		virtual bool update();
 		protected:
-		int  m_index;
+		uint  m_index;
 		char m_name[128];
 		// State
 		uint   m_numAxes;
@@ -198,7 +199,7 @@ namespace base {
 		int    m_buttons;
 		int    m_changed;
 		Point  m_hat;
-		private: // linux stuff
+		private: // internal stuff - mostly for linux
 		int    m_file;
 		uint8* m_keyMap;
 		uint8* m_absMap;

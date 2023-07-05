@@ -66,15 +66,16 @@ Joystick& Input::joystick(uint i) const {
 
 int Input::addJoystick(Joystick* j, int forceId) {
 	if(forceId < 0) {
+		j->m_index = m_joysticks.size();
 		m_joysticks.push_back(j);
-		return m_joysticks.size() - 1;
 	}
 	else {
 		while(forceId >= (int)m_joysticks.size()) m_joysticks.push_back(nullptr);
 		if(m_joysticks[forceId]) delete m_joysticks[forceId];
+		j->m_index = forceId;
 		m_joysticks[forceId] = j;
-		return forceId;
 	}
+	return j->m_index;
 }
 
 // ================================================================= //
@@ -142,7 +143,7 @@ int Input::initialiseJoysticks() {
 			ioctl(js, EVIOCGNAME(sizeof(joy->m_name)), joy->m_name);
 			fcntl(js, F_SETFL, O_NONBLOCK);
 			printf("Joystick %s: %d axes, %d buttons\n", joy->m_name, joy->m_numAxes, joy->m_numButtons);
-			m_joysticks.push_back(joy);
+			addJoystick(joy);
 			continue;
 		}
 		close(js);
@@ -212,12 +213,12 @@ int Input::initialiseJoysticks() {
 			if(result == JOYERR_NOERROR) {
 				// valid
 				Joystick* joy = new Joystick(joyCaps.wNumAxes, joyCaps.wNumButtons);
-				joy->m_index = i;
+				joy->m_file = i;
 				for(size_t j=0; j<sizeof(joy->m_name) && joyCaps.szPname[j]; ++j) joy->m_name[j] = (char)joyCaps.szPname[j];
 				uint* ranges[] = { &joyCaps.wXmin, &joyCaps.wYmin, &joyCaps.wZmin, &joyCaps.wRmin, &joyCaps.wUmin, &joyCaps.wVmin };
 				for(size_t j=0; j<joyCaps.wNumAxes; ++j) joy->m_range[i].min = ranges[i][0], joy->m_range[i].max = ranges[i][1];
 				printf("Joystick %s: %d axes, %d buttons\n", joy->m_name, joy->m_numAxes, joy->m_numButtons);
-				m_joysticks.push_back(joy);
+				addJoystick(joy);
 			}
 		}
 	}
@@ -228,7 +229,7 @@ bool Joystick::update() {
 	JOYINFOEX info;
 	info.dwSize = sizeof(info);
 	info.dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS;
-	joyGetPosEx(m_index, &info);
+	joyGetPosEx(m_file, &info);
 	const DWORD returnFlags[6] = { JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, JOY_RETURNR, JOY_RETURNU, JOY_RETURNV };
 	for(size_t i=0; i<m_numAxes; ++i) {
 		if(info.dwFlags & returnFlags[i]) {
@@ -256,7 +257,7 @@ bool Joystick::update() { return true; }
 #endif
 
 
-Joystick::Joystick(int a, int b) : m_index(-1), m_numAxes(a), m_numButtons(b), m_dead(0.1), m_buttons(0), m_changed(0), m_file(-1), m_keyMap(0), m_absMap(0), m_created(false) {
+Joystick::Joystick(int a, int b) : m_index(-1u), m_numAxes(a), m_numButtons(b), m_dead(0.1), m_buttons(0), m_changed(0), m_file(-1), m_keyMap(0), m_absMap(0), m_created(false) {
 	if(a>0) {
 		m_axis = new int[a];
 		m_range = new Range[a];
