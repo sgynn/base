@@ -600,6 +600,7 @@ def export(context, config):
     # Linked skeleton
     exportAnimation = config.export_animations != "NONE"
     if config.export_skeletons or exportAnimation:
+        armatures = set()
         for obj in exportList:
             if obj.type == 'MESH':
                 arm = obj.find_armature()
@@ -607,9 +608,12 @@ def export(context, config):
                 if not arm:
                     for c in obj.constraints:
                         if c.type == 'CHILD_OF' and c.target and c.target.type == 'ARMATURE': arm = c.target
-                if arm and arm not in exportList:
-                    if type(exportList) is set: exportList.add(arm)
-                    else: exportList.append(arm)
+                if arm: armatures.add(arm)
+
+        for arm in armatures:
+            if arm not in exportList:
+                if type(exportList) is set: exportList.add(arm)
+                else: exportList.append(arm)
 
     xml = create_document("model")
     xml.firstChild.setAttribute("version", "2.0");
