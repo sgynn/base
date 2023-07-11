@@ -172,6 +172,7 @@ namespace base {
 	class Joystick { 
 		public:
 		virtual ~Joystick();
+		const char* getName() const { return m_name; } /// Get device name
 		uint  getIndex() const { return m_index; }	/// Get joystick index
 		bool  button(uint) const;					/// Get state of a button
 		bool  pressed(uint) const;					/// Was this button pressed this frame
