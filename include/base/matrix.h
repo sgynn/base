@@ -1,7 +1,7 @@
-#ifndef _BASE_MATRIX_
-#define _BASE_MATRIX_
+#pragma once
 
 #include "vec.h"
+#include <initializer_list>
 
 /** Inline lightweight matrix class */
 class Matrix {
@@ -10,6 +10,7 @@ class Matrix {
 
 	Matrix();
 	Matrix(const float* p);
+	Matrix(std::initializer_list<float> v) { int i=-1; for(float f : v) if(++i<16) m[i]=f; else break; }
 	Matrix(const vec3& x, const vec3& y, const vec3& z, const vec3& p=vec3());
 
 	Matrix& setRotation(const Matrix& m);	// Update rotation part of matrix
@@ -203,6 +204,4 @@ inline bool Matrix::isAffine() const {
 	return a.dot(b)<ep && a.dot(c)<ep && b.dot(c)<ep;
 
 }
-
-#endif
 
