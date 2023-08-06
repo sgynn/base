@@ -10,7 +10,7 @@ namespace audio {
 		if(name==0 || name[0]==0) return INVALID;
 		LookupMap::iterator it = map.find(name);
 		if(it!=map.end()) return it->value;
-		uint ix = list.size();
+		unsigned ix = list.size();
 		list.push_back( T() );
 		map[name] = ix;
 		return ix;
