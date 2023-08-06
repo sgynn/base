@@ -286,7 +286,11 @@ Compositor::~Compositor() {
 		free(i.name);
 		if(i.name!=i.buffer) free(i.buffer);
 	}
-	for(Buffer* b: m_buffers) delete b;
+	for(Buffer* b: m_buffers) {
+		delete [] b->depth.input;
+		for(BufferAttachment& a: b->colour) delete [] a.input;
+		delete b;
+	}
 	for(Pass& p : m_passes) {
 		free(p.target);
 		delete p.pass;
@@ -310,13 +314,13 @@ Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format
 	b->height = h;
 	b->relativeWidth = 0;
 	b->relativeHeight = 0;
-	b->format[0] = f1;
-	b->format[1] = f2;
-	b->format[2] = f3;
-	b->format[3] = f4;
-	b->depthFormat = dfmt;
+	b->colour[0].format = f1;
+	b->colour[1].format = f2;
+	b->colour[2].format = f3;
+	b->colour[3].format = f4;
+	b->depth.format = dfmt;
 	b->unique = unique;
-	b->texture = 0;
+	b->texture = nullptr;
 	m_buffers.push_back(b);
 	return b;
 }
@@ -676,14 +680,52 @@ bool Workspace::compile(int w, int h) {
 
 	auto compareBuffers = [](const Compositor::Buffer* a, const Compositor::Buffer* b) {
 		return a->width==b->width && a->height==b->height && a->relativeWidth==b->relativeWidth
-			&& a->relativeHeight==b->relativeHeight && a->depthFormat==b->depthFormat
-			&& a->format[0]==b->format[0] && a->format[1]==b->format[1]
-			&& a->format[2]==b->format[2] && a->format[3]==b->format[3]
+			&& a->relativeHeight==b->relativeHeight && a->depth.format==b->depth.format
+			&& a->colour[0].format==b->colour[0].format && a->colour[0].format==b->colour[0].format
+			&& a->colour[2].format==b->colour[2].format && a->colour[3].format==b->colour[3].format
+			&& !a->colour[0].input && !a->colour[1].input && !a->colour[2].input && !a->colour[3].input
+			&& !b->colour[0].input && !b->colour[1].input && !b->colour[2].input && !b->colour[3].input
+			&& !a->depth.input && !b->depth.input
 			&& a->texture == b->texture;
 	};
 	auto getConnectorByBufferName = [](std::vector<Compositor::Connector>& list, const char* buffer) {
 		for(size_t i=0; i<list.size(); ++i) if(list[i].part==0 && strcmp(list[i].buffer, buffer)==0) return(int)i;
 		return -1;
+	};
+	auto createFrameBuffer = [w, h, &links](const Compositor::Buffer* buffer, const CInfo& info) {
+		int bw = buffer->relativeWidth>0? buffer->relativeWidth * w: buffer->width;
+		int bh = buffer->relativeHeight>0? buffer->relativeHeight * h: buffer->height;
+		FrameBuffer* buf = new FrameBuffer(bw, bh);
+		buf->bind();
+		auto getInputTexture = [&](const Compositor::BufferAttachment& data) -> const Texture* {
+			if(!data.input) return nullptr;
+			int inputIndex = info.compositor->getInput(data.input);
+			if(inputIndex < 0) return nullptr; // Invalid input
+			const LinkBuffer* linkData = links[info.inputs[inputIndex]].data;
+			if(!linkData) return nullptr;
+			if(linkData->buffer && linkData->buffer->texture) return linkData->buffer->texture;
+			if(!linkData->frameBuffer) return nullptr; // No framebuffer
+			const FrameBuffer* b = linkData->frameBuffer;
+			const Texture& result = data.part==Compositor::DepthIndex? b->depthTexture(): b->texture(data.part);
+			if(result.getFormat() == Texture::NONE) return nullptr; // Slot not set
+			else return &result;
+		};
+		if(buffer->depth.format) {
+			buf->attachDepth((Texture::Format) buffer->depth.format);
+			buf->depthTexture().setFilter(GL_NEAREST, GL_NEAREST);
+		}
+		else if(const Texture* tex = getInputTexture(buffer->depth)) {
+			buf->attachDepth(*tex);
+		}
+		int attachment = 0;
+		for(const auto& colour: buffer->colour) {
+			if(const Texture* tex = getInputTexture(colour)) buf->attachColour(attachment, *tex);
+			else if(colour.input) buf->attachColour(Texture::RGBA8); // Fallback if input not found
+			else if(colour.format) buf->attachColour((Texture::Format) colour.format);
+			else break;
+			++attachment;
+		}
+		return buf;
 	};
 
 
@@ -807,7 +849,7 @@ bool Workspace::compile(int w, int h) {
 				}
 				target = link.data->frameBuffer;
 				if(!target && link.data->buffer!=&outputBuffer) {
-					target = link.data->frameBuffer = createBuffer(link.data->buffer, w, h);
+					target = link.data->frameBuffer = createFrameBuffer(link.data->buffer, info);
 					m_buffers.push_back(target);
 				}
 
@@ -828,7 +870,8 @@ bool Workspace::compile(int w, int h) {
 					continue;
 				}
 				if(!internal[index]) {
-					internal[index] = createBuffer(bufferData, w, h);
+					//internal[index] = createBuffer(bufferData, w, h);
+					internal[index] = createFrameBuffer(bufferData, info);
 					m_buffers.push_back(internal[index]);
 				}
 				target = internal[index];
@@ -906,23 +949,25 @@ bool Workspace::compile(int w, int h) {
 	return true;
 }
 
+/*
 FrameBuffer* Workspace::createBuffer(Compositor::Buffer* b, int sw, int sh) {
 	int w = b->relativeWidth>0? b->relativeWidth * sw: b->width;
 	int h = b->relativeHeight>0? b->relativeHeight * sh: b->height;
 	FrameBuffer* buf = new FrameBuffer(w, h);
 	buf->bind();
-	if(b->depthFormat) {
-		buf->attachDepth((Texture::Format) b->depthFormat);
+	if(b->depth.format) {
+		buf->attachDepth((Texture::Format) b->depth.format);
 		buf->depthTexture().setFilter(GL_NEAREST, GL_NEAREST);
 	}
-	for(int f: b->format) {
-		if(f == Texture::NONE) break;
-		buf->attachColour((Texture::Format) f);
+	for(const auto& colour: b->colour) {
+		if(colour.format == Texture::NONE) break;
+		buf->attachColour((Texture::Format) colour.format);
 	}
-	if(!buf->isValid()) printf("Error: Invalid framebuffer %s, [%d]\n", b->name, (int)b->format[0]);
+	if(!buf->isValid()) printf("Error: Invalid framebuffer %s, [%d]\n", b->name, (int)b->colour[0].format);
 	FrameBuffer::Screen.bind();
 	return buf;
 }
+*/
 
 // ============================================================ //
 

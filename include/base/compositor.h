@@ -133,16 +133,24 @@ namespace base {
 		public:
 		Compositor(const char* name=0);
 		~Compositor();
-		using Format = Texture::Format;
 
+		using Format = Texture::Format;
+		static constexpr char DepthIndex = -1;
+
+		// Buffer attachments can be a format, or a texture from graph input
+		struct BufferAttachment {
+			Format format = Format::NONE;
+			char* input = nullptr;
+			char part = 0;
+		};
 
 		// Frame buffer definition
 		struct Buffer {
 			char  name[64];
 			int   width, height;
 			float relativeWidth, relativeHeight; // use these if nonzero
-			Format format[4];
-			Format depthFormat;
+			BufferAttachment colour[4];
+			BufferAttachment depth;
 			bool  unique; // Non-unique buffers are re-used where possible
 			base::Texture* texture; // use this instead - read only
 		};

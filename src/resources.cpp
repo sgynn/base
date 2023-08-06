@@ -833,8 +833,37 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 			if((rel&&(fw==0||fh==0)) || (!rel&&(iw==0||ih==0))) printf("Error: Invalid resolution for buffer %s of %s\n", name, e.attribute("name"));
 			if(f1<0 || (f1==0 && fd==0)) printf("Error: Invalid format for buffer %s if %s\n", name, e.attribute("name"));
 
-			if(rel) c->addBuffer(name, fw, fh, f1,f2,f3,f4,fd, unique);
-			else c->addBuffer(name, iw, ih, f1,f2,f3,f4,fd, unique);
+			Compositor::Buffer* buffer;
+			if(rel) buffer = c->addBuffer(name, fw, fh, f1,f2,f3,f4,fd, unique);
+			else buffer = c->addBuffer(name, iw, ih, f1,f2,f3,f4,fd, unique);
+
+			// New version can be a format, or an input texture
+			auto readSlot = [&i](Compositor::BufferAttachment& slot, const char* key) {
+				const char* value = i.attribute(key);
+				Fmt f = enumValue<Fmt>(value, 24, formats);
+				if(f) slot.format = f;
+				else if(value[0]) { // buffer:part
+					slot.format = Texture::NONE;
+					const char* split = strchr(value, ':');
+					if(split) {
+						if(split == value) return;
+						if(strcmp(split+1, "depth")==0 || strcmp(split+1, "d")==0) slot.part = -1;
+						else if(split[1]>='0' && split[1]<='3' && split[2]==0) slot.part = split[1] - '0';
+						else return; // invalid
+					}
+					else split = value + strlen(value);
+					int len = split - value;
+					slot.input = new char[len];
+					strncpy(slot.input, value, len);
+					slot.input[len-1] = 0;
+				}
+			};
+			readSlot(buffer->depth, "depth");
+			readSlot(buffer->colour[0], "slot0");
+			readSlot(buffer->colour[1], "slot1");
+			readSlot(buffer->colour[2], "slot2");
+			readSlot(buffer->colour[3], "slot3");
+
 		}
 		else if(i=="texture") {
 			Texture* tex = resources.textures.get(i.attribute("source"));
