@@ -181,6 +181,13 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, mipmaps>1? GL_LINEAR_MIPMAP_LINEAR: GL_LINEAR);
 	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	// Cube maps should always be clamped to remove any seam between surfaces
+	if(type == CUBE) {
+		glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	}
+
 	// Copy memory
 	if(isCompressedFormat(format)) {
 		for(int mip=0; mip<mipmaps; ++mip) {
