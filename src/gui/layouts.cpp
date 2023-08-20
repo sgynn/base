@@ -63,8 +63,8 @@ Point HorizontalLayout::getMinimumSize(const Widget* p) const {
 		size.x += m_space;
 		if(w->getAnchor() == 0x33 || !w->isVisible()) continue;
 		Point s = w->getPreferredSize();
-		if((w->getAnchor()&0xf) != 3) size.x += s.x;
-		if(w->getAnchor()>>4 != 3) size.y = max(size.y, s.y);
+		if((w->getAnchor()&0xf) != 3 || w->isAutosize()) size.x += s.x;
+		if(w->getAnchor()>>4 != 3 || w->isAutosize()) size.y = max(size.y, s.y);
 	}
 	size.x -= m_space;
 	size += m_margin + m_margin;
@@ -101,8 +101,8 @@ Point VerticalLayout::getMinimumSize(const Widget* p) const {
 		size.y += m_space;
 		if(w->getAnchor() == 0x33 || !w->isVisible()) continue;
 		Point s = w->getPreferredSize();
-		if((w->getAnchor()&0xf) != 3) size.x = max(size.x, s.x);
-		if(w->getAnchor()>>4 != 3) size.y += s.y;
+		if((w->getAnchor()&0xf) != 3 || w->isAutosize()) size.x = max(size.x, s.x);
+		if(w->getAnchor()>>4 != 3 || w->isAutosize()) size.y += s.y;
 	}
 	size.y -= m_space;
 	size += m_margin + m_margin;

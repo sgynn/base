@@ -444,7 +444,7 @@ void Widget::setSize(int w, int h) {
 	m_rect.width = w;
 	m_rect.height = h;
 	if(!layoutPaused) resumeLayout(true);
-	if(Widget* parent=getParent()) parent->onChildChanged(this);
+	if(m_parent) m_parent->onChildChanged(this);
 	notifyChange();
 	if(eventResized) eventResized(this);
 }
@@ -504,8 +504,6 @@ void Widget::updateAutosize() {
 	if(m_client != this && m_client->m_anchor != 0x33) return; // client must resize with widget for autosize
 	Point newSize = getPreferredSize();
 	assert(newSize.x<5000 && newSize.y<5000);
-	if((m_anchor&0xf)==3) newSize.x = m_rect.width;
-	if((m_anchor>>4)==3) newSize.y = m_rect.height;
 	setSizeAnchored(newSize);
 }
 
@@ -887,8 +885,10 @@ Layout* Widget::getLayout() const {
 
 void Widget::refreshLayout() {
 	pauseLayout();
+	Point lsize = getSize();
 	if(m_client->m_layout) m_client->m_layout->apply(m_client);
 	updateAutosize();
+	if(m_client->m_layout && lsize != getSize()) m_client->m_layout->apply(m_client);
 	resumeLayout(false);
 }
 

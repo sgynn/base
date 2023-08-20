@@ -65,11 +65,12 @@ Point Label::getPreferredSize() const {
 }
 void Label::updateAutosize() {
 	if(isAutosize()) {
-		Point lastSize = getSize();
+		//Point lastSize = getSize();
 		Point newSize = getPreferredSize();
 		setSizeAnchored(newSize);
 		
-		// Font alignment dictates resize direction
+		// Font alignment dictates resize direction - *conflicts with widget anchor*
+		/*
 		int a = m_fontAlign? m_fontAlign: m_skin->getFontAlign();
 		if(a&10) {
 			Point p = getPosition();
@@ -79,6 +80,7 @@ void Label::updateAutosize() {
 			else if((a&12)==ALIGN_MIDDLE) p.y -= (getSize().y - lastSize.y)/2;
 			setPosition(p);
 		}
+		*/
 	}
 }
 void Label::setWordWrap(bool w) {
