@@ -813,7 +813,10 @@ int Widget::deleteChildWidgets() {
 		w->setRoot(0);
 		delete w;
 	}
-	if(deleted) notifyChange();
+	if(deleted) {
+		refreshLayout();
+		notifyChange();
+	}
 	return deleted;
 }
 
