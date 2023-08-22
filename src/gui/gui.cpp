@@ -467,6 +467,11 @@ void Widget::setSizeAnchored(const Point& s) {
 	}
 	setPosition(pos);
 	setSize(size);
+	
+	// Autosize fix for spanned items. Above setSize may not refresh parent in this case.
+	if(m_parent && m_parent->isAutosize() && (size.x!=s.x || size.y!=s.y) && size==getSize()) {
+		m_parent->refreshLayout();
+	}
 }
 
 Point Widget::getPreferredSize() const { // Minimum size
