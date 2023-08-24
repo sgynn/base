@@ -339,6 +339,7 @@ Widget::Widget(const Rect& r, Skin* s): m_rect(r), m_skin(s), m_colour(-1), m_an
 }
 
 Widget::~Widget() {
+	pauseLayout();
 	if(m_relative) delete [] m_relative;
 	if(m_parent && m_parent->getRoot()) removeFromParent();
 	for(uint i=0; i<m_children.size(); ++i) delete m_children[i];
