@@ -46,14 +46,12 @@ Widget* Textbox::clone(const char* t) const {
 	return w;
 }
 
-void Textbox::updateAutosize() {
-	if(isAutosize()) {
-		Point s = m_skin->getFont()->getSize(m_text, m_skin->getFontSize());
-		s += m_skin->getState(0).textPos;
-		pauseLayout();
-		setSizeAnchored(s);
-		resumeLayout(false);
-	}
+Point Textbox::getPreferredSize() const {
+	if(!isAutosize()) return getSize();
+	Point s = m_skin->getFont()->getSize(m_text, m_skin->getFontSize());
+	s += m_skin->getState(0).textPos;
+	++s.x; // Space for cursor at the end of the longest line
+	return s;
 }
 
 void Textbox::setPosition(int x, int y) {
@@ -61,6 +59,7 @@ void Textbox::setPosition(int x, int y) {
 	Widget::setPosition(x, y);
 	m_selectRect.position() = m_rect.position() + rel;
 }
+
 void Textbox::setText(const char* t) {
 	if(!t) t = "";
 	m_length = strlen(t);

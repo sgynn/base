@@ -66,7 +66,7 @@ Point HorizontalLayout::getMinimumSize(const Widget* p) const {
 		if((w->getAnchor()&0xf) != 3 || w->isAutosize()) size.x += s.x;
 		if(w->getAnchor()>>4 != 3 || w->isAutosize()) size.y = max(size.y, s.y);
 	}
-	size.x -= m_space;
+	if(!getWidgets(p).empty()) size.x -= m_space;
 	size += m_margin + m_margin;
 	return size;
 }
@@ -104,7 +104,7 @@ Point VerticalLayout::getMinimumSize(const Widget* p) const {
 		if((w->getAnchor()&0xf) != 3 || w->isAutosize()) size.x = max(size.x, s.x);
 		if(w->getAnchor()>>4 != 3 || w->isAutosize()) size.y += s.y;
 	}
-	size.y -= m_space;
+	if(!getWidgets(p).empty()) size.y -= m_space;
 	size += m_margin + m_margin;
 	return size;
 }

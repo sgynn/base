@@ -403,9 +403,7 @@ void Widget::setPosition(int x, int y) {
 
 	m_rect.x = x;
 	m_rect.y = y;
-	if(m_parent) {
-		m_parent->onChildChanged(this);
-	}
+	if(Widget* parent = getParent()) parent->onChildChanged(this);
 	notifyChange();
 }
 void Widget::setSize(int w, int h) {
@@ -445,7 +443,7 @@ void Widget::setSize(int w, int h) {
 	m_rect.width = w;
 	m_rect.height = h;
 	if(!layoutPaused) resumeLayout(true);
-	if(m_parent) m_parent->onChildChanged(this);
+	if(Widget* parent = getParent()) parent->onChildChanged(this);
 	notifyChange();
 	if(eventResized) eventResized(this);
 }
@@ -541,7 +539,7 @@ void Widget::useRelativePositioning(bool rel) {
 void Widget::updateRelativeFromRect() {
 	if(m_parent) {
 		Point p = getPosition();
-		Point s = getParent()->getSize();
+		Point s = m_parent->getSize();
 		float w = s.x, h = s.y;
 		m_relative[0] = p.x / w;
 		m_relative[1] = p.y / h;
@@ -619,7 +617,7 @@ void Widget::setAnchor(const char* anchor) {
 		}
 	}
 	if(!isLayoutPaused()) updateAutosize();
-	if(m_parent) m_parent->onChildChanged(this);
+	if(Widget* parent = getParent()) parent->onChildChanged(this);
 }
 int Widget::getAnchor(char* s) const {
 	if(s) {
@@ -872,7 +870,7 @@ Widget* Widget::getParent(bool includeTemplates) const {
 	// Get root widget of parent template
 	Widget* p = m_parent;
 	while(p && p->isTemplate()) p = p->m_parent;
-	//if(p && p->m_client != m_parent) asm("int $3");
+	if(p && p->m_client != m_parent) return m_parent; // Non-template widget attached to a non-client
 	return p;
 }
 
@@ -895,7 +893,8 @@ Layout* Widget::getLayout() const {
 void Widget::refreshLayout() {
 	pauseLayout();
 	Point lsize = getSize();
-	if(m_client->m_layout) m_client->m_layout->apply(m_client);
+	if(m_client != this && !m_client->isLayoutPaused()) m_client->refreshLayout();
+	else if(m_layout) m_layout->apply(this);
 	updateAutosize();
 	if(m_client->m_layout && lsize != getSize()) m_client->m_layout->apply(m_client);
 	resumeLayout(false);

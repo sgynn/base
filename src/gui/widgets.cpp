@@ -629,6 +629,12 @@ template<typename T> void SpinboxT<T>::parseText(bool event) {
 		m_textChanged = false;
 	}
 }
+template<> void SpinboxT<float>::mouseWheel(Widget*, int w) {
+	parseText(false);
+	float v = m_value + w * m_wheelStep;
+	if(fabs(v) < 1e-6f) v=0;
+	setValue(v, true); 
+}
 
 // Make sure these functions actually get created
 namespace gui {
@@ -848,43 +854,13 @@ Point Scrollpane::getPreferredSize() const {
 
 void Scrollpane::updateAutosize() {
 	if(this == m_client) return;	// Stop infinite recursion
-	// Autosize pane
 	if(isAutosize()) {
-		// No widgets
-		if(getWidgetCount() == 0) {
-			if(m_useFullSize) {
-				Point view = getViewWidget()->getSize();
-				setPaneSize(view.x, view.y);
-			}
-			else setPaneSize(0,0);
-		}
-		else {
-			// Calculate size
-			Rect r(0,0,0,0);
-			if(m_useFullSize) {
-				const Point& s = getViewWidget()->getSize();
-				m_client->setSize(s); // Prevent expanding items from stopping client from shrinking
-				r.set(0,0,s.x,s.y);
-
-				// Special override for textbox
-				if(m_useFullSize && getWidgetCount() == 1) {
-					Widget* w = getWidget(0);
-					if(w->cast<Textbox>() && w->isAutosize() && w->getAnchor()==0) {
-						if(!w->isLayoutPaused()) w->refreshLayout();
-						Point s = w->getSize();
-						w->pauseLayout();
-						w->setSize(r.width>s.x? r.width: s.x, r.height>s.y? r.height: s.y);
-						w->resumeLayout();
-					}
-				}
-			}
-			for(Widget* w: *m_client) {
-				if(w->isVisible()) {
-					r.include( Rect(w->getPosition(), w->getSize()) );
-				}
-			}
-			setPaneSize(r.width, r.height);
-		}
+		m_client->pauseLayout();
+		m_client->setAutosize(true);
+		Point s = m_client->getPreferredSize();
+		m_client->setAutosize(false);
+		setPaneSize(s.x, s.y);
+		m_client->resumeLayout();
 	}
 }
 void Scrollpane::setPaneSize(int w, int h) {

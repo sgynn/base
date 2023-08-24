@@ -175,7 +175,7 @@ class Textbox : public Widget {
 	~Textbox();
 	void draw() const override;
 	void setPosition(int x, int y) override;
-	void updateAutosize() override;
+	Point getPreferredSize() const override;
 	const char* getText() const { return m_text; }
 	const char* getSelectedText() const;
 	int getLineCount() const;
