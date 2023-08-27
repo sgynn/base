@@ -120,7 +120,7 @@ inline Rect Rect::intersection(const Rect& r) const {
 class PointRangeIterator {
 	public:
 	PointRangeIterator(Point start, Point end, Point value) : m_start(start), m_end(end), m_value(value) {
-		if(start.x>=end.x || start.y>=end.y) end = start;
+		if(start.x>=end.x || start.y>=end.y) m_end = start;
 	}
 	PointRangeIterator operator++() { PointRangeIterator tmp=*this; operator++(0); return tmp; }
 	PointRangeIterator operator++(int) { ++m_value.x; if(m_value.x>=m_end.x) m_value.set(m_start.x, m_value.y+1); return *this; }
@@ -143,7 +143,7 @@ inline PointRangeIteratorWrapper range(const Rect& r) { return PointRangeIterato
 class Point3RangeIterator {
 	public:
 	Point3RangeIterator(Point3 start, Point3 end, Point3 value) : m_start(start), m_end(end), m_value(value) {
-		if(start.x>=end.x || start.y>=end.y || start.z>=end.z) end = start;
+		if(start.x>=end.x || start.y>=end.y || start.z>=end.z) m_end = start;
 	}
 	Point3RangeIterator operator++() { Point3RangeIterator tmp=*this; operator++(0); return tmp; }
 	Point3RangeIterator operator++(int) {

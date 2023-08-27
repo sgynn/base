@@ -249,7 +249,7 @@ Mesh* createIcoSphere(float radius, int divisions) {
 	};
 	
 	indices.assign(cix, cix+20*3);
-	for(int i=0; i<divisions; ++i) {
+	for(int d=0; d<divisions; ++d) {
 		std::vector<uint16> next;
 		next.reserve(indices.size()*4);
 		for(uint i=0; i<indices.size(); i+=3) {

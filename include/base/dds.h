@@ -8,7 +8,7 @@ namespace base {
 		enum DDSFormat { INVALID, LUMINANCE, LUMINANCE_ALPHA, RGB, RGBA, BC1, BC2, BC3, BC4, BC5 };
 		enum DDSMode { FLAT, CUBE, VOLUME, ARRAY };
 
-		DDS() : format(INVALID), mode(FLAT), width(0), height(0), data(0) {}
+		DDS() {}
 		DDS(DDS&&);
 		DDS(const DDS&) = delete;
 		~DDS() { clear(); }
@@ -34,11 +34,11 @@ namespace base {
 		void flip();
 
 		// Image data
-		DDSFormat format;
-		DDSMode   mode;
-		int       mipmaps;
-		int       width, height, depth;
-		unsigned char** data;
+		DDSFormat format = INVALID;
+		DDSMode   mode = FLAT;
+		int       mipmaps = 0;
+		int       width=0, height=0, depth=0;
+		unsigned char** data = nullptr;;
 
 		private:
 		void flipTexture(unsigned char* data, int width, int height, int depth);

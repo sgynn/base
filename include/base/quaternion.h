@@ -190,7 +190,7 @@ inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
 		y = (m[8] - m[2]) * s;
 		z = (m[1] - m[4]) * s;
 	} else {
-		static int nexti[3] = { 1, 2, 0 };
+		static constexpr int nexti[3] = { 1, 2, 0 };
 		int i = 0;	// Biggest diagonal
 		if(m[5]  > m[0])   i = 1;
 		if(m[10] > m[i*5]) i = 2;

@@ -1,5 +1,4 @@
-#ifndef _BASE_HASHMAP_
-#define _BASE_HASHMAP_
+#pragma once
 
 #include <cstring>
 #include <cstdlib>
@@ -34,7 +33,7 @@ namespace base {
 		class t_iterator {
 			friend class HashMap;
 			public:
-			t_iterator() : m_item(0) {}
+			t_iterator() : m_item(nullptr), m_map(nullptr) {}
 			t_iterator operator++(int) { t_iterator tmp=*this; next(); return tmp; }
 			t_iterator operator++() { next(); return *this; }
 			Pair& operator*() { return *(*m_item); }
@@ -208,4 +207,3 @@ template<typename T> bool base::HashMap<T>::validate() const {
 }
 
 #undef THRESHOLD
-#endif

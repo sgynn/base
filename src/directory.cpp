@@ -31,7 +31,7 @@ namespace base { struct SortFiles {
 		do {
 			c0 = (unsigned char) (*s0>='a' && *s0<='z'? *s0-u: *s0); ++s0;
 			c1 = (unsigned char) (*s1>='a' && *s1<='z'? *s1-u: *s1); ++s1;
-			if(c1==0) return c0<c1;
+			if(c1==0) return false;
 		} while(c0 == c1);
 		return c0<c1;
 	}
@@ -105,13 +105,13 @@ int Directory::getFullPath(const char* in, char* out, int lim) {
 }
 
 const char* Directory::getWorkingPath() {
-	static char path[PATH_MAX];
+	static char dir[PATH_MAX];
 	#ifdef WIN32
-	if(!_getcwd(path, PATH_MAX)) return 0;
+	if(!_getcwd(dir, PATH_MAX)) return 0;
 	#else
-	if(!getcwd(path, PATH_MAX)) return 0;
+	if(!getcwd(dir, PATH_MAX)) return 0;
 	#endif
-	return path;
+	return dir;
 }
 
 int Directory::getRelativePath(const char* in, char* out, int lim) {
@@ -213,10 +213,10 @@ int Directory::scan() {
 }
 
 
-bool Directory::contains( const char* file ) {
+bool Directory::contains(const char* file) {
 	if(m_files.empty()) scan();
-	for(iterator i=m_files.begin(); i!=m_files.end(); i++) {
-		if(strcmp(i->name, file)==0) return true;
+	for(const File& f: m_files) {
+		if(strcmp(f.name, file)==0) return true;
 	}
 	return false;
 }

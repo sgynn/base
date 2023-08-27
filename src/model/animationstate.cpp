@@ -25,7 +25,17 @@ int AnimationState::allocateTrack() {
 int AnimationState::allocateTrack(unsigned t) {
 	if(t>=m_animations.size()) {
 		AnimationInstance empty;
-		empty.animation = 0;
+		empty.animation = nullptr;
+		empty.blend   = AnimationBlend::Set;
+		empty.bone    = 0;
+		empty.mesh    = 0;
+		empty.weight  = 0;
+		empty.speed   = 1;
+		empty.frame   = 0;
+		empty.loop    = false;
+		empty.changed = false;
+		empty.looped  = 0;
+		empty.keyMap  = nullptr;
 		m_animations.resize(t+1, empty);
 	}
 	return t;
