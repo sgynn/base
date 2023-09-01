@@ -199,12 +199,13 @@ AnimationController::~AnimationController() {
 void AnimationController::initialise(Model* model, AnimationBank* bank, bool rootMotion) {
 	m_bank = bank;
 	delete m_state;
-	if(model->getSkeleton()) {
+	if(model && model->getSkeleton()) {
 		Skeleton* skeleton = new Skeleton(*model->getSkeleton());
 		m_state = new AnimationState(skeleton);
 		m_rootMotion = rootMotion;
 		setAnimationBank(bank);
 	}
+	else m_state = nullptr;
 }
 
 void AnimationController::setAnimationBank(AnimationBank* bank) {
