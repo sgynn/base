@@ -27,6 +27,7 @@ void capture() {
 */
 
 using namespace base;
+using namespace script;
 
 char outputBuffer[8192];
 
@@ -74,11 +75,17 @@ void Console::setFont(const gui::Font* font, int size) {
 }
 
 void Console::addFunction(const char* name, const char* desc, const FunctionDelegate& func) {
-	addFunction(name, desc, script::Function::bind({"x"}, [func](const char* s) { func(s); return script::Variable(); }));
+	addFunction(name, nullptr, desc, func);
 }
 void Console::addFunction(const char* name, const char* desc, script::Function* func) {
+	addFunction(name, nullptr, desc, func);
+}
+void Console::addFunction(const char* name, VariableName&& ac, const char* desc, const FunctionDelegate& func) {
+	addFunction(name, std::forward<VariableName>(ac), desc, script::Function::bind({"x"}, [func](const char* s) { func(s); return script::Variable(); }));
+}
+void Console::addFunction(const char* name, VariableName&& ac, const char* desc, script::Function* func) {
 	delete m_functions.get(name, {0,0}).delegate;
-	m_functions[name] = { func, desc };
+	m_functions[name] = { func, desc, ac };
 }
 
 void Console::callFunction(const char* function, const char* param) {
@@ -210,7 +217,6 @@ void Console::draw() {
 }
 
 
-using namespace script;
 
 #define isAlpha(c) ((*c>='a' && *c<='z') || (*c>='A' && *c<='Z') || *c=='_')
 #define isDigit(c) (*c>='0' && *c<='9')
@@ -235,27 +241,75 @@ int Console::autoComplete(char* buffer) const {
 	// read back from end of buffer
 	char* e = buffer + strlen(buffer);
 	char* c = e-1;
-	while(c>buffer && (*c=='.' || isAlpha(c) || isDigit(c))) {
-		if(*c=='.' && *e==0) e = c;
-		--c;
+	bool hasBrackets = false;
+	while(c>buffer && (*c=='.' || isAlpha(c) || isDigit(c) || *c==']')) {
+		if(c[0]==']') {
+			if(c[1]!='.') break;
+			--c;
+			int bracket = 1;
+			hasBrackets = true;
+			while(c>buffer && bracket>0) {
+				if(*c=='[') --bracket;
+				if(*c==']') ++bracket;
+				--c;
+			}
+		}
+		else {
+			if(*c=='.' && *e==0) e = c;
+			--c;
+		}
 	}
+	// What preceded it
+	if(c>buffer) {
+		if(*c==' ' || *c=='[') ++c;
+		else return 0; // Wut?
+	}
+
+
 	char t = *e; *e = 0;
 	char tmp[128]; 
-	strcpy(tmp, t?e+1:c);
+	strcpy(tmp, t? e+1: c); // tmp is the partial we are matching, c is the whole section
 	int fix = strlen(tmp);
 	bool first = true;
 	// Autocomplete functions
 	if(t==0) {
-		autoComplete(tmp, "list", fix, first); // Builtin function
 		for(const auto& i : m_functions) {
 			autoComplete(tmp, i.key, fix, first);
 		}
 	}
+	
+	// Get our autocomplete source
+	VariableName source;
+	if(c > buffer) {
+		const char* f = buffer;
+		while(*f==' ') ++f;
+		int longest = 0;
+		for(const auto& i : m_functions) {
+			int len = strlen(i.key);
+			if(len > longest &&  strncmp(i.key, f, len) == 0) {
+				longest = len;
+				source = i.value.autoCompleteSource;
+			}
+		}
+	}
+
 	// Autocomplete variable
-	const Variable& var = t? m_root.find(c): m_root;
-	if(t) c = e+1;
-	for(Variable::iterator i=var.begin(); i!=var.end(); ++i) {
-		autoComplete(tmp, i->key, fix, first);
+	if(hasBrackets) {
+		if(Expression* e = Script::parseExpression(c)) {
+			Variable var = e->evaluate(m_root);
+			for(Variable::iterator i=var.begin(); i!=var.end(); ++i) {
+				autoComplete(tmp, i->key, fix, first);
+			}
+		}
+		else printf("Invalid expression %s\n", c);
+	}
+	else { // No brackets - can do a straight lookup
+		if(!source && t) source = c;
+		const Variable& var = source? m_root.get_const(source): m_root;
+		if(t) c = e+1;
+		for(Variable::iterator i=var.begin(); i!=var.end(); ++i) {
+			autoComplete(tmp, i->key, fix, first);
+		}
 	}
 
 	// Finalise

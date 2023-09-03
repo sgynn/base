@@ -40,7 +40,9 @@ class Console {
 	/** Add a function pointer */
 	typedef Delegate<void(const char*)> FunctionDelegate;
 	void addFunction(const char* name, const char* description, const FunctionDelegate& func);
+	void addFunction(const char* name, script::VariableName&& autocomplete, const char* description, const FunctionDelegate& func);
 	void addFunction(const char* name, const char* description, script::Function* func);
+	void addFunction(const char* name, script::VariableName&& autocomplete, const char* description, script::Function* func);
 	void callFunction(const char* function, const char* data="");
 	
 
@@ -93,7 +95,11 @@ class Console {
 
 	// Variables
 	script::Variable m_root;
-	struct ConsoleFunction { script::Function* delegate; const char* description; };
+	struct ConsoleFunction {
+		script::Function* delegate;
+		const char* description;
+		script::VariableName autoCompleteSource;
+	};
 	base::HashMap<ConsoleFunction> m_functions;
 
 	// Line parsing
