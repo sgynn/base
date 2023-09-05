@@ -102,8 +102,8 @@ int base::intersectRayCapsule(const vec3& p, const vec3& d, const vec3& a, const
 	float nd = d.dot(l);
 	float dd = l.dot(l);
 	// Fully outside cylinder endcaps
-	if(md<0 && md+nd < 0) return intersectRaySphere(p,d,a,radius,t); // Outside a
-	if(md>dd && md+nd > dd) return intersectRaySphere(p,d,b,radius,t); // Outside b
+	//if(md<0 && md+nd < 0) return intersectRaySphere(p,d,a,radius,t); // Outside a
+	//if(md>dd && md+nd > dd) return intersectRaySphere(p,d,b,radius,t); // Outside b
 	float nn = d.dot(d);
 	float mn = m.dot(d);
 	float va = dd * nn - nd * nd;
@@ -119,7 +119,7 @@ int base::intersectRayCapsule(const vec3& p, const vec3& d, const vec3& a, const
 	}
 
 	float vb = dd * mn - nd * md;
-	float discr = vb*vb - va - vc;
+	float discr = vb*vb - va * vc;
 	if(discr < 0) return 0; // No real roots - miss
 	t = (-vb - sqrt(discr)) / va;
 	if(md + t * nd < 0) { // Outside a
