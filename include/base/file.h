@@ -26,7 +26,8 @@ namespace base {
 		template<class T> int writeArray(const T* value, int count) { return write((const char*)value, sizeof(T)*count); }
 		template<class T> bool read(T& value)                       { return read((char*)&value, sizeof(value)) == sizeof(T); }
 		template<class T> bool readArray(T* value, int count)       { return read((char*)value, sizeof(T)*count) == sizeof(T)*count; }
-		template<class T=char> T get()                              { T value=0; read(value); return value; }
+		template<class T=char> T get()                              { T value=T(); read(value); return value; }
+		template<class T=char> T get(T&& init)                      { T value=init; read(value); return value; }
 		protected:
 		int open();
 		int find();
