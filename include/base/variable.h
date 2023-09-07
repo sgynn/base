@@ -1,5 +1,4 @@
-#ifndef _SCRIPT_VARIABLE_
-#define _SCRIPT_VARIABLE_
+#pragma once
 
 #include <base/math.h>
 #include <base/hashmap.h>
@@ -252,10 +251,10 @@ namespace script {
 		bool operator==(const VariableName&) const;
 		bool operator!=(const VariableName&) const;
 		operator bool() const;
+		size_t size() const { return parts.size(); }
+		uint operator[](size_t i) const { return parts[i]; }
 		protected:
 		std::vector<uint> parts;
 	};
 }
-
-#endif
 
