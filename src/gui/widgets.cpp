@@ -388,7 +388,7 @@ void Checkbox::setIcon(IconList* list, const char* checked, const char* unchecke
 		m_checkedIcon = list->getIconIndex(checked);
 		m_uncheckedIcon = list->getIconIndex(unchecked);
 	}
-	setIcon(list, checked, unchecked);
+	Button::setIcon(list, isSelected()? checked: unchecked);
 }
 
 void Checkbox::onMouseButton(const Point& p, int d, int u) {

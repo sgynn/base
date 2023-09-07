@@ -406,6 +406,7 @@ void Listbox::updateCache(bool full) {
 			m_cache.insert(m_cache.begin() + m_cacheOffset, count, nullptr);
 			for(int i=0; i<count; ++i) {
 				Widget* itemWidget = m_itemWidget->clone();
+				if((itemWidget->getAnchor() & 0xf)==3) itemWidget->setSize(getClientRect().width, itemWidget->getSize().y);
 				bindEvents(itemWidget);
 				m_cache[m_cacheOffset+i] = itemWidget;
 				add(itemWidget);
