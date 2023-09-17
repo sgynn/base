@@ -541,6 +541,19 @@ bool Variable::operator==(const Variable& v) const {
 }
 bool Variable::operator!=(const Variable& v) const { return !operator==(v); }
 
+bool Variable::operator==(const char* string) const {
+	if(!isString()) return false;
+	const char* s = *this;
+	if(s == string) return true;
+	if(!s || !string) return false;
+	return strcmp(string, *this) == 0;
+}
+bool Variable::operator!=(const char* string) const {
+	return !operator==(string);
+}
+
+
+
 //// Utilities ////
 bool Variable::isObject() const { return (type&0xf)==OBJECT; }
 bool Variable::isArray() const { return (type&0xf)==ARRAY; }

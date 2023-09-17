@@ -117,6 +117,8 @@ namespace script {
 
 		bool operator==(const Variable&) const;
 		bool operator!=(const Variable&) const;
+		bool operator==(const char* string) const;
+		bool operator!=(const char* string) const;
 
 		enum LinkFlags { LINK_DEFAULT, LINK_READONLY=1, LINK_SET=2 }; // LINK_SET uses value from script
 		bool link(bool&,   int flags=0);
