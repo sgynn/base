@@ -550,6 +550,9 @@ def write_object(node, obj, config):
         elif obj.empty_display_type == 'CIRCLE': node.setAttribute("shape", "circle")
         elif obj.empty_display_type == 'SPHERE': node.setAttribute("shape", "sphere")
 
+    if obj.type == 'LIGHT':
+        node.setAttribute("light", ' '.join( format_num(v) for v in obj.color[:3] ))
+
     
     export_custom_properties(node, obj)
 
