@@ -128,19 +128,19 @@ Point FlowLayout::getMinimumSize(const Widget* p) const {
 	Point size(0,0);
 	if(getWidgets(p).size() > 0) {
 		int baseWidth = p->getSize().x;
-		int bottom=m_margin, right = m_margin - m_space;
+		int row = m_margin, right = m_margin - m_space;
 		for(Widget* w: getWidgets(p)) {
 			if(!w->isVisible()) continue;
 			Point s = w->getPreferredSize();
-			if(right + m_space + s.x < baseWidth) {
+			if(right + m_space + s.x <= baseWidth) {
 				right += s.x + m_space;
 			}
 			else {
-				bottom = size.y;
-				right = size.x + m_margin;
+				row = size.y;
+				right = m_margin;
 			}
 			size.x = max(size.x, right);
-			size.y = max(size.y, bottom + s.y);
+			size.y = max(size.y, row + s.y);
 		}
 		size += m_margin;
 	}
