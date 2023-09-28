@@ -976,6 +976,14 @@ void TabbedPane::initialise(const Root* r, const PropertyMap& p) {
 		if(m_currentTab < 0) m_currentTab = atoi(tab);
 	}
 	else m_currentTab = 0;
+	
+	// connect tabs created with clone()
+	if(m_tabStrip) {
+		int num = m_tabStrip->getTemplateCount();
+		for(int i=0; i<num; ++i) {
+			m_tabStrip->getTemplateWidget(i)->cast<Button>()->eventPressed.bind(this, &TabbedPane::onTabButton);
+		}
+	}
 }
 void TabbedPane::add(Widget* w, unsigned index) {
 	if(!m_tabFrame) Widget::add(w, index);
