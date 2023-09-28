@@ -262,13 +262,11 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	updateBounds();
 }
 
-Widget* Listbox::clone(const char* ws) const {
-	Widget* w = Widget::clone(ws);
-	if(Listbox* list = w->cast<Listbox>()) {
-		if(getItemCount()) for(const ListItem& i: items()) list->addItem(i);
-		list->m_multiSelect = m_multiSelect;
+void Listbox::copyData(const Widget* from) {
+	if(const Listbox* list = from->cast<Listbox>()) {
+		for(const ListItem& i: list->items()) addItem(i);
+		m_multiSelect = list->m_multiSelect;
 	}
-	return w;
 }
 
 void Listbox::setItemWidget(Widget* w) {
@@ -607,13 +605,10 @@ void Combobox::initialise(const Root* root, const PropertyMap& p) {
 	ItemList::initialise(p);
 }
 
-Widget* Combobox::clone(const char* ws) const {
-	Widget* w = Widget::clone(ws);
-	Combobox* c = w->cast<Combobox>();
-	if(c && getItemCount()) {
-		for(const ListItem& i: items()) c->addItem(i);
+void Combobox::copyData(const Widget* from) {
+	if(const Combobox* c = from->cast<Combobox>()) {
+		for(const ListItem& i: c->items()) addItem(i);
 	}
-	return w;
 }
 
 void Combobox::setVisible(bool v) {

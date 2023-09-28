@@ -326,6 +326,7 @@ Widget* Widget::clone(const char* newType) const {
 		c->m_parent = w;
 	}
 
+	w->copyData(this);
 	w->initialise(m_root, PropertyMap()); // Note: m_root will nearly always be null
 	w->resumeLayout();
 	return w;

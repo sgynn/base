@@ -247,6 +247,9 @@ void CompositorTextures::expose(size_t id, FrameBuffer* buffer) {
 		for(CTexture* t = m_textures[id]; t; t=t->next) {
 			if(t->index<0) *t->texture = buffer->depthTexture();
 			else *t->texture = buffer->texture(t->index);
+			if(!t->texture->unit()) {
+				printf("Error: Compositor exposed texture not part of framebuffer %s:%c\n", m_names.name(id), t->index<0? 'd': t->index+'0');
+			}
 		}
 	}
 }

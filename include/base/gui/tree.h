@@ -94,7 +94,7 @@ class TreeView : public Widget {
 	void scrollToItem(TreeNode*);
 	void draw() const override;
 	void setSize(int,int) override;
-	Widget* clone(const char* t) const override;
+	void copyData(const Widget*) override;
 
 	public:
 	Delegate<void(TreeView*, TreeNode*)> eventSelected;

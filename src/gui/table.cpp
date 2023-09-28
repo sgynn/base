@@ -36,17 +36,14 @@ void Table::draw() const {
 	// Possibly selected box, row striping, lines ?
 }
 
-Widget* Table::clone(const char* t) const {
-	Widget* w = Widget::clone(t);
-	Table* table = w->cast<Table>();
-	if(table) {
+void Table::copyData(const Widget* from) {
+	if(const Table* table = from->cast<Table>()) {
 		// Copy header data
-		table->m_columns = m_columns;
+		m_columns = table->m_columns;
 		for(uint i=0; i<m_columns.size(); ++i) {
-			table->m_columns[i].header = m_header->getWidget(i);
+			m_columns[i].header = table->m_header->getWidget(i);
 		}
 	}
-	return w;
 }
 
 void Table::setSize(int w, int h) {

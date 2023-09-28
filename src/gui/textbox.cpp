@@ -33,17 +33,16 @@ void Textbox::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("suffix")) setSuffix(p["suffix"]);
 	if(p.contains("hint")) setHint(p["hint"]);
 }
-Widget* Textbox::clone(const char* t) const {
-	Widget* w = Widget::clone(t);
-	if(Textbox* t = w->cast<Textbox>()) {
-		t->m_hint = m_hint;
-		t->m_suffix = m_suffix;
-		t->m_selectColour = m_selectColour;
-		t->m_multiline = m_multiline;
-		t->m_readOnly = m_readOnly;
-		t->m_password = m_password;
+
+void Textbox::copyData(const Widget* from) {
+	if(const Textbox* t = from->cast<Textbox>()) {
+		m_hint = t->m_hint;
+		m_suffix = t->m_suffix;
+		m_selectColour = t->m_selectColour;
+		m_multiline = t->m_multiline;
+		m_readOnly = t->m_readOnly;
+		m_password = t->m_password;
 	}
-	return w;
 }
 
 Point Textbox::getPreferredSize() const {

@@ -192,7 +192,7 @@ class Widget {
 	std::vector<Widget*>::iterator begin() const { return m_client->m_children.begin() + m_client->m_skipTemplate; }
 	std::vector<Widget*>::iterator end() const   { return m_client->m_children.end(); }
 
-	virtual Widget*  clone(const char* newType=0) const;				// Clone widget and children. newType can override widget class
+	Widget*          clone(const char* newType=0) const;	// Clone widget and children. newType can override widget class
 	virtual void     initialise(const Root*, const PropertyMap&);
 	const Transform& getDerivedTransform() const { return m_derivedTransform; }
 	Rect             getAbsoluteRect() const;
@@ -277,6 +277,7 @@ class Widget {
 	void updateRelativeFromRect();
 	void shiftTransforms(float x, float y);
 	void updateChildTransforms();
+	virtual void copyData(const Widget* from) {}	// Copy any properties on cloning. Called before initialise
 	virtual void updateTransforms();
 	inline bool contains(const Point& local) const { return local.x>=0 && local.y>=0 && local.x<=m_rect.width && local.y<=m_rect.height; }
 	static unsigned deriveColour(unsigned base, unsigned custom, short flags);

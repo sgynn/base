@@ -223,15 +223,13 @@ void TreeView::initialise(const Root*, const PropertyMap& p) {
 	m_lineColour |= 0xff000000;
 	m_needsUpdating = true;
 }
-Widget* TreeView::clone(const char* type) const {
-	Widget* w = Widget::clone(type);
-	TreeView* t = w->cast<TreeView>();
-	if(t) {
-		t->m_lineColour = m_lineColour;
-		t->m_indent = m_indent;
-		t->m_hideRootNode = m_hideRootNode;
+
+void TreeView::copyData(const Widget* from) {
+	if(const TreeView* t = from->cast<TreeView>()) {
+		m_indent = t->m_indent;
+		m_lineColour = t->m_lineColour;
+		m_hideRootNode = t->m_hideRootNode;
 	}
-	return w;
 }
 
 TreeNode* TreeView::getNodeAt(const Point& localPos) {

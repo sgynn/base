@@ -29,13 +29,13 @@ void Label::initialise(const Root*, const PropertyMap& map) {
 	if(map.contains("fontsize")) m_fontSize = atoi(map["fontsize"]);
 	if(map.contains("caption")) setCaption( map["caption"] );
 }
-Widget* Label::clone(const char* nt) const {
-	Label* w = Widget::clone(nt)->cast<Label>();
-	w->m_wordWrap = m_wordWrap;
-	w->m_fontSize = m_fontSize;
-	w->m_fontAlign = m_fontAlign;
-	w->m_caption = m_caption;
-	return w;
+void Label::copyData(const Widget* from) {
+	if(const Label* label = from->cast<Label>()) {
+		m_fontAlign = label->m_fontAlign;
+		m_wordWrap = label->m_wordWrap;
+		m_fontSize = label->m_fontSize;
+		m_caption = label->m_caption;
+	}
 }
 void Label::setCaption( const char* c) {
 	m_caption = c;
@@ -184,11 +184,11 @@ void Icon::initialise(const Root* root, const PropertyMap& p) {
 	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
 	updateAutosize();
 }
-Widget* Icon::clone(const char* nt) const {
-	Icon* w = Widget::clone(nt)->cast<Icon>();
-	w->m_iconList = m_iconList;
-	w->m_iconIndex = m_iconIndex;
-	return w;
+void Icon::copyData(const Widget* from) {
+	if(const Icon* icon = from->cast<Icon>()) {
+		m_iconList = icon->m_iconList;
+		m_iconIndex = icon->m_iconIndex;
+	}
 }
 Point Icon::getPreferredSize() const {
 	if(isAutosize() && m_iconList && m_iconIndex>=0) {
@@ -238,10 +238,11 @@ void Image::initialise(const Root* root, const PropertyMap& p) {
 		if(isAutosize() && m_image>=0) setSizeAnchored(root->getRenderer()->getImageSize(index));
 	}
 }
-Widget* Image::clone(const char* nt) const {
-	Widget* w = Widget::clone(nt);
-	w->cast<Image>()->m_image = m_image;
-	return w;
+void Image::copyData(const Widget* from) {
+	if(const Image* img = from->cast<Image>()) {
+		m_image = img->m_image;
+		m_angle = img->m_angle;
+	}
 }
 void Image::setImage(const char* file) {
 	int index = m_root->getRenderer()->getImage(file);
@@ -363,14 +364,13 @@ void Checkbox::initialise(const Root* root, const PropertyMap& p) {
 	p.readValue("drag", m_dragMode);
 	setChecked(p.getValue("checked", isChecked()));
 }
-Widget* Checkbox::clone(const char* type) const {
-	Widget* w = Super::clone(type);
-	if(Checkbox* c = w->cast<Checkbox>()) {
-		c->m_dragMode = m_dragMode;
-		c->m_checkedIcon = m_checkedIcon;
-		c->m_uncheckedIcon = m_uncheckedIcon;
+void Checkbox::copyData(const Widget* from) {
+	Super::copyData(from);
+	if(const Checkbox* c = from->cast<Checkbox>()) {
+		m_dragMode = c->m_dragMode;
+		m_checkedIcon = c->m_checkedIcon;
+		m_uncheckedIcon = c->m_uncheckedIcon;
 	}
-	return w;
 }
 
 void Checkbox::setSelected(bool s) {
@@ -431,13 +431,11 @@ void DragHandle::initialise(const Root*, const PropertyMap& p) {
 	m_clamp = p.getValue("clamp", m_clamp);
 }
 
-Widget* DragHandle::clone(const char* t) const {
-	Widget* w = Widget::clone(t);
-	if(DragHandle* d = w->cast<DragHandle>()) {
-		d->m_mode = m_mode;
-		d->m_clamp = m_clamp;
+void DragHandle::copyData(const Widget* from) {
+	if(const DragHandle* handle = from->cast<DragHandle>()) {
+		m_mode = handle->m_mode;
+		m_clamp = handle->m_clamp;
 	}
-	return w;
 }
 
 void DragHandle::onMouseButton(const Point& p, int d, int u) {
@@ -568,15 +566,13 @@ template<typename T> void SpinboxT<T>::initialise(const Root*, const PropertyMap
 	}
 }
 
-template<typename T> Widget* SpinboxT<T>::clone(const char* t) const {
-	Widget* w = Widget::clone(t);
-	if(SpinboxT<T>* s = dynamic_cast<SpinboxT<T>*>(w)) {
-		s->m_value = m_value;
-		s->m_min = m_min;
-		s->m_wheelStep = m_wheelStep;
-		s->m_buttonStep = m_buttonStep;
+template<typename T> void SpinboxT<T>::copyData(const Widget* from) {
+	if(const SpinboxT<T>* s = dynamic_cast<const SpinboxT<T>*>(from)) {
+		m_min = s->m_min;
+		m_value = s->m_value;
+		m_wheelStep = s->m_wheelStep;
+		m_buttonStep = s->m_buttonStep;
 	}
-	return w;
 }
 template<typename T> void SpinboxT<T>::setStep(T b, T w) { m_buttonStep=b; m_wheelStep=w; }
 template<typename T> T SpinboxT<T>::getValue() const { return m_value; }
@@ -679,14 +675,13 @@ void Scrollbar::initialise(const Root*, const PropertyMap& p) {
 		m_block->eventMouseDown.bind(this, &Scrollbar::pressBlock);
 	}
 }
-Widget* Scrollbar::clone(const char* t) const {
-	Widget* w = Widget::clone(t);
-	Scrollbar* s = w->cast<Scrollbar>();
-	s->m_range = m_range;
-	s->m_value = m_value;
-	s->m_mode = m_mode;
-	s->m_step = m_step;
-	return w;
+void Scrollbar::copyData(const Widget* from) {
+	if(const Scrollbar* s = from->cast<Scrollbar>()) {
+		m_range = s->m_range;
+		m_value = s->m_value;
+		m_mode = s->m_mode;
+		m_step = s->m_step;
+	}
 }
 void Scrollbar::setSize(int w, int h) {
 	Widget::setSize(w, h);
@@ -796,11 +791,11 @@ void Scrollpane::initialise(const Root*, const PropertyMap& p) {
 	if(m_hScroll) m_hScroll->eventChanged.bind(this, &Scrollpane::scrollChanged);
 	setPaneSize( m_client->getSize().x, m_client->getSize().y );
 }
-Widget* Scrollpane::clone(const char* t) const {
-	Widget* w = Widget::clone(t);
-	w->cast<Scrollpane>()->m_useFullSize = m_useFullSize;
-	w->cast<Scrollpane>()->m_alwaysShowScrollbars = m_alwaysShowScrollbars;
-	return w;
+void Scrollpane::copyData(const Widget* from) {
+	if(const Scrollpane* s = from->cast<Scrollpane>()) {
+		m_useFullSize = s->m_useFullSize;
+		m_alwaysShowScrollbars = s->m_alwaysShowScrollbars;
+	}
 }
 Widget* Scrollpane::getViewWidget() const {
 	return m_client->getParent();
@@ -1115,14 +1110,12 @@ void CollapsePane::initialise(const Root* root, const PropertyMap& p) {
 	m_expandAnchor = m_anchor;
 	expand(!m_collapsed);
 }
-Widget* CollapsePane::clone(const char* type) const {
-	Widget* w = Widget::clone(type);
-	if(CollapsePane* c = w->cast<CollapsePane>()) {
-		c->m_expandAnchor = m_expandAnchor;
-		c->setCaption(getCaption());
-		c->expand(isExpanded());
+void CollapsePane::copyData(const Widget* from) {
+	if(const CollapsePane* c = from->cast<CollapsePane>()) {
+		m_expandAnchor = c->m_expandAnchor;
+		m_collapsed = c->m_collapsed;
+		m_moveable = c->m_moveable;
 	}
-	return w;
 }
 void CollapsePane::setCaption(const char* c) {
 	if(m_header) m_header->setCaption(c);
@@ -1243,12 +1236,12 @@ void SplitPane::initialise(const Root* r, const PropertyMap& p) {
 		validateLayout();
 	}
 }
-Widget* SplitPane::clone(const char* nt) const {
-	SplitPane* w = Widget::clone(nt)->cast<SplitPane>();
-	w->m_mode = m_mode;
-	w->m_resizeMode = m_resizeMode;
-	w->m_minSize = m_minSize;
-	return w;
+void SplitPane::copyData(const Widget* from) {
+	if(const SplitPane* w = from->cast<SplitPane>()) {
+		m_mode = w->m_mode;
+		m_minSize = w->m_minSize;
+		m_resizeMode = w->m_resizeMode;
+	}
 }
 void SplitPane::setupSash(Widget* sash) {
 	sash->eventMouseMove.bind(this, &SplitPane::moveSash);

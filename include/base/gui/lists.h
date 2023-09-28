@@ -156,7 +156,7 @@ class Listbox : public Widget, public ItemList {
 	WIDGET_TYPE(Listbox);
 	Listbox(const Rect& r, Skin*);
 	~Listbox();
-	Widget* clone(const char* t) const override;
+	void copyData(const Widget*) override;
 	void setMultiSelect(bool);
 	void scrollToItem(uint index);
 	void draw() const override;
@@ -208,7 +208,7 @@ class Combobox : public Widget, public ItemList {
 	Combobox(const Rect&, Skin*);
 	~Combobox();
 
-	Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	void setPosition(int x, int y) override;
 	void setVisible(bool) override;
 	void setText(const char* text);
@@ -252,7 +252,7 @@ class Table : public Widget {
 	void initialise(const Root*, const PropertyMap&) override;
 	void draw() const override;
 	void setSize(int,int) override;
-	Widget* clone(const char* t) const override;
+	void copyData(const Widget*) override;
 
 	public:
 	void showHeader(bool visible);

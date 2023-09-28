@@ -23,8 +23,8 @@ class Label : public Widget {
 	virtual void setFontSize(int s);	// set to 0 to use default size
 	virtual void setFontAlign(int a);	// use 0 for skin default
 	protected:
-	virtual void initialise(const Root*, const PropertyMap&) override;
-	virtual Widget* clone(const char*) const override;
+	void initialise(const Root*, const PropertyMap&) override;
+	void copyData(const Widget*) override;
 	void updateAutosize() override;
 	void updateWrap();
 	String m_caption;
@@ -52,7 +52,7 @@ class Icon : public Widget {
 	void initialise(const Root*, const PropertyMap&) override;
 	Point getPreferredSize() const override;
 	protected:
-	virtual Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	IconList* m_iconList;
 	int       m_iconIndex;
 	float     m_angle;
@@ -86,8 +86,8 @@ class Image : public Widget {
 	void  draw() const override;
 	Point getPreferredSize() const override;
 	protected:
-	virtual void initialise(const Root*, const PropertyMap&) override;
-	virtual Widget* clone(const char*) const override;
+	void initialise(const Root*, const PropertyMap&) override;
+	void copyData(const Widget*) override;
 	int      m_image;
 	float    m_angle;
 };
@@ -123,11 +123,11 @@ class Checkbox : public Button {
 	public:
 	Delegate<void(Button*)> eventChanged;
 	protected:
-	virtual void initialise(const Root*, const PropertyMap&) override;
+	void initialise(const Root*, const PropertyMap&) override;
 	void onMouseButton(const Point&, int, int) override;
 	void onMouseMove(const Point&, const Point&, int) override;
 	void onKey(int code, wchar_t chr, KeyMask mask) override;
-	Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	protected:
 	bool m_dragMode = false;
 	int m_checkedIcon = -1;
@@ -140,7 +140,7 @@ class DragHandle : public Widget {
 	enum Mode { MOVE, SIZE };
 	DragHandle(const Rect& r, Skin* s, Mode mode=MOVE) : Widget(r,s), m_mode(mode) {}
 	void initialise(const Root*, const PropertyMap&) override;
-	Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	protected:
 	void onMouseMove(const Point&, const Point&, int) override;
 	void onMouseButton(const Point&, int, int) override;
@@ -193,7 +193,7 @@ class Textbox : public Widget {
 	Delegate<void(Textbox*)>              eventSubmit;
 
 	protected:
-	Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	void initialise(const Root*, const PropertyMap&) override;
 	void onKey(int code, wchar_t key, KeyMask mask) override;
 	void onMouseButton(const Point&, int, int) override;
@@ -227,13 +227,13 @@ class SpinboxT : public Widget {
 	public:
 	SpinboxT(const Rect&, Skin*, const char* format);
 	void initialise(const Root*, const PropertyMap&) override;
-	Widget* clone(const char*) const override;
 	T  getValue() const;
 	void setValue(T value, bool fireChangeEvent=false);
 	void setRange(T min, T max);
 	void setSuffix(const char* s);
 	void setStep(T button, T wheel);
 	protected:
+	void copyData(const Widget*) override;
 	void mouseWheel(Widget*, int w);
 	void textChanged(Textbox*, const char*);
 	void textSubmit(Textbox*);
@@ -284,7 +284,7 @@ class Scrollbar : public Widget {
 	Delegate<void(Scrollbar*, int)> eventChanged;
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;
-	Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	protected:
 	void onMouseButton(const Point&, int, int) override;
 	bool onMouseWheel(int w) override;
@@ -315,7 +315,7 @@ class Scrollpane : public Widget {
 	void setPaneSize(int width, int height);	// Set size of scrollable panel
 	void useFullSize(bool m);					// Minimum size of panel is widget size. Also locks size if no scrollbar
 	void alwaysShowScrollbars(bool s);				// Always show scrollbars. False only shows them when needed.
-	Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	Point getPreferredSize() const override;
 	using Widget::add;							// import add funtions from widget
 	void add(Widget* w, unsigned index) override;// Adding child widgets resizes pane if in autosize mode
@@ -371,7 +371,7 @@ class CollapsePane : public Widget {
 	WIDGET_TYPE(CollapsePane);
 	CollapsePane(const Rect&, Skin*);
 	void initialise(const Root*, const PropertyMap&) override;
-	Widget* clone(const char*) const override;
+	void copyData(const Widget*) override;
 	bool isExpanded() const;
 	void expand(bool);
 	void setCaption(const char*);
@@ -403,11 +403,11 @@ class SplitPane : public Widget {
 	WIDGET_TYPE(SplitPane);
 	enum ResizeMode { ALL, FIRST, LAST };
 	SplitPane(const Rect& r, Skin*, Orientation orientation=VERTICAL);
-	virtual void initialise(const Root*, const PropertyMap&) override;
-	virtual Widget* clone(const char*) const override;
-	virtual void add(Widget* w, unsigned index) override;
-	virtual void setSize(int w, int h) override;
-	virtual bool remove(Widget* w) override; 
+	void initialise(const Root*, const PropertyMap&) override;
+	void copyData(const Widget*) override;
+	void add(Widget* w, unsigned index) override;
+	void setSize(int w, int h) override;
+	bool remove(Widget* w) override; 
 	void setResizeMode(ResizeMode);	// Affects how children are resized
 	void setSplit(int split);	// Set split in pixels
 	void setSplit(float split);	// Set split percentage { 0 - 1 }
