@@ -59,7 +59,7 @@ class Perlin : public Fractal<T> {
 	public:
 	Perlin();
 	~Perlin();
-	T value(const T* v, int n);
+	T value(const T* v, int n) override;
 	
 	private:
 	static const int B = 0x100;
@@ -79,16 +79,33 @@ class Perlin : public Fractal<T> {
 };
 
 /**
+ * Many functions use perlin noise as a base
+ */
+template <typename T>
+class PerlinDerived : public Fractal<T> {
+	private:
+	bool ownedPerlin;
+	protected:
+	Perlin<T>* perlin;
+	PerlinDerived(Perlin<T>* p) : perlin(p), ownedPerlin(false) {}
+	PerlinDerived(int seed) : perlin(new Perlin<T>(seed)), ownedPerlin(true) {}
+	PerlinDerived() : perlin(new Perlin<T>()), ownedPerlin(true) {}
+	~PerlinDerived() { if(ownedPerlin) delete perlin; }
+};
+
+
+/**
 *	Perlin noise again - perhaps i should merge them
 *	This version can have multiple octaves however
 */
 template <typename T>
-class Perlin2 : public Fractal<T> {
+class Perlin2 : public PerlinDerived<T> {
 	public:
-	Perlin2(Perlin<T>* perlin, int octaves=1) : perlin(perlin), octaves(octaves) {};
-	T value(const T*v, int n);
+	Perlin2(Perlin<T>* perlin, int octaves=1) : PerlinDerived<T>(perlin), octaves(octaves) {};
+	Perlin2(int seed, int octaves=1) : PerlinDerived<T>(seed), octaves(octaves) {};
+	Perlin2(int octaves=1) : octaves(octaves) {};
+	T value(const T*v, int n) override;
 	private:
-	Perlin<T>* perlin;
 	int octaves;
 };
 
@@ -99,11 +116,12 @@ class Perlin2 : public Fractal<T> {
 template <typename T>
 class Turbulance : public Fractal<T> {
 	public:
-	Turbulance(Perlin<T>* perlin, T frequencies=2.3) : perlin(perlin), freq(frequencies) { }
+	Turbulance(Perlin<T>* perlin, T frequencies=2.3) : PerlinDerived<T>(perlin), freq(frequencies) { }
+	Turbulance(int seed, T frequencies=2.3) : PerlinDerived<T>(seed), freq(frequencies) { }
+	Turbulance(T frequencies=2.3) : freq(frequencies) { }
 	void set(T frequencies) { freq = frequencies; }
-	T value(const T* v, int n);
+	T value(const T* v, int n) override;
 	private:
-	Perlin<T>* perlin;
 	T freq;
 };
 
@@ -116,7 +134,7 @@ class CellNoise : public Fractal<T> {
 	public:
 	CellNoise();
 	
-	T value(const T* v, int n);
+	T value(const T* v, int n) override;
 	
 	private:
 	static const int B = 0x100;
@@ -127,46 +145,57 @@ class CellNoise : public Fractal<T> {
 	void consider(T* cell, int n, T& dist1, T& dist2);
 };
 
-/**
-*	FbM (Fractal Brownean Motion)
-*/
+/** Base class for FbM and others */
 template <typename T>
-class FBM : public Fractal<T> {
+class ComplexFractal : public PerlinDerived<T> {
+	protected:
+	ComplexFractal(Perlin<T>* perlin, T H, T lacunarity, T octaves) : PerlinDerived<T>(perlin), H(H), lacunarity(lacunarity), octaves(octaves) { init(); }
+	ComplexFractal(int seed, T H, T lacunarity, T octaves) : PerlinDerived<T>(seed), H(H), lacunarity(lacunarity), octaves(octaves) { init(); }
+	ComplexFractal(T H, T lacunarity, T octaves) : H(H), lacunarity(lacunarity), octaves(octaves) { init(); }
+	~ComplexFractal() { delete [] exponent_array; }
+	void init() { Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity); }
+
 	public:
-	FBM(Perlin<T>* perlin, T H=0.76, T lacunarity=0.6, T octaves=5.0) : perlin(perlin), H(H), lacunarity(lacunarity), octaves(octaves), exponent_array(0) {
-		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
-	}
-	~FBM() { delete [] exponent_array; }
-	
 	void set(T H, T lacunarity, T octaves) {
 		this->H = H;
 		this->lacunarity = lacunarity;
 		this->octaves = octaves;
-		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
+		init();
 	}
-	
-	T value(const T* v, int n) {
+	protected:
+	T H;
+	T lacunarity;
+	T octaves;
+	T* exponent_array = nullptr;
+};
+
+
+/**
+*	FbM (Fractal Brownean Motion)
+*/
+template <typename T>
+class FBM : public ComplexFractal<T> {
+	public:
+	FBM(Perlin<T>* perlin, T H=0.76, T lacunarity=0.6, T octaves=5.0) : ComplexFractal<T>(perlin, H, lacunarity, octaves) {}
+	FBM(int seed, T H=0.76, T lacunarity=0.6, T octaves=5.0) : ComplexFractal<T>(seed, H, lacunarity, octaves) {}
+	FBM(T H=0.76, T lacunarity=0.6, T octaves=5.0) : ComplexFractal<T>(H, lacunarity, octaves) {}
+
+	T value(const T* v, int n) override {
 		T value, remainder;
 		T vc[3] = {0,0,0}; memcpy(vc, v, n*sizeof(T));
 		int i;
 		value = 0;
-		for (i=0; i<octaves; i++) {
-			value += perlin->value(vc, n) * exponent_array[i];
-			MULT(vc, lacunarity);
+		for (i=0; i<this->octaves; i++) {
+			value += this->perlin->value(vc, n) * this->exponent_array[i];
+			MULT(vc, this->lacunarity);
 		}
 		
-		remainder = octaves - (int)octaves;
-		if (remainder) value += remainder * perlin->value( vc, n ) * exponent_array[i];
+		remainder = this->octaves - (int)this->octaves;
+		if (remainder) value += remainder * this->perlin->value( vc, n ) * this->exponent_array[i];
 		
-		return value / octaves;
+		return value / this->octaves;
 	}
-	
-	private:
-	Perlin<T>* perlin;
-	T H;
-	T lacunarity;
-	T octaves;
-	T* exponent_array;
+	using Fractal<T>::value;
 };
 
 /**
@@ -175,45 +204,36 @@ class FBM : public Fractal<T> {
 template <typename T>
 class HybridMultiFractal : public Fractal<T> {
 	public:
-	HybridMultiFractal(Perlin<T>* perlin, T H=0.5, T lacunarity=0.551, T octaves=3.57, T offset=0.01) : perlin(perlin), H(H), lacunarity(lacunarity), octaves(octaves), offset(offset), exponent_array(0) {
-		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
-	}
-	~HybridMultiFractal() { delete [] exponent_array; }
-	
+	HybridMultiFractal(Perlin<T>* perlin, T H=0.5, T lacunarity=0.551, T octaves=3.57, T offset=0.01) : ComplexFractal<T>(perlin, H, lacunarity, octaves), offset(offset) {}
+	HybridMultiFractal(int seed, T H=0.5, T lacunarity=0.551, T octaves=3.57, T offset=0.01) : ComplexFractal<T>(seed, H, lacunarity, octaves), offset(offset) {}
+	HybridMultiFractal(T H=0.5, T lacunarity=0.551, T octaves=3.57, T offset=0.01) : ComplexFractal<T>(H, lacunarity, octaves), offset(offset) {}
+
 	void set(T H, T lacunarity, T octaves, T offset) {
-		this->H = H;
-		this->lacunarity = lacunarity;
-		this->octaves = octaves;
+		set(H, lacunarity, octaves, offset);
 		this->offset = offset;
-		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
-	T value(const T* v, int n) {
+	T value(const T* v, int n) override {
 		T result, signal, weight, remainder;
 		T vc[3] = {0,0,0}; memcpy(vc, v, n*sizeof(T));
-		result = (perlin->value(vc, n) + offset) * exponent_array[0];
+		result = (this->perlin->value(vc, n) + offset) * this->exponent_array[0];
 		weight = result;
-		MULT(vc, lacunarity);
+		MULT(vc, this->lacunarity);
 		int i;
-		for (i=1; i<octaves; i++) {
+		for (i=1; i<this->octaves; i++) {
 			if(weight > 1.0) weight = 1.0;
-			signal = ( perlin->value(vc, n) + offset ) * exponent_array[i];
+			signal = ( this->perlin->value(vc, n) + offset ) * this->exponent_array[i];
 			result += weight * signal;
 			weight *= signal;			
-			MULT(vc, lacunarity);
+			MULT(vc, this->lacunarity);
 		}
-		remainder = octaves - (int)octaves;
-		if (remainder) result += remainder * perlin->value(vc, n) * exponent_array[i];
-		return result / octaves;
+		remainder = this->octaves - (int)this->octaves;
+		if (remainder) result += remainder * this->perlin->value(vc, n) * this->exponent_array[i];
+		return result / this->octaves;
 	}
 	
 	private:
-	Perlin<T>* perlin;
-	T H;
-	T lacunarity;
-	T octaves;
 	T offset;
-	T* exponent_array;	
 };
 
 /**
@@ -222,49 +242,40 @@ class HybridMultiFractal : public Fractal<T> {
 template <typename T>
 class RigidMultiFractal : public Fractal<T> {
 	public:
-	RigidMultiFractal(Perlin<T>* perlin, T H=0.526, T lacunarity=1.0, T octaves=6.85, T offset=0.011, T gain=0.49) : perlin(perlin), H(H), lacunarity(lacunarity), octaves(octaves), offset(offset), gain(gain), exponent_array(0) {
-		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
-	}
-	~RigidMultiFractal() { delete [] exponent_array; }
+	RigidMultiFractal(Perlin<T>* perlin, T H=0.526, T lacunarity=1.0, T octaves=6.85, T offset=0.011, T gain=0.49) : ComplexFractal<T>(perlin, H, lacunarity, octaves), offset(offset), gain(gain) {}
+	RigidMultiFractal(int seed, T H=0.526, T lacunarity=1.0, T octaves=6.85, T offset=0.011, T gain=0.49) : ComplexFractal<T>(seed, H, lacunarity, octaves), offset(offset), gain(gain) {}
+	RigidMultiFractal(T H=0.526, T lacunarity=1.0, T octaves=6.85, T offset=0.011, T gain=0.49) : ComplexFractal<T>(H, lacunarity, octaves), offset(offset), gain(gain) {}
 	
 	void set(T H, T lacunarity, T octaves, T offset, T gain) {
-		this->H = H;
-		this->lacunarity = lacunarity;
-		this->octaves = octaves;
+		init(H, lacunarity, octaves);
 		this->offset = offset;
 		this->gain = gain;
-		Fractal<T>::expArray(exponent_array, (int)octaves+1, H, lacunarity);
 	}
 	
-	T value(const T* v, int n) {
+	T value(const T* v, int n) override {
 		double result, signal, weight;
 		T vc[3] = {0,0,0}; memcpy(vc, v, n*sizeof(T));
 		int i;
-		signal = perlin->value(vc, n);
+		signal = this->perlin->value(vc, n);
 		if(signal < 0.0) signal = -signal;
 		result = signal = (offset - signal) * signal;
 		weight = 1.0;
-		for(i=1; i<octaves; i++) {
-			MULT(vc, lacunarity);
+		for(i=1; i<this->octaves; i++) {
+			MULT(vc, this->lacunarity);
 			weight = signal * gain;
 			if(weight > 1.0) weight = 1.0;
 			if(weight < 0.0) weight = 0.0;
-			signal = perlin->value(vc, n);
+			signal = this->perlin->value(vc, n);
 			if (signal < 0.0) signal = -signal;
 			signal = (offset - signal) * signal * weight;
-			result += signal * exponent_array[i];
+			result += signal * this->exponent_array[i];
 		}
 		return result;
 	}
 	
 	private:
-	Perlin<T>* perlin;
-	T H;
-	T lacunarity;
-	T octaves;
 	T offset;
 	T gain;
-	T* exponent_array;		
 };
 
 // ------------------------------------------------------------------------------------------------------------------------------
@@ -420,7 +431,7 @@ T Perlin2<T>::value(const T* v, int n) {
 	T t=0, vc[3];
 	for(int i=0; i<octaves; i++) {
 		for(int j=0; j<n; j++) vc[j] = v[j] / (1<<i);
-		t+= perlin->value(vc, n);
+		t+= this->perlin->value(vc, n);
 	}
 	if(octaves) t /= octaves;
 	return t;
@@ -434,7 +445,7 @@ T Turbulance<T>::value(const T* v, int n) {
 		if(n>1) { vc[1] = f * v[1];
 		if(n>2) vc[2] = f * v[2]; 
 		}
-		t += fabs(perlin->value(vc, n)) / f;
+		t += fabs(this->perlin->value(vc, n)) / f;
 	}
 	return t;
 }
