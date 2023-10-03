@@ -2,6 +2,7 @@
 
 #include <base/math.h>
 #include <base/hashmap.h>
+#include <base/string.h>
 #include <base/gui/delegate.h>
 #include <initializer_list>
 #include <vector>
@@ -11,39 +12,7 @@
 namespace script {
 	class Function;
 	class VariableName;
-	typedef std::vector<class String> StringList;
-
-	/** Managed string class */
-	class String {
-		char* s;
-		int* ref;
-		void drop();
-		void makeUnique();
-		public:
-		String(const char* s=0);
-		String(const char* s, uint length);
-		String(std::initializer_list<const char*> parts);
-		String(const String&);
-		String(String&&);
-		~String();
-		bool empty() const;
-		uint length() const;
-		const char* str() const;
-		const String& operator=(const String&);
-		const String& operator=(String&&);
-		const String& operator=(const char*);
-		operator const char*() const;
-		String operator+(const String&) const;
-		String operator+(const char*) const;
-		friend String operator+(const char*, const String&);
-		bool operator==(const char*) const;
-		bool operator!=(const char*) const;
-		char operator[](int) const;
-		char& operator[](int);
-		static StringList split(const char* s, const char* tok, bool keepEmpty=false, const char* trim=" ");
-		static String cat(const char* a, const char* b);
-	};
-
+	using base::String;
 
 	/** Console Variables. Can be stured internally, or a pointer to external data */
 	class Variable {

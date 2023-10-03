@@ -2,6 +2,7 @@
 
 #include <base/hashmap.h>
 #include <base/point.h>
+#include <base/string.h>
 #include "delegate.h"
 #include "transform.h"
 #include <vector>
@@ -21,6 +22,8 @@ class Widget;
 class Root;
 class Renderer;
 class Layout;
+
+using base::String;
 
 #ifndef LINUX
 typedef unsigned int uint;
@@ -58,43 +61,6 @@ inline LoadFlags operator|(LoadFlags a, LoadFlags b) { return (LoadFlags)((int)a
 
 #define WIDGET_TYPE(name) RTTI_DERIVED(name);
 
-
-/** Gui string class - basically a cstring wrapper */
-class String {
-	public:
-	String(const char* s = 0) : m_data(0)		{ set(s); }
-	String(const char* s, size_t len):m_data(0) { if(s&&s[0]&&len) { size_t l=strlen(s); if(len<l)l=len; m_data=(char*)malloc(l+1); memcpy(m_data,s,l); m_data[l]=0; } }
-	String(String&& s) : m_data(s.m_data)       { s.m_data=0; }
-	String(const String& s)	: m_data(0)			{ set(s); }
-	const String& operator=(const char* s)		{ set(s); return *this;}
-	const String& operator=(const String& s)	{ set(s); return *this; }
-	const String& operator=(String&& s)	        { if(m_data) free(m_data); m_data=s.m_data; s.m_data=0; return *this; }
-
-	bool operator==(const char* s) const		{ return m_data==s || (!m_data&&!*s) || (m_data && strcmp(m_data, s)==0); }
-	bool operator==(const String& s) const		{ return m_data==s.m_data || (m_data && strcmp(m_data, s.m_data)==0); }
-	bool operator!=(const char* s) const		{ return m_data!=s && (m_data||*s) && (!m_data || strcmp(m_data, s)); }
-	bool operator!=(const String& s) const		{ return m_data!=s.m_data && (!m_data || strcmp(m_data, s.m_data)); }
-	friend bool operator==(const char* a, const String& s) { return s == a; }
-	friend bool operator!=(const char* a, const String& s) { return s != a; }
-
-	~String()									{ set(0); }
-	String& swap(String& other)					{ char* t=m_data; m_data=other.m_data; other.m_data=t; return *this;}
-	operator const char*() const				{ return m_data; }
-	const char* str() const                     { return m_data? m_data: ""; }
-	size_t length() const						{ return m_data? strlen(m_data): 0; }
-	bool empty() const							{ return !m_data || !m_data[0]; }
-	void clear()                                { set(0); }
-
-	char& operator[](uint i)                    { return m_data[i]; }
-	String& operator+=(const char* s)           { if(s&&s[0]) *this = *this + s; return *this; }
-	String& operator+=(const String& s)         { if(!s.empty()) *this = *this + s; return *this; }
-	String operator+(const char* s) const       { if(empty()) return String(s); if(!s||!s[0]) return *this; String r; r.m_data=(char*)malloc(length() + strlen(s) + 1); sprintf(r.m_data, "%s%s", m_data,s); return r; }
-	String operator+(const String& s) const     { if(empty()) return s; if(s.empty()) return *this; String r; r.m_data=(char*)malloc(length() + s.length() + 1); sprintf(r.m_data, "%s%s", m_data,s.m_data); return r; }
-	friend String operator+(const char* a, const String& s) { if(!a&&!a[0]) return s; if(s.empty()) return String(a); String r; r.m_data=(char*)malloc(strlen(a)+s.length()+1); sprintf(r.m_data, "%s%s", a, s.m_data); return r; }
-	private:
-	void set(const char* s)                     { if(m_data==s) return; if(m_data) free(m_data); m_data = s&&s[0]? strdup(s): 0; }
-	char* m_data;
-};
 
 /** Additional properties from external data - basically extra accessors for a string hashmap */
 class PropertyMap : public base::HashMap<const char*> {

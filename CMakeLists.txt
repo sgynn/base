@@ -156,6 +156,7 @@ set(headers
 	include/base/scene.h
 	include/base/shader.h
 	include/base/skeleton.h
+	include/base/string.h
 	include/base/texture.h
 	include/base/thread.h
 	include/base/vec.h
