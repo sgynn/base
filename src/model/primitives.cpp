@@ -42,6 +42,45 @@ Mesh* createPlane(const vec2& size) {
 	return createMesh(4, vx, 6, ix);
 }
 // ----------------------------------------------------------------------------- //
+Mesh* createPlane(const vec2& size, int divisions) {
+	++divisions;
+	vec2 a = -size / 2;
+	vec2 step = size / divisions;
+	float uvStep = 1.f / divisions;
+	int vstride = divisions + 1;
+	float* vx = new float[11 * vstride * vstride];
+	for(int y=0; y<vstride; ++y) {
+		for(int x=0; x<vstride; ++x) {
+			float* v = vx + 11 * (x + y * vstride);
+			v[0] = a.x + step.x * x;
+			v[1] = 0;
+			v[2] = a.y + step.y * y;
+			v[3] = 0;
+			v[4] = 1;
+			v[5] = 0;
+			v[6] = 1;
+			v[7] = 0;
+			v[8] = 0;
+			v[9] = x * uvStep;
+			v[10] = y * uvStep;
+		}
+	}
+	uint16* ix = new uint16[divisions * divisions * 6];
+	for(int y=0; y<divisions; ++y) {
+		for(int x=0; x<divisions; ++x) {
+			uint16* i = ix + 6*(x + y*divisions);
+			uint16 n = x + y * vstride;
+			i[0] = n;
+			i[1] = n+vstride;
+			i[2] = n+1;
+			i[3] = n+1;
+			i[4] = n+vstride;
+			i[5] = n+vstride+1;
+		}
+	}
+	return createMesh(vstride*vstride, vx, divisions*divisions*6, ix);
+}
+// ----------------------------------------------------------------------------- //
 Mesh* createBox(const vec3& size) {
 	vec3 s = size/2;
 	float* vx = new float[24 * 11];

@@ -6,6 +6,7 @@
 namespace base {
 	class Mesh;
 	extern Mesh* createPlane   (const vec2& size=vec2(1,1));
+	extern Mesh* createPlane   (const vec2& size, int divisions);
 	extern Mesh* createBox     (const vec3& size=vec3(1,1,1));
 	extern Mesh* createSphere  (float radius=0.5, int seg=12, int div=8);
 	extern Mesh* createIcoSphere(float radius=0.5, int div=1);
