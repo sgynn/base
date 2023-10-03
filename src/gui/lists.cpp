@@ -338,7 +338,7 @@ void Listbox::bindEvents(Widget* item) {
 	if(Spinbox* s = item->cast<Spinbox>()) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
 	if(SpinboxFloat* s = item->cast<SpinboxFloat>()) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
 	if(Textbox* t = item->cast<Textbox>()) {
-		t->eventSubmit.bind([this](Textbox* t) {
+		t->eventSubmit.bind([](Textbox* t) {
 			t->getParent()->setFocus();
 		});
 		t->eventGainedFocus.bind([this](Widget* w) {
@@ -361,7 +361,7 @@ void Listbox::cacheItem(ListItem& item, Widget* w) const {
 	if(eventCacheItem) eventCacheItem(item, w);
 	else {
 		// Automatic version.
-		auto setFromData = [&item](Widget* w, const Any& value) {
+		auto setFromData = [](Widget* w, const Any& value) {
 			if(value.isNull()) return;
 			if(Checkbox* c = w->cast<Checkbox>()) c->setSelected(value.getValue(false));
 			else if(const String* text = value.cast<String>()) {

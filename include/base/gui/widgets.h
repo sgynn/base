@@ -482,7 +482,7 @@ class ScaleBox : public Widget {
 	public:
 	ScaleBox(const Rect& r, Skin*);
 	void initialise(const Root*, const PropertyMap&) override;
-	Point getPreferredSize() const { return getSize(); }
+	Point getPreferredSize() const override { return getSize(); }
 	void setPosition(int x, int y) override;
 	void setSize(int w, int h) override;
 	void updateAutosize() override;

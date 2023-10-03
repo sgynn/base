@@ -546,7 +546,7 @@ void TreeView::bindEvents(Widget* item) {
 	if(Spinbox* s = item->cast<Spinbox>()) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
 	if(SpinboxFloat* s = item->cast<SpinboxFloat>()) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
 	if(Textbox* t = item->cast<Textbox>()) {
-		t->eventSubmit.bind([this](Textbox* t) {
+		t->eventSubmit.bind([](Textbox* t) {
 			t->getParent()->setFocus();
 		});
 		t->eventGainedFocus.bind([this](Widget* w) {

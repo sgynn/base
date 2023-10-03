@@ -84,7 +84,7 @@ Mesh* createPlane(const vec2& size, int divisions) {
 Mesh* createBox(const vec3& size) {
 	vec3 s = size/2;
 	float* vx = new float[24 * 11];
-	auto addPlane = [s, vx](float*& v, vec3 t, vec3 b, vec3 n) {
+	auto addPlane = [s](float*& v, vec3 t, vec3 b, vec3 n) {
 		set(v, (t+b+n) * s);
 		set(v+3, n);
 		set(v+6, t);
