@@ -270,8 +270,10 @@ namespace base {
 			m_semaphores[1] = CreateSemaphore(NULL, 0, threads, NULL);
 		}
 		~Barrier() {
-			CloseHandle(m_semaphores[0]);
-			CloseHandle(m_semaphores[1]);
+			if(m_count > 0) {
+				CloseHandle(m_semaphores[0]);
+				CloseHandle(m_semaphores[1]);
+			}
 		}
 		void sync() {
 			volatile size_t index = m_index;
@@ -285,19 +287,20 @@ namespace base {
 			}
 		}
 		private:
-		size_t m_count;
-		size_t m_index;
-		HANDLE m_semaphores[2];
+		size_t m_count = 0;
+		size_t m_index = 0;
+		HANDLE m_semaphores[2] { NULL, NULL };
 		volatile LONG m_lockCount;
 	};
 	#else
 	class Barrier {
 		public:
-		void initialise(int threads) { pthread_barrier_init(&m_barrier, 0, threads); }
-		~Barrier() { pthread_barrier_destroy(&m_barrier); }
+		void initialise(int threads) { pthread_barrier_init(&m_barrier, 0, threads); m_initialised=true; }
+		~Barrier() { if(m_initialised) pthread_barrier_destroy(&m_barrier); }
 		void sync() { pthread_barrier_wait(&m_barrier); }
 		private:
 		pthread_barrier_t m_barrier;
+		int m_initialised = false;
 	};
 	#endif
 

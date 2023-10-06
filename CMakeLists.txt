@@ -77,6 +77,15 @@ set(audio
 	src/audio/source.cpp
 )
 
+set(particles
+	src/particles/affectors.h
+	src/particles/definition.cpp
+	src/particles/emitters.h
+	src/particles/particles.cpp
+	src/particles/renderers.cpp
+	src/particles/renderers.h
+)
+
 set( png
 	src/png/png.c
 	src/png/pngerror.c
@@ -145,6 +154,8 @@ set(headers
 	include/base/opengl.h
 	include/base/orbitcamera.h
 	include/base/parse.h
+	include/base/particledef.h
+	include/base/particles.h
 	include/base/png.h
 	include/base/point.h
 	include/base/primitives.h
@@ -205,7 +216,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
-add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${script} ${audio} ${headers} ${guiheaders} )
+add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${script} ${audio} ${particles} ${headers} ${guiheaders} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 install(FILES ${guiheaders} DESTINATION include/base/gui)

@@ -2,6 +2,7 @@
 
 #include <base/resourcemanager.h>
 
+namespace particle { class System; }
 namespace base { 
 	class Model;
 	class Texture;
@@ -22,14 +23,15 @@ namespace base {
 		Resources(const Resources&) = delete;
 		~Resources() { if(s_instance==this) s_instance=0; }
 
-		ResourceManager<Model>           models;
-		ResourceManager<Texture>         textures;
-		ResourceManager<Material>        materials;
-		ResourceManager<Shader>          shaders;
-		ResourceManager<ShaderPart>      shaderParts;
-		ResourceManager<ShaderVars>      shaderVars;	// Shared shader vars
-		ResourceManager<Compositor>      compositors;
-		ResourceManager<CompositorGraph> graphs;
+		ResourceManager<Model>            models;
+		ResourceManager<Texture>          textures;
+		ResourceManager<Material>         materials;
+		ResourceManager<Shader>           shaders;
+		ResourceManager<ShaderPart>       shaderParts;
+		ResourceManager<ShaderVars>       shaderVars;	// Shared shader vars
+		ResourceManager<Compositor>       compositors;
+		ResourceManager<CompositorGraph>  graphs;
+		ResourceManager<particle::System> particles;
 
 		// Load xml file defining multiple resources ?
 		bool loadFile(const char* file);

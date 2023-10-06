@@ -7,6 +7,10 @@
 #include <base/compositor.h>
 #include <base/bmloader.h>
 #include <base/texture.h>
+#include <base/particles.h>
+#include <base/particledef.h>
+#include <base/script.h>
+#include <base/file.h>
 #include <base/png.h>
 #include <base/dds.h>
 #include <base/xml.h>
@@ -61,6 +65,7 @@ void Resources::addPath(const char* path) {
 	textures.addPath(path);
 	materials.addPath(path);
 	shaders.addPath(path);
+	particles.addPath(path);
 }
 
 // ----------------------------------------------------------------------------------- //
@@ -516,7 +521,30 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 	
 	return m;
 }
+// ----------------------------------------------------------------------------------- //
 
+class ParticleLoader : public ResourceLoader<particle::System> {
+	Resources* resources;
+	public:
+	ParticleLoader(Resources* res) : resources(res) {}
+	particle::System* create(const char*, Manager*) override;
+	void destroy(particle::System* m) override { delete m; }
+};
+particle::System* ParticleLoader::create(const char* name, Manager* manager) {
+	// Resolve filename
+	char filename[1024];
+	if(!manager->findFile(name, filename, 1024)) {
+		printf("ParticleLoader: File not found %s\n", name);
+		return 0;
+	}
+
+	script::Variable data;
+	script::Script script;
+	script.parse(File(filename).data());
+	script.run(data);
+	particle::System* system = particle::loadSystem(data.get("system"));
+	return system;
+}
 
 // =================================================================================== //
 
@@ -1105,6 +1133,7 @@ Resources::Resources() {
 	shaderParts.setDefaultLoader( new ShaderPartLoader(shaders) );
 	materials.setDefaultLoader( new MaterialLoader(this) );
 	models.setDefaultLoader( new ModelLoader(this));
+	particles.setDefaultLoader( new ParticleLoader(this) );
 }
 
 int Resources::update() {
