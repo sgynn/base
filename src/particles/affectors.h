@@ -101,6 +101,25 @@ class OrientToVelocity : public Affector {
 	}
 };
 
+class SetDirection : public Affector {
+	public:
+	Value x = 0;
+	Value y = 0;
+	Value z = 1;
+	void update(Particle& p, float st, float time) const override {
+		float v = st - p.spawnTime;
+		vec3 dir(x.getValue(v), y.getValue(v), z.getValue(v));
+		if(dir != vec3()) {
+			dir.normalise();
+			vec3 left = p.orientation.xAxis();
+			vec3 up = dir.cross(left).normalise();
+			left = up.cross(dir);
+			p.orientation.fromMatrix(Matrix(left, up, dir));
+		}
+	}
+};
+
+
 
 }
 

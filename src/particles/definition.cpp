@@ -301,6 +301,13 @@ void particle::registerInternalStructures() {
 	AddValueProperty(Affector, Rotator2D, def, amount);
 	}
 
+	{
+	auto def = CreateAffectorDefinition(SetDirection, Affector);
+	AddValueProperty(Affector, SetDirection, def, x);
+	AddValueProperty(Affector, SetDirection, def, y);
+	AddValueProperty(Affector, SetDirection, def, z);
+	}
+
 	CreateAffectorDefinition(OrientToVelocity, Affector);
 
 	{
@@ -321,6 +328,7 @@ void particle::registerInternalStructures() {
 	
 	CreateRenderDataDefinition(SpriteRendererQuads, RenderData);
 	CreateRenderDataDefinition(SpriteRenderer, RenderData);
+	CreateRenderDataDefinition(QuadRenderer, RenderData);
 
 	{
 	auto def = CreateRenderDataDefinition(InstanceRenderer,RenderData);

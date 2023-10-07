@@ -18,6 +18,12 @@ class SpriteRenderer : public RenderData {
 	void setParticleVertices(void* output, const Particle& p, const Matrix& view) const override;
 };
 
+class QuadRenderer : public RenderData {
+	public:
+	QuadRenderer();
+	void setParticleVertices(void* output, const Particle& p, const Matrix& view) const override;
+};
+
 
 class InstanceRenderer : public RenderData {
 	public:
