@@ -8,13 +8,13 @@ class PointRenderer : public RenderData {
 
 class SpriteRendererQuads : public RenderData {
 	public:
-	SpriteRenderer();
+	SpriteRendererQuads();
 	void setParticleVertices(void* output, const Particle& p, const Matrix& view) const override;
 };
 
 class SpriteRenderer : public RenderData {
 	public:
-	SpriteRenderer2();
+	SpriteRenderer();
 	void setParticleVertices(void* output, const Particle& p, const Matrix& view) const override;
 };
 

@@ -125,7 +125,7 @@ void Renderer::destroyImage(unsigned index) {
 	Image& img = m_images[index];
 	if(img.atlased) removeFromAtlas(index);
 	else {
-		int unit = img.texture;
+		GLuint unit = img.texture;
 		glDeleteTextures(1, &unit);
 	}
 	
@@ -140,7 +140,7 @@ int Renderer::getImage(const char* name) const {
 	return -1;
 }
 
-bool Renderer::hasImage(unsigned index) {
+bool Renderer::hasImage(unsigned index) const {
 	if(index >= m_images.size()) return false;
 	return !m_images[index].name.empty();
 }
