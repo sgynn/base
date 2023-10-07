@@ -128,6 +128,7 @@ EM_BOOL emscriptenUpdate(double totalTime, void* data) {
 	static double lastTime = totalTime;
 	float deltaTime = (totalTime - lastTime) / 1000.0; // totalTime is in milliseconds
 	lastTime = totalTime;
+	Game::setGameTime(Game::gameTime() + deltaTime);
 	Game::setFrameTime(deltaTime);
 	state->update();
 	state->draw();

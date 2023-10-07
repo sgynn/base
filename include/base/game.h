@@ -48,6 +48,7 @@ class Game {
 	/** Get detailed timings */
 	static void debugTime(uint& game, uint& system, uint& update, uint& render);
 	static void setFrameTime(float t) { s_inst->m_frameTime=t; }
+	static void setGameTime(float time) { s_inst->m_totalTime=time; }
 
 	//Input stuff (depricated)
 	static bool Key(int k);				// Get the state of a key
