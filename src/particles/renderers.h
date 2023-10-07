@@ -6,11 +6,18 @@ namespace particle {
 class PointRenderer : public RenderData {
 };
 
-class SpriteRenderer : public RenderData {
+class SpriteRendererQuads : public RenderData {
 	public:
 	SpriteRenderer();
 	void setParticleVertices(void* output, const Particle& p, const Matrix& view) const override;
 };
+
+class SpriteRenderer : public RenderData {
+	public:
+	SpriteRenderer2();
+	void setParticleVertices(void* output, const Particle& p, const Matrix& view) const override;
+};
+
 
 class InstanceRenderer : public RenderData {
 	public:

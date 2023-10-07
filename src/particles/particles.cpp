@@ -1,6 +1,10 @@
 #include <base/particles.h>
 
+#ifndef EMSCRIPTEN
 #define assert(x) if(!(x)) asm("int $3\nnop");
+#else
+#define assert(x)
+#endif
 
 using namespace particle;
 
@@ -25,8 +29,13 @@ inline void eraseFast(std::vector<T>& list, T& item) {
 
 // ================================================================================= //
 
+#ifndef EMSCRIPTEN
 template<> constexpr float ValueGraph<float>::getDefault() { return 0.f; }
 template<> constexpr uint ValueGraph<uint>::getDefault() { return 0xffffffffu; }
+#else
+template<> float ValueGraph<float>::getDefault() { return 0.f; }
+template<> uint ValueGraph<uint>::getDefault() { return 0xffffffffu; }
+#endif
 
 template<>
 inline float ValueGraph<float>::lerp(float a, float b, float t) { return a*(1-t) + b*t; }
@@ -73,8 +82,10 @@ T ValueGraph<T>::getValue(float key) const {
 	return lerp(data[a].value, data[a+1].value, t);
 }
 
-template class ValueGraph<float>;
-template class ValueGraph<uint>;
+namespace particle {
+	template class ValueGraph<float>;
+	template class ValueGraph<uint>;
+}
 
 // ================================================================================= //
 
@@ -231,7 +242,7 @@ void Affector::trigger(Instance* inst, Particle& p) const {
 // ===================================================================================== //
 
 RenderData::RenderData(Type type) : m_type(type), m_material(0) {
-	static const int vpp[] = { 4,2,1,1 };
+	static const int vpp[] = { 6,4,2,1,1 };
 	m_verticesPerParticle = vpp[type];
 }
 

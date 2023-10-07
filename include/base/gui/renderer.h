@@ -57,10 +57,12 @@ class Renderer {
 	virtual int   getImage(const char* name) const;
 	virtual bool  replaceImage(unsigned index, int width, int height, int channels, void* data);
 	virtual bool  replaceImage(unsigned index, int width, int height, int glUnit);
+	virtual void  destroyImage(unsigned index);
 
 	Point         getImageSize(unsigned index) const;
 	const char*   getImageName(unsigned index) const;
 	unsigned      getImageCount() const;
+	bool          hasImage(unsigned index) const;
 
 	void          grabImageReference(unsigned);
 	void          dropImageReference(unsigned);

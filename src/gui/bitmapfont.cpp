@@ -4,7 +4,7 @@
 #include <cstdio>
 
 gui::BitmapFont::BitmapFont(const char* file, const char* characters) {
-	strncpy(m_file, file, sizeof(m_file));
+	strncpy(m_file, file, sizeof(m_file)-1);
 	m_characters = characters? strdup(characters): 0;
 }
 

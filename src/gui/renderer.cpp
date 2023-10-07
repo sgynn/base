@@ -120,9 +120,29 @@ bool Renderer::replaceImage(unsigned index, int w, int h, int unit) {
 	return true;
 }
 
+void Renderer::destroyImage(unsigned index) {
+	if(index==0 || index >= m_images.size()) return;
+	Image& img = m_images[index];
+	if(img.atlased) removeFromAtlas(index);
+	else {
+		int unit = img.texture;
+		glDeleteTextures(1, &unit);
+	}
+	
+	// make it be the blank image in case it is still referenced
+	img = m_images[0];
+	img.ref = 0;
+	img.name.clear();
+}
+
 int Renderer::getImage(const char* name) const {
 	for(unsigned i=0; i<m_images.size(); ++i) if(m_images[i].name == name) return i;
 	return -1;
+}
+
+bool Renderer::hasImage(unsigned index) {
+	if(index >= m_images.size()) return false;
+	return !m_images[index].name.empty();
 }
 
 
@@ -467,22 +487,6 @@ void Renderer::pushNew(const Rect& rect) {
 	m_scissor.push_back(m_transform.transform(rect));
 }
 void Renderer::pop() { m_scissor.pop_back(); }
-
-/*
-void Renderer::setScale(const Point& origin, float scale) {
-	m_transform.identity = scale == 1;
-
-
-// Rotation round arbitrary point
-//  cos(a), sin(a),
-//  -sin(a), cos(a),
-//  x-x*cos(a) + y*sin(a), y - x * sin(a) - y * cos(a));
-
-	m_transform.m[0] = m_transform.m[4] = scale;
-	m_transform.m[6] = origin.x - origin.x*scale;
-	m_transform.m[7] = origin.y - origin.y*scale;
-}
-*/
 
 // ==================================================== //
 

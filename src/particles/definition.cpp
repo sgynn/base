@@ -319,7 +319,8 @@ void particle::registerInternalStructures() {
 	AddFuncProperty(RenderData, RenderData, def, "material", Material, String);
 	}
 	
-	CreateRenderDataDefinition(SpriteRenderer,RenderData);
+	CreateRenderDataDefinition(SpriteRendererQuads, RenderData);
+	CreateRenderDataDefinition(SpriteRenderer, RenderData);
 
 	{
 	auto def = CreateRenderDataDefinition(InstanceRenderer,RenderData);

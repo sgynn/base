@@ -31,7 +31,7 @@ class Object {
 	virtual void trigger(Instance*, Particle&) const {}
 	int getDataIndex() const { return m_index; }
 	System* getSystem() { return m_system; }
-	static inline float random() { return (float)rand()/RAND_MAX; }
+	static inline float random() { return (float)rand()/(float)RAND_MAX; }
 	protected:
 	private:
 	friend class System;
@@ -70,7 +70,7 @@ class Value {
 	float getValue(float key=0) const {
 		switch(type) {
 		case VALUE:  return max;
-		case RANDOM: return (float)rand()/RAND_MAX * (max-min) + min;
+		case RANDOM: return Object::random() * (max-min) + min;
 		case MAP:    return key*(max-min)+min;
 		case GRAPH:  return graph->getValue(key);
 		default: return 0;
@@ -91,7 +91,7 @@ class Value {
 
 class RenderData : public Object {
 	public:
-	enum Type { QUADS, STRIP, POINTS, INSTANCE };
+	enum Type { TRIANGLES, QUADS, STRIP, POINTS, INSTANCE };
 	RenderData(Type type);
 	virtual ~RenderData();
 	virtual const char* getMaterial() const { return m_material; }

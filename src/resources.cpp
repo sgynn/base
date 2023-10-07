@@ -524,9 +524,7 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 // ----------------------------------------------------------------------------------- //
 
 class ParticleLoader : public ResourceLoader<particle::System> {
-	Resources* resources;
 	public:
-	ParticleLoader(Resources* res) : resources(res) {}
 	particle::System* create(const char*, Manager*) override;
 	void destroy(particle::System* m) override { delete m; }
 };
@@ -1133,7 +1131,7 @@ Resources::Resources() {
 	shaderParts.setDefaultLoader( new ShaderPartLoader(shaders) );
 	materials.setDefaultLoader( new MaterialLoader(this) );
 	models.setDefaultLoader( new ModelLoader(this));
-	particles.setDefaultLoader( new ParticleLoader(this) );
+	particles.setDefaultLoader( new ParticleLoader() );
 }
 
 int Resources::update() {
