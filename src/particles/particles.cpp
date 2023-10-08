@@ -90,7 +90,7 @@ namespace particle {
 // ================================================================================= //
 
 Emitter::Emitter() : startEnabled(true), limit(1000), inheritVelocity(1), spawnCount(1)
-	, rate(10), scale(1), life(1)
+	, rate(10), scale(1), life(1), mass(1)
 	, m_renderer(0) {
 }
 void Emitter::setRenderer(RenderData* r) {
@@ -110,9 +110,14 @@ void Emitter::update(Instance* instance, float time) const {
 	if(currentRate<=0) return;
 	int num = data.accumulator * currentRate;
 	data.accumulator -= num/currentRate;
+	vec3 pos = vec3(&instance->getTransform()[12]);
+	Quaternion rot(instance->getTransform());
 	for(int i=0; i<num; ++i) {
-		float start = instance->m_time - i/currentRate;
+		//float start = instance->m_time - i/currentRate;
+		float timeOffset = -i/currentRate;
 		for(int j=0; j<spawnCount; ++j) {
+			spawnParticle(instance, pos, rot, instance->getVelocity(), instance->m_time, timeOffset);
+			/*
 			Particle& n = instance->allocate(this);
 			n.position = vec3(&instance->getTransform()[12]);
 			n.orientation.fromMatrix(instance->getTransform());
@@ -124,6 +129,7 @@ void Emitter::update(Instance* instance, float time) const {
 			n.affectorMask = m_initialAffectorMask;
 			spawnParticle(n, instance->getTransform(), instance->m_time);
 			for(Event* event: m_events[(int)Event::Type::SPAWN]) fireEvent(instance, event, n);
+			*/
 		}
 	}
 }
@@ -146,6 +152,22 @@ void Emitter::updateT(int thread, int count, Instance* instance, float time) con
 			if(t < event->time && t+time >= event->time) fireEvent(instance, event, particle);
 		}
 	}
+}
+
+Particle& Emitter::spawnParticle(Instance* instance, const vec3& pos, const Quaternion& orientation, const vec3& velocity, float key, float timeOffset) const {
+	Particle& n = instance->allocate(this);
+	n.position = pos;
+	n.orientation = orientation;
+	n.velocity = velocity * inheritVelocity;
+	n.scale = vec3(scale.getValue(key));
+	n.spawnTime = instance->m_time + timeOffset;
+	n.dieTime = n.spawnTime + life.getValue(key);
+	n.mass = mass.getValue(key);
+	n.colour = 0xffffff;
+	n.affectorMask = m_initialAffectorMask;
+	spawnParticle(n, instance->getTransform(), key);
+	for(Event* event: m_events[(int)Event::Type::SPAWN]) fireEvent(instance, event, n);
+	return n;
 }
 
 void Emitter::addAffector(Affector* e) {
@@ -217,10 +239,10 @@ void Emitter::fireEventT(Instance* instance, const Event* e, Particle& p, int th
 
 void Emitter::trigger(Instance* instance, Particle& p) const {
 	// Spawn a particle here
-	Matrix m;
-	p.orientation.toMatrix(m);
-	m.setTranslation(p.position);
 	for(int i=0; i<spawnCount; ++i) {
+		spawnParticle(instance, p.position, p.orientation, p.velocity, 0, 0);
+		/*
+
 		Particle& n = instance->allocate(this);
 		n.position = p.position;
 		n.orientation = p.orientation;
@@ -228,10 +250,13 @@ void Emitter::trigger(Instance* instance, Particle& p) const {
 		n.scale = vec3(scale.getValue(0)); // ToDo - what input ?
 		n.spawnTime = instance->m_time;
 		n.dieTime = n.spawnTime + life.getValue(0);
-		n.colour = 0xffffff;
+		n.colour = colour.getValue(0);
+		n.mass = mass.getValue(0);
 		n.affectorMask = m_initialAffectorMask;
 		spawnParticle(n, m, instance->m_time);
 		n.velocity += p.velocity * inheritVelocity;
+		for(Event* event: m_events[(int)Event::Type::SPAWN]) fireEvent(instance, event, n);
+		*/
 	}
 }
 
@@ -347,7 +372,7 @@ Instance::~Instance() {
 
 void Instance::initialise() {
 	if(!m_system) return;
-	Particle tmp { vec3(), vec3(), vec3(1,1,1), Quaternion(), 0, 0, 0xffffffff };
+	Particle tmp;
 	m_pool.resize(m_system->getPoolSize(), tmp);
 	if(m_count) for(Particle& p: m_pool) p.spawnTime=0;
 	m_count = 0;

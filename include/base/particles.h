@@ -15,12 +15,13 @@ class Manager;
 struct Particle {
 	vec3 position;
 	vec3 velocity;
-	vec3 scale;
+	vec3 scale = vec3(1,1,1);
 	Quaternion orientation;
-	float spawnTime;
-	float dieTime;
-	uint colour;
-	uint affectorMask;
+	float spawnTime = 0;
+	float dieTime = 0;
+	float mass = 1;
+	uint colour = 0xffffffff;
+	uint affectorMask = 0xffffffff;
 };
 
 
@@ -169,15 +170,20 @@ class Emitter : public Object {
 	void fireEventT(Instance*, const Event*, Particle&, int threadIndex) const;
 	void allocateAffectorMasks();
 
+	private:
+	Particle& spawnParticle(Instance* instance, const vec3& pos, const Quaternion& orientation, const vec3& velocity, float key, float timeOffset) const;
+
 	public:
+	bool   eventOnly=false;	// This emitter can only be triggered by internal events
 	bool   startEnabled;	// Start spawning patricles. set to false for triggered particles
 	int    limit;			// Limit patricle count from this emitter
 	float  inheritVelocity;	// Multiplier to inherit parent particle velocity
 	int    spawnCount;		// Particles to spawn at once
-	Value  rate;	// Spawn rate
-	Value  scale;	// Particle scale
-	Value  life;	// Particle life time
-	Gradient colour; // Initial colour
+	Value  rate;			// Spawn rate
+	Value  scale;			// Particle scale
+	Value  life;			// Particle life time
+	Value  mass;			// Mass affects force affectors
+	Gradient colour;		// Initial colour
 
 	protected:
 	friend class Instance;

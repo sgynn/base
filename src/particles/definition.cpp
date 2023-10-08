@@ -11,119 +11,103 @@ base::HashMap<Definition<Affector>*> particle::s_affectorFactory;
 base::HashMap<Definition<Emitter>*> particle::s_emitterFactory;
 base::HashMap<Definition<Event>*> particle::s_eventFactory;
 
-
-
-System* particle::loadSystem(const Variable& data) {
-	if(!data.get("emitters")) return nullptr;
-	struct EmitterRef  { Variable var; particle::Emitter* emitter; };
-	struct ParticleRef { Variable var; particle::RenderData* renderData; };
-	struct AffectorRef { Variable var; particle::Affector* affector; };
-	struct EventRef    { Variable var; particle::Event* event; };
-	std::vector<EmitterRef> emitters;
-	std::vector<ParticleRef> renderers;
-	std::vector<AffectorRef> affectors;
-	std::vector<EventRef> events;
-
-	particle::System* system = new particle::System();
-	if(data.contains("pool")) system->setPoolSize(data.get("pool"));
-	for(auto& v: data.get("emitters")) {
-		const Variable& emitterVar = v.value;
-		particle::Emitter* emitter = 0;
-		for(const auto& i: emitters) if(i.var==emitterVar) emitter = i.emitter;
-		if(!emitter && emitterVar) {
-			Definition<Emitter>* def = s_emitterFactory.get(emitterVar.get("type"), 0);
-			if(!def || !def->create) {
-				printf("Particle error: Undefined emitter type '%s'\n", (const char*)emitterVar.get("type"));
-				continue;
+class ParticleSystemLoader {
+	enum Type { EMITTER, AFFECTOR, RENDERER, EVENT };
+	struct ObjectRef { Variable var; Object* object; int type; };
+	std::vector<ObjectRef> m_objects;
+	template<class T>
+	T* getObject(const Variable& var, Type type) const {
+		for(const ObjectRef& o: m_objects) if(o.var==var) return static_cast<T*>(o.object);
+		return nullptr;
+	}
+	template<class T>
+	static void loadProperties(T* object, const Definition<T>* def, const Variable& data) {
+		while(def) {
+			for(auto& i: def->properties) {
+				const Variable& value = data.get(i.key);
+				if(!value.isNull()) i.set(object, value);
 			}
-			emitter = def->create();
+			def = def->parent;
+		}
+	}
 
-			// Set emitter propertes
-			while(def) {
-				for(auto& i: def->properties) {
-					const Variable& value = emitterVar.get(i.key);
-					if(!value.isNull())
-						i.set(emitter, value);
-				}
-				def = def->parent;
+	public:
+	System* load(const Variable& data) {
+		if(!data.get("emitters")) return nullptr;
+		particle::System* system = new particle::System();
+		if(data.contains("pool")) system->setPoolSize(data.get("pool"));
+		for(const Variable& ev: data.get("emitters")) {
+			if(Emitter* e = loadObject<Emitter>(ev, EMITTER, s_emitterFactory)) {
+				system->addEmitter(e);
 			}
-
-			emitters.push_back({emitterVar, emitter});
-			system->addEmitter(emitter);
-
-			// Create renderer
-			particle::RenderData* renderData = 0;
-			const Variable& particleVar = emitterVar.get("particle");
-			for(auto& i: renderers) if(i.var == particleVar) renderData = i.renderData;
-			if(!renderData && particleVar) {
-				Definition<RenderData>* rdef = s_renderDataFactory.get(particleVar.get("type"), 0);
-				if(rdef && rdef->create) {
-					renderData = rdef->create();
-					renderers.push_back({particleVar, renderData});
-					system->addRenderer(renderData);
-					// Additional properties
-					renderData->setMaterial(particleVar.get("material"));
+		}
+		// Resolve any floating objects
+		for(ObjectRef& o: m_objects) {
+			if(!o.object->getSystem()) {
+				switch(o.type) {
+				default: break;
+				case EMITTER:
+					static_cast<Emitter*>(o.object)->eventOnly = true;
+					system->addEmitter(static_cast<Emitter*>(o.object));
+					break;
+				case EVENT:
+					if(!static_cast<Event*>(o.object)->target) delete o.object; // unused
+					break;
 				}
-				else printf("Particle error: Undefined render type '%s'\n", (const char*)particleVar.get("type"));
 			}
-			emitter->setRenderer(renderData);
+		}
 
-
-			// Create affectors
-			for(const auto& a: emitterVar.get("affectors")) {
-				const Variable& affectorVar = a.value;
-				particle::Affector* affector = 0;
-				for(auto& i: affectors) if(i.var == affectorVar) affector = i.affector;
-				if(!affector && affectorVar) {
-					Definition<Affector>* adef = s_affectorFactory.get(affectorVar.get("type"), 0);
-					if(adef && adef->create) {
-						affector = adef->create();
-						while(adef) {
-							for(auto& i: adef->properties) {
-								const Variable& value = affectorVar.get(i.key);
-								if(!value.isNull()) i.set(affector, value);
-							}
-							adef = adef->parent;
-						}
-						affectors.push_back({affectorVar, affector});
-					}
-					else printf("Particle error: Undefined affector type '%s'\n", (const char*)affectorVar.get("type"));
-				}
-				if(affector) emitter->addAffector(affector);
+		m_objects.clear();
+		return system;
+	}
+	
+	template<class T> void loadReferences(T* object, const Variable& data) {}
+	void loadReferences(Emitter* emitter, const Variable& data) {
+		emitter->setRenderer(loadObject<RenderData>(data.get("particle"), RENDERER, s_renderDataFactory));
+		for(Variable& var: data.get("affectors")) {
+			if(Affector* a = loadObject<Affector>(var, AFFECTOR, s_affectorFactory)) {
+				emitter->addAffector(a);
 			}
-
-			// Create events
-			for(const auto& e: emitterVar.get("events")) {
-				const Variable& eventVar = e.value;
-				particle::Event* event = nullptr;
-				for(auto& i: events) if(i.var == eventVar) event = i.event;
-				if(!event && eventVar.get("target")) {
-					Definition<Event>* edef = s_eventFactory.get(eventVar.get("type"), 0);
-					if(edef && edef->create) {
-						event = edef->create();
-						for(auto& i: edef->properties) {
-							const Variable& value = eventVar.get(i.key);
-							if(!value.isNull()) i.set(event, value);
-						}
-						events.push_back({eventVar, event});
-					}
-					else printf("Particle error: Undefined event type '%s'\n", (const char*)eventVar.get("type"));
-				}
-				if(event) emitter->addEvent(event);
+		}
+		for(Variable& var: data.get("events")) {
+			if(Event* e = loadObject<Event>(var, EVENT, s_eventFactory)) {
+				if(e->target) emitter->addEvent(e);
 			}
 		}
 	}
-	
-	// Link event targets
-	for(auto& event: events) {
-		const Variable& target = event.var.get_const("target");
-		for(auto& e: emitters)  if(e.var == target) event.event->target = e.emitter;
-		for(auto& a: affectors) if(a.var == target) event.event->target = a.affector;
-		for(auto& e: events)    if(e.var == target) event.event->target = e.event;
+	void loadReferences(Event* event, const Variable& var) {
+		const Variable& target = var.get("target");
+		const char* targetType = target.get("type");
+		if(s_emitterFactory.contains(targetType)) event->target = loadObject<Emitter>(target, EMITTER, s_emitterFactory);
+		else if(s_eventFactory.contains(targetType)) event->target = loadObject<Event>(target, EVENT, s_eventFactory);
+		else if(s_affectorFactory.contains(targetType)) event->target = loadObject<Affector>(target, AFFECTOR, s_affectorFactory);
+		if(!event->target) printf("Particle Error: Event has no target\n");
 	}
 
 
-	return system;
+	template<class T>
+	T* loadObject(const Variable& data, Type type, const base::HashMap<Definition<T>*>& factory) {
+		if(data.isNull()) return nullptr;
+		T* object = getObject<T>(data, type);
+		if(!object) {
+			const Definition<T>* def = factory.get(data.get("type"), nullptr);
+			if(!def || !def->create) {
+				constexpr const char* types[] = { "emitter", "affector", "renderer", "event" };
+				printf("Particle error: Undefined %s type '%s'\n", types[type], (const char*)data.get("type"));
+				return nullptr;
+			}
+			object = def->create();
+			m_objects.push_back({data, object, type});
+			loadProperties(object, def, data);
+			loadReferences(object, data);
+		}
+		return object;
+	}
+};
+
+
+System* particle::loadSystem(const Variable& data) {
+	return ParticleSystemLoader().load(data);
 }
 
 Value particle::loadValue(const Variable& var) {
@@ -201,6 +185,18 @@ Variable particle::getGradientAsVariable(const Gradient& gradient) {
 	return r;
 }
 
+Variable particle::getEnumAsVariable(int value, const EnumValues& e) {
+	if(value >= 0 && value < (int)e.size()) return e[value];
+	else return value;
+
+}
+int particle::loadEnum(const Variable& v, const EnumValues& e) {
+	if(v.isNumber()) return(int)v;
+	if(const char* name = v) {
+		for(size_t i=0; i<e.size(); ++i) if(strcmp(name, e[i])==0) return(int)i;
+	}
+	return 0;
+}
 
 // ================================================================== //
 
@@ -211,6 +207,7 @@ void particle::registerInternalStructures() {
 	AddBasicProperty(Event, Event, def, "time", time, Float);
 	AddBasicProperty(Event, Event, def, "once", once, Bool);
 	AddBasicProperty(Event, Event, def, "enabled", startEnabled, Bool);
+	AddEnumProperty(Event, Event, def, Event::Effect, effect, "Trigger", "Enable", "Disable", "Toggle");
 	s_eventFactory["Spawn"] = new Definition<Event>{{}, 0, "Spawn", [](){return new Event(Event::Type::SPAWN);}};
 	s_eventFactory["Death"] = new Definition<Event>{{}, 0, "Death", [](){return new Event(Event::Type::DIE);}};
 	}
@@ -225,6 +222,7 @@ void particle::registerInternalStructures() {
 	AddValueProperty(Emitter, Emitter, def, rate);
 	AddValueProperty(Emitter, Emitter, def, scale);
 	AddValueProperty(Emitter, Emitter, def, life);
+	AddValueProperty(Emitter, Emitter, def, mass);
 
 	def->properties.push_back({"colour", PropertyType::Gradient,
 		[](Emitter* e, const Variable& v) { e->colour = loadGradient(v); },
@@ -274,6 +272,13 @@ void particle::registerInternalStructures() {
 	}
 
 	{
+	auto def = CreateAffectorDefinition(SetVelocity, Affector);
+	AddValueProperty(Affector, SetVelocity, def, velocity.x);
+	AddValueProperty(Affector, SetVelocity, def, velocity.y);
+	AddValueProperty(Affector, SetVelocity, def, velocity.z);
+	}
+
+	{
 	auto def = CreateAffectorDefinition(DragForce, Affector);
 	AddValueProperty(Affector, DragForce, def, amount);
 	}
@@ -303,9 +308,9 @@ void particle::registerInternalStructures() {
 
 	{
 	auto def = CreateAffectorDefinition(SetDirection, Affector);
-	AddValueProperty(Affector, SetDirection, def, x);
-	AddValueProperty(Affector, SetDirection, def, y);
-	AddValueProperty(Affector, SetDirection, def, z);
+	AddValueProperty(Affector, SetDirection, def, direction.x);
+	AddValueProperty(Affector, SetDirection, def, direction.y);
+	AddValueProperty(Affector, SetDirection, def, direction.z);
 	}
 
 	CreateAffectorDefinition(OrientToVelocity, Affector);
@@ -316,6 +321,7 @@ void particle::registerInternalStructures() {
 		[](Affector* a, const Variable& v) { static_cast<Colourise*>(a)->colour = loadGradient(v); },
 		[](const Affector* a) { return getGradientAsVariable(static_cast<const Colourise*>(a)->colour); }
 	});
+	//AddEnumProperty(Affector, Colourise, def, Colourise::BlendMode, blend, "Set", "Add", "Multiply", "Alpha");
 	}
 
 	// ====================================================================================== //

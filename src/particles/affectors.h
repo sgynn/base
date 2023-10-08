@@ -7,9 +7,9 @@ class LinearForce : public Affector {
 	public:
 	void update(Particle& p, float st, float time) const override {
 		float age = st - p.spawnTime;
-		p.velocity.x += force.x.getValue(age) * time;
-		p.velocity.y += force.y.getValue(age) * time;
-		p.velocity.x += force.z.getValue(age) * time;
+		p.velocity.x += force.x.getValue(age) * time / p.mass;
+		p.velocity.y += force.y.getValue(age) * time / p.mass;
+		p.velocity.x += force.z.getValue(age) * time / p.mass;
 	}
 	public:
 	struct { Value x,y,z; } force;
@@ -24,6 +24,19 @@ class DragForce : public Affector {
 };
 
 
+class SetVelocity : public Affector {
+	public:
+	void update(Particle& p, float st, float time) const override {
+		float age = st - p.spawnTime;
+		p.velocity.x = velocity.x.getValue(age);
+		p.velocity.y = velocity.y.getValue(age);
+		p.velocity.x = velocity.z.getValue(age);
+	}
+	public:
+	struct { Value x,y,z; } velocity;
+};
+
+
 class PointAttactor : public Affector {
 	public:
 	vec3 position;
@@ -31,7 +44,7 @@ class PointAttactor : public Affector {
 	void update(Particle& p, float st, float time) const override {
 		vec3 dir = (position - p.position);
 		//float dist = dir.normaliseWithLength();
-		p.velocity += dir * strength.getValue(st - p.spawnTime) * time;
+		p.velocity += dir * strength.getValue(st - p.spawnTime) * time / p.mass;
 	}
 };
 
@@ -50,7 +63,7 @@ class Attractor : public Affector {
 	void update(Particle& p, float st, float time) const override {
 		float s = strength.getValue(st - p.spawnTime);
 		float d = centre.distance(p.position);
-		p.velocity += (centre - p.position) * (s * time / fmax(0.01f,d));
+		p.velocity += (centre - p.position) * (s * time / fmax(0.01f,d)) / p.mass;
 	}
 };
 
@@ -86,6 +99,7 @@ class Colourise : public Affector {
 	void update(Particle& p, float st, float time) const override {
 		p.colour = colour.getValue(st - p.spawnTime);
 	}
+	private:
 };
 
 class OrientToVelocity : public Affector {
@@ -103,12 +117,10 @@ class OrientToVelocity : public Affector {
 
 class SetDirection : public Affector {
 	public:
-	Value x = 0;
-	Value y = 0;
-	Value z = 1;
+	struct { Value x,y,z; } direction;
 	void update(Particle& p, float st, float time) const override {
 		float v = st - p.spawnTime;
-		vec3 dir(x.getValue(v), y.getValue(v), z.getValue(v));
+		vec3 dir(direction.x.getValue(v), direction.y.getValue(v), direction.z.getValue(v));
 		if(dir != vec3()) {
 			dir.normalise();
 			vec3 left = p.orientation.xAxis();

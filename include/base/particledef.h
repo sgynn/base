@@ -8,10 +8,14 @@ namespace particle {
 	extern System* loadSystem(const script::Variable& data);
 
 
+
+	using EnumValues = std::vector<const char*>;
 	extern Value loadValue(const script::Variable&);
 	extern Gradient loadGradient(const script::Variable&);
 	extern script::Variable getValueAsVariable(const Value&);
 	extern script::Variable getGradientAsVariable(const Gradient&);
+	extern script::Variable getEnumAsVariable(int value, const EnumValues& e);
+	extern int loadEnum(const script::Variable&, const EnumValues& e);
 
 	enum class PropertyType { Value, Int, Float, Bool, Vector, String, Enum, Gradient };
 	template<typename T>
@@ -20,7 +24,7 @@ namespace particle {
 		PropertyType type;
 		void(*set)(T*,const script::Variable&);
 		script::Variable(*get)(const T*);
-		std::vector<const char*> enumValues;
+		EnumValues enumValues;
 	};
 	template<class T>
 	struct Definition {
@@ -79,19 +83,14 @@ namespace particle {
 	});
 
 // Property is an integer set from enum strings
-#define AddEnumProperty(Base, Type, def, key, var, ...) \
+#define AddEnumPropertyN(Base, Type, def, EnumType, key, var, ...) \
 	def->properties.push_back( Property<Base>{ \
 		key, PropertyType::Enum, \
-		[](Base* a, const Variable& v) { static_cast<Type*>(a)->var = v; }, \
-		[](const Base* a)->script::Variable { return static_cast<const Type*>(a)->var; } \
+		[](Base* a, const Variable& v) { static_cast<Type*>(a)->var = (EnumType)loadEnum(v, {__VA_ARGS__}); }, \
+		[](const Base* a)->script::Variable { return getEnumAsVariable((int)static_cast<const Type*>(a)->var, {__VA_ARGS__}); }, \
 		{ __VA_ARGS__ } \
 	});
-
-
-
-
-
-	
+#define AddEnumProperty(Base, Type, def, EnumType, var, ...) AddEnumPropertyN(Base, Type, def, EnumType, #var, var, __VA_ARGS__)
 	
 
 
