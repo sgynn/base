@@ -145,6 +145,7 @@ namespace base {
 
 		bool m_active;		// Does the camera update
 		bool m_grabMouse;	// Does this camera lock the mouse position
+		Point m_lastMouse;	// Mouse location before being grabbed
 		vec3 m_velocity;	// Camera velocity
 		vec2 m_rVelocity;	// Rotational velocity
 		bool m_useUpVector;	// Enforce up vector

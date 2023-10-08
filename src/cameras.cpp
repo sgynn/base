@@ -32,6 +32,10 @@ void CameraBase::setPitchLimits(float min, float max) {
 }
 
 void CameraBase::grabMouse(bool g) {
+	if(g == m_grabMouse) return;
+	Input& in = *Game::input();
+	if(!m_grabMouse) m_lastMouse = in.mouse;
+	else in.warpMouse(m_lastMouse.x, m_lastMouse.y);
 	m_grabMouse = g;
 }
 
