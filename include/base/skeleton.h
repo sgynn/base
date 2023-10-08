@@ -30,7 +30,7 @@ namespace base {
 
 		const vec3&       getPosition() const;	/**< Get the relative position */
 		const vec3&       getScale() const;		/**< Get the relative scale */
-		const vec3        getEuler() const;		/**< Get the relative angle as Pitch,Yaw,Roll */
+		const EulerAngles getEuler() const;		/**< Get the relative angle as Pitch,Yaw,Roll */
 		const Quaternion& getAngle() const;		/**< Get the relative rotation as a quaternion */
 		const Matrix&     getTransformation() const;			/**< Get the local transformation of the bone */
 		const Matrix&     getAbsoluteTransformation() const;	/**< Get absolute transformation */

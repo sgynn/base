@@ -1,6 +1,8 @@
 #pragma once
 #include "matrix.h"
 
+struct EulerAngles { float yaw=0, pitch=0, roll=0; };
+
 /** Quaternion class */
 class Quaternion {
 	public:
@@ -8,10 +10,11 @@ class Quaternion {
 
 	Quaternion();											/** Construct empty quaternion */
 	Quaternion(float w, float x, float y, float z);			/** Construct quaternion with specified value */
-	Quaternion(const vec3& euler);							/** Construct quaternion from euler angles (pitch,yaw,roll) */
+	Quaternion(float yaw, float pitch=0, float roll=0);		/** Construct quaternion from euler angles (pitch,yaw,roll) */
 	Quaternion(const Matrix& m);							/** Construct quaternion from rotation matrix */
 	Quaternion(const float* f);								/** Construct quaternion from float array */
 	Quaternion(const vec3& axis, float angle);				/** Construct quaternion from angle axis pair */
+	Quaternion(const vec3& direction, const vec3& up=vec3(0,1,0)); /** Construct quaternion from direction vectors */
 
 	// Accessors
 	operator      const float*() const;						/** typecast to float array */
@@ -22,13 +25,13 @@ class Quaternion {
 
 
 	// Conversion
-	Quaternion& fromEuler(const vec3&);						/** Set values from euler angle */
+	Quaternion& fromEuler(float yaw, float pitch, float roll);/** Set values from euler angle */
 	Quaternion& fromMatrix(const Matrix& m);				/** Set values from matrix */
 	Quaternion& fromAxis(const vec3& axis, float angle);	/** Set values from angle-axis */
+	Quaternion& fromDirection(const vec3& dir, const vec3& up);
 	void        toMatrix(Matrix& m) const;					/** Convert quaternion to matrix in place */
-	void        toEuler(vec3& v) const;						/** Convert quaternion to euler angles in place */
 	Matrix      getMatrix() const;							/** Return matrix representation of quaternion */
-	vec3        getEuler() const;							/** Return euler angled representation of quaternion */
+	EulerAngles getEuler() const;							/** Return euler angled representation of quaternion */
 	vec3        getAxis() const;							/** Get the axis represented by this quaternion */
 	float       getAngle() const;							/** Get angle represented by this quaternion */
 	Quaternion  getInverse() const;							/** Get the inverse of this quaternion */
@@ -63,9 +66,10 @@ class Quaternion {
 inline Quaternion::Quaternion() : w(1), x(0),y(0),z(0) {};
 inline Quaternion::Quaternion(float w, float x, float y, float z): w(w), x(x), y(y), z(z) {}
 inline Quaternion::Quaternion(const float* f) : w(f[0]), x(f[1]), y(f[2]), z(f[3]) {}
-inline Quaternion::Quaternion(const vec3& e)                            { fromEuler(e); }
+inline Quaternion::Quaternion(float y, float p, float r)                { fromEuler(y,p,r); }
 inline Quaternion::Quaternion(const Matrix& m)                          { fromMatrix(m); }
 inline Quaternion::Quaternion(const vec3& axis, float angle)            { fromAxis(axis, angle); }
+inline Quaternion::Quaternion(const vec3& dir, const vec3& up)          { fromDirection(dir, up); }
 inline Quaternion::operator const float*() const                        { return &w; }
 inline Quaternion::operator float*()                                    { return &w; }
 inline const float& Quaternion::operator[](int i) const                 { return *((&w)+i); }
@@ -73,7 +77,6 @@ inline float&       Quaternion::operator[](int i)                       { return
 inline Quaternion&  Quaternion::set(float a, float b, float c, float d) { w=a; x=b; y=c; z=d; return *this; }
 inline bool         Quaternion::operator==(const Quaternion& q) const   { return w==q.w && x==q.x && y==q.y && z==q.z; }
 inline bool         Quaternion::operator!=(const Quaternion& q) const   { return w!=q.w || x!=q.x || y!=q.y || z!=q.z; }
-inline vec3         Quaternion::getEuler() const                        { vec3 e; toEuler(e); return e; }
 inline Matrix       Quaternion::getMatrix() const                       { Matrix m; toMatrix(m); return m; }
 inline float        Quaternion::getAngle() const                        { return 2 * acos(w); }
 inline Quaternion   Quaternion::getInverse() const                      { return Quaternion(w, -x, -y, -z); }
@@ -142,10 +145,10 @@ inline Quaternion Quaternion::arc(const vec3& a, const vec3& b) {
 	return Quaternion(s*0.5f, c.x*rs, c.y*rs, c.z*rs);
 }
 
-inline Quaternion& Quaternion::fromEuler(const vec3& e) {
-	float hy = e.y * 0.5f;
-	float hp = e.x * 0.5f;
-	float hr = e.z * 0.5f;
+inline Quaternion& Quaternion::fromEuler(float yaw, float pitch, float roll) {
+	float hy = yaw * 0.5f;
+	float hp = pitch * 0.5f;
+	float hr = roll * 0.5f;
 	float cy = cos(hy);
 	float sy = sin(hy);
 	float cp = cos(hp);
@@ -160,11 +163,13 @@ inline Quaternion& Quaternion::fromEuler(const vec3& e) {
 	return *this;
 
 }
-inline void Quaternion::toEuler(vec3& e) const {
+
+inline EulerAngles Quaternion::getEuler() const {
+	EulerAngles e;
 //	float xx=x*x, yy=y*y, zz=z*z, ww=w*w;
-//	e.x = atan2( 2 * (y*z + w*x), ww - xx - yy + zz);	// Pitch
-//	e.y = asin (-2 * (x*z - w*y));						// Yaw
-//	e.z = atan2( 2 * (x*y + w*z), ww + xx - yy - zz);	// Roll
+//	e.pitch = atan2( 2 * (y*z + w*x), ww - xx - yy + zz);
+//	e.yaw = asin (-2 * (x*z - w*y));
+//	e.roll = atan2( 2 * (x*y + w*z), ww + xx - yy - zz);
 
 	// My version - use matrix forward for pitch,yaw
 	float fx = 2 * (x*z + w*y);
@@ -173,11 +178,12 @@ inline void Quaternion::toEuler(vec3& e) const {
 	float up = 1 - 2 * (x*x + z*z);
 	float ly = 2 * (x*y + w*z);		// matrix left.y
 
-	e.y = atan2(fx, fz);
-	e.x = -atan2(fy, sqrt(fx*fx + fz*fz));
-	if(up<0) { e.y -= PI; e.x=-PI-e.x; } // Flip values if pointing down.
-	e.z = asin(ly / cos(e.x) );
+	e.yaw = atan2(fx, fz);
+	e.pitch = -atan2(fy, sqrt(fx*fx + fz*fz));
+	if(up<0) { e.yaw -= PI; e.pitch=-PI-e.pitch; } // Flip values if pointing down.
+	e.roll = asin(ly / cos(e.pitch) );
 	// Other version: PI-pitch, yaw+PI, roll+PI
+	return e;
 }
 
 inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
@@ -236,6 +242,13 @@ inline Quaternion& Quaternion::fromAxis(const vec3& axis, float angle) {
 	y = axis.y * s;
 	z = axis.z * s;
 	return *this;
+}
+
+inline Quaternion& Quaternion::fromDirection(const vec3& dir, const vec3& up) {
+	vec3 z = dir.normalised();
+	vec3 x = up.cross(z).normalise();
+	vec3 y = z.cross(x);
+	return fromMatrix(Matrix(x,y,z));
 }
 
 inline Quaternion slerp(const Quaternion& a, const Quaternion& b, float v) {

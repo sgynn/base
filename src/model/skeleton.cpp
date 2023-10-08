@@ -27,7 +27,7 @@ void Bone::setScale(const vec3& s) {
 	m_state = 1;
 }
 void Bone::setEuler(const vec3& pyr) {
-	m_angle.fromEuler(pyr);
+	m_angle.fromEuler(pyr.y, pyr.x, pyr.z);
 	m_state = 1;
 }
 void Bone::setAngle(const Quaternion& q) {
@@ -53,7 +53,7 @@ void Bone::rotate(const Quaternion& q) {
 	m_state = 1;
 }
 
-const vec3 Bone::getEuler() const {
+const EulerAngles Bone::getEuler() const {
 	return m_angle.getEuler();
 }
 
