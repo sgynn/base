@@ -18,7 +18,7 @@ Renderer::Renderer() {
 Renderer::~Renderer() {
 }
 
-void Renderer::setQueue(unsigned char queue, RenderQueueMode mode) {
+void Renderer::setQueueMode(unsigned char queue, RenderQueueMode mode) {
 	m_queueMode[queue] = mode;
 }
 
@@ -46,9 +46,10 @@ void Renderer::render(unsigned char first, unsigned char last) {
 	for(size_t i=first; i<=last; ++i) {
 		std::vector<Drawable*>& queue = m_drawables[i];
 		switch(m_queueMode[i]) {
-		case QUEUE_NORMAL: break;
-		case QUEUE_SORTED:         std::sort(queue.begin(), queue.end(), [cp](Drawable*a, Drawable*b) { return DIST(a) < DIST(b); }); break;
-		case QUEUE_SORTED_INVERSE: std::sort(queue.begin(), queue.end(), [cp](Drawable*a, Drawable*b) { return DIST(a) > DIST(b); }); break;
+		case RenderQueueMode::Normal: break;
+		case RenderQueueMode::Sorted:        std::sort(queue.begin(), queue.end(), [cp](Drawable*a, Drawable*b) { return DIST(a) < DIST(b); }); break;
+		case RenderQueueMode::SortedInverse: std::sort(queue.begin(), queue.end(), [cp](Drawable*a, Drawable*b) { return DIST(a) > DIST(b); }); break;
+		case RenderQueueMode::Disabled: continue;
 		}
 
 		for(Drawable* d : queue) {

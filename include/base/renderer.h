@@ -14,7 +14,7 @@ namespace base {
 	class AutoVariableSource;
 	class Drawable;
 
-	enum RenderQueueMode { QUEUE_NORMAL, QUEUE_SORTED, QUEUE_SORTED_INVERSE };
+	enum class RenderQueueMode : char { Normal, Sorted, SortedInverse, Disabled };
 
 	// Render state holds the active state of the renderer
 	class RenderState {
@@ -55,12 +55,13 @@ namespace base {
 		void clear();
 		void add(Drawable*, unsigned char queue=0);
 		void remove(Drawable*, unsigned char queue=0); /// @deprecated
-		void setQueue(unsigned char queue, RenderQueueMode mode);
+		void setQueueMode(unsigned char queue, RenderQueueMode mode);
 
 		void render(unsigned char first=0, unsigned char last=255);
 		void clearScreen();
 
 		RenderState& getState() { return m_state; }
+		RenderQueueMode getQueueMode(unsigned char queue) const { return m_queueMode[queue]; }
 
 		protected:
 		std::vector<Drawable*> m_drawables[256];
