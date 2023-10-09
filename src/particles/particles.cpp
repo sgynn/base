@@ -163,7 +163,7 @@ Particle& Emitter::spawnParticle(Instance* instance, const vec3& pos, const Quat
 	n.spawnTime = instance->m_time + timeOffset;
 	n.dieTime = n.spawnTime + life.getValue(key);
 	n.mass = mass.getValue(key);
-	n.colour = 0xffffff;
+	n.colour = colour.getValue(key);
 	n.affectorMask = m_initialAffectorMask;
 	spawnParticle(n, instance->getTransform(), key);
 	for(Event* event: m_events[(int)Event::Type::SPAWN]) fireEvent(instance, event, n);
@@ -241,22 +241,6 @@ void Emitter::trigger(Instance* instance, Particle& p) const {
 	// Spawn a particle here
 	for(int i=0; i<spawnCount; ++i) {
 		spawnParticle(instance, p.position, p.orientation, p.velocity, 0, 0);
-		/*
-
-		Particle& n = instance->allocate(this);
-		n.position = p.position;
-		n.orientation = p.orientation;
-		n.velocity.set(0,0,0);
-		n.scale = vec3(scale.getValue(0)); // ToDo - what input ?
-		n.spawnTime = instance->m_time;
-		n.dieTime = n.spawnTime + life.getValue(0);
-		n.colour = colour.getValue(0);
-		n.mass = mass.getValue(0);
-		n.affectorMask = m_initialAffectorMask;
-		spawnParticle(n, m, instance->m_time);
-		n.velocity += p.velocity * inheritVelocity;
-		for(Event* event: m_events[(int)Event::Type::SPAWN]) fireEvent(instance, event, n);
-		*/
 	}
 }
 
@@ -381,8 +365,9 @@ void Instance::initialise() {
 	m_emitters.clear();
 	m_emitters.reserve(m_system->emitters().size());
 	for(Emitter* e: m_system->emitters()) {
+		assert(e->m_index >= 0);
 		m_emitters.push_back(EmitterInstance{e, 0.f, e->startEnabled});
-		if(e->startEnabled) m_active.push_back(e->m_index);
+		if(e->startEnabled && !e->eventOnly) m_active.push_back(e->m_index);
 	}
 	for(RenderInstance& r: m_renderers) delete [] r.head;
 	m_renderers.clear();
@@ -417,7 +402,7 @@ void Instance::update(float time) {
 
 	// Update spawns
 	for(EmitterInstance& e: m_emitters) {
-		if(e.enabled) e.emitter->update(this, time);
+		if(e.enabled && !e.emitter->eventOnly) e.emitter->update(this, time);
 	}
 
 	// Fire threaded events
