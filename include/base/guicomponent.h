@@ -9,10 +9,10 @@ namespace base {
 
 class GUIComponent : public GameStateComponent {
 	public:
-	GUIComponent(gui::Root* gui, float scale=1) : GameStateComponent(-20, 60, PERSISTENT), m_gui(gui), m_mult(1) {
-		setScale(scale);
+	GUIComponent(gui::Root* gui, int height=0) : GameStateComponent(-20, 60, PERSISTENT), m_gui(gui), m_fixedHeight(height) {
+		setHeight(height);
 	}
-	explicit GUIComponent(const char* file, float scale=1) : GUIComponent(new gui::Root(Game::getSize()), scale) {
+	explicit GUIComponent(const char* file, int height=0) : GUIComponent(new gui::Root(Game::getSize()), height) {
 		m_gui->load(file);
 	}
 	~GUIComponent() {
@@ -26,7 +26,7 @@ class GUIComponent : public GameStateComponent {
 			m_gui->mouseEvent(Point(-1,-1), 0, wheel);
 		}
 		else {
-			m_gui->mouseEvent(Point(mouse.x*m_mult, Game::height()-mouse.y*m_mult), mouse.button, wheel);
+			m_gui->mouseEvent(Point(mouse.x*m_mult, (Game::height()-mouse.y)*m_mult), mouse.button, wheel);
 		}
 		bool textboxWasFocused = m_gui->getFocusedWidget()->cast<gui::Textbox>();
 		if(Game::LastKey() && !hasComponentFlags(BLOCK_KEYS)) {
@@ -41,16 +41,26 @@ class GUIComponent : public GameStateComponent {
 		m_gui->draw(Game::getSize());
 	}
 	void resized(const Point& s) override {
+		if(m_fixedHeight > 0) m_mult = m_fixedHeight / (float)s.y;
 		m_gui->resize(s.x*m_mult, s.y*m_mult);
 	}
+	// Scale to a fixed height - width is calculated to maintain aspect ratio. Set to 0 to disable scaling
+	void setHeight(int height) {
+		m_fixedHeight = height;
+		resized(Game::getSize());
+	}
+	// Set the gui scale factor
 	void setScale(float scale) {
+		m_fixedHeight = 0;
 		m_mult = 1/scale;
 		resized(Game::getSize());
 	}
+	float getScale() const { return 1.f / m_mult; }
 	gui::Root* getGUI() { return m_gui; }
 	private:
 	gui::Root* m_gui;
-	float m_mult;
+	float m_mult = 1;
+	float m_fixedHeight = 0;
 };
 
 }
