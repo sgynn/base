@@ -681,7 +681,7 @@ void Renderer::drawImage(int image, const Rect& r, float angle, uint colour, flo
 	if(angle==0) drawBox(r, image, Rect(0,0,s.x,s.y), &colour, false);
 	else {
 		Transform t = m_transform;
-		m_transform.rotate(angle, r.x+r.width/2, r.y+r.width/2);
+		m_transform.rotate(angle, r.x+r.width/2, r.y+r.height/2);
 		drawBox(r, image, Rect(0,0,s.x,s.y), &colour, false);
 		m_transform = t;
 	}
