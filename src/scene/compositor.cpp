@@ -39,6 +39,7 @@ void CompositorPassClear::execute(const FrameBuffer* target, const Rect& view, R
 		glEnable(GL_SCISSOR_TEST);
 		glScissor(view.x, view.y, view.width, view.height);
 	}
+	glDepthMask(1); // If the previous material turned these off, glClear will not work
 	glClearColor(mColour[0], mColour[1], mColour[2], mColour[3]);
 	glClear(mBits);
 	if(!full) glDisable(GL_SCISSOR_TEST);
