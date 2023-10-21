@@ -70,8 +70,9 @@ bool EMWindow::createWindow() {
 		s.canvasResizedCallback = [](int t, const void* r, void* data) {
 			Point size;
 			EMWindow* wnd = (EMWindow*)data;
-			//float ratio = emscripten_get_device_pixel_ratio();
+			float ratio = emscripten_get_device_pixel_ratio();
 			emscripten_get_canvas_element_size(wnd->m_canvas, &size.x, &size.y);
+			printf("Resize: %dx%d (%g)\n", size.x, size.y, ratio);
 			wnd->notifyResize(std::forward<Point>(size));
 			return 0;
 		};

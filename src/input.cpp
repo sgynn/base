@@ -270,12 +270,36 @@ void Input::bindJoystick(uint action, uint js, uint axis, float threshold) {
 	m_axisBinding.push_back({(uint8)js, (uint8)axis, (char)(threshold*127), 0});
 }
 
+void Input::bindAxisInternal(uint action, uint8 type, uint8 js, uint index, float multiplier) {
+	while(m_valueBinding.size() <= action) m_valueBinding.emplace_back();
+	for(ValueBinding& b: m_valueBinding[action]) {
+		if(b.type == type && b.js==js && b.index==index) { b.multiplier = multiplier; return; }
+	}
+	m_valueBinding[action].push_back(ValueBinding{type, js, (uint16)index, multiplier});
+}
+void Input::bindJoystickValue(uint action, uint joystick, uint axis, float multiplier) {
+	bindAxisInternal(action, 0, joystick, axis, multiplier);
+}
+void Input::bindMouseValue(uint action, uint axis, float multiplier) {
+	bindAxisInternal(action, axis<2? 2: 3, 0, axis, multiplier);
+}
+void Input::bindButtonValue(uint action, uint key, float value) {
+	bindAxisInternal(action, 4, 0, key, value);
+}
+void Input::bindButtonValue(uint action, uint joystick, uint button, float value) {
+	bindAxisInternal(action, 1, joystick, button, value);
+}
+
+
+
 void Input::unbind(uint action) {
 	if(action < m_binding.size()) m_binding[action].clear();
+	if(action < m_valueBinding.size()) m_valueBinding[action].clear();
 }
 
 void Input::unbindAll() {
 	for(auto& action: m_binding) action.clear();
+	for(auto& action: m_valueBinding) action.clear();
 }
 
 inline bool Input::checkJoystickThreshold(const AxisBinding& binding) const {
@@ -322,6 +346,31 @@ bool Input::released(uint action) const {
 		}
 	}
 	return false;
+}
+
+float Input::value(uint action) const {
+	float value = 0;
+	if(action>=m_valueBinding.size()) return 0;
+	for(const ValueBinding& b: m_valueBinding[action]) {
+		switch(b.type) {
+		case 0: // Joystick axis
+			value += joystick(b.js).axis(b.index) * b.multiplier;
+			break;
+		case 1: // Joystick button
+			if(joystick(b.js).button(b.index)) value += b.multiplier;
+			break;
+		case 2: // Mouse axis
+			value += mouse.delta[b.index] * b.multiplier;
+			break;
+		case 3: // Mouse wheel
+			value += mouse.wheel * b.multiplier;
+			break;
+		case 4: // Keyboard value
+			if(key(b.index)) value += b.multiplier;
+			break;
+		}
+	}
+	return value;
 }
 
 const char* Input::getActionName(uint action) const {

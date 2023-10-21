@@ -1,5 +1,4 @@
-#ifndef _BASE_INPUT_
-#define _BASE_INPUT_
+#pragma once
 
 #include "math.h"
 #include "hashmap.h"
@@ -253,11 +252,16 @@ namespace base {
 		void bindMouse(uint action, uint button);
 		void bindJoystick(uint action, uint joystick, uint button);
 		void bindJoystick(uint action, uint joystick, uint axis, float threshold);
+		void bindJoystickValue(uint action, uint joystick, uint axis, float multiplier=1);
+		void bindButtonValue(uint action, uint joystick, uint button, float value);
+		void bindButtonValue(uint action, uint keycode, float value);
+		void bindMouseValue(uint action, uint axis, float multiplier=1);
 		void unbind(uint action);
 		void unbindAll();
 		bool check(uint action) const;
 		bool pressed(uint action) const;
 		bool released(uint action) const;
+		float value(uint action) const;
 		void loadActions(const class INIFile&);
 		void saveActions(class INIFile&) const;
 
@@ -267,6 +271,7 @@ namespace base {
 		/** Update must be called once per frame BEFORE window events are processed */
 		void update();
 		private:
+		void bindAxisInternal(uint action, uint8 type, uint8 joystick, uint axis, float multiplier);
 		
 		bool m_key[128];		// state, pressed, released
 		char m_keyChange[128];	// keys that were pressed or released during the last frame
@@ -294,7 +299,9 @@ namespace base {
 		// Input binding
 		HashMap<uint> m_names;
 		struct Binding { uint button:8; uint type:2; uint mask:6; }; // 16 bits
+		struct ValueBinding { uint8 type; uint8 js; uint16 index; float multiplier; };
 		std::vector< std::vector<Binding> > m_binding;
+		std::vector< std::vector<ValueBinding> > m_valueBinding;
 
 		// Need additonal data to track joystick axis threshold bindings
 		struct AxisBinding { uint8 js; uint8 axis; char threshold; bool last; };
@@ -302,6 +309,4 @@ namespace base {
 		std::vector<AxisBinding> m_axisBinding;
 	};
 };
-
-#endif
 
