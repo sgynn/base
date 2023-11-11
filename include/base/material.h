@@ -22,10 +22,10 @@ namespace base {
 		Blend();
 		Blend(BlendMode);
 		Blend(BlendMode colour, BlendMode alpha);
-		Blend(uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha);
-		void set(int, BlendMode);
-		void set(int, BlendMode colour, BlendMode alpha);
-		void set(int, uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha);
+		Blend(unsigned srcRGB, unsigned dstRGB, unsigned srcAlpha, unsigned dstAlpha);
+		void set(int buffer, BlendMode);
+		void set(int buffer, BlendMode colour, BlendMode alpha);
+		void set(int buffer, unsigned srcRGB, unsigned dstRGB, unsigned srcAlpha, unsigned dstAlpha);
 		bool operator==(const Blend&) const;
 		void bind() const;
 		

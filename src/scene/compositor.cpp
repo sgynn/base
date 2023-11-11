@@ -697,7 +697,9 @@ bool Workspace::compile(int w, int h) {
 	}
 	CLink& link = links[ outputInfo.inputs[0] ];
 	Compositor::Buffer outputBuffer;
-	memset(&outputBuffer, 0, sizeof(outputBuffer));
+	outputBuffer.width = outputBuffer.height = 0;
+	outputBuffer.unique = true;
+	outputBuffer.texture = nullptr;
 	strcpy(outputBuffer.name, "OUTPUT");
 	link.processed = true;
 	link.data = allocateLinkBuffer(&outputBuffer);

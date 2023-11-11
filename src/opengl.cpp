@@ -124,6 +124,7 @@ PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D = 0;
 PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glCompressedTexSubImage3D = 0;
 PFNGLGENERATEMIPMAPPROC          glGenerateMipmap = 0;
 PFNGLBLENDFUNCSEPARATEPROC       glBlendFuncSeparate = 0;
+PFNGLBLENDFUNCSEPARATEIPROC      glBlendFuncSeparatei = 0;
 
 PFNGLGENVERTEXARRAYSPROC       glGenVertexArrays       = 0;
 PFNGLBINDVERTEXARRAYPROC       glBindVertexArray       = 0;
@@ -164,6 +165,7 @@ int initialiseOpenGLExtensions() {
 	glCompressedTexSubImage3D = (PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)wglGetProcAddress("glCompressedTexSubImage3D");
 	glGenerateMipmap       = (PFNGLGENERATEMIPMAPPROC)wglGetProcAddress("glGenerateMipmap");
 	glBlendFuncSeparate    = (PFNGLBLENDFUNCSEPARATEPROC)wglGetProcAddress("glBlendFuncSeparate");
+	glBlendFuncSeparatei    = (PFNGLBLENDFUNCSEPARATEIPROC)wglGetProcAddress("glBlendFuncSeparatei");
 
 
 	glCreateShader       = (PFNGLCREATESHADERPROC)   wglGetProcAddress("glCreateShader");
