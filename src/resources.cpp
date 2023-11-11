@@ -15,6 +15,7 @@
 #include <base/dds.h>
 #include <base/xml.h>
 #include <base/thread.h>
+#include <base/opengl.h>
 #include <cstdio>
 #include <list>
 
@@ -444,6 +445,7 @@ class MaterialLoader : public ResourceLoader<Material> {
 
 static void parseShaderVariable(ShaderVars& vars, const XMLElement& e);
 static Blend parseBlendState(const XMLElement&);
+static MacroState parseMacroState(const XMLElement&);
 
 Material* MaterialLoader::create(const char* name, Manager* manager) {
 	// Materials are complicated
@@ -603,7 +605,7 @@ static E enumValue(const char* value, int size, const char** strings) {
 	if(value && value[0]) printf("Error: Invalid resource enum value '%s'\n", value);
 	return (E)-1;
 }
-template<typename T> T enumValueT(const char* value, int size, const char** strings, T defaultValue) {
+template<typename T> T enumValue(const char* value, int size, const char** strings, T defaultValue) {
 	int r = enumValue(value, size, strings);
 	if(r<0) return defaultValue;
 	else return (T)r;
@@ -734,44 +736,82 @@ void XMLResourceLoader::loadMaterialPass(const XMLElement& e, Pass* pass) {
 			if(shared) pass->addShared(shared);
 			else printf("Error: Missing shared shadervars %s\n", name);
 		}
-		else if(i=="blend") {
-			pass->blend = parseBlendState(i);
-		}
 		else if(i=="state") {
-			const char* cullModes[] = { "none", "back", "front" };
-			pass->state.cullMode = enumValueT(i.attribute("cull"), 3, cullModes, CULL_BACK);
-			const char* depthModes[] = { "always", "less", "lequal", "greater", "gequal", "equal", "disabled" };
-			pass->state.depthTest = enumValueT(i.attribute("depth"), 7, depthModes, DEPTH_LEQUAL);
-			pass->state.depthWrite = i.attribute("depthWrite", 1);	// perhaps use mask="RGBD"
-			pass->state.wireframe  = i.attribute("wireframe", 0);
-			pass->state.depthOffset = i.attribute("offset", 0.f);
-			if(const char* mask = i.attribute("colour", nullString)) {
-				pass->state.colourMask = MASK_NONE;
-				if(strchr(mask, 'r')) pass->state.colourMask |= MASK_RED;
-				if(strchr(mask, 'g')) pass->state.colourMask |= MASK_GREEN;
-				if(strchr(mask, 'b')) pass->state.colourMask |= MASK_BLUE;
-				if(strchr(mask, 'a')) pass->state.colourMask |= MASK_ALPHA;
+			pass->state = parseMacroState(i);
+		}
+	}
+	pass->blend = parseBlendState(e);
+}
+
+static Blend parseBlendState(const XMLElement& material) {
+	Blend blend;
+	const char* presets[] = { "none", "alpha", "add", "multiply" };
+	const char* constants[] = {
+		"ZERO",
+		"ONE",
+		"SRC_COLOR",
+		"ONE_MINUS_SRC_COLOR",
+		"DST_COLOR",
+		"ONE_MINUS_DST_COLOR",
+		"SRC_ALPHA",
+		"ONE_MINUS_SRC_ALPHA",
+		"DST_ALPHA",
+		"ONE_MINUS_DST_ALPHA",
+		"SRC_ALPHA_SATURATE",
+	};
+	const uint values[] = {
+		GL_ZERO,
+		GL_ONE,
+		GL_SRC_COLOR,
+		GL_ONE_MINUS_SRC_COLOR,
+		GL_DST_COLOR,
+		GL_ONE_MINUS_DST_COLOR,
+		GL_SRC_ALPHA,
+		GL_ONE_MINUS_SRC_ALPHA,
+		GL_DST_ALPHA,
+		GL_ONE_MINUS_DST_ALPHA,
+		GL_SRC_ALPHA_SATURATE,
+	};
+
+	for(const XMLElement& i: material) {
+		if(i == "blend") {
+			int buffer = i.attribute("buffer", -1);
+			if(i.hasAttribute("mode")) {
+				BlendMode mode      = enumValue(i.attribute("mode"), 4, presets, BLEND_NONE);
+				BlendMode alpha = enumValue(i.attribute("alpha"), 4, presets, mode);
+				if(buffer<0) return Blend(mode, alpha);
+				else blend.set(buffer, mode, alpha);
+			}
+			else {
+				int srcRGB = enumValue(i.attribute("src"), 11, constants, 1);
+				int dstRGB = enumValue(i.attribute("dst"), 11, constants, 1);
+				int srcAlpha = enumValue(i.attribute("srcAlpha"), 11, constants, srcRGB);
+				int dstAlpha = enumValue(i.attribute("dstAlpha"), 11, constants, dstRGB);
+				if(buffer<0) return Blend(values[srcRGB], values[dstRGB], values[srcAlpha], values[dstAlpha]);
+				else blend.set(buffer, values[srcRGB], values[dstRGB], values[srcAlpha], values[dstAlpha]);
 			}
 		}
 	}
+	return blend;
 }
 
-static Blend parseBlendState(const XMLElement& e) {
-	Blend blend(BLEND_NONE);
-	// Predefined modes
-	const char* modes[] = { "none", "alpha", "add", "multiply" };
-	int mode      = enumValue(e.attribute("mode"), 4, modes);
-	int alphaMode = enumValue(e.attribute("alpha"), 4, modes);
-	if(alphaMode<0) alphaMode = mode;
-	if(mode>=0) blend = Blend((BlendMode)mode, (BlendMode)alphaMode);
-	else {
-		// Hmm, how to specify this? so many options
-		// src, dst, srcalpha, dstalpha, operation
-		// src*1 + (1-dst)
-		mode = 0;
+static MacroState parseMacroState(const XMLElement& i) {
+	MacroState state;
+	const char* cullModes[] = { "none", "back", "front" };
+	state.cullMode = enumValue(i.attribute("cull"), 3, cullModes, CULL_BACK);
+	const char* depthModes[] = { "always", "less", "lequal", "greater", "gequal", "equal", "disabled" };
+	state.depthTest = enumValue(i.attribute("depth"), 7, depthModes, DEPTH_LEQUAL);
+	state.depthWrite = i.attribute("depthWrite", 1);	// perhaps use mask="RGBD"
+	state.wireframe  = i.attribute("wireframe", 0);
+	state.depthOffset = i.attribute("offset", 0.f);
+	if(const char* mask = i.attribute("colour", nullptr)) {
+		state.colourMask = MASK_NONE;
+		if(strchr(mask, 'r')) state.colourMask |= MASK_RED;
+		if(strchr(mask, 'g')) state.colourMask |= MASK_GREEN;
+		if(strchr(mask, 'b')) state.colourMask |= MASK_BLUE;
+		if(strchr(mask, 'a')) state.colourMask |= MASK_ALPHA;
 	}
-	// Basic version for now
-	return (BlendMode) mode;
+	return state;
 }
 
 Material* XMLResourceLoader::loadMaterial(const XMLElement& e, const char* name) {
@@ -908,6 +948,9 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				CompositorPassScene* pass = new CompositorPassScene(iw, ih, material, technique);
 				pass->setCamera(i.attribute("camera", nullptr));
 				c->addPass(target, pass);
+				// Additional material override properties
+				if(i.find("blend")) pass->setBlend(parseBlendState(i));
+				if(const XMLElement& e = i.find("state")) pass->setState(parseMacroState(e));
 			}
 			else if(strcmp(type, "quad")==0) {
 				const char* material = i.attribute("material");

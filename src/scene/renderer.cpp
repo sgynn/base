@@ -66,12 +66,13 @@ void Renderer::clearScreen() {
 
 // ============================================================= //
 
-RenderState::RenderState() : m_camera(0), m_activePass(0), m_materialOverride(0), m_materialTechnique(0), m_viewport(0,0,0,0) {
+RenderState::RenderState() : m_viewport(0,0,0,0) {
 	m_auto = new AutoVariableSource();
 }
 
 RenderState::~RenderState() {
 	delete m_auto;
+	setMaterialOverride(nullptr);
 }
 
 void RenderState::setCamera(Camera* c) {
@@ -101,7 +102,13 @@ void RenderState::setMaterial(Material* m) {
 void RenderState::setMaterialPass(Pass* p) {
 	if(p) {
 		if(p == m_activePass) p->bindVariables(m_auto, true);
-		else p->bind(m_auto); // ToDo: separate blocks
+		else {
+			p->getShader()->bind();
+			p->bindVariables(m_auto);
+			p->bindTextures();
+			(m_blendOverride? *m_blendOverride: p->blend).bind();
+			(m_stateOverride? *m_stateOverride: p->state).bind();
+		}
 	}
 	else {
 		// This is actually an error - perhaps use a default vertex only shader ?
@@ -112,6 +119,27 @@ void RenderState::setMaterialPass(Pass* p) {
 
 void RenderState::setMaterialOverride(Material* m) {
 	m_materialOverride = m;
+	delete m_stencilOverride;
+	delete m_stateOverride;
+	delete m_blendOverride;
+	m_stencilOverride = nullptr;
+	m_stateOverride = nullptr;
+	m_blendOverride = nullptr;
+}
+
+void RenderState::setMaterialBlendOverride(const Blend& b) {
+	if(!m_blendOverride) m_blendOverride = new Blend(b);
+	else *m_blendOverride = b;
+}
+
+void RenderState::setMaterialStateOverride(const MacroState& s) {
+	if(!m_stateOverride) m_stateOverride = new MacroState(s);
+	else *m_stateOverride = s;
+}
+
+void RenderState::setStencilOverride(const StencilState& s) {
+	if(!m_stencilOverride) m_stencilOverride = new StencilState(s);
+	else *m_stencilOverride = s;
 }
 
 void RenderState::setMaterialTechnique(size_t id) {
@@ -132,7 +160,7 @@ void RenderState::unbindVertexBuffers() {
 
 void RenderState::reset() {
 	m_materialTechnique = 0;
-	setMaterial(0);
+	setMaterial(nullptr);
 	glDepthMask(1);
 	
 	static Blend blend(BLEND_ALPHA);

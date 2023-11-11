@@ -13,6 +13,9 @@ namespace base {
 	class Material;
 	class AutoVariableSource;
 	class Drawable;
+	class Blend;
+	class MacroState;
+	class StencilState;
 
 	enum class RenderQueueMode : char { Normal, Sorted, SortedInverse, Disabled };
 
@@ -30,6 +33,9 @@ namespace base {
 		void setMaterialOverride(Material*);
 		void setMaterialTechnique(size_t);
 		void setMaterialTechnique(const char*);
+		void setMaterialBlendOverride(const Blend& blend);
+		void setMaterialStateOverride(const MacroState&);
+		void setStencilOverride(const StencilState&);
 		void unbindVertexBuffers();
 		void reset();	// Try to put the renderer back to its default state
 
@@ -38,10 +44,13 @@ namespace base {
 		
 		private:
 		AutoVariableSource*  m_auto;
-		base::Camera*        m_camera;
-		Pass*                m_activePass;
-		Material*            m_materialOverride;
-		size_t               m_materialTechnique;
+		base::Camera*        m_camera = nullptr;
+		Pass*                m_activePass = nullptr;
+		Material*            m_materialOverride = nullptr;
+		size_t               m_materialTechnique = 0;
+		Blend*               m_blendOverride = nullptr;
+		MacroState*          m_stateOverride = nullptr;
+		StencilState*        m_stencilOverride = nullptr;
 		Rect                 m_viewport;
 	};
 

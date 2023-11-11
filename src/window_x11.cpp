@@ -88,9 +88,9 @@ bool X11Window::createWindow() {
 
 	// Create context
 	int attribs[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
 		GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-		//GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+		GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 		None
 	};
 	m_context = glXCreateContextAttribsARB(m_display, m_fbConfig, 0, GL_TRUE, attribs);

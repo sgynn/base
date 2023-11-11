@@ -2,6 +2,7 @@
 
 #include <base/hashmap.h>
 #include <base/texture.h>
+#include <base/material.h>
 #include <vector>
 
 namespace base {
@@ -104,17 +105,25 @@ namespace base {
 		void setMaterial(Material* m, const char* technique);
 		void setCamera(const char* camera);
 		void setMaterial(Material* m) { mMaterial=m; }
+		void setBlend(const Blend& blend);
+		void setStencil(const StencilState&);
+		void setState(const MacroState&);
+		void clearMaterialOverides();
 
 		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
 		const char* getCamera() const override { return mCameraName; }
 		void resolveExternals(MaterialResolver*) override;
 
 		protected:
-		uint8     mFirst, mLast;	// Render queues to draw
-		char*     mMaterialName;	// Override material name
-		size_t    mTechnique;		// Material technique to use
-		char*     mCameraName;		// Camera name
-		Material* mMaterial;		// Resolved material - how to set this ?? 
+		uint8         mFirst, mLast;      // Render queues to draw
+		char*         mMaterialName;      // Override material name
+		size_t        mTechnique;         // Material technique to use
+		char*         mCameraName;        // Camera name
+		Material*     mMaterial;          // Resolved material - how to set this ?? 
+		Blend         mBlend;             // Set blend state override
+		MacroState    mState;             // Material state override
+		StencilState  mStencil;           // Stencil state override
+		int           mOverrideFlags = 0; // What to override
 	};
 	/// Copy a texture
 	class CompositorPassCopy final : public CompositorPass {

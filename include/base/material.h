@@ -22,17 +22,22 @@ namespace base {
 		Blend();
 		Blend(BlendMode);
 		Blend(BlendMode colour, BlendMode alpha);
+		Blend(uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha);
+		void set(int, BlendMode);
+		void set(int, BlendMode colour, BlendMode alpha);
+		void set(int, uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha);
 		bool operator==(const Blend&) const;
 		void bind() const;
+		
+		private:
+		enum class State : char { Disabled, Single, Separate, Indexed, IndexedSeparate };
+		struct Data { int buffer; unsigned short src, dst, srcAlpha, dstAlpha; };
 
-		// flags: src/dst, colour/alpha, invert, constant
-		bool enabled;
-		bool separate;
-		int src, dst;
-		int srcAlpha, dstAlpha;
+		State m_state;
+		std::vector<Data> m_data;
 
 		private:
-		void setFromEnum(BlendMode, int& src, int& dst);
+		static void setFromEnum(BlendMode, unsigned short& src, unsigned short& dst);
 	};
 
 	/** Material macro state */
@@ -200,7 +205,7 @@ namespace base {
 
 
 		// Will set a texture for all passes that have the variable
-		void setTexture(const char* name, Texture* texture);
+		bool setTexture(const char* name, Texture* texture);
 
 		protected:
 		std::vector<Pass*> m_passes;

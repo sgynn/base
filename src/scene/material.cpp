@@ -369,38 +369,105 @@ void Pass::bindVariables(AutoVariableSource* autos, bool onlyAuto) const {
 
 // ======================================================================================= //
 
-Blend::Blend() : enabled(false), separate(false), src(0), dst(0), srcAlpha(0), dstAlpha(0) {
+Blend::Blend() : m_state(State::Disabled) {
 }
-Blend::Blend(BlendMode mode) : enabled(true), separate(false), src(0), dst(0), srcAlpha(0), dstAlpha(0) {
-	if(mode == BLEND_NONE) enabled = false;
-	else setFromEnum(mode, src, dst);
-}
-Blend::Blend(BlendMode colour, BlendMode alpha) : enabled(true), separate(false), src(0), dst(0), srcAlpha(0), dstAlpha(0) {
-	if(colour == BLEND_NONE && alpha == BLEND_NONE) enabled = false;
+
+Blend::Blend(BlendMode mode) {
+	if(mode == BLEND_NONE) m_state = State::Disabled;
 	else {
-		setFromEnum(colour, src, dst);
-		setFromEnum(alpha, srcAlpha, dstAlpha);
+		m_state = State::Single;
+		m_data.push_back({0});
+		setFromEnum(mode, m_data[0].src, m_data[0].dst);
+		m_data[0].srcAlpha = m_data[0].src;
+		m_data[0].dstAlpha = m_data[0].dst;
 	}
 }
+
+Blend::Blend(BlendMode colour, BlendMode alpha) {
+	if(colour == BLEND_NONE && alpha == BLEND_NONE) m_state = State::Disabled;
+	else {
+		m_state = colour==alpha? State::Single: State::Separate;
+		m_data.push_back({0});
+		setFromEnum(colour, m_data[0].src, m_data[0].dst);
+		setFromEnum(alpha, m_data[0].srcAlpha, m_data[0].dstAlpha);
+	}
+}
+
+Blend::Blend(uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha) {
+	m_state = srcRGB == srcAlpha && dstRGB == dstAlpha? State::Single: State::Separate;
+	m_data.push_back({0, (uint16)srcRGB, (uint16)dstRGB, (uint16)srcAlpha, (uint16)dstAlpha});
+}
+
+void Blend::set(int buffer, BlendMode mode) {
+	set(buffer, mode, mode);
+}
+
+void Blend::set(int buffer, BlendMode colour, BlendMode alpha) {
+	m_state = State::IndexedSeparate;
+	for(Data& d: m_data) {
+		if(d.buffer == buffer) {
+			setFromEnum(colour, d.src, d.dst);
+			setFromEnum(alpha, d.srcAlpha, d.dstAlpha);
+			return;
+		}
+	}
+	m_data.push_back({buffer});
+	setFromEnum(colour, m_data.back().src, m_data.back().dst);
+	setFromEnum(alpha, m_data.back().srcAlpha, m_data.back().dstAlpha);
+}
+
+void Blend::set(int buffer, uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha) {
+	m_state = State::IndexedSeparate;
+	for(Data& d: m_data) {
+		if(d.buffer == buffer) {
+			d.src = (uint16)srcRGB;
+			d.dst = (uint16)dstRGB;
+			d.srcAlpha = (uint16)srcAlpha;
+			d.dstAlpha = (uint16)dstAlpha;
+			return;
+		}
+	}
+	m_data.push_back({buffer, (uint16)srcRGB, (uint16)dstRGB, (uint16)srcAlpha, (uint16)dstAlpha});
+}
+
+
 bool Blend::operator==(const Blend& b) const {
-	if(!enabled && !b.enabled) return true;
-	if(enabled != b.enabled) return false;
-	if(separate != b.separate) return false;
-	if(src!=b.src || dst!=b.dst) return false;
-	if(separate && (srcAlpha!=b.srcAlpha || dstAlpha!=b.dstAlpha)) return false;
+	if(m_state != b.m_state) return false;
+	if(m_data.size() != b.m_data.size()) return false;
+	for(size_t i=0; i<m_data.size(); ++i) {
+		if(m_data[i].buffer != b.m_data[i].buffer) return false;
+		if(m_data[i].src != b.m_data[i].src) return false;
+		if(m_data[i].dst != b.m_data[i].dst) return false;
+		if(m_data[i].srcAlpha != b.m_data[i].srcAlpha) return false;
+		if(m_data[i].dstAlpha != b.m_data[i].dstAlpha) return false;
+	}
 	return true;
 }
 
 void Blend::bind() const {
-	if(enabled) {
+	switch(m_state) {
+	case State::Disabled:
+		glDisable(GL_BLEND);
+		break;
+	case State::Single:
 		glEnable(GL_BLEND);
-		if(separate) glBlendFuncSeparate(src, dst, srcAlpha, dstAlpha);
-		else glBlendFunc(src, dst);
+		glBlendFunc(m_data[0].src, m_data[0].dst);
+		break;
+	case State::Separate:
+		glEnable(GL_BLEND);
+		glBlendFuncSeparate(m_data[0].src, m_data[0].dst, m_data[0].srcAlpha, m_data[0].dstAlpha);
+		break;
+	case State::Indexed:
+	case State::IndexedSeparate:
+		glEnable(GL_BLEND);
+		for(const Data& d: m_data) {
+			glBlendFuncSeparatei(d.buffer, d.src, d.dst, d.srcAlpha, d.dstAlpha);
+		}
+		break;
 	}
-	else glDisable(GL_BLEND);
 }
 
-void Blend::setFromEnum(BlendMode mode, int& rsc, int& dst) {
+void Blend::setFromEnum(BlendMode mode, unsigned short& src, unsigned short& dst) {
 	switch(mode) {
 	case BLEND_NONE:
 		src = GL_ONE;
@@ -530,11 +597,14 @@ size_t Material::getPassID(const char* name) {
 }
 
 
-void Material::setTexture(const char* name, Texture* texture) {
+bool Material::setTexture(const char* name, Texture* texture) {
+	bool ok = false;
 	for(Pass* pass: m_passes) {
 		if(pass->getTextureSlot(name) < pass->getTextureCount()) {
 			pass->setTexture(name, texture);
+			ok = true;
 		}
 	}
+	return ok;
 }
 

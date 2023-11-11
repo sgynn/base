@@ -172,9 +172,35 @@ CompositorPassScene::~CompositorPassScene() {
 	free(mCameraName);
 }
 
+void CompositorPassScene::setMaterial(Material* m, const char* technique) {
+	free(mMaterialName);
+	mMaterialName = nullptr;
+	mTechnique = Material::getPassID(technique);
+}
+
+void CompositorPassScene::setBlend(const Blend& b) {
+	mBlend = b;
+	mOverrideFlags |= 1;
+}
+
+void CompositorPassScene::setStencil(const StencilState& s) {
+	mStencil = s;
+	mOverrideFlags |= 2;
+}
+
+void CompositorPassScene::setState(const MacroState& s) {
+	mState = s;
+	mOverrideFlags |= 4;
+}
+
+void CompositorPassScene::clearMaterialOverides() {
+	setMaterial(nullptr, nullptr);
+	mOverrideFlags = 0;
+}
+
 void CompositorPassScene::setCamera(const char* camera) {
 	if(mCameraName) free(mCameraName);
-	mCameraName = camera? strdup(camera): 0;
+	mCameraName = camera? strdup(camera): nullptr;
 }
 
 void CompositorPassScene::resolveExternals(MaterialResolver* r) {
@@ -187,11 +213,18 @@ void CompositorPassScene::execute(const FrameBuffer* target, const Rect& view, R
 	state.setMaterialTechnique(mTechnique);
 	state.setCamera(camera);
 
+	if(mMaterial) state.setMaterialOverride(mMaterial);
+	if(mOverrideFlags & 1) state.setMaterialBlendOverride(mBlend);
+	if(mOverrideFlags & 2) state.setMaterialStateOverride(mState);
+	if(mOverrideFlags & 4) state.setStencilOverride(mStencil);
+
 	if(scene) {
 		renderer->clear();
 		scene->collect(renderer, state.getCamera(), mFirst, mLast);
 	}
 	renderer->render(mFirst, mLast);
+	state.setMaterialOverride(nullptr);
+	state.setMaterialTechnique((int)0);
 }
 
 // ================================================================================ //
