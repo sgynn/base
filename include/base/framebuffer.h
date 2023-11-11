@@ -36,6 +36,7 @@ class FrameBuffer {
 
 	/** Is this a depth only buffer */
 	bool isDepthOnly() const { return m_count==0; }
+	int  getColourBufferCount() const { return m_count; }
 
 	/** Is this a valid framebuffer */
 	bool isValid() const;

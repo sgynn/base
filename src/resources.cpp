@@ -1004,13 +1004,18 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				}
 			}
 			else if(strcmp(type, "clear")==0) {
-				int flags = 0;
-				if(i.attribute("colour", 1)) flags |= 1;
-				if(i.attribute("depth", 1)) flags |= 2;
-				if(i.attribute("stencil", 1)) flags |= 4;
+				ClearBits flags = (ClearBits)0;
+				if(i.attribute("colour", 1)) flags = flags | CLEAR_COLOUR;
+				if(i.attribute("depth", 1)) flags = flags | CLEAR_DEPTH;
+				if(i.attribute("stencil", 1)) flags = flags | CLEAR_STENCIL;
 				float depth = i.attribute("depth", 1.f);
-				uint colour=i.attribute("value", 0u);
-				c->addPass(target, new CompositorPassClear(flags, colour, depth));
+				uint colour = i.attribute("value", 0u);
+				CompositorPassClear* clear = new CompositorPassClear(flags, colour, depth);
+				clear->setColour(0, i.attribute("buffer0", colour));
+				clear->setColour(1, i.attribute("buffer1", colour));
+				clear->setColour(2, i.attribute("buffer2", colour));
+				clear->setColour(3, i.attribute("buffer3", colour));
+				c->addPass(target, clear);
 			}
 			else if(strcmp(type, "copy")==0) {
 				c->addPass(target, new CompositorPassCopy(i.attribute("source")));

@@ -40,6 +40,7 @@ namespace base {
 
 
 	enum ClearBits { CLEAR_COLOUR=1, CLEAR_DEPTH=2, CLEAR_STENCIL=4 };
+	inline constexpr ClearBits operator|(ClearBits a, ClearBits b) { return (ClearBits)((int)a | (int)b); }
 
 	/// Compositor pass virtual base class
 	class CompositorPass {
@@ -53,19 +54,23 @@ namespace base {
 	/// Clear target buffer
 	class CompositorPassClear final : public CompositorPass {
 		public:
-		CompositorPassClear(char clearBits=3, uint colour=0, float depth=1);
-		CompositorPassClear(char clearBits, const float* colour, float depth=1);
+		CompositorPassClear(ClearBits clearBits=CLEAR_COLOUR|CLEAR_DEPTH, uint colour=0, float depth=1);
+		CompositorPassClear(ClearBits clearBits, const float* colour, float depth=1);
 		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
-		void setColour(float r, float g, float b, float a=1) { mColour[0]=r; mColour[1]=g; mColour[2]=b; mColour[3]=a; }
+		void setColour(unsigned rgba);
+		void setColour(unsigned rgb, float alpha);
+		void setColour(float r, float g, float b, float a=1);
+		void setColour(int buffer, float r, float g, float b, float a);
+		void setColour(int buffer, unsigned rgba);
 		void setDepth(float value) { mDepth=value; }
-		void setBits(unsigned bits) { mBits=bits; }
-		const float* getColour() const { return mColour; }
+		void setBits(ClearBits bits) { mBits=bits; }
+		const float* getColour(int buffer=0) const;
 		float getDepth() const { return mDepth; }
 		unsigned getBits() const { return mBits; }
 		protected:
-		float    mColour[4];
 		float    mDepth;
 		unsigned mBits;
+		std::vector<float> mColour;
 	};
 	/// Draw a fullscreen quad
 	class CompositorPassQuad final : public CompositorPass {

@@ -15,21 +15,56 @@ using namespace base;
 
 Compositor* Compositor::Output = new Compositor();
 
-CompositorPassClear::CompositorPassClear(char bits, uint c, float d) : mDepth(d), mBits(0) {
-	mColour[2] = (c&0xff)/255.f;
-	mColour[1] = ((c>>8)&0xff)/255.f;
-	mColour[0] = ((c>>16)&0xff)/255.f;
-	mColour[3] = ((c>>24)&0xff)/255.f;
+CompositorPassClear::CompositorPassClear(ClearBits bits, uint c, float d) : mDepth(d), mBits(0) {
+	mColour.resize(4, 0.f);
+	setColour(c, (c>>24)/255.f);
 	if(bits & CLEAR_COLOUR)  mBits |= GL_COLOR_BUFFER_BIT;
 	if(bits & CLEAR_DEPTH)   mBits |= GL_DEPTH_BUFFER_BIT;
 	if(bits & CLEAR_STENCIL) mBits |= GL_STENCIL_BUFFER_BIT;
 }
-CompositorPassClear::CompositorPassClear(char bits, const float* c, float d) : mDepth(d), mBits(0) {
-	if(c) memcpy(mColour, c, 4*sizeof(float));
-	else memset(mColour, 0, 4*sizeof(float));
+CompositorPassClear::CompositorPassClear(ClearBits bits, const float* c, float d) : mDepth(d), mBits(0) {
+	mColour.resize(4, 0.f);
+	if(c) memcpy(mColour.data(), c, 4*sizeof(float));
 	if(bits & CLEAR_COLOUR)  mBits |= GL_COLOR_BUFFER_BIT;
 	if(bits & CLEAR_DEPTH)   mBits |= GL_DEPTH_BUFFER_BIT;
 	if(bits & CLEAR_STENCIL) mBits |= GL_STENCIL_BUFFER_BIT;
+}
+void CompositorPassClear::setColour(unsigned rgba) { setColour(0, rgba); }
+void CompositorPassClear::setColour(unsigned rgb, float alpha) {
+	setColour(0, rgb);
+	mColour[3] = alpha;
+}
+void CompositorPassClear::setColour(int buffer, unsigned rgba) {
+	float r = (rgba&0xff)/255.f;
+	float g = ((rgba>>8)&0xff)/255.f;
+	float b = ((rgba>>16)&0xff)/255.f;
+	float a = ((rgba>>24)&0xff)/255.f;
+	setColour(buffer, r, g, b, a);
+}
+void CompositorPassClear::setColour(float r, float g, float b, float a) {
+	mColour.resize(4);
+	mColour[0] = r;
+	mColour[1] = g;
+	mColour[2] = b;
+	mColour[3] = a;
+}
+void CompositorPassClear::setColour(int buffer, float r, float g, float b, float a) {
+	if(buffer>0 && mColour.size()==4 && mColour[0]==r && mColour[1]==g && mColour[2]==b && mColour[3]==a) return;
+
+	while((int)mColour.size() <= buffer * 4) {
+		mColour.push_back(mColour[0]);
+		mColour.push_back(mColour[1]);
+		mColour.push_back(mColour[2]);
+		mColour.push_back(mColour[3]);
+	}
+	mColour[buffer*4+0] = r;
+	mColour[buffer*4+1] = g;
+	mColour[buffer*4+2] = b;
+	mColour[buffer*4+3] = a;
+}
+const float* CompositorPassClear::getColour(int buffer) const {
+	if(buffer*4 < (int)mColour.size()) return mColour.data() + buffer*4;
+	return mColour.data();
 }
 void CompositorPassClear::execute(const FrameBuffer* target, const Rect& view, Renderer* r, Camera*, Scene*) const {
 	bool full = view.x==0 && view.y==0 && view.width==target->width() && view.height==target->height();
@@ -40,8 +75,25 @@ void CompositorPassClear::execute(const FrameBuffer* target, const Rect& view, R
 		glScissor(view.x, view.y, view.width, view.height);
 	}
 	glDepthMask(1); // If the previous material turned these off, glClear will not work
-	glClearColor(mColour[0], mColour[1], mColour[2], mColour[3]);
-	glClear(mBits);
+	
+	if(mColour.size() == 4 || target->getColourBufferCount() <= 1) {
+		glClearColor(mColour[0], mColour[1], mColour[2], mColour[3]);
+		glClear(mBits);
+	}
+	else {
+		// Clear colour buffers individually
+		GLenum buf;
+		for(int i=0; i<target->getColourBufferCount(); ++i) {
+			const float* col = getColour(i);
+			buf = GL_COLOR_ATTACHMENT0 + i;
+			glDrawBuffers(1, &buf);
+			glClearColor(col[0], col[1], col[2], col[3]);
+			glClear(mBits);
+		}
+		static GLenum all[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+		glDrawBuffers(target->getColourBufferCount(), all);
+	}
+
 	if(!full) glDisable(GL_SCISSOR_TEST);
 }
 
@@ -1014,7 +1066,7 @@ CompositorGraph* base::getDefaultCompositor() {
 	static CompositorGraph* graph = 0;
 	if(graph) return graph;
 	Compositor* c = new Compositor();
-	c->addPass("0", new CompositorPassClear(3, 0x000020, 1) );
+	c->addPass("0", new CompositorPassClear(CLEAR_DEPTH | CLEAR_COLOUR, 0x000020, 1) );
 	c->addPass("0", new CompositorPassScene(0,255) );
 	c->addOutput("0");
 	graph = new CompositorGraph;
