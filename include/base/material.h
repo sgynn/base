@@ -27,6 +27,7 @@ namespace base {
 		void set(int buffer, BlendMode colour, BlendMode alpha);
 		void set(int buffer, unsigned srcRGB, unsigned dstRGB, unsigned srcAlpha, unsigned dstAlpha);
 		bool operator==(const Blend&) const;
+		bool operator!=(const Blend&) const;
 		void bind() const;
 		
 		private:

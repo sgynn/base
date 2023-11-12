@@ -444,6 +444,10 @@ bool Blend::operator==(const Blend& b) const {
 	return true;
 }
 
+bool Blend::operator!=(const Blend& b) const {
+	return !(*this == b);
+}
+
 void Blend::bind() const {
 	switch(m_state) {
 	case State::Disabled:
