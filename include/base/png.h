@@ -1,5 +1,4 @@
-#ifndef _BASE_PNG_
-#define _BASE_PNG_
+#pragma once
 
 namespace base {
 	class PNG {
@@ -7,19 +6,19 @@ namespace base {
 		PNG() : data(0), width(0), height(0), bpp(0) {}
 		PNG(const PNG&);
 		~PNG() { clear(); }
-		const PNG& operator=(const PNG&);
-		
-		// c++11 move functions
 		PNG(PNG&& p);
+		const PNG& operator=(const PNG&);
 		const PNG& operator=(PNG&&);
 		
-		/** Load the bitmap image - returns image object or NULL */
+		/// Load a png image from file
 		static PNG load(const char* filename);
-		/** Create a blank image */
+		/// Load a png image from data held in memory
+		static PNG loadEmbedded(unsigned size, const char* data);
+		/// Create a new image from pixel data
 		static PNG create(int width, int height, int depth, const char* data=0);
-		/** Save image to file*/
+		/// Save image to file
 		int save(const char* filename);
-		/** Clear png data */
+		// Clear png data
 		void clear();
 		
 		// Image data
@@ -29,4 +28,3 @@ namespace base {
 	};
 };
 
-#endif
