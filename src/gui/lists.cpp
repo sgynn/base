@@ -137,11 +137,9 @@ void ItemList::sortItems(int flags) {
 		std::sort(m_items->begin(), m_items->end(), [inv](const ListItem& a, const ListItem& b) {
 			const char* sa = a.getText(); if(!sa) sa="";
 			const char* sb = b.getText(); if(!sb) sb="";
-			constexpr int shift = 'a' - 'A';
+			constexpr int mask = 0xdf; // ascii case has only one bit difference
 			while(*sa && *sb) {
-				char u = *sa>'a'? *sa - shift: *sa;
-				char v = *sa>'a'? *sa - shift: *sa;
-				if((u<v) != inv) return false;
+				if(((*sa&mask) < (*sb&mask)) != inv) return false;
 				++sa;
 				++sb;
 			}

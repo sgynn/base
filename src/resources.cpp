@@ -599,16 +599,13 @@ static int floatArray(const char* s, float* array, int max) {
 	return count;
 }
 
-template<class E=int>
-static E enumValue(const char* value, int size, const char** strings) {
-	for(int i=0; i<size; ++i) if(strcmp(value, strings[i])==0) return (E)i;
+template<int N, typename T> T enumValue(const char* value, const char* (&strings)[N], T defaultValue) {
+	for(int i=0; i<N; ++i) if(strcmp(value, strings[i])==0) return (T)i;
 	if(value && value[0]) printf("Error: Invalid resource enum value '%s'\n", value);
-	return (E)-1;
+	return defaultValue;
 }
-template<typename T> T enumValue(const char* value, int size, const char** strings, T defaultValue) {
-	int r = enumValue(value, size, strings);
-	if(r<0) return defaultValue;
-	else return (T)r;
+template<int N, typename T=int> T enumValue(const char* value, const char* (&strings)[N]) {
+	return enumValue(value, strings, (T)-1);
 }
 
 static void parseShaderVariable(ShaderVars& vars, const XMLElement& e) {
@@ -688,7 +685,7 @@ Shader* XMLResourceLoader::loadShader(const XMLElement& e) {
 		if(i=="source") {
 			filename = i.attribute("file");
 			const char* shaderTypes[] = { "vertex", "fragment", "geometry" };
-			int type = enumValue(i.attribute("type"), 3, shaderTypes);
+			int type = enumValue(i.attribute("type"), shaderTypes);
 			ResourceFile file(filename, &resources.shaders);
 			if(type<0) printf("Invalid shader attachment type %s\n", i.attribute("type"));
 			else if(!file) printf("Error: Shader file not found: %s\n", filename);
@@ -777,16 +774,16 @@ static Blend parseBlendState(const XMLElement& material) {
 		if(i == "blend") {
 			int buffer = i.attribute("buffer", -1);
 			if(i.hasAttribute("mode")) {
-				BlendMode mode      = enumValue(i.attribute("mode"), 4, presets, BLEND_NONE);
-				BlendMode alpha = enumValue(i.attribute("alpha"), 4, presets, mode);
+				BlendMode mode      = enumValue(i.attribute("mode"), presets, BLEND_NONE);
+				BlendMode alpha = enumValue(i.attribute("alpha"), presets, mode);
 				if(buffer<0) return Blend(mode, alpha);
 				else blend.set(buffer, mode, alpha);
 			}
 			else {
-				int srcRGB = enumValue(i.attribute("src"), 11, constants, 1);
-				int dstRGB = enumValue(i.attribute("dst"), 11, constants, 1);
-				int srcAlpha = enumValue(i.attribute("srcAlpha"), 11, constants, srcRGB);
-				int dstAlpha = enumValue(i.attribute("dstAlpha"), 11, constants, dstRGB);
+				int srcRGB = enumValue(i.attribute("src"), constants, 1);
+				int dstRGB = enumValue(i.attribute("dst"), constants, 1);
+				int srcAlpha = enumValue(i.attribute("srcAlpha"), constants, srcRGB);
+				int dstAlpha = enumValue(i.attribute("dstAlpha"), constants, dstRGB);
 				if(buffer<0) return Blend(values[srcRGB], values[dstRGB], values[srcAlpha], values[dstAlpha]);
 				else blend.set(buffer, values[srcRGB], values[dstRGB], values[srcAlpha], values[dstAlpha]);
 			}
@@ -798,9 +795,9 @@ static Blend parseBlendState(const XMLElement& material) {
 static MacroState parseMacroState(const XMLElement& i) {
 	MacroState state;
 	const char* cullModes[] = { "none", "back", "front" };
-	state.cullMode = enumValue(i.attribute("cull"), 3, cullModes, CULL_BACK);
+	state.cullMode = enumValue(i.attribute("cull"), cullModes, CULL_BACK);
 	const char* depthModes[] = { "always", "less", "lequal", "greater", "gequal", "equal", "disabled" };
-	state.depthTest = enumValue(i.attribute("depth"), 7, depthModes, DEPTH_LEQUAL);
+	state.depthTest = enumValue(i.attribute("depth"), depthModes, DEPTH_LEQUAL);
 	state.depthWrite = i.attribute("depthWrite", 1);	// perhaps use mask="RGBD"
 	state.wireframe  = i.attribute("wireframe", 0);
 	state.depthOffset = i.attribute("offset", 0.f);
@@ -889,24 +886,13 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 			if(n==0) printf("Error: Invalid compositor buffer size for %s in %s\n", name, e.attribute("name"));
 			else if(n==1) fh = fw, ih = iw;
 
-			using Fmt = Texture::Format;
-			Fmt f1 = enumValue<Fmt>(i.attribute("format1", i.attribute("format")), 24, formats);
-			Fmt f2 = enumValue<Fmt>(i.attribute("format2"), 24, formats);
-			Fmt f3 = enumValue<Fmt>(i.attribute("format3"), 24, formats);
-			Fmt f4 = enumValue<Fmt>(i.attribute("format4"), 24, formats);
-			Fmt fd = enumValue<Fmt>(i.attribute("depth"), 24, formats);
-
 			if((rel&&(fw==0||fh==0)) || (!rel&&(iw==0||ih==0))) printf("Error: Invalid resolution for buffer %s of %s\n", name, e.attribute("name"));
-			if(f1<0 || (f1==0 && fd==0)) printf("Error: Invalid format for buffer %s if %s\n", name, e.attribute("name"));
 
-			Compositor::Buffer* buffer;
-			if(rel) buffer = c->addBuffer(name, fw, fh, f1,f2,f3,f4,fd, unique);
-			else buffer = c->addBuffer(name, iw, ih, f1,f2,f3,f4,fd, unique);
-
-			// New version can be a format, or an input texture
-			auto readSlot = [&i](Compositor::BufferAttachment& slot, const char* key) {
+			// Buffer slots can be a format, or an input texture
+			auto readSlot = [&i](Compositor::BufferAttachment& slot, const char* key, const char* key2=nullptr) {
 				const char* value = i.attribute(key);
-				Fmt f = enumValue<Fmt>(value, 24, formats);
+				if(!value[0] && key2) value = i.attribute(key2);
+				Texture::Format f = enumValue(value, formats, Texture::NONE);
 				if(f) slot.format = f;
 				else if(value[0]) { // buffer:part
 					slot.format = Texture::NONE;
@@ -919,17 +905,27 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 					}
 					else split = value + strlen(value);
 					int len = split - value;
-					slot.input = new char[len];
+					slot.input = new char[len+1];
 					strncpy(slot.input, value, len);
-					slot.input[len-1] = 0;
+					slot.input[len] = 0;
 				}
 			};
+
+			Compositor::Buffer* buffer;
+			if(rel) buffer = c->addBuffer(name, fw, fh, Texture::NONE);
+			else buffer = c->addBuffer(name, iw, ih, Texture::NONE);
+			buffer->unique = unique;
 			readSlot(buffer->depth, "depth");
-			readSlot(buffer->colour[0], "slot0");
+			readSlot(buffer->colour[0], "slot0", "format");
 			readSlot(buffer->colour[1], "slot1");
 			readSlot(buffer->colour[2], "slot2");
 			readSlot(buffer->colour[3], "slot3");
+			// Check buffer validity
+			if(buffer->depth.format==0 && buffer->depth.input==0 && buffer->colour[0].format==0 && buffer->colour[0].input==0) {
+				printf("Error: Invalid format for buffer %s of %s\n", name, e.attribute("name"));
+			}
 
+			if(i.hasAttribute("format1")) printf("Error: Old style compositor buffer format no longer supported!\n");
 		}
 		else if(i=="texture") {
 			Texture* tex = resources.textures.get(i.attribute("source"));
@@ -1005,11 +1001,11 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 			}
 			else if(strcmp(type, "clear")==0) {
 				ClearBits flags = (ClearBits)0;
-				if(i.attribute("colour", 1)) flags = flags | CLEAR_COLOUR;
-				if(i.attribute("depth", 1)) flags = flags | CLEAR_DEPTH;
-				if(i.attribute("stencil", 1)) flags = flags | CLEAR_STENCIL;
+				if(i.hasAttribute("stencil")) flags = flags | CLEAR_STENCIL;
+				if(i.hasAttribute("colour")) flags = flags | CLEAR_COLOUR;
+				if(i.hasAttribute("depth")) flags = flags | CLEAR_DEPTH;
 				float depth = i.attribute("depth", 1.f);
-				uint colour = i.attribute("value", 0u);
+				uint colour = i.attribute("colour", 0u);
 				CompositorPassClear* clear = new CompositorPassClear(flags, colour, depth);
 				clear->setColour(0, i.attribute("buffer0", colour));
 				clear->setColour(1, i.attribute("buffer1", colour));

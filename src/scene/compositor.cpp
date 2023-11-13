@@ -35,9 +35,9 @@ void CompositorPassClear::setColour(unsigned rgb, float alpha) {
 	mColour[3] = alpha;
 }
 void CompositorPassClear::setColour(int buffer, unsigned rgba) {
-	float r = (rgba&0xff)/255.f;
+	float b = (rgba&0xff)/255.f;
 	float g = ((rgba>>8)&0xff)/255.f;
-	float b = ((rgba>>16)&0xff)/255.f;
+	float r = ((rgba>>16)&0xff)/255.f;
 	float a = ((rgba>>24)&0xff)/255.f;
 	setColour(buffer, r, g, b, a);
 }
