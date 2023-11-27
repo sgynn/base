@@ -64,6 +64,10 @@ Model* BMLoader::loadModel(const XMLElement& e) {
 			Animation* a = loadAnimation(*i);
 			model->addAnimation(a);
 		}
+		else if(*i == "layout") {
+			ModelLayout* lay = loadLayout(*i);
+			model->setLayout(lay);
+		}
 
 		for(BMExtension& e: bmExtensions) {
 			if(*i == e.key) {
@@ -297,5 +301,55 @@ Animation* BMLoader::loadAnimation(const XMLElement& e) {
 		}
 	}
 	return anim;
+}
+
+// ----------------------------------------------------------------------------------------------------------- //
+
+template<int N> bool isStringInList(const char* str, const char* (&list)[N]) {
+	for(int i=0; i<N; ++i) if(strcmp(str, list[i])==0) return true;
+	return false;
+}
+
+ModelLayout* BMLoader::loadLayout(const XMLElement& e) {
+	static const char* reserved[] = { "name", "bone", "position", "orientation", "scale", "mesh", "instance", "light", "shape" };
+	ModelLayout* layout = new ModelLayout;
+	struct Stack { const XMLElement* element; ModelLayout::Node* parent; };
+	std::vector<Stack> stack;
+	stack.push_back({&e, &layout->root()});
+	for(size_t index=0; index<stack.size(); ++index) {
+		const XMLElement& i = *stack[index].element;
+		ModelLayout::Node* n = new ModelLayout::Node();
+		const char* name = i.attribute("name");
+		const char* bone = i.attribute("bone");
+		const char* object = 0;
+		static const char* nope = 0;
+
+		n->scale.set(1,1,1);
+		sscanf(i.attribute("position"), "%f %f %f", &n->position.x, &n->position.y, &n->position.z);
+		sscanf(i.attribute("orientation"), "%f %f %f %f", &n->orientation.w, &n->orientation.x, &n->orientation.y, &n->orientation.z);
+		sscanf(i.attribute("scale"), "%f %f %f", &n->scale.x, &n->scale.y, &n->scale.z);
+
+		if(const char* o = i.attribute("mesh", nope)) n->object = o, n->type = ModelLayout::MESH;
+		else if(const char* o = i.attribute("shape", nope)) n->object = o, n->type = ModelLayout::SHAPE;
+		else if(const char* o = i.attribute("instance", nope)) n->object = o, n->type = ModelLayout::INSTANCE;
+		else if(const char* o = i.attribute("light", nope)) {
+			sscanf(o, "%f %f %f", &n->scale.x, &n->scale.y, &n->scale.z);
+			n->type = ModelLayout::LIGHT;
+		}
+		n->name = name[0]? strdup(name): 0;
+		n->bone = bone[0]? strdup(bone): 0;
+		n->object = object? strdup(object): 0;
+		n->parent = stack[index].parent;
+		n->parent->children.push_back(n);
+
+		// Custom properties
+		for(auto& prop: i.attributes()) {
+			if(!isStringInList(prop.key, reserved)) n->properties[prop.key] = strdup(prop.value);
+		}
+
+
+		for(const XMLElement& child: i) stack.push_back({&child, n});
+	}
+	return layout;
 }
 

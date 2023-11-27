@@ -3,6 +3,7 @@
 #include "mesh.h"
 #include "skeleton.h"
 #include "animation.h"
+#include "modellayout.h"
 #include "animationstate.h"
 
 namespace base {
@@ -73,6 +74,8 @@ class Model {
 	static void skinMesh(Mesh* in, const Skeleton*, int* map, Mesh* out);		// Software skinning - deform a mesh
 	static int* createSkinMap(Skeleton*, Mesh*);								// Create Bone->Skin map
 
+	const ModelLayout* getLayout() const { return m_layout; }
+	void setLayout(ModelLayout* l) { delete m_layout; m_layout = l; }
 
 	// Extensions
 	void addExtension(ModelExtension* e);
@@ -93,11 +96,12 @@ class Model {
 
 	protected:
 	std::vector<MeshInfo> m_meshes;
-	Skeleton* m_skeleton;
+	Skeleton* m_skeleton = nullptr;
+	ModelLayout* m_layout = nullptr;
 
 	// Animations
 	std::vector<Animation*> m_animations;	// All animations
-	AnimationState* m_animationState;
+	AnimationState* m_animationState = nullptr;
 
 	// Extensions
 	std::vector<ModelExtension*> m_extensions;

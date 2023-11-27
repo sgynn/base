@@ -150,6 +150,7 @@ set(headers
 	include/base/matrix.h
 	include/base/mesh.h
 	include/base/model.h
+	include/base/modellayout.h
 	include/base/noise.h
 	include/base/opengl.h
 	include/base/orbitcamera.h

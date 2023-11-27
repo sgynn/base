@@ -7,16 +7,18 @@ namespace base {
 	class Bone;
 	class Skeleton;
 	class Animation;
+	class ModelLayout;
 	class ModelExtension;
 
 	class BMLoader {
 		public:
-		static Model*     load(const char* file);
-		static Model*     parse(const char* data);
-		static Model*     loadModel(const XMLElement& e);
-		static Mesh*      loadMesh(const XMLElement& e);
-		static Skeleton*  loadSkeleton(const XMLElement& e);
-		static Animation* loadAnimation(const XMLElement& e);
+		static Model*       load(const char* file);
+		static Model*       parse(const char* data);
+		static Model*       loadModel(const XMLElement& e);
+		static Mesh*        loadMesh(const XMLElement& e);
+		static Skeleton*    loadSkeleton(const XMLElement& e);
+		static Animation*   loadAnimation(const XMLElement& e);
+		static ModelLayout* loadLayout(const XMLElement& e);
 
 		static void registerExtension(const char* key, ModelExtension*(*)(const XMLElement& e));
 
