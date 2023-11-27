@@ -50,6 +50,9 @@ class Game {
 	static void setFrameTime(float t) { s_inst->m_frameTime=t; }
 	static void setGameTime(float time) { s_inst->m_totalTime=time; }
 
+	/// Get the active game state
+	static GameState* getState();
+
 	//Input stuff (depricated)
 	static bool Key(int k);				// Get the state of a key
 	static bool Pressed(int k);			// Was the key pressed

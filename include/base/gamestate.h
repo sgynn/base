@@ -97,6 +97,8 @@ class GameStateManager {
 		
 		void update();
 		void draw();
+
+		GameState* getState() { return m_currentState; }
 		
 		void changeState(GameState* next);
 		void onResized(const Point& newSize);

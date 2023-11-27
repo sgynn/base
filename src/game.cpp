@@ -85,6 +85,10 @@ void Game::setInitialState(GameState* state) {
 	m_state->changeState(state);
 }
 
+GameState* Game::getState() {
+	return s_inst->m_state->getState();
+}
+
 void Game::setTargetFPS(uint fps) {
 	m_targetFPS = fps;
 }
