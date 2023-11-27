@@ -59,6 +59,31 @@ namespace base {
 			return result;
 		}
 
+		template<class List>
+		static String join(const List& list, const char* separator) {
+			String result;
+			bool first = true;
+			for(auto& i: list) {
+				if(first) first = false;
+				else result += separator;
+				result += i;
+			}
+			return result;
+		}
+
+		template<class List, class Func>
+		static String join(const List& list, const char* separator, const Func& func) {
+			String result;
+			bool first = true;
+			for(auto& i: list) {
+				if(first) first = false;
+				else result += separator;
+				result += func(i);
+			}
+			return result;
+		}
+
+
 		static StringList split(const char* src, const char* tok, bool keepEmpty=false, const char* trim=" ") {
 			StringList out;
 			if(!src || !tok || !tok[0]) return out; // Invalid input
