@@ -13,8 +13,8 @@ ShaderPart::ShaderPart(ShaderType t, const char* src, const char* def) : m_type(
 }
 ShaderPart::ShaderPart(const ShaderPart& s) : m_type(s.m_type), m_object(0), m_compiled(false), m_changed(true), m_source(s.m_source), m_sourceRef(s.m_sourceRef) {
 	if(m_source) ++*m_sourceRef;
-	for(size_t i=0; i<s.m_defines.size(); ++i) {
-		m_defines.push_back( strdup(s.m_defines[i]) );
+	for(const char* def : s.m_defines) {
+		m_defines.push_back( strdup(def) );
 	}
 }
 ShaderPart::ShaderPart(ShaderPart&& s) : m_type(s.m_type), m_object(s.m_object), m_compiled(s.m_compiled), m_changed(s.m_changed), m_source(s.m_source), m_sourceRef(s.m_sourceRef), m_defines(s.m_defines) {
@@ -23,7 +23,7 @@ ShaderPart::ShaderPart(ShaderPart&& s) : m_type(s.m_type), m_object(s.m_object),
 }
 ShaderPart::~ShaderPart() {
 	dropSource();
-	for(size_t i=0; i<m_defines.size(); ++i) free(m_defines[i]);
+	for(char* def: m_defines) free(def);
 }
 
 ShaderPart& ShaderPart::operator=(ShaderPart& o) {
@@ -89,7 +89,7 @@ int ShaderPart::getDefineIndex(const char* def) const {
 }
 
 void ShaderPart::setDefines(const char* def) {
-	for(size_t i=0; i<m_defines.size(); ++i) free(m_defines[i]);
+	for(char* def: m_defines) free(def);
 	m_defines.clear();
 	if(!def || !def[0]) return;
 	
@@ -132,8 +132,8 @@ bool ShaderPart::compile() {
 	if(version>0) k=sprintf(header, "#version %d\n", version);
 	#endif
 	// Extra defines
-	for(size_t i=0; i<m_defines.size(); ++i) {
-		k += sprintf(header+k, "#define %s\n", m_defines[i]);
+	for(const char* def: m_defines) {
+		k += sprintf(header+k, "#define %s\n", def);
 	}
 	// Remove any = from defines
 	for(int i=0; i<k; ++i) if(header[i]=='=') header[i]=' ';
@@ -308,17 +308,24 @@ Shader::Shader(Shader&& s) : m_shaders(s.m_shaders), m_object(s.m_object), m_lin
 Shader::~Shader() {
 }
 
-Shader Shader::clone() const {
-	Shader copy;
-	for(size_t i=0; i<m_shaders.size(); ++i) {
-		copy.attach( new ShaderPart(*m_shaders[i]) );
+Shader* Shader::clone() const {
+	Shader* copy = new Shader();
+	for(ShaderPart* part : m_shaders) {
+		copy->attach( new ShaderPart(*part) );
 	}
 	return copy;
 }
 
 void Shader::setDefines(const char* def) {
-	for(size_t i=0; i<m_shaders.size(); ++i) {
-		m_shaders[i]->setDefines(def);
+	for(ShaderPart* part : m_shaders) {
+		part->setDefines(def);
+		m_changed = true;
+	}
+}
+
+void Shader::define(const char* def) {
+	for(ShaderPart* part : m_shaders) {
+		part->define(def);
 		m_changed = true;
 	}
 }
@@ -335,8 +342,8 @@ bool Shader::isCompiled() const {
 bool Shader::needsRecompile() const {
 	if(m_changed) return true;
 	if(!m_linked) return false;	// failed
-	for(size_t i=0; i<m_shaders.size(); ++i) {
-		if(m_shaders[i]->m_changed) return true;
+	for(ShaderPart* part : m_shaders) {
+		if(part->m_changed) return true;
 	}
 	return false;
 }
@@ -345,8 +352,8 @@ bool Shader::compile() {
 	bool good = true;
 	m_linked = 0;
 	m_changed = false;
-	for(size_t i=0; i<m_shaders.size(); ++i) {
-		if(m_shaders[i]->m_changed) good &= m_shaders[i]->compile();
+	for(ShaderPart* part : m_shaders) {
+		if(part->m_changed) good &= part->compile();
 	}
 	if(!good) return false;
 
@@ -358,10 +365,10 @@ bool Shader::compile() {
 	GLuint attached[8];
 	glGetAttachedShaders(m_object, 8, &count, attached);
 
-	for(size_t i=0; i<m_shaders.size(); ++i) {
+	for(ShaderPart* part : m_shaders) {
 		bool alreadyAttached = false;
-		for(int j=0; j<count; ++j) if(attached[j] == m_shaders[i]->m_object) alreadyAttached=true;
-		if(!alreadyAttached) glAttachShader(m_object, m_shaders[i]->m_object);
+		for(int j=0; j<count; ++j) if(attached[j] == part->m_object) alreadyAttached=true;
+		if(!alreadyAttached) glAttachShader(m_object, part->m_object);
 		GL_CHECK_ERROR;
 	}
 	glLinkProgram(m_object);

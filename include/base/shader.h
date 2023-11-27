@@ -61,7 +61,7 @@ class Shader {
 	Shader(Shader&& s);
 	Shader& operator=(const Shader&) = default;
 
-	Shader clone() const;	// Create a clone of this shader, with cloned program objects
+	Shader* clone() const;	// Create a clone of this shader, with cloned program objects
 
 	void attach(ShaderPart* s);
 	void setEntryPoint(ShaderType stage, const char* entry);
@@ -71,6 +71,7 @@ class Shader {
 	void bind() const;			// bind shader
 
 	void setDefines(const char* defines);		// Set defines on all shader objeccts
+	void define(const char* define);			// Add a define to all shader obects
 
 	int getLog(char* buffer, int size) const;	// Get compile log
 
