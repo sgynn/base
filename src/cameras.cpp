@@ -180,6 +180,7 @@ void OrbitCamera::update(int mask) {
 		if(in.check(m_binding.right))   move.x =  1;
 		if(in.check(m_binding.up))      move.y =  1;
 		if(in.check(m_binding.down))    move.y = -1;
+		if(getUp().dot(m_upVector) < 0) move *= -1;
 		vec3 z = getDirection();
 		vec3 x = m_upVector.cross(z).normalise();
 		z = x.cross(m_upVector);
