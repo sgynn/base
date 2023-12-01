@@ -972,8 +972,9 @@ void TabbedPane::initialise(const Root* r, const PropertyMap& p) {
 	// Selected tab can be index or name. Note: Tabs dont exist yet
 	if(p.contains("tab")) {
 		const char* tab = p["tab"];
-		m_currentTab = getTabIndex(tab);
-		if(m_currentTab < 0) m_currentTab = atoi(tab);
+		int tabIndex = getTabIndex(tab);
+		if(tabIndex<0) tabIndex = atoi(tab);
+		selectTab(tabIndex);
 	}
 	else m_currentTab = 0;
 	
