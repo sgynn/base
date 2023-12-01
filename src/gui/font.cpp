@@ -21,7 +21,7 @@ int Font::getFontSize(int closest) const {
 
 Point Font::getSize(const char* string, int size, int len) const {
 	Point result;
-	if(!string[0]) return result;
+	if(!string || !string[0]) return result;
 	if(const Face* face = selectFace(size)) {
 		float scale = (float)size / (float)face->size;
 		result.y = face->height * scale;

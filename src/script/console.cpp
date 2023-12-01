@@ -210,7 +210,7 @@ void Console::draw() {
 	// history
 	for(size_t i=0; i<m_out.size() && pos.y>0; ++i) {
 		pos.y -= step;
-		m_renderer->drawText(pos, m_font, m_fontSize, colour, m_out.get(i));
+		m_renderer->drawText(pos, m_font, m_fontSize, colour, m_out.get(i).str());
 	}
 	
 	m_renderer->end();

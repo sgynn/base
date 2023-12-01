@@ -115,7 +115,7 @@ template<class Loader> bool gui::Font::addFace(Loader& loader, int size) {
 template<class VxFunc, class IxFunc>
 int gui::Font::buildVertexArray(const char* text, int len, float size, Point& pos, const Rect& rect, const VxFunc& vfunc, const IxFunc& ifunc) const {
 	const Face* face = selectFace(size);
-	if(!face) return 0;
+	if(!face || !text) return 0;
 
 	float scale = (float)size / face->size;
 	float ix = 1.f / m_textureSize.x;
