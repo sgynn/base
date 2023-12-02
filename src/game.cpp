@@ -148,12 +148,12 @@ void Game::run() {
 	emscripten_request_animation_frame_loop(&emscriptenUpdate, m_state);
 	
 	#else
-	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
+	GL_CHECK_ERROR;
 
 	if(m_targetFPS==0) {
 	
