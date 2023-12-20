@@ -65,12 +65,13 @@ inline LoadFlags operator|(LoadFlags a, LoadFlags b) { return (LoadFlags)((int)a
 /** Additional properties from external data - basically extra accessors for a string hashmap */
 class PropertyMap : public base::HashMap<const char*> {
 	public:
-	bool readValue(const char* key, bool& value) const    { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
-	bool readValue(const char* key, int& value) const     { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
-	bool readValue(const char* key, float& value) const   { if(const char* s=get(key,0)) { value = atof(s); return true; } return false; }
-	int   getValue(const char* key, int fallback) const   { if(const char* s=get(key,0)) return atoi(s); return fallback; }
-	float getValue(const char* key, float fallback) const { if(const char* s=get(key,0)) return atof(s); return fallback; }
-	bool  getValue(const char* key, bool fallback) const  { return getValue(key, fallback? 1: 0); }
+	bool readValue(const char* key, float& value) const { if(const char* s=get(key,0)) { value = atof(s); return true; } return false; }
+	bool readValue(const char* key, bool& value) const  { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
+	bool readValue(const char* key, uint& value) const  { if(const char* s=get(key,0)) { char*e; if(s[0]=='#') value = strtoul(s+1, &e, 16); else value = strtoul(s,&e,10); return true; } return false; }
+	bool readValue(const char* key, int& value) const   { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
+
+	template<typename T> 
+	T getValue(const char* key, T fallback) const { readValue(key, fallback); return fallback; }
 };
 
 

@@ -349,7 +349,7 @@ Shader* ShaderLoader::create(const char* name, Manager* mgr) {
 
 	if(name) {
 		if(strchr(name, ',')==0) {
-			// Name being a single glsl file
+			// Name being a single glsl file, possibly with defines
 			char vsKey[256], fsKey[256];
 			sprintf(vsKey, "VS:%s", name);
 			sprintf(fsKey, "FS:%s", name);
@@ -357,12 +357,20 @@ Shader* ShaderLoader::create(const char* name, Manager* mgr) {
 			ShaderPart* fs = m_partManager.getIfExists(fsKey);
 
 			if(!vs && !fs) {
+				const char* defines = nullptr;
+				if(const char* e = strchr(name, '|')) {
+					strncpy(vsKey, name, e-name);
+					vsKey[e-name] = 0;
+					name = vsKey;
+					defines = e + 1;
+				}
+
 				ResourceFile file(name, mgr);
 				if(file) {
-					vs = new ShaderPart(VERTEX_SHADER, file);
-					fs = new ShaderPart(FRAGMENT_SHADER, file);
-					m_partManager.add(fsKey, fs);
-					m_partManager.add(vsKey, vs);
+					vs = new ShaderPart(VERTEX_SHADER, file, defines);
+					fs = new ShaderPart(FRAGMENT_SHADER, file, defines);
+					//m_partManager.add(fsKey, fs);
+					//m_partManager.add(vsKey, vs);
 					attachments += 2;
 				}
 			}

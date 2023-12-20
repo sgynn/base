@@ -153,7 +153,8 @@ class DragHandle : public Widget {
 class ProgressBar : public Widget {
 	WIDGET_TYPE(ProgressBar);
 	ProgressBar(const Rect&, Skin*, Orientation o=HORIZONTAL);
-	virtual void setSize(int w, int h) override;
+	void setSize(int w, int h) override;
+	void copyData(const Widget*) override;
 	void  setRange(float min, float max);
 	void  setValue(float);
 	float getRange() const;

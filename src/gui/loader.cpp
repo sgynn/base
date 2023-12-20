@@ -61,6 +61,22 @@ namespace gui {
 		return state;
 	}
 
+	uint parseColour(const char* data, uint fallback=0xffffffff) {
+		if(!data[0]) return fallback;
+		char* end;
+		if(data[0]=='#') {
+			uint v = strtoul(data+1, &end, 16);
+			if(end <= data + 7) v |= 0xff000000; // Full opacity if alpha omitted
+			return v;
+		}
+		// rgba
+		int rgba[4] = { 0,0,0,255 };
+		if(parseValues(data, 4, rgba) > 2) {
+			return rgba[0] | rgba[1]<<8 | rgba[2]<<16 | rgba[3]<<24;
+		}
+		return fallback;
+	}
+
 	inline int operator~(LoadFlags f) { return ~(int)f; }
 	inline bool operator&(int a, LoadFlags b) { return a&(int)b; }
 }
@@ -171,11 +187,9 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 						s.rect    = parseRect(j->attribute("coord"), s.rect);
 						s.textPos = parsePoint(j->attribute("offset"), s.textPos);
 						s.border  = parseBorder(j->attribute("border"), s.border);
-						s.foreColour  = j->attribute("colour", state? s.foreColour: 0xffffff);
-						s.foreColour  = j->attribute("forecolour", s.foreColour);
-						s.backColour  = j->attribute("backcolour", state? s.backColour: 0xffffff);
-						s.foreColour |= 0xff000000;
-						s.backColour |= 0xff000000;
+						s.foreColour  = parseColour(j->attribute("colour"), state? s.foreColour: 0xffffffff);
+						s.foreColour  = parseColour(j->attribute("forecolour"), s.foreColour);
+						s.backColour  = parseColour(j->attribute("backcolour"), state? s.backColour: 0xffffffff);
 						skin->setState(state, s);
 					}
 				}
@@ -240,8 +254,8 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 					else if(e=="state") {
 						int state = parseSkinState(e.attribute("name", "normal"));
 						if(state>=0) {
-							gen.colours[state].back = e.attribute("back", 0u); 
-							gen.colours[state].line = e.attribute("line", 0xffffffffu); 
+							gen.colours[state].back = parseColour(e.attribute("back"), 0xff000000); 
+							gen.colours[state].line = parseColour(e.attribute("line"), 0xffffffff); 
 							stateMask |= 1<<state;
 						}
 					}

@@ -3,8 +3,8 @@
 #include <base/gui/skin.h>
 #include <base/gui/font.h>
 #include <base/gui/layouts.h>
-#include <cstdio>
 
+#include <cstdio>
 #include <base/input.h>
 
 using namespace gui;
@@ -500,20 +500,24 @@ void ProgressBar::setValue(float v) {
 	if(m_progress && m_progress->getParent()) {
 		// Update size
 		float normalised = (m_value - m_min) / (m_max - m_min);
-		Point s = m_progress->getSize();
-		Point p = m_progress->getParent()->getSize();
-		s[m_mode] = (p[m_mode] - m_borderLow - m_borderHigh) * normalised;
-		m_progress->setSize(s.x, s.y);
+		Point barSize = m_progress->getSize();
+		Point viewSize = m_progress->getParent()->getSize();
+		barSize[m_mode] = (viewSize[m_mode] - m_borderLow - m_borderHigh) * normalised;
+		m_progress->setSize(barSize);
 		// Fix alignment
-		int a = m_mode==HORIZONTAL? m_anchor&7: (m_anchor>>4)&7;
+		int a = m_mode==HORIZONTAL? m_anchor&3: (m_anchor>>4)&3;
 		Point pos = m_progress->getPosition();
-		if(a==4) {	// Centre aligned
-			pos[m_mode] = p[m_mode] - s[m_mode];
-			m_progress->setPosition(pos.x, pos.y);
+		if(a==2) {	// Centre aligned
+			pos[m_mode] = viewSize[m_mode] / 2 - barSize[m_mode]/2 + (m_borderHigh - m_borderLow);
+			m_progress->setPosition(pos);
 		}
-		else if(a==2) {	// Right Aligned
-			pos[m_mode] = s[m_mode] - m_borderHigh;
-			m_progress->setPosition(pos.x, pos.y);
+		else if(a==1) {	// Right Aligned
+			pos[m_mode] = viewSize[m_mode] - barSize[m_mode] - m_borderHigh;
+			m_progress->setPosition(pos);
+		}
+		else {	// Left Aligned
+			pos[m_mode] = m_borderLow;
+			m_progress->setPosition(pos);
 		}
 	}
 }
@@ -527,17 +531,30 @@ void ProgressBar::setBarColour(int c) {
 void ProgressBar::initialise(const Root* r, const PropertyMap& p) {
 	m_progress = getTemplateWidget("_progress");
 	if(p.contains("orientation") && strcmp(p["orientation"], "vertical")==0) m_mode = VERTICAL;
-	if(p.contains("min")) m_min = atof(p["min"]);
-	if(p.contains("max")) m_min = atof(p["max"]);
-	if(p.contains("value")) m_min = atof(p["value"]);
 	if(m_progress) {
-		char* tmp = 0;
-		m_borderLow = m_progress->getPosition()[m_mode];
-		m_borderHigh = m_progress->getParent()->getSize()[m_mode] - m_borderLow - m_progress->getSize()[m_mode];
-		const char* col = p.get("barcolour", 0);
-		if(col && col[0] == '#') m_progress->setColour(strtol(col+1, &tmp, 16));
+		if(m_value == m_max) {
+			m_borderLow = m_progress->getPosition()[m_mode];
+			m_borderHigh = m_progress->getParent()->getSize()[m_mode] - m_borderLow - m_progress->getSize()[m_mode];
+		}
+		else setValue(m_max);
+		uint colour;
+		if(p.readValue("barcolour", colour)) m_progress->setColour(colour);
 	}
+	p.readValue("min", m_min);
+	p.readValue("max", m_max);
+	p.readValue("value", m_value);
 	setValue(m_value);
+}
+
+void ProgressBar::copyData(const Widget* from) {
+	if(const ProgressBar* o = from->cast<const ProgressBar>()) {
+		m_mode = o->m_mode;
+		m_min = o->m_min;
+		m_max = o->m_max;
+		m_value = o->m_value;
+		m_borderLow = o->m_borderLow;
+		m_borderHigh = o->m_borderHigh;
+	}
 }
 
 
