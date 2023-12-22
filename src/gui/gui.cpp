@@ -286,7 +286,7 @@ void Skin::updateUndefinedStates() {
 			break;
 		}
 	}
-	int from[] = { 0, 0, 0, 0, 0, 4, 4, 3 };
+	int from[] = { 0, 0, 1, 0, 0, 4, 5, 3 };
 	for(int i=0; i<m_stateCount; ++i) {
 		if(~m_definedStates & 1<<i) copyState(i, from[i]);
 	}
