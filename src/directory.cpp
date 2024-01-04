@@ -66,7 +66,8 @@ int Directory::clean(const char* in, char* out, int lim) {
 		else if(strncmp(c, "/../", 4)==0 || strncmp(c, "/..", 4)==0) { //up
 			if((k==2 && strncmp(out, "..", 2)) || (k>2 && strncmp(&out[k-3], "/..", 3))) {
 				//remove segment
-				while(k>0 && out[k-1]!='/') k--;
+				while(k>0 && out[k]!='/') k--;
+				out[k] = 0;
 				c+=2;
 			} else out[k++] = *c;
 		} else out[k++] = *c;
