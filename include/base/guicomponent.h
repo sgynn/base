@@ -20,7 +20,7 @@ class GUIComponent : public GameStateComponent {
 	}
 	void update() override {
 		const Mouse& mouse = Game::input()->mouse;
-		m_gui->setKeyMask((gui::KeyMask)Game::input()->getKeyModifier());
+		m_gui->setKeyMask((gui::KeyMask)(Game::input()->getKeyModifier()>>9));
 		int wheel = hasComponentFlags(BLOCK_WHEEL)? 0: mouse.wheel;
 		if(hasComponentFlags(BLOCK_MOUSE)) {
 			m_gui->mouseEvent(Point(-1,-1), 0, wheel);
