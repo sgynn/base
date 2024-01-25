@@ -235,8 +235,8 @@ class Combobox : public Widget, public ItemList {
 	void hideList();
 
 	protected:
-	Listbox* m_list;
-	Widget*  m_text;
+	Listbox* m_list = nullptr;
+	Widget*  m_text = nullptr;
 	
 };
 
@@ -307,12 +307,12 @@ class Table : public Widget {
 	void fireCustomEvent(Widget*);
 
 	protected:
-	Widget*     m_headerTemplate;
-	Widget*     m_header;
-	Scrollpane* m_dataPanel;
-	bool        m_sortable;	// Are columns sortable
-	int         m_sorted;   // column to sort by. negative for inverse order. 0=none;
-	int         m_rowHeight;
+	Widget*     m_headerTemplate = nullptr;
+	Widget*     m_header = nullptr;
+	Scrollpane* m_dataPanel = nullptr;
+	bool        m_sortable = false;	// Are columns sortable
+	int         m_sorted = 0;   // column to sort by. negative for inverse order. 0=none;
+	int         m_rowHeight = 16;
 
 	typedef std::vector<Any> DefaultRowType;
 	std::vector<Any> m_data;	// Table data
