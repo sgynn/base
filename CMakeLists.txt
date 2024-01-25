@@ -127,6 +127,7 @@ set(headers
 	include/base/batcher.h
 	include/base/bmloader.h
 	include/base/bounds.h
+	include/base/bresenham.h
 	include/base/camera.h
 	include/base/collision.h
 	include/base/colour.h
