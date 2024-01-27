@@ -488,13 +488,13 @@ Point Widget::getPreferredSize() const { // Minimum size
 					case 0: setMax(newSize.x, r.right()); break; // Left
 					case 1: setMax(newSize.x, clientSize.x - r.x); break;	// Right
 					case 2: setMax(newSize.x, (r.width/2 + abs(r.x+r.width/2 - clientSize.x/2)) * 2); break; // Centre
-					case 3: setMax(newSize.x, r.x + clientSize.x - r.right()); break; // Span
+					case 3: setMax(newSize.x, r.x + clientSize.x - w->m_rect.right() + (w->isAutosize()? r.width:0)); break; // Span
 					}
 					switch(w->m_anchor>>4) {
 					case 0: setMax(newSize.y, r.bottom()); break; // Top
 					case 1: setMax(newSize.y, clientSize.y - r.y); break;	// Bottom
 					case 2: setMax(newSize.y, (r.height/2 + abs(r.y+r.height/2 - clientSize.y/2)) * 2); break; // Centre
-					case 3: setMax(newSize.y, r.y + clientSize.y - r.bottom()); break; // Span
+					case 3: setMax(newSize.y, r.y + clientSize.y - w->m_rect.bottom() + (w->isAutosize()? r.height: 0)); break; // Span
 					}
 				}
 			}
@@ -506,8 +506,11 @@ Point Widget::getPreferredSize() const { // Minimum size
 
 void Widget::updateAutosize() {
 	if(!isAutosize()) return;
+	if(m_anchor == 0x33) return; // autosize messes up span anchors
 	if(m_client != this && m_client->m_anchor != 0x33) return; // client must resize with widget for autosize
 	Point newSize = getPreferredSize();
+	if((m_anchor&0xf)==3) newSize.x = getSize().x; // Don't autosize spanned anchors
+	if((m_anchor>>4)==3) newSize.y = getSize().y;
 	assert(newSize.x<5000 && newSize.y<5000);
 	setSizeAnchored(newSize);
 }
@@ -878,7 +881,10 @@ Widget* Widget::getParent(bool includeTemplates) const {
 // =================================================== //
 
 void Widget::onChildChanged(Widget* w) {
-	if(!isLayoutPaused()) refreshLayout();
+	if(!isLayoutPaused()) {
+		if(isAutosize() && ((m_anchor&0xf)==3 || m_anchor>>4==3) && getParent()) getParent()->onChildChanged(this);
+		refreshLayout();
+	}
 }
 
 void Widget::setLayout(Layout* layout) {
