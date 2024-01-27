@@ -467,6 +467,11 @@ class Popup : public Widget {
 	void popup(Widget* owner, Side side=BELOW);
 	void popup(Root* root, const Point& absolutePosition, Widget* owner=0);
 	Widget* addItem(Root* root, const char* button, const char* name="", const char* caption="", ButtonDelegate event=ButtonDelegate());
+	template<class F> Widget* addItem(Root* r, const char* type, const char* caption, F&& func) {
+		Widget* w = addItem(r, type, "", caption, {});
+		if(Button* b = w->cast<Button>()) b->eventPressed.bind(func);
+		return w;
+	}
 	void hide();
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;
