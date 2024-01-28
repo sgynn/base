@@ -565,8 +565,7 @@ void Widget::setVisible(bool v) {
 	if(v == isVisible()) return;
 	m_states = v? m_states|1: m_states&~1;
 	notifyChange();
-	Widget* p = getParent();
-	if(p && !p->isLayoutPaused()) p->refreshLayout();
+	if(Widget* p = getParent()) p->onChildChanged(this);
 	// Clear focus if hidden
 	if(!v && m_root) {
 		for(Widget* w=m_root->m_focus; w; w=w->m_parent) if(!w->isVisible()) { m_root->m_root->setFocus(); break; }
@@ -578,7 +577,13 @@ void Widget::setTangible(Tangible t) { m_states = (m_states&~0xc) | ((int)t << 2
 void Widget::setSelected(bool v) { m_states = v? m_states|0x10: m_states&~0x10; }
 void Widget::setInheritState(bool v) { m_states = v? m_states|0x40: m_states&~0x40; }
 void Widget::setAsTemplate() { m_states |= 0x20; }
-void Widget::setAutosize(bool v) { m_states = v? m_states|0x80: m_states&~0x80; if(v && !isLayoutPaused()) updateAutosize(); }
+void Widget::setAutosize(bool v) {
+	m_states = v? m_states|0x80: m_states&~0x80;
+	if(v && !isLayoutPaused()) {
+		updateAutosize();
+		if(getAnchor()==0x33 && getParent()) getParent()->onChildChanged(this);
+	}
+}
 
 bool Widget::isVisible() const { return m_states&1; }
 bool Widget::isEnabled() const { return m_states&2; }
