@@ -478,7 +478,9 @@ Point Widget::getPreferredSize() const { // Minimum size
 	if(isAutosize()) {
 		Point newSize(0, 0);
 		const Point& clientSize = m_client->getSize();
-		if(m_layout) return m_layout->getMinimumSize(this);
+		if(m_client->m_layout) {
+			newSize = m_client->m_layout->getMinimumSize(m_client);
+		}
 		else {
 			auto setMax = [](int& value, int other) { if(other>value) value=other; };
 			for(Widget* w: m_client->m_children) {
@@ -498,8 +500,8 @@ Point Widget::getPreferredSize() const { // Minimum size
 					}
 				}
 			}
-			return newSize + getSize() - clientSize;
 		}
+		return newSize + getSize() - clientSize;
 	}
 	return getSize();
 }
