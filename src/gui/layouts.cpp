@@ -127,24 +127,27 @@ void FlowLayout::apply(Widget* p) const {
 Point FlowLayout::getMinimumSize(const Widget* p) const {
 	Point size(0,0);
 	if(getWidgets(p).size() > 0) {
-		int baseWidth = p->getSize().x;
-		int row = m_margin, right = m_margin - m_space;
+		int minWidth = 0;
+		for(Widget* w: getWidgets(p)) if(w->isVisible()) minWidth = max(minWidth, w->getPreferredSize().x);
+		int wrapWidth = max(minWidth, p->getSize().x - 2 * m_margin);
+		size.x = minWidth;
+
+		int row = 0, right = -m_space;
 		for(Widget* w: getWidgets(p)) {
 			if(!w->isVisible()) continue;
 			Point s = w->getPreferredSize();
-			if(right + m_space + s.x <= baseWidth) {
+			if(right + m_space + s.x <= wrapWidth) {
 				right += s.x + m_space;
 			}
 			else {
-				row = size.y;
-				right = m_margin;
+				row = size.y + m_space;
+				right = s.x;
 			}
 			size.x = max(size.x, right);
 			size.y = max(size.y, row + s.y);
 		}
-		size += m_margin;
 	}
-	else size += 2 * m_margin;
+	size += 2 * m_margin;
 	return size;
 }
 
