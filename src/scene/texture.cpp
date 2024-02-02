@@ -350,7 +350,7 @@ int Texture::setPixels(int x, int y, int w, int h, Format format, const void* sr
 	else {
 		unsigned dfmt = getDataFormat(format);
 		unsigned dtype = getDataType(format);
-		glTexImage2D(target, mip, x, y, w, h, dfmt, dtype, src);
+		glTexSubImage2D(target, mip, x, y, w, h, dfmt, dtype, src);
 	}
 	GL_CHECK_ERROR;
 	return 1;
