@@ -318,6 +318,7 @@ Widget* Widget::clone(const char* newType) const {
 	w->m_root = 0;
 	w->m_skipTemplate = m_skipTemplate;
 	w->m_name = m_name;
+	w->m_tip = m_tip;
 	// children
 	w->pauseLayout();
 	for(uint i=0; i<m_children.size(); ++i) {
