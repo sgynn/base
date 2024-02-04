@@ -838,7 +838,7 @@ int Widget::deleteChildWidgets() {
 
 void Widget::setRoot(Root* r) {
 	if(m_root && m_root->m_focus==this) m_root->m_focus = 0;
-	if(m_root && m_root->m_mouseFocus==this) m_root->m_mouseFocus = 0;
+	if(m_root && m_root->m_mouseFocus==this) m_root->m_mouseFocus = m_root->getRootWidget();
 	bool added = r && r != m_root;
 
 	// Register name
