@@ -16,56 +16,55 @@ void ColourPicker::initialise(const Root* root, const PropertyMap& p) {
 	// Generate subwidgets
 	if(root && getWidgetCount() == 0) {
 		IconList* images = root->getIconList("colourpicker");
-		if(!images) images = createImages(const_cast<Root*>(root), 128);
+		if(!images || !images->getImageIndex()) images = createImages(const_cast<Root*>(root), 128);
 
 		int size = getSize().y;
 		int bar = size / 8 + 4;
 		m_wheel = new Icon(Rect(0,0,size,size), m_skin);
 		m_value = new Icon(Rect(size+4,0,bar,size), m_skin);
-		m_alpha = new Icon(Rect(0,0,bar,size), m_skin);
-		Icon* checker = new Icon(Rect(size+bar+8,0,bar,size), m_skin);
+		m_alpha = new Icon(Rect(size+bar+8,0,bar,size), m_skin);
+		Icon* alphaGradient = new Icon(Rect(0,0,bar,size), m_skin);
 
 		m_wheelMark = new Icon(Rect(0,0,3,3), m_skin);
 		m_valueMark = new Icon(Rect(0,0,bar,1), m_skin);
 		m_alphaMark = new Icon(Rect(0,0,bar,1), m_skin);
 
 		m_wheel->setIcon(images, 0);
-		m_wheel->setAnchor("tlrb");
-		m_wheel->setTangible(Tangible::ALL);
+		m_wheel->setTangible(Tangible::SELF);
 		m_wheel->setAsTemplate();
 		m_value->setIcon(images, 1);
-		m_value->setAnchor("trb");
-		m_value->setTangible(Tangible::ALL);
+		m_value->setTangible(Tangible::SELF);
 		m_value->setAsTemplate();
-		m_alpha->setIcon(images, 2);
-		m_alpha->setAnchor("tlrb");
-		m_alpha->setTangible(Tangible::ALL);
-		checker->setIcon(images, 3);
-		checker->setAnchor("trb");
-		checker->setAsTemplate();
-		checker->setTangible(Tangible::ALL);
+		m_alpha->setIcon(images, 3);
+		m_alpha->setTangible(Tangible::SELF);
+		m_alpha->setAsTemplate();
+		alphaGradient->setIcon(images, 2);
+		alphaGradient->setAsTemplate();
+		alphaGradient->setAnchor("tlrb");
 		m_wheelMark->setIcon(images, 4);
 		m_valueMark->setIcon(images, 4);
 		m_alphaMark->setIcon(images, 4);
+		m_valueMark->setAnchor("tlr");
+		m_alphaMark->setAnchor("tlr");
+
+		m_alphaMark->setAsTemplate();
+		m_valueMark->setAsTemplate();
+		m_wheelMark->setAsTemplate();
 
 		add(m_wheel);
 		add(m_value);
+		add(m_alpha);
 		m_wheel->add(m_wheelMark);
 		m_value->add(m_valueMark);
-		if(m_alpha) {
-			add(checker);
-			checker->add(m_alpha);
-			m_alpha->add(m_alphaMark);
-		}
+		m_alpha->add(alphaGradient);
+		m_alpha->add(m_alphaMark);
 
 		m_wheel->eventMouseDown.bind(this, &ColourPicker::changeWheel);
 		m_wheel->eventMouseMove.bind(this, &ColourPicker::changeWheel);
 		m_value->eventMouseDown.bind(this, &ColourPicker::changeValue);
 		m_value->eventMouseMove.bind(this, &ColourPicker::changeValue);
-		if(m_alpha) {
-			m_alpha->eventMouseDown.bind(this, &ColourPicker::changeAlpha);
-			m_alpha->eventMouseMove.bind(this, &ColourPicker::changeAlpha);
-		}
+		m_alpha->eventMouseDown.bind(this, &ColourPicker::changeAlpha);
+		m_alpha->eventMouseMove.bind(this, &ColourPicker::changeAlpha);
 		setColour(0xffffff);
 	}
 }
@@ -199,4 +198,31 @@ void ColourPicker::changeAlpha(Widget* w, const Point& p, int b) {
 	}
 }
 
+void ColourPicker::setHasAlpha(bool a) {
+	if(m_alpha) m_alpha->setVisible(a);
+}
+
+Point ColourPicker::getPreferredSize() const {
+	if(!m_wheel) return Point();
+	Point s = m_wheel->getPreferredSize();
+	s.x += s.y / (128/16);
+	if(m_alpha->isVisible()) s.x += s.y / (128/16);
+	return s;
+}
+
+void ColourPicker::refreshLayout() {
+	if(!m_wheel) return;
+	int sh = getSize().y;
+	int sw = getSize().x - sh;
+	if(m_alpha->isVisible()) sw /= 2;
+
+	m_wheel->setSize(sh, sh);
+	m_wheel->setPosition(0,0);
+	m_value->setSize(sw, sh);
+	m_value->setPosition(sh, 0);
+	m_alpha->setSize(sw, sh);
+	m_alpha->setPosition(sh + sw, 0);
+	setColour(m_colour);
+	updateAutosize();
+}
 
