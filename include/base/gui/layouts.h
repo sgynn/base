@@ -13,7 +13,7 @@ namespace gui {
 		virtual uint type() const = 0;	// Get layout type id
 		virtual const char* typeName() const = 0;	// Get layout type string
 		virtual void apply(Widget*) const = 0;	// Apply layout to this widget
-		virtual Point getMinimumSize(const Widget*) const = 0; // Get minimum size of the widget that can still fit contents
+		virtual Point getMinimumSize(const Widget*, const Point& hint) const = 0; // Get minimum size of the widget that can still fit contents
 		int getMargin() const { return m_margin; }
 		int getSpacing() const { return m_space; }
 		protected:
@@ -31,7 +31,7 @@ namespace gui {
 		uint type() const override { return staticType(); } \
 		const char* typeName() const override { return staticName(); } \
 		void apply(Widget*) const override; \
-		Point getMinimumSize(const Widget*) const override; \
+		Point getMinimumSize(const Widget*, const Point& hint) const override; \
 		static uint staticType() { static uint id=__COUNTER__; return id; } \
 		static const char* staticName() { return #Name; } \
 	};

@@ -475,12 +475,12 @@ void Widget::setSizeAnchored(const Point& s) {
 	}
 }
 
-Point Widget::getPreferredSize() const { // Minimum size
+Point Widget::getPreferredSize(const Point& hint) const { // Minimum size
 	if(isAutosize()) {
 		Point newSize(0, 0);
 		const Point& clientSize = m_client->getSize();
 		if(m_client->m_layout) {
-			newSize = m_client->m_layout->getMinimumSize(m_client);
+			newSize = m_client->m_layout->getMinimumSize(m_client, hint);
 		}
 		else {
 			auto setMax = [](int& value, int other) { if(other>value) value=other; };

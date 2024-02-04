@@ -57,12 +57,12 @@ void HorizontalLayout::apply(Widget* p) const {
 		slot.x += slot.width + m_space;
 	}
 }
-Point HorizontalLayout::getMinimumSize(const Widget* p) const {
+Point HorizontalLayout::getMinimumSize(const Widget* p, const Point& hint) const {
 	Point size(0,0);
 	for(Widget* w: getWidgets(p)) {
 		size.x += m_space;
 		if(w->getAnchor() == 0x33 || !w->isVisible()) continue;
-		Point s = w->getPreferredSize();
+		Point s = w->getPreferredSize(hint);
 		if((w->getAnchor()&0xf) != 3 || w->isAutosize()) size.x += s.x;
 		if(w->getAnchor()>>4 != 3 || w->isAutosize()) size.y = max(size.y, s.y);
 	}
@@ -95,12 +95,12 @@ void VerticalLayout::apply(Widget* p) const {
 		slot.y += slot.height + m_space;
 	}
 }
-Point VerticalLayout::getMinimumSize(const Widget* p) const {
+Point VerticalLayout::getMinimumSize(const Widget* p, const Point& hint) const {
 	Point size(0,0);
 	for(Widget* w: getWidgets(p)) {
 		size.y += m_space;
 		if(w->getAnchor() == 0x33 || !w->isVisible()) continue;
-		Point s = w->getPreferredSize();
+		Point s = w->getPreferredSize(hint);
 		if((w->getAnchor()&0xf) != 3 || w->isAutosize()) size.x = max(size.x, s.x);
 		if(w->getAnchor()>>4 != 3 || w->isAutosize()) size.y += s.y;
 	}
@@ -124,12 +124,13 @@ void FlowLayout::apply(Widget* p) const {
 	}
 }
 
-Point FlowLayout::getMinimumSize(const Widget* p) const {
+Point FlowLayout::getMinimumSize(const Widget* p, const Point& hint) const {
 	Point size(0,0);
 	if(getWidgets(p).size() > 0) {
 		int minWidth = 0;
+		int parentWidth = hint.x? hint.x: p->getSize().x;
 		for(Widget* w: getWidgets(p)) if(w->isVisible()) minWidth = max(minWidth, w->getPreferredSize().x);
-		int wrapWidth = max(minWidth, p->getSize().x - 2 * m_margin);
+		int wrapWidth = max(minWidth, parentWidth - 2 * m_margin);
 		size.x = minWidth;
 
 		int row = 0, right = -m_space;
@@ -165,7 +166,7 @@ void FixedGridLayout::apply(Widget* p) const {
 		if(slot.right() > p->getSize().x-m_margin) slot.x=m_margin, slot.y += slot.height+m_space;
 	}
 }
-Point FixedGridLayout::getMinimumSize(const Widget* p) const {
+Point FixedGridLayout::getMinimumSize(const Widget* p, const Point& hint) const {
 	if(getWidgets(p).size() == 0) return Point(m_margin*2, m_margin*2);
 	Point slot;
 	for(Widget* w: getWidgets(p)) {
@@ -224,7 +225,7 @@ void DynamicGridLayout::apply(Widget* p) const {
 	}
 }
 
-Point DynamicGridLayout::getMinimumSize(const Widget* p) const {
+Point DynamicGridLayout::getMinimumSize(const Widget* p, const Point& hint) const {
 	Point size;
 	// complicated
 	return size;

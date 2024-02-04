@@ -16,7 +16,7 @@ class Label : public Widget {
 	Label(const Rect&, Skin*, const char* c="");
 	virtual void draw() const override;
 	virtual void setSize(int w, int h) override;
-	virtual Point getPreferredSize() const override;
+	virtual Point getPreferredSize(const Point& hint=Point()=Point()) const override;
 	virtual void setCaption(const char*);
 	virtual const char* getCaption() const;
 	virtual void setWordWrap(bool w);
@@ -50,7 +50,7 @@ class Icon : public Widget {
 	float getAngle() const { return m_angle; }
 	void draw() const override;
 	void initialise(const Root*, const PropertyMap&) override;
-	Point getPreferredSize() const override;
+	Point getPreferredSize(const Point& hint=Point()) const override;
 	protected:
 	void copyData(const Widget*) override;
 	IconList* m_iconList;
@@ -84,7 +84,7 @@ class Image : public Widget {
 	void  setAngle(float a) { m_angle=a; }
 	float getAngle() const { return m_angle; }
 	void  draw() const override;
-	Point getPreferredSize() const override;
+	Point getPreferredSize(const Point& hint=Point()) const override;
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
@@ -100,7 +100,7 @@ class Button : public Label, public IconInterface {
 	void setCaption(const char*) override;
 	const char* getCaption() const override;
 	void draw() const override;
-	Point getPreferredSize() const override;
+	Point getPreferredSize(const Point& hint=Point()) const override;
 	public: // Events
 	Delegate<void(Button*)> eventPressed;
 	protected:
@@ -176,7 +176,7 @@ class Textbox : public Widget {
 	~Textbox();
 	void draw() const override;
 	void setPosition(int x, int y) override;
-	Point getPreferredSize() const override;
+	Point getPreferredSize(const Point& hint=Point()) const override;
 	const char* getText() const { return m_text; }
 	const char* getSelectedText() const;
 	int getLineCount() const;
@@ -317,7 +317,7 @@ class Scrollpane : public Widget {
 	void useFullSize(bool m);					// Minimum size of panel is widget size. Also locks size if no scrollbar
 	void alwaysShowScrollbars(bool s);				// Always show scrollbars. False only shows them when needed.
 	void copyData(const Widget*) override;
-	Point getPreferredSize() const override;
+	Point getPreferredSize(const Point& hint=Point()) const override;
 	using Widget::add;							// import add funtions from widget
 	void add(Widget* w, unsigned index) override;// Adding child widgets resizes pane if in autosize mode
 	void setSize(int w, int h) override;
@@ -488,7 +488,7 @@ class ScaleBox : public Widget {
 	public:
 	ScaleBox(const Rect& r, Skin*);
 	void initialise(const Root*, const PropertyMap&) override;
-	Point getPreferredSize() const override { return getSize(); }
+	Point getPreferredSize(const Point& hint=Point()) const override { return getSize(); }
 	void setPosition(int x, int y) override;
 	void setSize(int w, int h) override;
 	void updateAutosize() override;

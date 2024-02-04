@@ -138,7 +138,7 @@ void ColourPicker::setColour(const Colour& c) {
 	HSV hsv = c.toHSV();
 	if(m_wheel) m_wheel->setColour(Colour(hsv.value, hsv.value, hsv.value));
 	if(m_value)	m_value->setColour(Colour().fromHSV(hsv.hue, hsv.saturation, 1));
-	if(m_alpha) m_alpha->getTemplateWidget(0)->setColour(m_colour.toRGB());
+	if(m_alpha && m_alpha->getTemplateWidget(0)) m_alpha->getTemplateWidget(0)->setColour(m_colour.toRGB());
 
 	if(m_valueMark) {
 		m_valueMark->setPosition(0, (1-hsv.value) * m_value->getSize().y);
@@ -201,7 +201,7 @@ void ColourPicker::setHasAlpha(bool a) {
 	if(m_alpha) m_alpha->setVisible(a);
 }
 
-Point ColourPicker::getPreferredSize() const {
+Point ColourPicker::getPreferredSize(const Point& hint) const {
 	if(!m_wheel) return Point();
 	Point s = m_wheel->getPreferredSize();
 	s.x += s.y / (128/16);

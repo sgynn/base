@@ -46,7 +46,7 @@ void Label::setSize(int w, int h) {
 	Widget::setSize(w, h);
 	if(m_wordWrap) updateWrap();
 }
-Point Label::getPreferredSize() const {
+Point Label::getPreferredSize(const Point& hint) const {
 	if(!isAutosize() || !m_skin || !m_skin->getFont()) return getSize();
 	const char* t = m_caption? m_caption.str(): "XX";
 	int fontSize = m_fontSize? m_fontSize: m_skin->getFontSize();
@@ -190,7 +190,7 @@ void Icon::copyData(const Widget* from) {
 		m_iconIndex = icon->m_iconIndex;
 	}
 }
-Point Icon::getPreferredSize() const {
+Point Icon::getPreferredSize(const Point& hint) const {
 	if(isAutosize() && m_iconList && m_iconIndex>=0) {
 		if(m_anchor!=0x33) {
 			if((m_anchor&0xf) == 3) {
@@ -257,7 +257,7 @@ int Image::getImage() const {
 	return m_image;
 }
 
-Point Image::getPreferredSize() const {
+Point Image::getPreferredSize(const Point& hint) const {
 	if(isAutosize() && m_image>=0 && m_root) {
 		// Maintain aspect ratio
 		if(m_anchor!=0x33) {
@@ -336,9 +336,9 @@ void Button::onMouseButton(const Point& p, int d, int u) {
 	Widget::onMouseButton(p, d, u);
 	if(hasFocus() && u==1 && eventPressed && contains(p)) eventPressed(this);
 }
-Point Button::getPreferredSize() const {
-	if(m_caption) return Label::getPreferredSize();
-	else return Widget::getPreferredSize();
+Point Button::getPreferredSize(const Point& hint) const {
+	if(m_caption) return Label::getPreferredSize(hint);
+	else return Widget::getPreferredSize(hint);
 }
 void Button::updateAutosize() {
 	if(m_caption) Label::updateAutosize();
@@ -860,7 +860,7 @@ void Scrollpane::ensureVisible(const Point& p) {
 	printf("-> Offset %d,%d\n", getOffset().x, getOffset().y);
 }
 
-Point Scrollpane::getPreferredSize() const {
+Point Scrollpane::getPreferredSize(const Point& hint) const {
 	return getSize();
 }
 
@@ -869,7 +869,7 @@ void Scrollpane::updateAutosize() {
 	if(isAutosize()) {
 		m_client->pauseLayout();
 		m_client->setAutosize(true);
-		Point s = m_client->getPreferredSize();
+		Point s = m_client->getPreferredSize(getViewWidget()->getSize());
 		m_client->setAutosize(false);
 		setPaneSize(s.x, s.y);
 		m_client->resumeLayout();

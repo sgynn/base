@@ -11,7 +11,7 @@ class ColourPicker : public gui::Widget {
 	ColourPicker(const Rect&, gui::Skin*);
 	~ColourPicker();
 	void initialise(const gui::Root*, const gui::PropertyMap&) override;
-	Point getPreferredSize() const override;
+	Point getPreferredSize(const Point& hint) const override;
 	void refreshLayout() override;
 	
 	void setHasAlpha(bool);

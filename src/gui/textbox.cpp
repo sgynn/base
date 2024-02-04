@@ -45,7 +45,7 @@ void Textbox::copyData(const Widget* from) {
 	}
 }
 
-Point Textbox::getPreferredSize() const {
+Point Textbox::getPreferredSize(const Point& hint) const {
 	if(!isAutosize()) return getSize();
 	Point s = m_skin->getFont()->getSize(m_text, m_skin->getFontSize());
 	s += m_skin->getState(0).textPos;

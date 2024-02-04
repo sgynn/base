@@ -102,7 +102,7 @@ class Widget {
 
 	const Point& getPosition() const;
 	const Point& getSize() const;
-	virtual Point getPreferredSize() const;		// If autoSize, gets the target size
+	virtual Point getPreferredSize(const Point& hint=Point()) const;		// If autoSize, gets the minimum size
 
 	void setAnchor(int code);			// Set anchor code
 	void setAnchor(const char*);		// Set anchor string
