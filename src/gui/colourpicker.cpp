@@ -16,7 +16,7 @@ void ColourPicker::initialise(const Root* root, const PropertyMap& p) {
 	// Generate subwidgets
 	if(root && getWidgetCount() == 0) {
 		IconList* images = root->getIconList("colourpicker");
-		if(!images || !images->getImageIndex()) images = createImages(const_cast<Root*>(root), 128);
+		if(!images || images->getImageIndex()<=0) images = createImages(const_cast<Root*>(root), 128);
 
 		int size = getSize().y;
 		int bar = size / 8 + 4;
