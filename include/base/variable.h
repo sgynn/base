@@ -13,8 +13,8 @@ namespace script {
 	class Function;
 	class VariableName;
 	using base::String;
-
-	/** Console Variables. Can be stured internally, or a pointer to external data */
+	
+	/// Console Variables. Can be stured internally, or a pointer to external data
 	class Variable {
 		friend class Expression;
 		enum Types { OBJECT=1, BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, ARRAY, STRING, FUNCTION, FIXED=0x20, CONST=0x40, LINK=0x80, EXPLICIT=0x100 };
@@ -107,8 +107,10 @@ namespace script {
 
 		template<typename T> void set(const char* n, const T& v) { find(n) = v; } // Alternative syntax
 		template<typename T> void set(uint n, const T& v) { get(n) = v; }
+		template<typename T> void set(const VariableName& n, const T& v) { get(n) = v; }
 		template<typename T> bool link(const char* n, T& v, int f=0) { return find(n).link(v,f); } // Alternative syntax
 		template<typename T> bool link(uint n, T& v, int f) { return get(n).link(v,f); }
+		template<typename T> bool link(const VariableName& n, T& v, int f) { return get(n).link(v,f); }
 
 		typedef Delegate<void(Variable&)> VariableCallback;
 		void setCallback( const VariableCallback& );
@@ -203,7 +205,7 @@ namespace script {
 	// Specialisation to allow ranged iterators to be on variables rather than subitems
 	template<> inline Variable::Variable(Variable::SubItem v): type(0) { *this=v.value; }
 
-	
+
 	/// Variable name with pre-looked up strings
 	class VariableName {
 		friend class Variable;
@@ -227,5 +229,7 @@ namespace script {
 		protected:
 		std::vector<uint> parts;
 	};
+
+
 }
 
