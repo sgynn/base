@@ -109,6 +109,7 @@ class AnimationController {
 	AnimationKey getAction() const;		// Get the active action - It may have ended.
 	float        getProgress() const;	// 0-1 value through active animation
 	float        getWeight() const;		// Weight of active action
+	int          getGroup() const { return m_group; }
 
 	void         setProgress(float);	// Set progress of current action.
 	void         setWeight(float);		// Set weight of currrent action
