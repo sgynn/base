@@ -40,7 +40,7 @@ void DebugGeometryManager::initialise(Scene* scene, int queue, Material* mat) {
 	if(scene) {
 		SceneNode* node = new DebugGeometrySceneNode();
 		for(auto& i: s_instance->m_drawables) node->attach(i.second);
-		s_instance->m_nodes.push_back(node);
+s_instance->m_nodes.push_back(node);
 		scene->add(node);
 	}
 }
@@ -311,6 +311,64 @@ void DebugGeometry::circle(const vec3& p, const vec3& axis, float r, int seg, in
 		m_buffer->push_back(v);
 		v.pos = p + x * sin(i*step)  + y * cos(i*step);
 		m_buffer->push_back(v);
+	}
+}
+
+void DebugGeometry::arc(const vec3& centre, const vec3& dstart, const vec3& dend, int segments, int colour) {
+	assert(segments<1024); // Probably wrong parameter
+	DebugGeometryVertex v;
+	setColour(v, colour);
+	if(segments < 3) {
+		v.pos = centre + dstart;
+		m_buffer->push_back(v);
+		v.pos = centre + dend;
+		m_buffer->push_back(v);
+	}
+	else {
+		float d0 = dstart.length();
+		float d1 = dend.length();
+		Quaternion arc = Quaternion::arc(dstart, dend);
+		Quaternion step = slerp(Quaternion(), arc, 1.f/(segments-1));
+		if(arc.w >= 1.0) return;
+		v.pos = centre + dstart;
+		vec3 dir = dstart / d0;
+		for(int i=1; i<segments; ++i) {
+			m_buffer->push_back(v);
+			dir = step * dir;
+			v.pos = centre + dir * flerp(d0, d1, (float)i / (float)segments);
+			m_buffer->push_back(v);
+		}
+		m_buffer->push_back(v);
+		v.pos = centre + dend;
+		m_buffer->push_back(v);
+	}
+}
+
+void DebugGeometry::capsule(const vec3& a, const vec3& b, float radius, int seg, int colour, float cap) {
+	vec3 n = (b-a).normalise();
+	circle(a, n, radius, seg, colour);
+	circle(b, n, radius, seg, colour);
+	vec3 basis(n.y, n.z, n.x);
+	vec3 x = n.cross(basis).normalise();
+	vec3 y = n.cross(x);
+	x *= radius;
+	y *= radius;
+	line(a+x, b+x, colour);
+	line(a-x, b-x, colour);
+	line(a+y, b+y, colour);
+	line(a-y, b-y, colour);
+	// Caps
+	if(cap > 0) {
+		seg /= 4;
+		n *= radius;
+		arc(a,  x, n*-cap, seg, colour);
+		arc(a, -x, n*-cap, seg, colour);
+		arc(a,  y, n*-cap, seg, colour);
+		arc(a, -y, n*-cap, seg, colour);
+		arc(b,  x, n*cap, seg, colour);
+		arc(b, -x, n*cap, seg, colour);
+		arc(b,  y, n*cap, seg, colour);
+		arc(b, -y, n*cap, seg, colour);
 	}
 }
 
