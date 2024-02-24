@@ -57,6 +57,7 @@ namespace script {
 		virtual String toString() const;
 		bool isConst() const { return op!=SET && op!=APPEND && !(lhs.type==EXPRESSION&&!lhs.expr->isConst()) && !(rhs.type==EXPRESSION&&!rhs.expr->isConst()); }
 		inline Variable evaluate(Context& context) const { return evaluate(std::forward<Context>(context)); }
+		VariableName extractVariableName(Context&&) const; // If a SET expression, or evaluates to a varaible lookup, get the full name lookup
 	};
 	// Conditional expression ( condition ? trueValue, falseValue )
 	class Conditional : public Expression {

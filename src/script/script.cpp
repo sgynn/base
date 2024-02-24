@@ -364,6 +364,41 @@ Variable Expression::evaluate(Context&& context) const {
 	return r;
 }
 
+VariableName Expression::extractVariableName(Context&& context) const {
+	VariableName name;
+	if(op == NIL || op == SET || op == APPEND || op == GET || op == GET2) {
+		switch(lhs.type) {
+		case NAME: name += lhs.var; break;
+		case COMPOUNDNAME:
+			for(const uint* n = lhs.cvar; *n!=~0u; ++n) name += *n;
+			break;
+		case EXPRESSION:
+			name = lhs.expr->extractVariableName(fwd(context));
+		default: break;
+		}
+
+		if(op == GET) { // lhs[rhs]
+			Variable e = opValue(rhs, fwd(context));
+			if(e.isNumber()) name += (uint)e;
+			else name += e.toString();
+		}
+		else if(op == GET2) {  // lhs.rhs
+			switch(rhs.type) {
+			case NAME: name += rhs.var; break;
+			case COMPOUNDNAME:
+				for(const uint* n = rhs.cvar; *n!=~0u; ++n) name += *n;
+				break;
+			case EXPRESSION:
+				name += rhs.expr->extractVariableName(fwd(context));
+			default: break;
+			}
+		}
+	}
+	return name;
+}
+
+
+
 Conditional::Conditional() { rhd.type = NOTHING; }
 Conditional::~Conditional() { opDelete(rhd); }
 Variable Conditional::evaluate(Context&& context) const {

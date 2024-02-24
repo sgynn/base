@@ -56,6 +56,9 @@ class Console {
 	void unlink(const char* name);								// Unlink a variable
 	void erase(const char* name);								// Remove a variable
 
+
+	Delegate<void(const script::VariableName&)> eventSet; // A variable was set using the console
+
 	private:
 	/** Simple fixed size queue for histories */
 	template<class T>

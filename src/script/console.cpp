@@ -391,12 +391,16 @@ bool Console::execute(const char* s) {
 		}
 		else {
 			const char* eq = strchr(s, '=');
+			while(eq>s && eq[-1] == ' ') --eq; //trim
 			printf("Set %.*s to %s\n", (int)(eq-s), s, result.toString().str());
 			// FIXME Variable change callbacks
 			// result is a copy, and does not have the function
 			// either need to parse the variable, or let evaluate() fire the callbacks.
 			// Perhaps a parameter: evaluate(context, fireCallbacks) ?
 			// or we can fire them regardless? could be slower having to do extra checks though
+
+			// Use a generic callback for now - TODO: extract VariableName
+			if(eventSet) eventSet(expression->extractVariableName(script::Context(m_root)));
 		}
 		delete expression;
 		return true;
