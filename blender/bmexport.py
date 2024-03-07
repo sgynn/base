@@ -331,6 +331,15 @@ def export_animations(context, config, skeleton, xml):
         if skeleton.animation_data.action:
             actions.append( (skeleton.animation_data.action, "Action") )
 
+        # Disable modifiers that can make this slow
+        modifiers = []
+        disableModifiers = [ 'TRIANGULATE', 'SUBSURF', 'DISPLACE' ]
+        for obj in context.view_layer.objects:
+            for m in obj.modifiers:
+                if m.type in disableModifiers and m.show_viewport:
+                    modifiers.append(m)
+                    m.show_viewport = False
+
         restore = {}
         if skeleton.animation_data.nla_tracks and (config.export_animations == "LINKED" or config.export_animations == "UNLOCKED"):
             unlocked_only = config.export_animations == "UNLOCKED"
@@ -388,6 +397,11 @@ def export_animations(context, config, skeleton, xml):
                 b[0].location = b[1];
                 b[0].rotation_quaternion = b[2]
                 b[0].scale = b[3]
+
+        # Restore disabled modifiers
+        for m in modifiers:
+            m.show_viewport = True
+
 
 def same(a,b): return abs(a-b)<0.00001
 
