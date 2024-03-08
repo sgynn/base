@@ -161,6 +161,9 @@ namespace script {
 
 		// A linear value to use as a key in maps
 		size_t getObjectHash() const { return isObject() || isVector() || isArray()? (size_t)obj: 0; }
+
+		// Search this object for an item and return its path
+		VariableName findObject(const Variable& item, int depth=0) const;
 		
 		// Object iterator
 		struct SubItem {
@@ -221,8 +224,12 @@ namespace script {
 		VariableName& operator+=(const VariableName&);
 		friend VariableName operator+(uint id, const VariableName& name);
 		friend VariableName operator+(const char* first, const VariableName& name);
+		friend bool operator==(uint id, const VariableName& name);
+		friend bool operator!=(uint id, const VariableName& name);
 		bool operator==(const VariableName&) const;
 		bool operator!=(const VariableName&) const;
+		bool operator==(uint name) const;
+		bool operator!=(uint name) const;
 		operator bool() const;
 		size_t size() const { return parts.size(); }
 		uint operator[](size_t i) const { return parts[i]; }

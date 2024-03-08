@@ -68,6 +68,8 @@ bool VariableName::operator==(const VariableName& o) const {
 bool VariableName::operator!=(const VariableName& o) const {
 	return !(*this == o);
 }
+bool VariableName::operator==(uint id) const { return parts.size()==1 && parts[0] == id; }
+bool VariableName::operator!=(uint id) const { return parts.size()!=1 || parts[0] != id; }
 
 VariableName& VariableName::operator+=(uint id) { parts.push_back(id); return *this; }
 VariableName& VariableName::operator+=(const char* name) { parts.push_back(Variable::lookupName(name)); return *this; }
@@ -75,8 +77,12 @@ VariableName& VariableName::operator+=(const VariableName& name) { parts.insert(
 VariableName VariableName::operator+(uint id) const { VariableName n=*this; n += id; return n; }
 VariableName VariableName::operator+(const char* name) const { VariableName n=*this; n += name; return n; }
 VariableName VariableName::operator+(const VariableName& name) const { VariableName n=*this; n += name; return n; }
-VariableName operator+(uint id, const VariableName& name) { VariableName n; n += id; n += name; return n; }
-VariableName operator+(const char* pre, const VariableName& name) { VariableName n; n += pre; n += name; return n; }
+namespace script {
+	VariableName operator+(uint id, const VariableName& name) { VariableName n; n += id; n += name; return n; }
+	VariableName operator+(const char* pre, const VariableName& name) { VariableName n; n += pre; n += name; return n; }
+	bool operator==(uint id, const VariableName& name) { return name==id; }
+	bool operator!=(uint id, const VariableName& name) { return name!=id; }
+}
 
 // ------------------------------------------------ //
 
@@ -632,6 +638,17 @@ void Variable::lock() {
 void Variable::setExplicit(bool e) {
 	if(e) type |= EXPLICIT;
 	else type &= ~EXPLICIT;
+}
+
+VariableName Variable::findObject(const Variable& item, int depth) const {
+	if(!item.isObject() && !item.isArray() && !item.isFunction()) return VariableName(); // Not an object type
+	for(const auto& i: *this) {
+		if(i.value == item) return VariableName() + i.id;
+		else if(depth > 0 && (i.value.isObject() || i.value.isArray())) {
+			if(VariableName r = i.value.findObject(item, depth-1)) return i.id + r;
+		}
+	}
+	return VariableName();
 }
 
 String Variable::toString(int depth, bool quotes, bool multiLine, int indent) const {
