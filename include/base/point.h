@@ -4,6 +4,7 @@
 struct Point {
 	int x, y;
 	Point() : x(0), y(0) {};
+	explicit Point(int v) : x(v), y(v) {}
 	Point(int x, int y) : x(x), y(y) {};
 	Point& set(int px, int py) { x=px; y=py; return *this; }
 	Point operator-() const { return Point(-x, -y); }
@@ -26,6 +27,7 @@ struct Point {
 struct Point3 {
 	int x, y, z;
 	Point3() : x(0), y(0), z(0) {};
+	explicit Point3(int v) : x(v), y(v), z(v) {}
 	Point3(int x, int y, int z) : x(x), y(y), z(z) {};
 	Point3& set(int px, int py, int pz) { x=px; y=py; z=pz; return *this; }
 	Point3 operator-() const { return Point3(-x, -y, -z); }

@@ -191,7 +191,7 @@ void Icon::copyData(const Widget* from) {
 	}
 }
 Point Icon::getPreferredSize(const Point& hint) const {
-	if(isAutosize() && m_iconList && m_iconIndex>=0) {
+	if(isAutosize() && m_iconList && m_iconIndex>=0 && m_iconIndex < m_iconList->size()) {
 		if(m_anchor!=0x33) {
 			if((m_anchor&0xf) == 3) {
 				Point s = m_iconList->getIconRect(m_iconIndex).size();
