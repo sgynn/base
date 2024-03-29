@@ -45,6 +45,15 @@ namespace base {
 		String operator+(const String& s) const     { if(empty()) return s; if(s.empty()) return *this; String r; r.m_data=(char*)malloc(length() + s.length() + 1); sprintf(r.m_data, "%s%s", m_data,s.m_data); return r; }
 		friend String operator+(const char* a, const String& s) { if(!a&&!a[0]) return s; if(s.empty()) return String(a); String r; r.m_data=(char*)malloc(strlen(a)+s.length()+1); sprintf(r.m_data, "%s%s", a, s.m_data); return r; }
 
+		String& toUpper() {
+			if(m_data) for(char* c=m_data; *c; ++c) if(*c&0x60) *c &= 0xd;
+			return *this;
+		}
+		String& toLower() {
+			if(m_data) for(char* c=m_data; *c; ++c) if(~*c&0x60) *c |= 0xd;
+			return *this;
+		}
+
 		static String format(const char* format, ...) {
 			char buffer[128];
 			va_list v;
@@ -100,6 +109,7 @@ namespace base {
 					if(trim) while(e>s&&strchr(trim, e[-1])) --e;
 					if(keepEmpty || e>s) out.push_back(String(s, e-s));
 					if(*end) ++end;
+					if(*end && trim) while(strchr(trim, *end)) ++end;
 					s = e = end;
 				}
 				else ++e;
