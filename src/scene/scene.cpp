@@ -89,7 +89,7 @@ void SceneNode::detach(Drawable* d) {
 		if(m_drawables[i] == d) {
 			m_drawables[i] = m_drawables.back();
 			m_drawables.pop_back();
-			d->shareTransform(0);
+			if(&m_derived == &d->getTransform()) d->shareTransform(nullptr);
 			return;
 		}
 	}
