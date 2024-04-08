@@ -5,7 +5,6 @@ struct Point;
 
 namespace base {
 
-enum StateMode { TRANSIENT, PERSISTENT };
 enum ComponentFlags { BLOCK_KEYS=1, BLOCK_MOUSE=2, BLOCK_WHEEL=4, BLOCK_UPDATE=8, BLOCK_DRAW=0x10, BLOCK_GRAB=0x20 };
 
 class GameStateManager;
@@ -20,6 +19,7 @@ class GameState;
 class GameStateComponent {
 	friend class GameState;
 	public:
+	enum StateMode { TRANSIENT, PERSISTENT };
 	GameStateComponent(int updateOrder=0, int drawOrder=0, StateMode mode=TRANSIENT) : m_mode(mode), m_updateOrder(updateOrder), m_drawOrder(drawOrder) {}
 	virtual ~GameStateComponent() {}
 	virtual void begin() {}
