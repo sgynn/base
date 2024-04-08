@@ -162,13 +162,24 @@ void DebugGeometryManager::setMaterial(Material* m) {
 
 class DebugGeometryDrawable : public Drawable {
 	public:
-	DebugGeometryDrawable(float w=1) : m_size(0), m_lineWidth(w) {}
+	DebugGeometryDrawable(float w=1, float xray=0.2) : m_size(0), m_lineWidth(w), m_xray(xray) {}
 	virtual void draw( RenderState& i ) {
 		if(m_size) {
 			i.setMaterial(m_material);
 			bind();
 			if(m_lineWidth!=1) glLineWidth(m_lineWidth);
 			glDrawArrays(GL_LINES, 0, m_size);
+			
+			if(m_xray > 0) {
+				glEnable(GL_BLEND);
+				glDepthFunc(GL_GREATER);
+				glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+				glBlendColor(0,0,0,m_xray);
+				glDrawArrays(GL_LINES, 0, m_size);
+				m_material->getPass(0)->blend.bind();
+				glDepthFunc(GL_LEQUAL);
+			}
+
 			if(m_lineWidth!=1) glLineWidth(1);
 			GL_CHECK_ERROR;
 		}
@@ -188,14 +199,15 @@ class DebugGeometryDrawable : public Drawable {
 	protected:
 	size_t m_size;
 	float  m_lineWidth;
+	float  m_xray;
 	HardwareVertexBuffer m_vbo;
 };
 
 
 // ---------------------------------------------- //
 
-DebugGeometry::DebugGeometry(DebugGeometryManager* mgr, DebugGeometryFlush f, bool x, float w): m_manager(mgr), m_mode(f) {
-	m_drawable = new DebugGeometryDrawable(w);
+DebugGeometry::DebugGeometry(DebugGeometryManager* mgr, DebugGeometryFlush f, bool xray, float w) : m_manager(mgr), m_mode(f) {
+	m_drawable = new DebugGeometryDrawable(w, xray?0.1:0);
 	m_buffer = new GeometryList;
 	m_manager->add(this);
 }
