@@ -172,7 +172,8 @@ namespace script {
 	/// Entry point
 	class Script {
 		public:
-		Script();
+		Script() = default;
+		Script(const char* source) { parse(source); }
 		~Script();
 		bool        parse(const char* source);
 		bool		run(Variable& context);
@@ -193,7 +194,7 @@ namespace script {
 		static int         parseInvertor(const char*&);
 		static void        compoundExpression(Expression** stack, int& front, Expression* expr, int precidence);
 		private:
-		Block* m_block;
+		Block* m_block = nullptr;
 	};
 
 }

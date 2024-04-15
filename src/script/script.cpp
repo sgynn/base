@@ -1128,7 +1128,7 @@ bool Script::parse(const char* source) {
 		m_block = b;
 		m_block->scoped = false;
 	}
-	else m_block = 0;
+	else m_block = nullptr;
 	return m_block;
 }
 bool Script::run(Variable& v) {
@@ -1139,6 +1139,5 @@ bool Script::run(Variable& v) {
 	m_block->evaluate(fwd(context));
 	return true;
 }
-Script::Script() : m_block(0) {}
 Script::~Script() { delete m_block; }
 
