@@ -147,7 +147,7 @@ const AnimationBank::AnimationInfo* AnimationBank::getAnimation(const AnimationK
 		if(a->groupMask&mask) total += a->weight;
 	}
 	if(total>0) {
-		total *= rand()/RAND_MAX;
+		total *= (float)rand()/(float)RAND_MAX;
 		for(AnimationInfo* a=m_animations[k]; a; a=a->next) {
 			if(a->groupMask&mask) {
 				total -= a->weight;
