@@ -240,7 +240,7 @@ void Emitter::fireEventT(Instance* instance, const Event* e, Particle& p, int th
 void Emitter::trigger(Instance* instance, Particle& p) const {
 	// Spawn a particle here
 	for(int i=0; i<spawnCount; ++i) {
-		spawnParticle(instance, p.position, p.orientation, p.velocity, 0, 0);
+		spawnParticle(instance, p.position, p.orientation, p.velocity, instance->getTime() - p.spawnTime, 0);
 	}
 }
 
@@ -387,6 +387,7 @@ void Instance::trigger() {
 	n.position = vec3(&getTransform()[12]);
 	n.orientation.fromMatrix(getTransform());
 	n.velocity = getVelocity();
+	n.spawnTime = getTime();
 	for(EmitterInstance& e: m_emitters) {
 		if(!e.emitter->eventOnly) e.emitter->trigger(this, n);
 	}
