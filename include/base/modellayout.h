@@ -65,7 +65,7 @@ namespace base {
 				}
 				else {
 					++current;
-					if(current == node->children.end() && !stack.empty()) {
+					while(current == node->children.end() && !stack.empty()) {
 						node = node->parent;
 						current = node->children.begin() + stack.back() + 1;
 						stack.pop_back();
