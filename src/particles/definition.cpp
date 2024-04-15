@@ -78,9 +78,11 @@ class ParticleSystemLoader {
 	void loadReferences(Event* event, const Variable& var) {
 		const Variable& target = var.get("target");
 		const char* targetType = target.get("type");
-		if(s_emitterFactory.contains(targetType)) event->target = loadObject<Emitter>(target, EMITTER, s_emitterFactory);
-		else if(s_eventFactory.contains(targetType)) event->target = loadObject<Event>(target, EVENT, s_eventFactory);
-		else if(s_affectorFactory.contains(targetType)) event->target = loadObject<Affector>(target, AFFECTOR, s_affectorFactory);
+		if(targetType) {
+			if(s_emitterFactory.contains(targetType)) event->target = loadObject<Emitter>(target, EMITTER, s_emitterFactory);
+			else if(s_eventFactory.contains(targetType)) event->target = loadObject<Event>(target, EVENT, s_eventFactory);
+			else if(s_affectorFactory.contains(targetType)) event->target = loadObject<Affector>(target, AFFECTOR, s_affectorFactory);
+		}
 		if(!event->target) printf("Particle Error: Event has no target\n");
 	}
 
