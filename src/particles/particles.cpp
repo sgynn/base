@@ -149,7 +149,7 @@ void Emitter::updateT(int thread, int count, Instance* instance, float time) con
 		for(const Event* event: m_events[(int)Event::Type::TIME]) {
 			float t = instance->m_time - particle.spawnTime;
 			if(!event->once) t -= floor(t/event->time)*event->time;
-			if(t < event->time && t+time >= event->time) fireEvent(instance, event, particle);
+			if(t < event->time && t+time >= event->time) fireEventT(instance, event, particle, thread);
 		}
 	}
 }
