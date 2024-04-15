@@ -546,6 +546,8 @@ particle::System* ParticleLoader::create(const char* name, Manager* manager) {
 		return 0;
 	}
 
+	particle::registerInternalStructures();
+
 	script::Variable data;
 	script::Script script;
 	script.parse(File(filename).data());
