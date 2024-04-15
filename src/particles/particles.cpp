@@ -393,6 +393,31 @@ void Instance::trigger() {
 	}
 }
 
+void Instance::reset() {
+	m_time = 0;
+	for(int i=0; i<m_threads; ++i) {
+		m_triggered[i].clear();
+		m_destroy[i].clear();
+	}
+	for(EmitterInstance& e: m_emitters) {
+		e.enabled = e.emitter->startEnabled;
+		for(uint i: e.particles) freeParticle(m_pool[i]);
+		e.particles.clear();
+	}
+	m_active.clear();
+	for(Emitter* e: m_system->emitters()) {
+		if(e->startEnabled && !e->eventOnly) m_active.push_back(e->m_index);
+	}
+}
+
+void Instance::shift(const vec3& delta) {
+	for(EmitterInstance& e: m_emitters) {
+		for(uint i: e.particles) {
+			m_pool[i].position += delta;
+		}
+	}
+}
+
 void Instance::update(float time) {
 	if(!m_enabled) return;
 	// Need to reset head pointers if paused

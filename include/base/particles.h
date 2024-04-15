@@ -235,6 +235,8 @@ class Instance {
 	System* getSystem() const { return m_system; }
 	float getTime() const { return m_time; }
 	void trigger();
+	void reset();
+	void shift(const vec3&);
 
 	protected:
 	void initialiseThreadData(int m_threads);
