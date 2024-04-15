@@ -387,7 +387,9 @@ void Instance::trigger() {
 	n.position = vec3(&getTransform()[12]);
 	n.orientation.fromMatrix(getTransform());
 	n.velocity = getVelocity();
-	for(EmitterInstance& e: m_emitters) e.emitter->trigger(this, n);
+	for(EmitterInstance& e: m_emitters) {
+		if(!e.emitter->eventOnly) e.emitter->trigger(this, n);
+	}
 }
 
 void Instance::update(float time) {
