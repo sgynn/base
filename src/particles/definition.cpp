@@ -204,14 +204,18 @@ int particle::loadEnum(const Variable& v, const EnumValues& e) {
 
 
 void particle::registerInternalStructures() {
+	if(!s_emitterFactory.empty()) return; // Already registered
+
 	{
-	auto def = s_eventFactory["Timer"] = new Definition<Event>{{}, 0, "Timer", [](){return new Event(Event::Type::TIME);}};
+	auto eventDef = new Definition<Event>(); // common event properties
+	AddBasicProperty(Event, Event, eventDef, "enabled", startEnabled, Bool);
+	AddEnumProperty(Event, Event, eventDef, Event::Effect, effect, "Trigger", "Enable", "Disable", "Toggle");
+
+	auto def = s_eventFactory["Timer"] = new Definition<Event>{{}, eventDef, "Timer", [](){return new Event(Event::Type::TIME);}};
 	AddBasicProperty(Event, Event, def, "time", time, Float);
 	AddBasicProperty(Event, Event, def, "once", once, Bool);
-	AddBasicProperty(Event, Event, def, "enabled", startEnabled, Bool);
-	AddEnumProperty(Event, Event, def, Event::Effect, effect, "Trigger", "Enable", "Disable", "Toggle");
-	s_eventFactory["Spawn"] = new Definition<Event>{{}, 0, "Spawn", [](){return new Event(Event::Type::SPAWN);}};
-	s_eventFactory["Death"] = new Definition<Event>{{}, 0, "Death", [](){return new Event(Event::Type::DIE);}};
+	s_eventFactory["Spawn"] = new Definition<Event>{{}, eventDef, "Spawn", [](){return new Event(Event::Type::SPAWN);}};
+	s_eventFactory["Death"] = new Definition<Event>{{}, eventDef, "Death", [](){return new Event(Event::Type::DIE);}};
 	}
 
 	// ====================================================================================== //
@@ -306,6 +310,13 @@ void particle::registerInternalStructures() {
 	{
 	auto def = CreateAffectorDefinition(Rotator2D, Affector);
 	AddValueProperty(Affector, Rotator2D, def, amount);
+	}
+
+	{
+	auto def = CreateAffectorDefinition(Rotator3D, Affector);
+	AddValueProperty(Affector, Rotator3D, def, amount);
+	AddBasicProperty(Affector, Rotator3D, def, "axis", axis, Vector);
+	AddBasicProperty(Affector, Rotator3D, def, "local", local, Bool);
 	}
 
 	{
