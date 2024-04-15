@@ -315,14 +315,13 @@ ModelLayout* BMLoader::loadLayout(const XMLElement& e) {
 	ModelLayout* layout = new ModelLayout;
 	struct Stack { const XMLElement* element; ModelLayout::Node* parent; };
 	std::vector<Stack> stack;
-	stack.push_back({&e, &layout->root()});
+	for(const XMLElement& child: e) stack.push_back({&child, &layout->root()});
 	for(size_t index=0; index<stack.size(); ++index) {
 		const XMLElement& i = *stack[index].element;
 		ModelLayout::Node* n = new ModelLayout::Node();
 		const char* name = i.attribute("name");
 		const char* bone = i.attribute("bone");
-		const char* object = 0;
-		static const char* nope = 0;
+		static const char* nope = nullptr;
 
 		n->scale.set(1,1,1);
 		sscanf(i.attribute("position"), "%f %f %f", &n->position.x, &n->position.y, &n->position.z);
@@ -336,9 +335,9 @@ ModelLayout* BMLoader::loadLayout(const XMLElement& e) {
 			sscanf(o, "%f %f %f", &n->scale.x, &n->scale.y, &n->scale.z);
 			n->type = ModelLayout::LIGHT;
 		}
-		n->name = name[0]? strdup(name): 0;
-		n->bone = bone[0]? strdup(bone): 0;
-		n->object = object? strdup(object): 0;
+		n->name = name[0]? strdup(name): nullptr;
+		n->bone = bone[0]? strdup(bone): nullptr;
+		n->object = n->object? strdup(n->object): nullptr;
 		n->parent = stack[index].parent;
 		n->parent->children.push_back(n);
 
