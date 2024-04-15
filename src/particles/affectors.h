@@ -56,6 +56,17 @@ class Rotator2D : public Affector {
 	}
 };
 
+class Rotator3D : public Affector {
+	public:
+	bool local = true;
+	Value amount = 0.1;
+	vec3 axis = vec3(0,1,0);
+	void update(Particle& p, float st, float time) const override {
+		Quaternion rot(local? p.orientation*axis: axis, amount.getValue(st-p.spawnTime) * time);
+		p.orientation *= rot;
+	}
+};
+
 class Attractor : public Affector {
 	public:
 	vec3 centre;
