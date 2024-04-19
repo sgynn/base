@@ -223,19 +223,19 @@ audio::objectID audio::createObject() {
 		if(!objects[id]) {
 			o->id = id;
 			objects[id] = o;
-			printf("Created object %u\n", id);
+			printf("Created audio object %u\n", id);
 			return id;
 		}
 	}
 	o->id = objects.size();
 	objects.push_back(o);
-	printf("Created object %u\n", o->id);
+	printf("Created audio object %u\n", o->id);
 	return o->id;
 }
 void audio::destroyObject(objectID id) {
 	vector<Object*>& objects = Data::instance->m_objects;
 	if(id<objects.size() && objects[id]) {
-		printf("Destroyed object %u\n", id);
+		printf("Destroyed audio object %u\n", id);
 		objects[id]->stopAll();
 
 		// stop any sounds
