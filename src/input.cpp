@@ -97,8 +97,9 @@ void Input::createMap() {
 	strcpy(s_ascii[0], ".abcdefghijklmnopqrstuvwxyz01234567890123456789.............`-=.\t[]\n;'#\\,./ ........../*-+.\n");
 	strcpy(s_ascii[1], ".ABCDEFGHIJKLMNOPQRSTUVWXYZ)!\"£$%^&*(0123456789.............¬_+.\t{}\n:@~|<>? ........../*-+.\n");
 	for(int i=0; i<128; i++) {
-		if(i>91 || (s_ascii[0][i]=='.' && i!=KEY_STOP)) s_ascii[0][i] = 0;
-		if(i>91 || (s_ascii[1][i]=='.' && i!=KEY_STOP)) s_ascii[1][i] = 0;
+		if(i==KEY_STOP || i==KEY_DEL_PAD) continue;
+		if(i>91 || s_ascii[0][i]=='.') s_ascii[0][i] = 0;
+		if(i>91 || s_ascii[1][i]=='.') s_ascii[1][i] = 0;
 	}
 	
 	//mapping from system input
