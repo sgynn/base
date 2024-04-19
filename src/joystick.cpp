@@ -1,6 +1,7 @@
 #include <base/input.h>
 #include <cstdio>
 
+
 using namespace base;
 
 
@@ -214,10 +215,17 @@ int Input::initialiseJoysticks() {
 				// valid
 				Joystick* joy = new Joystick(joyCaps.wNumAxes, joyCaps.wNumButtons);
 				joy->m_file = i;
-				for(size_t j=0; j<sizeof(joy->m_name) && joyCaps.szPname[j]; ++j) joy->m_name[j] = (char)joyCaps.szPname[j];
-				uint* ranges[] = { &joyCaps.wXmin, &joyCaps.wYmin, &joyCaps.wZmin, &joyCaps.wRmin, &joyCaps.wUmin, &joyCaps.wVmin };
-				for(size_t j=0; j<joyCaps.wNumAxes; ++j) joy->m_range[i].min = ranges[i][0], joy->m_range[i].max = ranges[i][1];
+				strcpy(joy->m_name, joyCaps.szPname);
+				int axes = joyCaps.wNumAxes;
+				if(axes>0) joy->m_range[0] = { (int)joyCaps.wXmin, (int)joyCaps.wXmax };
+				if(axes>1) joy->m_range[1] = { (int)joyCaps.wYmin, (int)joyCaps.wYmax };
+				if(axes>2) joy->m_range[2] = { (int)joyCaps.wZmin, (int)joyCaps.wZmax };
+				if(axes>4) joy->m_range[3] = { (int)joyCaps.wUmin, (int)joyCaps.wUmax };
+				if(axes>3) joy->m_range[4] = { (int)joyCaps.wRmin, (int)joyCaps.wRmax };
+				if(axes>5) joy->m_range[5] = { (int)joyCaps.wVmin, (int)joyCaps.wVmax };
+				for(int i=0; i<axes; ++i) joy->m_axis[i] = (joy->m_range[i].min + joy->m_range[i].max) / 2;
 				printf("Joystick %s: %d axes, %d buttons\n", joy->m_name, joy->m_numAxes, joy->m_numButtons);
+				for(int i=0; i<axes; ++i) printf("%d: %d (%d - %d)\n", i, joy->m_axis[i], joy->m_range[i].min, joy->m_range[i].max);
 				addJoystick(joy);
 			}
 		}
@@ -230,12 +238,13 @@ bool Joystick::update() {
 	info.dwSize = sizeof(info);
 	info.dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS;
 	joyGetPosEx(m_file, &info);
-	const DWORD returnFlags[6] = { JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, JOY_RETURNR, JOY_RETURNU, JOY_RETURNV };
+	const DWORD returnFlags[6] = { JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, JOY_RETURNU, JOY_RETURNR, JOY_RETURNV };
 	for(size_t i=0; i<m_numAxes; ++i) {
 		if(info.dwFlags & returnFlags[i]) {
 			m_axis[i] = *((&info.dwXpos) + i);	// Assuming contiguous
 		}
 	}
+	//printf("%lu %lu %lu %lu %lu %lu\n", info.dwXpos, info.dwYpos, info.dwZpos, info.dwUpos, info.dwRpos, info.dwVpos);
 	if(info.dwFlags & JOY_RETURNBUTTONS) {
 		m_changed = m_buttons ^ info.dwButtons;
 		m_buttons = info.dwButtons;
@@ -252,8 +261,43 @@ bool Joystick::update() {
 #endif
 
 #ifdef EMSCRIPTEN
-int Input::initialiseJoysticks() { return 0; }
-bool Joystick::update() { return true; }
+#include <emscripten.h>
+#include <emscripten/html5.h>
+
+int Input::initialiseJoysticks() {
+	printf("Initialising joysticks\n");
+	if(emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS) return 0;
+	int num = emscripten_get_num_gamepads();
+	printf("Detected %d joysticks\n", num);
+	for(Joystick* joy: m_joysticks) delete joy;
+	m_joysticks.clear();
+	EmscriptenGamepadEvent state;
+	for(int i=0; i<num; ++i) {
+		if(emscripten_get_gamepad_status(i, &state) == EMSCRIPTEN_RESULT_SUCCESS) {
+			printf("Detected controller: %s (%d axes, %d buttons)\n", state.id, state.numAxes, state.numButtons);
+			Joystick* joy = new Joystick(state.numAxes, state.numButtons);
+			joy->m_file = i;
+			joy->setDeadzone(0.3);
+			addJoystick(joy);
+		}
+	}
+	return num;
+}
+
+bool Joystick::update() {
+	EmscriptenGamepadEvent state;
+	if(emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS) return false;
+	if(emscripten_get_gamepad_status(m_file, &state) == EMSCRIPTEN_RESULT_SUCCESS) {
+		assert(m_numAxes == state.numAxes && m_numButtons==state.numButtons);
+		uint buttons = 0;
+		for(int i=0; i<m_numAxes; ++i) m_axis[i] = state.axis[i] * 100;
+		for(int i=0; i<m_numButtons; ++i) buttons |= state.digitalButton[i] << i;
+		m_changed = m_buttons ^ buttons;
+		m_buttons = buttons;
+		return true;
+	}
+	return false;
+}
 #endif
 
 

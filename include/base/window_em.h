@@ -34,6 +34,7 @@ namespace base {
 		static EM_BOOL mouseCallback(int type, const EmscriptenMouseEvent* e, void*);
 		static EM_BOOL wheelCallback(int type, const EmscriptenWheelEvent* e, void*);
 		static EM_BOOL focusCallback(int type, const EmscriptenFocusEvent* e, void*);
+		static EM_BOOL gamepadCallback(int type, const EmscriptenGamepadEvent*e, void*);
 
 		int m_context;
 		static Point s_mousePos;

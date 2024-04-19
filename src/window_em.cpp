@@ -59,6 +59,9 @@ bool EMWindow::createWindow() {
 	emscripten_set_focus_callback(m_canvas, this, 1, EMWindow::focusCallback);
 	emscripten_set_focusout_callback(m_canvas, this, 1, EMWindow::focusCallback);
 
+	emscripten_set_gamepadconnected_callback(this, true, EMWindow::gamepadCallback);
+	emscripten_set_gamepaddisconnected_callback(this, true, EMWindow::gamepadCallback);
+
 	// Fullscreen button - must have id="fullscreen"
 	emscripten_set_click_callback("#fullscreen", this, 1, [](int type, const EmscriptenMouseEvent* e, void* data) {
 		EMWindow* wnd = (EMWindow*)data;
@@ -140,6 +143,11 @@ EM_BOOL EMWindow::mouseCallback(int type, const EmscriptenMouseEvent* e, void*) 
 EM_BOOL EMWindow::wheelCallback(int type, const EmscriptenWheelEvent* e, void*) {
 	Game::input()->m_mouseState.wheel -= fmin(1,fmax(-1,e->deltaY / 3.0f)); // clamp due to inconsistent browsers
 	//printf("Mouse Wheel %g  %lu\n", e->deltaY, e->deltaMode);
+	return 0;
+}
+
+EM_BOOL EMWindow::gamepadCallback(int type, const EmscriptenGamepadEvent *event, void*) {
+	Game::input()->initialiseJoysticks(); // connected and disconected events
 	return 0;
 }
 
