@@ -72,6 +72,7 @@ namespace base {
 		Point m_size;
 		int m_colourDepth;
 		int m_depthBuffer;
+		unsigned m_cursor = ~0u;
 		bool m_fullScreen;
 		bool m_created = false;
 		bool m_focus = true;

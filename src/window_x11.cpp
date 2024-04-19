@@ -346,6 +346,8 @@ size_t createBlankCursor(Display* display) {
 }
 
 void X11Window::setCursor(unsigned c) {
+	if(c==m_cursor) return;
+	m_cursor = c;
 	if(!m_cursors[c]) {
 		switch(c) {
 		case CURSOR_NONE:      m_cursors[c] = createBlankCursor(m_display);  break;
@@ -376,5 +378,6 @@ void X11Window::createCursor(unsigned id, const char* image, int w, int h, int x
 	XcursorImageDestroy(cimg);
 	if(m_cursors[id]) XFreeCursor(m_display, id);
 	m_cursors[id] = cur;
+	if(id == m_cursor) XDefineCursor(m_display, m_window, cur);
 }
 

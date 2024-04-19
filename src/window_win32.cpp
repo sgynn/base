@@ -352,7 +352,8 @@ bool Win32Window::warpMouse(int x, int y) {
 // ==================================================================================================== //
 
 void Win32Window::setCursor(unsigned c) {
-	ShowCursor( c!=CURSOR_NONE );
+	if(c==m_cursor) return;
+	if((c==CURSOR_NONE) != (m_cursor==CURSOR_NONE)) ShowCursor(c!=CURSOR_NONE);
 	if(c!=CURSOR_NONE && !m_cursors[c]) {
 		switch(c) {
 		default:
@@ -370,6 +371,7 @@ void Win32Window::setCursor(unsigned c) {
 		}
 	}
 	SetCursor(m_cursors[c]);
+	m_cursor = c;
 }
 
 void Win32Window::createCursor(unsigned id, const char* image, int w, int h, int hotx, int hoty) {
@@ -401,4 +403,5 @@ void Win32Window::createCursor(unsigned id, const char* image, int w, int h, int
 	ICONINFO iconInfo { FALSE, (uint)hotx, (uint)hoty, andMap, xorMap };
 	HCURSOR cur = CreateIconIndirect(&iconInfo);
 	m_cursors[id] = cur;
+	if(m_cursor == id) SetCursor(cur);
 }
