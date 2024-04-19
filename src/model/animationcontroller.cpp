@@ -428,14 +428,19 @@ void AnimationController::setOverrideStartTrack(int newStart) {
 	m_overrideStart = newStart;
 }
 
-void AnimationController::playOverride(const AnimationKey& key, ActionMode mode, bool fade, bool additive) {
+void AnimationController::playOverride(const AnimationKey& key, ActionMode mode, float speed, bool fade, bool additive) {
 	const AnimationBank::AnimationInfo* a = m_bank->getAnimation(key, m_group);
 	if(a) {
 		AnimationBlend blend = additive? AnimationBlend::Add: AnimationBlend::Mix;
-		int track = m_state->play(a->animation, 1, blend, fade?0:1, mode==ActionMode::Loop?1:0);
+		int track = m_state->play(a->animation, speed, blend, fade?0:1, mode==ActionMode::Loop?1:0);
 		setMeta(track, a, OVERRIDE_IN, mode);
 		if(track < m_overrideStart) m_overrideStart = track;
 	}
+}
+
+void AnimationController::setOverrideSpeed(const AnimationKey& key, float speed) {
+	int index = findOverride(key);
+	if(index >= 0) m_state->setSpeed(speed, index);
 }
 
 void AnimationController::stopOverride(const AnimationKey& key, bool fade) {
@@ -480,8 +485,12 @@ bool AnimationController::hasOverride(const AnimationKey& key) const {
 
 float AnimationController::getOverrideProgress(const AnimationKey& key) const {
 	int index = findOverride(key);
-	if(index<0) return 0;
-	return m_state->getFrameNormalised(index);
+	return index<0? 0: m_state->getFrameNormalised(index);
+}
+
+float AnimationController::getOverrideWeight(const AnimationKey& key) const {
+	int index = findOverride(key);
+	return index<0? 0: m_state->getWeight(index);
 }
 
 void AnimationController::clearOverrides(bool fade) {

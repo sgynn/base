@@ -115,12 +115,14 @@ class AnimationController {
 	void         setWeight(float);		// Set weight of currrent action
 	void         setSpeed(float);		// Set speed of current action
 
-	void playOverride(const AnimationKey&, ActionMode=ActionMode::Hold, bool fade=true, bool additive=false);		// Play an override animation
+	void playOverride(const AnimationKey&, ActionMode=ActionMode::Hold, float speed=1, bool fade=true, bool additive=false);		// Play an override animation
 	void stopOverride(const AnimationKey&, bool fade=true);								// Stop an override animation
 	void setOverride(const AnimationKey&, float frame, float weight=1, bool additive=false);
+	void setOverrideSpeed(const AnimationKey&, float speed);
 	void forceOverride(const AnimationKey&, uint track, float frame, float weight, bool additive=false);
 	bool hasOverride(const AnimationKey&) const;
 	float getOverrideProgress(const AnimationKey&) const;
+	float getOverrideWeight(const AnimationKey&) const;
 	void clearOverrides(bool fade=false);
 
 	void              update(float time, bool finalise=true);
