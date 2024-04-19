@@ -222,6 +222,7 @@ static void writeMesh(FILE* fp, Mesh* mesh, int offset=0) {
 	uint size = mesh->getIndexCount();
 	for(uint i=0; i<size; ++i) {
 		if(i%3==0) fprintf(fp, "\nf ");
+		else fputc(' ', fp);
 		uint16 ix = mesh->getIndexBuffer()->getIndex(i) + offset;
 		fprintf(fp, "%d", ix);
 		if(hasTexCoords) fprintf(fp,"/%d", ix);
