@@ -76,6 +76,7 @@ extern PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D;
 extern PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glCompressedTexSubImage3D;
 extern PFNGLBLENDFUNCSEPARATEPROC       glBlendFuncSeparate;
 extern PFNGLBLENDFUNCSEPARATEIPROC      glBlendFuncSeparatei;
+extern PFNGLBLENDCOLORPROC              glBlendColor;
 
 extern PFNGLCREATESHADERPROC   glCreateShader;
 extern PFNGLSHADERSOURCEPROC   glShaderSource;
