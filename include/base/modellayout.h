@@ -59,7 +59,7 @@ namespace base {
 			bool operator!=(const Iterator& i) const { return current != i.current; }
 			Iterator& operator++() {
 				if(!(*current)->children.empty()) {
-					stack.push_back(*current - *node->children.begin());
+					stack.push_back(current - node->children.begin());
 					node = *current;
 					current = node->children.begin();
 				}
