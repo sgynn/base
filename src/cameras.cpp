@@ -6,9 +6,11 @@
 
 using namespace base;
 
+constexpr unsigned unbound = ~0u;
+
 CameraBase::CameraBase(float fov, float aspect, float near, float far) 
 	: Camera(fov,aspect?aspect:Game::aspect(),near,far), m_active(true), m_grabMouse(false),
-	m_useUpVector(false), m_constraint(-8,8), m_binding{0,1,2,3,~0u,~0u,~0u,~0u} {}
+	m_useUpVector(false), m_constraint(-8,8), m_binding{0,1,2,3,unbound,unbound,unbound,unbound,unbound,unbound} {}
 
 void CameraBase::setSpeed(float m, float r) {
 	m_moveSpeed = m;
@@ -39,15 +41,23 @@ void CameraBase::grabMouse(bool g) {
 	m_grabMouse = g;
 }
 
-void CameraBase::setBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down, unsigned rotate, unsigned pan) {
+void CameraBase::setMoveBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up, unsigned down) {
 	m_binding.forward = forward;
 	m_binding.back = back;
 	m_binding.left = left;
 	m_binding.right = right;
 	m_binding.up = up;
 	m_binding.down = down;
+}
+
+void CameraBase::setModeBinding(unsigned rotate, unsigned pan) {
 	m_binding.rotate = rotate;
 	m_binding.pan = pan;
+}
+
+void CameraBase::setRotateBinding(unsigned yaw, unsigned pitch) {
+	m_binding.yaw = yaw;
+	m_binding.pitch = pitch;
 }
 
 
@@ -57,6 +67,7 @@ FPSCamera::FPSCamera(float f, float a, float near, float far) : CameraBase(f,a,n
 	setUpVector( vec3(0,1,0) );
 }
 void FPSCamera::update(int mask) {
+	if(!m_active) return;
 	Input& in = *Game::input();
 
 	// Key Movement
@@ -75,10 +86,12 @@ void FPSCamera::update(int mask) {
 	}
 	
 	//Rotation
-	if(m_active && (mask&CU_MOUSE) && (m_binding.rotate==~0u || in.check(m_binding.rotate))) {
-		float dx = in.mouse.delta.x;
-		float dy = in.mouse.delta.y;
-		m_rVelocity -= vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
+	{
+		vec2 delta;
+		if(m_binding.yaw) delta.x = in.value(m_binding.yaw);
+		if(m_binding.pitch) delta.y = in.value(m_binding.pitch);
+		if((mask&CU_MOUSE) && (m_binding.rotate==unbound || in.check(m_binding.rotate))) delta -= vec2(in.mouse.delta.x, in.mouse.delta.y) * m_rotateSpeed;
+		m_rVelocity += delta * m_rotateAcc;
 
 		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
 		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
@@ -220,9 +233,12 @@ void OrbitCamera::update(int mask) {
 		}
 		else m_panHold = zero;
 	}
+	
+
+
 
 	// Mouse Rotation input
-	if(m_active && (mask&CU_MOUSE) && (m_binding.rotate==~0u || in.check(m_binding.rotate))) {
+	if(m_active && (mask&CU_MOUSE) && (m_binding.rotate==unbound || in.check(m_binding.rotate))) {
 		float dx = in.mouse.delta.x;
 		float dy = in.mouse.delta.y;
 		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
@@ -232,6 +248,10 @@ void OrbitCamera::update(int mask) {
 			in.warpMouse(Game::width()/2, Game::height()/2);
 		}
 	}
+
+	// Joystick rotation input
+	if(m_binding.yaw!=unbound) m_rVelocity.x += in.value(m_binding.yaw);
+	if(m_binding.pitch!=unbound) m_rVelocity.y += in.value(m_binding.pitch);
 
 	// Rotation update
 	if(m_rVelocity.x || m_rVelocity.y) {

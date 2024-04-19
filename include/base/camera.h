@@ -1,11 +1,11 @@
-#ifndef _BASE_CAMERA_
-#define _BASE_CAMERA_
+#pragma once
 
 #include "math.h"
 
-//screw windows
+// stupid Windows causing problems
 #undef near
 #undef far
+
 namespace base {
 	/** Camera class
 	 * Contains camera ttansformations and matrices
@@ -135,7 +135,9 @@ namespace base {
 		/** Set pitch constraint */
 		void setPitchLimits(float min=-PI, float max=PI);
 		/** Set key input binding */
-		void setBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up=~0u, unsigned down=~0u, unsigned rotate=~0u, unsigned drag=~0u);
+		void setMoveBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up=~0u, unsigned down=~0u);
+		void setModeBinding(unsigned rotate, unsigned pan);
+		void setRotateBinding(unsigned yaw, unsigned pitch);
 
 		protected:
 		float m_moveSpeed	= 10;		// Movement speed
@@ -161,11 +163,12 @@ namespace base {
 			unsigned down;		// Move down
 			unsigned rotate;	// Mouse rotates when held
 			unsigned pan;		// Mouse pan when held
+			unsigned yaw;		// Yaw rotate value
+			unsigned pitch;		// Pitch rotate value
 		} m_binding;
 	};
 
 
 };
 
-#endif
 
