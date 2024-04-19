@@ -30,7 +30,7 @@ void Label::initialise(const Root*, const PropertyMap& map) {
 	if(map.contains("caption")) setCaption( map["caption"] );
 }
 void Label::copyData(const Widget* from) {
-	if(const Label* label = from->cast<Label>()) {
+	if(const Label* label = cast<Label>(from)) {
 		m_fontAlign = label->m_fontAlign;
 		m_wordWrap = label->m_wordWrap;
 		m_fontSize = label->m_fontSize;
@@ -185,7 +185,7 @@ void Icon::initialise(const Root* root, const PropertyMap& p) {
 	updateAutosize();
 }
 void Icon::copyData(const Widget* from) {
-	if(const Icon* icon = from->cast<Icon>()) {
+	if(const Icon* icon = cast<Icon>(from)) {
 		m_iconList = icon->m_iconList;
 		m_iconIndex = icon->m_iconIndex;
 	}
@@ -239,7 +239,7 @@ void Image::initialise(const Root* root, const PropertyMap& p) {
 	}
 }
 void Image::copyData(const Widget* from) {
-	if(const Image* img = from->cast<Image>()) {
+	if(const Image* img = cast<Image>(from)) {
 		m_image = img->m_image;
 		m_angle = img->m_angle;
 	}
@@ -366,7 +366,7 @@ void Checkbox::initialise(const Root* root, const PropertyMap& p) {
 }
 void Checkbox::copyData(const Widget* from) {
 	Super::copyData(from);
-	if(const Checkbox* c = from->cast<Checkbox>()) {
+	if(const Checkbox* c = cast<Checkbox>(from)) {
 		m_dragMode = c->m_dragMode;
 		m_checkedIcon = c->m_checkedIcon;
 		m_uncheckedIcon = c->m_uncheckedIcon;
@@ -432,7 +432,7 @@ void DragHandle::initialise(const Root*, const PropertyMap& p) {
 }
 
 void DragHandle::copyData(const Widget* from) {
-	if(const DragHandle* handle = from->cast<DragHandle>()) {
+	if(const DragHandle* handle = cast<DragHandle>(from)) {
 		m_mode = handle->m_mode;
 		m_clamp = handle->m_clamp;
 	}
@@ -547,7 +547,7 @@ void ProgressBar::initialise(const Root* r, const PropertyMap& p) {
 }
 
 void ProgressBar::copyData(const Widget* from) {
-	if(const ProgressBar* o = from->cast<const ProgressBar>()) {
+	if(const ProgressBar* o = cast<ProgressBar>(from)) {
 		m_mode = o->m_mode;
 		m_min = o->m_min;
 		m_max = o->m_max;
@@ -693,7 +693,7 @@ void Scrollbar::initialise(const Root*, const PropertyMap& p) {
 	}
 }
 void Scrollbar::copyData(const Widget* from) {
-	if(const Scrollbar* s = from->cast<Scrollbar>()) {
+	if(const Scrollbar* s = cast<Scrollbar>(from)) {
 		m_range = s->m_range;
 		m_value = s->m_value;
 		m_mode = s->m_mode;
@@ -809,7 +809,7 @@ void Scrollpane::initialise(const Root*, const PropertyMap& p) {
 	setPaneSize( m_client->getSize().x, m_client->getSize().y );
 }
 void Scrollpane::copyData(const Widget* from) {
-	if(const Scrollpane* s = from->cast<Scrollpane>()) {
+	if(const Scrollpane* s = cast<Scrollpane>(from)) {
 		m_useFullSize = s->m_useFullSize;
 		m_alwaysShowScrollbars = s->m_alwaysShowScrollbars;
 	}
@@ -999,7 +999,8 @@ void TabbedPane::initialise(const Root* r, const PropertyMap& p) {
 	if(m_tabStrip) {
 		int num = m_tabStrip->getTemplateCount();
 		for(int i=0; i<num; ++i) {
-			m_tabStrip->getTemplateWidget(i)->cast<Button>()->eventPressed.bind(this, &TabbedPane::onTabButton);
+			Button* tabButton = cast<Button>(m_tabStrip->getTemplateWidget(i));
+			tabButton->eventPressed.bind(this, &TabbedPane::onTabButton);
 		}
 	}
 }
@@ -1021,7 +1022,7 @@ Widget* TabbedPane::addTab(const char* name, Widget* frame, int index) {
 	// Add button
 	if(m_buttonTemplate && m_tabStrip) {
 		if(m_buttonTemplate->getParent() == m_tabStrip) ++index;
-		Button* b = m_buttonTemplate->clone()->cast<Button>();
+		Button* b = cast<Button>(m_buttonTemplate->clone());
 		b->setCaption(name);
 		b->eventPressed.bind(this, &TabbedPane::onTabButton);
 		b->setVisible(true);
@@ -1137,7 +1138,7 @@ void CollapsePane::initialise(const Root* root, const PropertyMap& p) {
 	expand(!m_collapsed);
 }
 void CollapsePane::copyData(const Widget* from) {
-	if(const CollapsePane* c = from->cast<CollapsePane>()) {
+	if(const CollapsePane* c = cast<CollapsePane>(from)) {
 		m_expandAnchor = c->m_expandAnchor;
 		m_collapsed = c->m_collapsed;
 		m_moveable = c->m_moveable;
@@ -1263,7 +1264,7 @@ void SplitPane::initialise(const Root* r, const PropertyMap& p) {
 	}
 }
 void SplitPane::copyData(const Widget* from) {
-	if(const SplitPane* w = from->cast<SplitPane>()) {
+	if(const SplitPane* w = cast<SplitPane>(from)) {
 		m_mode = w->m_mode;
 		m_minSize = w->m_minSize;
 		m_resizeMode = w->m_resizeMode;
@@ -1553,9 +1554,9 @@ void Popup::popup(Root* root, const Point& abs, Widget* owner) {
 	if(m_parent) m_parent->remove(this);
 	root->getRootWidget()->add(this, abs.x, abs.y);
 	setVisible(true);
-	while(owner && !owner->cast<Popup>()) owner = owner->getParent();
+	while(owner && !cast<Popup>(owner)) owner = owner->getParent();
 	if(owner) {
-		owner->cast<Popup>()->m_owned.push_back(this);
+		cast<Popup>(owner)->m_owned.push_back(this);
 		m_owner = owner;
 	}
 	else {
@@ -1583,13 +1584,13 @@ void Popup::hide() {
 void Popup::lostFocus(Widget* w) {
 	if(!getRoot()) return;
 	Widget* newPopup = getRoot()->getFocusedWidget();
-	while(newPopup && !newPopup->cast<Popup>()) newPopup = newPopup->getParent();
+	while(newPopup && !cast<Popup>(newPopup)) newPopup = newPopup->getParent();
 	if(!newPopup) hide();
 	else {
 		// Bind lost focus event to this function
 		Widget* newItem = getRoot()->getFocusedWidget();
 		newItem->eventLostFocus.bind(this, &Popup::lostFocus);
-		for(Popup* w: newPopup->cast<Popup>()->m_owned) w->hide();
+		for(Popup* w: cast<Popup>(newPopup)->m_owned) w->hide();
 	}
 }
 
@@ -1599,8 +1600,8 @@ Widget* Popup::addItem(Root* root, const char* tname, const char* name, const ch
 	if(w) {
 		int bottom = 0;
 		if(getWidgetCount()) bottom = getWidget(getWidgetCount()-1)->getRect().bottom();
-		if(w->cast<Label>()) w->cast<Label>()->setCaption(text);
-		if(w->cast<Button>()) w->cast<Button>()->eventPressed = event;
+		if(cast<Label>(w)) cast<Label>(w)->setCaption(text);
+		if(cast<Button>(w)) cast<Button>(w)->eventPressed = event;
 		w->setName(name);
 		w->setSize(getSize().x, w->getSize().y);
 		w->setAnchor("lr");

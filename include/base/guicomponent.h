@@ -28,7 +28,7 @@ class GUIComponent : public GameStateComponent {
 		else {
 			m_gui->mouseEvent(Point(mouse.x*m_mult, (Game::height()-mouse.y)*m_mult), mouse.button, wheel);
 		}
-		bool textboxWasFocused = m_gui->getFocusedWidget()->cast<gui::Textbox>();
+		bool textboxWasFocused = cast<gui::Textbox>(m_gui->getFocusedWidget());
 		if(Game::LastKey() && !hasComponentFlags(BLOCK_KEYS)) {
 			m_gui->keyEvent(Game::LastKey(), Game::LastChar());
 		}

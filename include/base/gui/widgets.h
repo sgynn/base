@@ -469,7 +469,7 @@ class Popup : public Widget {
 	Widget* addItem(Root* root, const char* button, const char* name="", const char* caption="", ButtonDelegate event=ButtonDelegate());
 	template<class F> Widget* addItem(Root* r, const char* type, const char* caption, F&& func) {
 		Widget* w = addItem(r, type, "", caption, {});
-		if(Button* b = w->cast<Button>()) b->eventPressed.bind(func);
+		if(Button* b = cast<Button>(w)) b->eventPressed.bind(func);
 		return w;
 	}
 	void hide();

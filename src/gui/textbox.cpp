@@ -35,7 +35,7 @@ void Textbox::initialise(const Root*, const PropertyMap& p) {
 }
 
 void Textbox::copyData(const Widget* from) {
-	if(const Textbox* t = from->cast<Textbox>()) {
+	if(const Textbox* t = cast<Textbox>(from)) {
 		m_hint = t->m_hint;
 		m_suffix = t->m_suffix;
 		m_selectColour = t->m_selectColour;
@@ -196,7 +196,7 @@ void Textbox::select(int s, int len, bool shift) {
 }
 
 void Textbox::updateOffset(bool end) {
-	if(Scrollpane* pane = getParent()->cast<Scrollpane>()) {
+	if(Scrollpane* pane = cast<Scrollpane>(getParent())) {
 		int lineHeight = m_skin->getFont()->getLineHeight(m_skin->getFontSize());
 		Point pos = end? m_selectRect.bottomRight(): m_selectRect.position();
 		pos -= m_rect.position();

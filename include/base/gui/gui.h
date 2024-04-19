@@ -3,6 +3,7 @@
 #include <base/hashmap.h>
 #include <base/point.h>
 #include <base/string.h>
+#include <base/rtti.h>
 #include "delegate.h"
 #include "transform.h"
 #include <vector>
@@ -38,29 +39,7 @@ inline int operator&(KeyMask a, KeyMask b) { return (int)a & (int)b; }
 inline KeyMask operator|(KeyMask a, KeyMask b) { return (KeyMask)((int)a | (int)b); }
 inline LoadFlags operator|(LoadFlags a, LoadFlags b) { return (LoadFlags)((int)a|(int)b); }
 
-
-// RTTI stuff - gcc 6.2.1 has warnings. Add -Wno-nonnull-compare to hide them. ( Fixed with nasty hack. The whole thisng is a nasty hack anyway )
-#define RTTI_TYPE(name) \
-	static int staticType() { static int cid = typeid(name).hash_code(); return cid; } \
-	static const char* staticName() { return #name; } \
-
-#define RTTI_BASE(name) public: RTTI_TYPE(name); \
-	typedef name ThisType; \
-	virtual bool isType(int t) const { return t==staticType(); } \
-	virtual int getType() const { return staticType(); } \
-	virtual const char* getTypeName() const { return staticName(); } \
-	template<class T> T* cast() { size_t ptr=(size_t)this; return ptr && isType(T::staticType())? static_cast<T*>(this): 0; } \
-	template<class T> const T* cast() const { size_t ptr=(size_t)this; return ptr && isType(T::staticType())? static_cast<const T*>(this): 0; }
-
-#define RTTI_DERIVED(name) public: RTTI_TYPE(name); \
-	typedef ThisType Super; \
-	typedef name ThisType; \
-	virtual bool isType(int t) const override { return t==staticType() || Super::isType(t); }; \
-	virtual int getType() const override { return staticType(); } \
-	virtual const char* getTypeName() const override { return staticName(); } \
-
 #define WIDGET_TYPE(name) RTTI_DERIVED(name);
-
 
 /** Additional properties from external data - basically extra accessors for a string hashmap */
 class PropertyMap : public base::HashMap<const char*> {
@@ -144,17 +123,15 @@ class Widget {
 	Widget* getTemplateWidget(size_t index) { return index<(size_t)m_skipTemplate? m_children[index]: 0; }
 	Widget* getParent(bool includeTemplates=false) const;
 	Widget* getWidget(size_t index) const;
-	template<class T=Widget> T* getWidget(size_t index) const {
-		Widget* w = getWidget(index); return w? w->cast<T>(): 0;
-	}
+	//template<class T=Widget> T* getWidget(size_t index) const { return cast<T>(getWidget(index)); }
 	template<class T=Widget> T* getWidget(const Point& pos, bool intangible=false, bool templates=false) {
-		Widget* w = getWidget(pos, T::staticType(), intangible, templates); return w? w->cast<T>(): 0;
+		return cast<T>(getWidget(pos, T::staticType(), intangible, templates));
 	}
 	template<class W=Widget> W* getWidget(const char* name) const {
-		Widget* w = findChildWidget(name); return w? w->cast<W>(): 0;
+		return cast<W>(findChildWidget(name));
 	}
 	template<class W=Widget> W* getTemplateWidget(const char* name) const {
-		Widget* w = findTemplateWidget(name); return w? w->cast<W>(): 0;
+		Widget* w = findTemplateWidget(name); return cast<W>(w);
 	}
 	std::vector<Widget*>::iterator begin() const { return m_client->m_children.begin() + m_client->m_skipTemplate; }
 	std::vector<Widget*>::iterator end() const   { return m_client->m_children.end(); }
@@ -305,18 +282,18 @@ class Root {
 		if(!w) return nullptr;
 		w->setPosition(r.x, r.y);
 		w->setSize(r.width, r.height);
-		return w->cast<T>();
+		return cast<T>(w);
 	}
 	template<typename T=Widget> T* createWidget(const float* r, const char* skin, const char* name=0) const {
 		Widget* w = createWidget(skin, T::staticName(), name);
 		if(!w) return nullptr;
 		w->setPositionFloat(r[0], r[1], r[2], r[3]);
-		return w->cast<T>();
+		return cast<T>(w);
 	}
 	template<typename T=Widget> T* createWidget(const char* skin, const char* name=0) const {
 		bool forceType = T::staticType() != Widget::staticType();
 		Widget* w = createWidget(skin, T::staticName(), name, forceType);
-		return w->cast<T>();
+		return cast<T>(w);
 	}
 
 	// Widget creation - Use templated versions instead. 
@@ -330,7 +307,7 @@ class Root {
 
 	// get widget
 	template<class T=Widget> T* getWidget(const char* name) const {
-		return findInMap(m_widgets, name)->cast<T>();
+		return cast<T>(findInMap(m_widgets, name));
 	}
 
 	Renderer* getRenderer() const { return m_renderer; }

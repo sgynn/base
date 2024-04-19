@@ -37,7 +37,7 @@ void Table::draw() const {
 }
 
 void Table::copyData(const Widget* from) {
-	if(const Table* table = from->cast<Table>()) {
+	if(const Table* table = cast<Table>(from)) {
 		// Copy header data
 		m_columns = table->m_columns;
 		for(uint i=0; i<m_columns.size(); ++i) {
@@ -104,9 +104,9 @@ uint Table::insertColumn(uint index, const char* name, const char* title, int wi
 		m_header->add(c.header, c.pos, 0);
 		c.header->setVisible(true);
 		c.header->setSize(width, c.header->getSize().y);
-		Label* lbl = c.header->cast<Label>();
+		Label* lbl = cast<Label>(c.header);
 		if(lbl) lbl->setCaption(title);
-		Button* btn = c.header->cast<Button>();
+		Button* btn = cast<Button>(c.header);
 		if(btn) btn->eventPressed.bind(this, &Table::columnPressed);
 	}
 
@@ -149,7 +149,7 @@ void Table::setColumnWidth(uint index, int width) {
 
 void Table::setColumnTitle(uint index, const char* title) {
 	if(index>=m_columns.size() || !m_columns[index].header) return;
-	Label* lbl = m_columns[index].header->cast<Label>();
+	Label* lbl = cast<Label>(m_columns[index].header);
 	if(lbl) lbl->setCaption(title);
 }
 
@@ -343,10 +343,10 @@ void Table::cacheItem(uint row, uint column) {
 			w->setSize(col.width, m_rowHeight);
 			w->setPosition(col.pos, ypos);
 
-			if(Checkbox* c=w->cast<Checkbox>()) c->eventChanged.bind([this](Button* b){fireCustomEvent(b); });
-			else if(Button* b=w->cast<Button>()) b->eventPressed.bind([this](Button* b){fireCustomEvent(b); });
-			else if(Textbox* t=w->cast<Textbox>()) t->eventSubmit.bind([this](Textbox* t){fireCustomEvent(t); });
-			else if(Combobox* l=w->cast<Combobox>()) l->eventSelected.bind([this](Combobox* c, ListItem&){fireCustomEvent(c); });
+			if(Checkbox* c=cast<Checkbox>(w)) c->eventChanged.bind([this](Button* b){fireCustomEvent(b); });
+			else if(Button* b=cast<Button>(w)) b->eventPressed.bind([this](Button* b){fireCustomEvent(b); });
+			else if(Textbox* t=cast<Textbox>(w)) t->eventSubmit.bind([this](Textbox* t){fireCustomEvent(t); });
+			else if(Combobox* l=cast<Combobox>(w)) l->eventSelected.bind([this](Combobox* c, ListItem&){fireCustomEvent(c); });
 		}
 		if(!w) w = new Label(Rect(col.pos, ypos, col.width, m_rowHeight), m_skin);
 		m_dataPanel->add(w);
@@ -355,13 +355,13 @@ void Table::cacheItem(uint row, uint column) {
 	// Cache value
 	if(!eventCacheItem || !eventCacheItem(this, row, column, w)) {
 		const Any& value = getValue(row, column);
-		if(w->cast<Checkbox>() && value.isType<bool>()) w->cast<Checkbox>()->setChecked(*value.cast<bool>());
-		else if(w->cast<Label>()) w->cast<Label>()->setCaption(anyToString(value));
-		else if(w->cast<Textbox>()) w->cast<Textbox>()->setText(anyToString(value));
-		else if(w->cast<Combobox>()) w->cast<Combobox>()->setText(anyToString(value));
-		else if(w->cast<Icon>()) {
-			if(value.isType<int>()) w->cast<Icon>()->setIcon(*value.cast<int>());
-			else w->cast<Icon>()->setIcon(anyToString(value));
+		if(cast<Checkbox>(w) && value.isType<bool>()) cast<Checkbox>(w)->setChecked(*value.cast<bool>());
+		else if(cast<Label>(w)) cast<Label>(w)->setCaption(anyToString(value));
+		else if(cast<Textbox>(w)) cast<Textbox>(w)->setText(anyToString(value));
+		else if(cast<Combobox>(w)) cast<Combobox>(w)->setText(anyToString(value));
+		else if(cast<Icon>(w)) {
+			if(value.isType<int>()) cast<Icon>(w)->setIcon(*value.cast<int>());
+			else cast<Icon>(w)->setIcon(anyToString(value));
 		}
 	}
 }

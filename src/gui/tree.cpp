@@ -225,7 +225,7 @@ void TreeView::initialise(const Root*, const PropertyMap& p) {
 }
 
 void TreeView::copyData(const Widget* from) {
-	if(const TreeView* t = from->cast<TreeView>()) {
+	if(const TreeView* t = cast<TreeView>(from)) {
 		m_indent = t->m_indent;
 		m_lineColour = t->m_lineColour;
 		m_hideRootNode = t->m_hideRootNode;
@@ -470,18 +470,18 @@ int TreeView::buildCache(TreeNode* n, int y, int top, int bottom) const {
 inline void setFromData(Widget* w, const Any& value) {
 	if(value.isNull()) return;
 	if(w->getType() == Checkbox::staticType()) {
-		w->cast<Checkbox>()->setChecked( value.getValue(false) );
+		cast<Checkbox>(w)->setChecked( value.getValue(false) );
 		return;
 	}
 	const char* text = value.getValue<const char*>(0);
 	if(!text) text = value.getValue<String>(0);
 	if(w->isType(Label::staticType()))
-		w->cast<Label>()->setCaption(text? text: "");
+		cast<Label>(w)->setCaption(text? text: "");
 	else if(w->isType(Textbox::staticType()))
-		w->cast<Textbox>()->setText(text);
+		cast<Textbox>(w)->setText(text);
 	else if(w->isType(Icon::staticType())) {
-		if(text) w->cast<Icon>()->setIcon(text);
-		else w->cast<Icon>()->setIcon( value.getValue<int>(-1) );
+		if(text) cast<Icon>(w)->setIcon(text);
+		else cast<Icon>(w)->setIcon( value.getValue<int>(-1) );
 	}
 }
 
@@ -541,11 +541,11 @@ void TreeView::fireCustomEventEvent(Widget* w, T data) {
 }
 
 void TreeView::bindEvents(Widget* item) {
-	if(Button* b = item->cast<Button>()) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
-	if(Checkbox* c = item->cast<Checkbox>()) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
-	if(Spinbox* s = item->cast<Spinbox>()) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
-	if(SpinboxFloat* s = item->cast<SpinboxFloat>()) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
-	if(Textbox* t = item->cast<Textbox>()) {
+	if(Button* b = cast<Button>(item)) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
+	if(Checkbox* c = cast<Checkbox>(item)) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
+	if(Spinbox* s = cast<Spinbox>(item)) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
+	if(SpinboxFloat* s = cast<SpinboxFloat>(item)) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
+	if(Textbox* t = cast<Textbox>(item)) {
 		t->eventSubmit.bind([](Textbox* t) {
 			t->getParent()->setFocus();
 		});
@@ -554,7 +554,7 @@ void TreeView::bindEvents(Widget* item) {
 			if(node) node->select();
 		});
 		t->eventLostFocus.bind([this](Widget* w) {
-			Textbox* t = w->cast<Textbox>();
+			Textbox* t = cast<Textbox>(w);
 			fireCustomEventEvent(t, t->getText());
 			t->select(0);
 		});

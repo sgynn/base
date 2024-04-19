@@ -261,7 +261,7 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 }
 
 void Listbox::copyData(const Widget* from) {
-	if(const Listbox* list = from->cast<Listbox>()) {
+	if(const Listbox* list = cast<Listbox>(from)) {
 		for(const ListItem& i: list->items()) addItem(i);
 		m_multiSelect = list->m_multiSelect;
 	}
@@ -331,11 +331,11 @@ void Listbox::fireCustomEventEvent(Widget* w, T data) {
 }
 
 void Listbox::bindEvents(Widget* item) {
-	if(Button* b = item->cast<Button>()) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
-	if(Checkbox* c = item->cast<Checkbox>()) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
-	if(Spinbox* s = item->cast<Spinbox>()) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
-	if(SpinboxFloat* s = item->cast<SpinboxFloat>()) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
-	if(Textbox* t = item->cast<Textbox>()) {
+	if(Button* b = cast<Button>(item)) b->eventPressed.bind([this](Button* b) { fireCustomEventEvent(b, true); });
+	if(Checkbox* c = cast<Checkbox>(item)) c->eventChanged.bind([this](Button* c) { fireCustomEventEvent(c, c->isSelected()); });
+	if(Spinbox* s = cast<Spinbox>(item)) s->eventChanged.bind([this](Spinbox* s, int v){ fireCustomEventEvent(s, v); });
+	if(SpinboxFloat* s = cast<SpinboxFloat>(item)) s->eventChanged.bind([this](SpinboxFloat* s, float v){ fireCustomEventEvent(s, v); });
+	if(Textbox* t = cast<Textbox>(item)) {
 		t->eventSubmit.bind([](Textbox* t) {
 			t->getParent()->setFocus();
 		});
@@ -344,7 +344,7 @@ void Listbox::bindEvents(Widget* item) {
 			selectItem(index, true);
 		});
 		t->eventLostFocus.bind([this](Widget* w) {
-			Textbox* t = w->cast<Textbox>();
+			Textbox* t = cast<Textbox>(w);
 			fireCustomEventEvent(t, t->getText());
 			t->select(0);
 		});
@@ -361,15 +361,15 @@ void Listbox::cacheItem(ListItem& item, Widget* w) const {
 		// Automatic version.
 		auto setFromData = [](Widget* w, const Any& value) {
 			if(value.isNull()) return;
-			if(Checkbox* c = w->cast<Checkbox>()) c->setSelected(value.getValue(false));
+			if(Checkbox* c = cast<Checkbox>(w)) c->setSelected(value.getValue(false));
 			else if(const String* text = value.cast<String>()) {
-				if(Label* l = w->cast<Label>()) l->setCaption(*text);
-				else if(Textbox* t = w->cast<Textbox>()) t->setText(*text);
-				else if(Icon* i = w->cast<Icon>()) i->setIcon(*text);
+				if(Label* l = cast<Label>(w)) l->setCaption(*text);
+				else if(Textbox* t = cast<Textbox>(w)) t->setText(*text);
+				else if(Icon* i = cast<Icon>(w)) i->setIcon(*text);
 			}
-			else if(Icon* i = w->cast<Icon>()) i->setIcon(value.getValue<int>(-1));
-			else if(Spinbox* s = w->cast<Spinbox>()) s->setValue(value.getValue<int>(0));
-			else if(SpinboxFloat* s = w->cast<SpinboxFloat>()) s->setValue(value.getValue<float>(0));
+			else if(Icon* i = cast<Icon>(w)) i->setIcon(value.getValue<int>(-1));
+			else if(Spinbox* s = cast<Spinbox>(w)) s->setValue(value.getValue<int>(0));
+			else if(SpinboxFloat* s = cast<SpinboxFloat>(w)) s->setValue(value.getValue<float>(0));
 		};
 
 		if(w->getWidgetCount() == 0 && w->getTemplateCount() == 0) {
@@ -585,7 +585,7 @@ void Combobox::initialise(const Root* root, const PropertyMap& p) {
 	m_text = getTemplateWidget("_text");
 
 	// Textbox callbacks
-	Textbox* txt = m_text? m_text->cast<Textbox>(): 0;
+	Textbox* txt = m_text? cast<Textbox>(m_text): 0;
 	if(txt) {
 		txt->eventChanged.bind(this, &Combobox::textChanged);
 		txt->eventSubmit.bind(this, &Combobox::textSubmit);
@@ -604,7 +604,7 @@ void Combobox::initialise(const Root* root, const PropertyMap& p) {
 }
 
 void Combobox::copyData(const Widget* from) {
-	if(const Combobox* c = from->cast<Combobox>()) {
+	if(const Combobox* c = cast<Combobox>(from)) {
 		for(const ListItem& i: c->items()) addItem(i);
 	}
 }
@@ -684,15 +684,15 @@ void Combobox::hideList() {
 
 void Combobox::setText(const char* text) {
 	if(m_client && m_text) {
-		if(Label* lbl = m_text->cast<Label>()) lbl->setCaption(text);
-		else if(Textbox* txt = m_text->cast<Textbox>()) txt->setText(text);
+		if(Label* lbl = cast<Label>(m_text)) lbl->setCaption(text);
+		else if(Textbox* txt = cast<Textbox>(m_text)) txt->setText(text);
 	}
 }
 
 const char* Combobox::getText() const {
 	if(m_text) {
-		if(Label* lbl = m_text->cast<Label>()) return lbl->getCaption();
-		else if(Textbox* txt = m_text->cast<Textbox>()) return txt->getText();
+		if(Label* lbl = cast<Label>(m_text)) return lbl->getCaption();
+		else if(Textbox* txt = cast<Textbox>(m_text)) return txt->getText();
 	}
 	if(const ListItem* selected = getSelectedItem()) {
 		return selected->getText();

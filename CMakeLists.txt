@@ -165,6 +165,7 @@ set(headers
 	include/base/renderer.h
 	include/base/resources.h
 	include/base/resourcemanager.h
+	include/base/rtti.h
 	include/base/scenecomponent.h
 	include/base/scene.h
 	include/base/shader.h
