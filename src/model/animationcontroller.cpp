@@ -315,6 +315,7 @@ void AnimationController::playMove(float speed) {
 void AnimationController::playAction(const AnimationKey& key, ActionMode mode, float speed, bool blend) {
 	const AnimationBank::AnimationInfo* a = m_bank->getAnimation(key, m_group);
 	if(key && !a) printf("Missing animation %s\n", key.getName());
+	if(a && mode==ActionMode::End && a->animation->getLength()==1) printf("Warning: Trying to play single frame action %s with ActionMode::End\n", a->animation->getName());
 	if(!a) endAction();
 	else if(m_actionTrack>=0 && m_state->getAnimation(m_actionTrack)==a->animation) {
 		m_meta[m_actionTrack].mode = mode;
