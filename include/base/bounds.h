@@ -69,6 +69,7 @@ class BoundingBox {
 	void include   (const vec3& p);					/// Expand the bounding box to contain a point */
 	void include   (const BoundingBox& box);		/// Expand the bounding box to contain another bounding box */
 	void expand    (const float v);					/// Expand the range by value in all directions
+	void expand    (const vec3& v);					/// Expand bounds per axis
 	bool contains  (const vec3& p) const;			/// Is a point within the bounding box */
 	bool contains  (const BoundingBox& b) const;	/// Is a box entirely within this bounding box */
 	bool intersects(const BoundingBox& b) const;	/// Does a box intersect with this box */
@@ -109,6 +110,7 @@ class BoundingBox2D {
 	void include   (const vec2& p);					/// Expand the bounding box to contain a point */
 	void include   (const BoundingBox2D& box);		/// Expand the bounding box to contain another bounding box */
 	void expand    (const float v);					/// Expand the range by value in all directions
+	void expand    (const vec2& v);					/// Expand the range by value in each axis
 	bool contains  (const vec2& p) const;			/// Is a point within the bounding box */
 	bool contains  (const BoundingBox2D& b) const;	/// Is a box entirely within this bounding box */
 	bool intersects(const BoundingBox2D& b) const;	/// Does a box intersect with this box */
@@ -197,6 +199,10 @@ inline void BoundingBox::expand(float v) {
 	min.x-=v; min.y-=v; min.z-=v;
 	max.x+=v; max.y+=v; max.z+=v;
 }
+inline void BoundingBox::expand(const vec3& v) {
+	min -= v;
+	max += v;
+}
 inline bool BoundingBox::contains(const vec3& p) const {
 	return p.x>=min.x && p.x<=max.x && p.y>=min.y && p.y<=max.y && p.z>=min.z && p.z<=max.z;
 }
@@ -249,6 +255,10 @@ inline void BoundingBox2D::include(const BoundingBox2D& b) {
 inline void BoundingBox2D::expand(float v) {
 	min.x-=v; min.y-=v;
 	max.x+=v; max.y+=v;
+}
+inline void BoundingBox2D::expand(const vec2& v) {
+	min -= v;
+	max += v;
 }
 inline bool BoundingBox2D::contains(const vec2& p) const {
 	return p.x>=min.x && p.x<=max.x && p.y>=min.y && p.y<=max.y;
