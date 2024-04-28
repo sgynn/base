@@ -40,13 +40,18 @@ void DebugGeometryManager::initialise(Scene* scene, int queue, Material* mat) {
 	if(scene) {
 		SceneNode* node = new DebugGeometrySceneNode();
 		for(auto& i: s_instance->m_drawables) node->attach(i.second);
-s_instance->m_nodes.push_back(node);
+		s_instance->m_nodes.push_back(node);
 		scene->add(node);
 	}
 }
+
 void DebugGeometryManager::initialise(Scene* scene, int queue, bool onTop) {
 	initialise(scene, queue);
 	if(onTop) getDefaultMaterial()->getPass(0)->state.depthTest = DEPTH_ALWAYS;
+}
+
+void DebugGeometryManager::resetAll() {
+	if(s_instance) for(auto d: s_instance->m_drawables) d.first->reset();
 }
 
 void DebugGeometryManager::setVisible(bool vis) {

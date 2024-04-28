@@ -77,6 +77,7 @@ namespace base {
 		static DebugGeometryManager* getInstance() { return s_instance; }
 		static Material* getDefaultMaterial();
 		static void flush() { if(s_instance) s_instance->update(); } // Call this in render function to update drawables
+		static void resetAll(); // Calls reset() on all DebugGeometry objects
 		Material* getMaterial() const { return m_material; }
 		void setRenderQueue(int queue);
 		void setMaterial(Material*);
