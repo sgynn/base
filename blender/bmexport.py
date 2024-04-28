@@ -332,7 +332,7 @@ def export_animations(context, config, skeleton, xml):
             actions.append( (skeleton.animation_data.action, "Action") )
 
         # Modifier types to disable
-        disableModifiers = [ 'TRIANGULATE', 'SUBSURF', 'DISPLACE' ]
+        disableModifiers = [ 'TRIANGULATE', 'SUBSURF', 'DISPLACE', 'DECIMATE' ]
 
         restore = {}
         if skeleton.animation_data.nla_tracks and (config.export_animations == "LINKED" or config.export_animations == "UNLOCKED"):
