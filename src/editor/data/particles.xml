@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<gui height="1024" width="1024">
+	<external file="editor.xml"/>
+	<!--Widget Layout-->
+	<widget anchor="lt" template="window" name="particles" caption="Particle Editor" rect="120 168 756 600">
+		<widget anchor="lrtb" resize="last" template="hsplit" rect="0 0 746 573">
+			<widget anchor="lt" resize="last" template="vsplit" rect="0 0 194 573">
+				<widget anchor="lt" tab="_client" template="tabbedpane" rect="0 0 194 201">
+					<widget anchor="lrtb" class="Widget" rect="0 0 194 177" name="Emitters" skin="none">
+						<widget anchor="lrtb" template="listbox" name="emitters" rect="0 0 194 177"/>
+					</widget>
+					<widget anchor="lrtb" class="Widget" rect="0 0 194 177" name="Affectors" skin="none" visible="0">
+						<widget anchor="lrtb" template="listbox" name="affectors" rect="0 0 194 177"/>
+					</widget>
+					<widget anchor="lrtb" class="Widget" rect="0 0 194 177" name="Renderers" skin="none" visible="0">
+						<widget anchor="lrtb" template="listbox" name="renderers" rect="0 0 194 177"/>
+					</widget>
+				</widget>
+				<widget anchor="lt" class="Widget" layout="VerticalLayout" template="frame" name="properties" rect="0 203 194 370">
+					<widget anchor="lt" class="Widget" template="frame" rect="0 0 194 96">
+						<widget anchor="lt" template="label" caption="Property" rect="0 12 60 20"/>
+						<widget anchor="lt" template="editbox" rect="72 12 96 20"/>
+						<widget anchor="lt" template="button" rect="168 12 23 20"/>
+						<widget anchor="lt" template="checkbox" rect="12 48 16 16"/>
+						<widget anchor="lt" class="Spinbox" rect="48 48 60 20" name="spinbox" skin="panel">
+							<widget anchor="lrtb" class="Textbox" rect="0 0 51 20" name="_text" skin="panel"/>
+							<widget anchor="rt" class="Button" rect="51 0 9 10" name="_inc" skin="panel"/>
+							<widget anchor="rt" class="Button" rect="51 10 9 10" name="_dec" skin="panel"/>
+						</widget>
+						<widget anchor="lt" class="SpinboxFloat" rect="120 48 60 20" name="spinboxf" skin="panel">
+							<widget anchor="lrtb" class="Textbox" rect="0 0 51 20" name="_text" skin="panel"/>
+							<widget anchor="rt" class="Button" rect="51 0 9 10" name="_inc" skin="panel"/>
+							<widget anchor="rt" class="Button" rect="51 10 9 10" name="_dec" skin="panel"/>
+						</widget>
+					</widget>
+				</widget>
+			</widget>
+			<widget anchor="lt" class="ScaleBox" rect="196 0 550 573" name="graph" skin="none"/>
+		</widget>
+	</widget>
+	<widget anchor="lt" template="window" name="gradienteditor" caption="Gradient Editor" rect="120 792 372 104" visible="0">
+		<widget anchor="lrtb" class="Widget" template="frame" name="gradient" rect="7 12 350 37"/>
+		<widget anchor="cb" template="editbox" name="colour" rect="130 51 108 20"/>
+		<widget step="0.01" max="1e+06" anchor="cb" template="spinboxf" rect="84 51 45 20" min="-1e+06" value="1" name="key"/>
+		<widget anchor="lb" template="label" name="min" caption="0" rect="7 49 42 20"/>
+		<widget rect="315 49 42 20" anchor="rb" align="2" name="max" caption="1" template="label"/>
+		<widget anchor="cb" template="image" name="swatch" rect="238 51 29 20"/>
+	</widget>
+	<widget anchor="lt" template="window" name="grapheditor" caption="Graph Editor" rect="504 780 396 240" visible="0">
+		<widget anchor="lrtb" class="Widget" template="frame" name="graph" rect="12 12 365 156"/>
+		<widget anchor="cb" align="2" caption="X" template="label" rect="84 180 44 20"/>
+		<widget anchor="cb" template="spinboxf" name="x" rect="132 180 70 20"/>
+		<widget anchor="cb" template="spinboxf" name="y" rect="228 180 70 20"/>
+		<widget anchor="cb" align="2" caption="Y" template="label" rect="202 180 23 20"/>
+	</widget>
+</gui>

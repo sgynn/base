@@ -1,0 +1,242 @@
+<?xml version="1.0"?>
+<gui height="1024" width="1024">
+	<!--Font list-->
+	<font name="helvetica">
+		<face source="data/NotoSans-Regular.ttf" size="18"/>
+		<face source="helvetica" size="24"/>
+	</font>
+	<!--Generated Images-->
+	<genimage glyphs="14" name="glyphs"/>
+	<genimage radius="12" name="nodebg" core="2 2" line="2">
+		<corner style="round" name="tl"/>
+		<corner style="round" name="tr"/>
+		<corner style="round" name="bl"/>
+		<corner style="round" name="br"/>
+		<state back="#80ffffff" name="normal" line="#ffffffff"/>
+	</genimage>
+	<genimage radius="6" name="nodetitle" core="2 2" line="1">
+		<corner style="round" name="tl"/>
+		<corner style="round" name="tr"/>
+		<state back="#ffb0b0b0" name="normal" line="#ffb0b0b0"/>
+	</genimage>
+	<genimage radius="2" name="tooltip" core="1 1" line="1">
+		<corner style="round" name="tl"/>
+		<corner style="round" name="tr"/>
+		<corner style="round" name="bl"/>
+		<corner style="round" name="br"/>
+		<state back="#a0ffffff" name="normal" line="#ffffffff"/>
+	</genimage>
+	<genimage radius="3" name="default" core="2 2" line="1">
+		<corner style="round" name="tl"/>
+		<corner style="round" name="tr"/>
+		<corner style="round" name="bl"/>
+		<corner style="round" name="br"/>
+		<state back="#602b3f67" name="normal" line="#ff6876d7"/>
+	</genimage>
+	<genimage radius="18" name="mainmenu" core="2 2" line="0">
+		<corner style="chamfer" name="bl"/>
+		<state back="#ffffffff" name="normal" line="#ffffffff"/>
+	</genimage>
+	<genimage radius="6" name="graph" core="2 2" line="2">
+		<corner style="round" name="tl"/>
+		<corner style="round" name="tr"/>
+		<corner style="round" name="bl"/>
+		<corner style="round" name="br"/>
+		<state back="#80b0b0b0" name="normal" line="#ffb0b0b0"/>
+	</genimage>
+	<genimage radius="3" name="button" core="2 2" line="1">
+		<corner style="round" name="tl"/>
+		<corner style="round" name="tr"/>
+		<corner style="round" name="bl"/>
+		<corner style="round" name="br"/>
+		<state back="#ffffffff" name="normal" line="#ffffffff"/>
+	</genimage>
+	<!--Widget Skins-->
+	<skin name="listitem">
+		<font name="helvetica" size="16"/>
+		<state coord="0 0 42 20" name="normal"/>
+		<state forecolour="#ffff80" name="highlight"/>
+		<state forecolour="#ffffff" name="pressed"/>
+		<state forecolour="#808080" name="disabled"/>
+		<state forecolour="#ff9040" name="selected normal"/>
+	</skin>
+	<skin name="panel">
+		<font name="helvetica" size="16"/>
+		<image file="default"/>
+		<state border="4 4 4 4" coord="0 0 8 8" name="normal"/>
+	</skin>
+	<skin name="button">
+		<font align="middlecentre" name="helvetica" size="16"/>
+		<image file="button"/>
+		<state border="4 4 4 4" coord="0 0 8 8" backcolour="#7f92ff" name="normal"/>
+		<state backcolour="#82acff" name="highlight"/>
+		<state backcolour="#3f79ff" name="pressed"/>
+		<state backcolour="#204463" name="disabled"/>
+		<state backcolour="#85d0ff" name="selected normal"/>
+		<state backcolour="#71a4ff" name="selected highlight"/>
+		<state backcolour="#68aeff" name="selected pressed"/>
+		<state backcolour="#3c5f8b" name="selected disabled"/>
+	</skin>
+	<skin name="mainmenu">
+		<font name="helvetica" size="0"/>
+		<image file="mainmenu"/>
+		<state border="19 3 2 12" coord="0 14 34 24" name="normal"/>
+	</skin>
+	<skin name="none">
+		<font name="helvetica" size="16"/>
+		<state name="normal"/>
+	</skin>
+	<skin name="graphnode">
+		<font name="helvetica" size="16"/>
+		<image file="nodebg"/>
+		<state border="13 13 13 13" coord="0 0 24 24" backcolour="#6677ff" name="normal"/>
+	</skin>
+	<skin name="nodeback">
+		<font name="helvetica" size="16"/>
+		<image file="graph"/>
+		<state border="7 7 7 7" coord="0 0 14 14" name="normal"/>
+	</skin>
+	<skin name="nodebar">
+		<font align="middlecentre" name="helvetica" size="16"/>
+		<image file="nodetitle"/>
+		<state border="7 7 7 7" coord="0 0 14 14" name="normal"/>
+	</skin>
+	<skin name="tooltip">
+		<font name="helvetica" size="16"/>
+		<image file="tooltip"/>
+		<state border="3 3 3 3" coord="0 0 5 5" backcolour="#caef78" name="normal"/>
+	</skin>
+	<!--Icon sets-->
+	<iconlist name="glyphs">
+		<image file="glyphs"/>
+		<icon rect="1 3 13 8" name="up"/>
+		<icon rect="15 4 13 8" name="down"/>
+		<icon rect="32 1 8 13" name="left"/>
+		<icon rect="4 16 8 12" name="right"/>
+		<icon rect="16 16 12 12" name="dot"/>
+		<icon rect="30 16 12 12" name="cross"/>
+	</iconlist>
+	<iconlist name="connectors">
+		<image file="graph"/>
+		<icon rect="0 0 14 14" name="default"/>
+	</iconlist>
+	<iconlist name="editors">
+		<image file="data/editor/editoricons.png"/>
+		<icon rect="0 48 16 16" name="browser"/>
+		<icon rect="16 48 16 16" name="compositor"/>
+		<icon rect="32 48 16 16" name="scene"/>
+		<icon rect="48 48 16 16" name="renderdoc"/>
+		<icon rect="0 32 16 16" name="audio"/>
+	</iconlist>
+	<!--Templates-->
+	<template rect="0 0 100 100" name="frame" skin="panel" category="Containers"/>
+	<template class="Textbox" name="editbox" skin="panel" category="Input"/>
+	<template class="Button" name="button" skin="button" category="Input"/>
+	<template name="image" class="Image" skin="panel" rect="0 0 64 64" image="blank" category="Display"/>
+	<template name="icon" class="Icon" skin="panel" rect="0 0 32 32" iconlist="glyphs" category="Display"/>
+	<template category="Display" class="Label" name="label" skin="panel" caption="Label"/>
+	<template name="checkbox" class="Checkbox" skin="none" rect="0 0 16 16" category="Input" iconlist="glyphs" icon="4">
+		<widget name="_box" skin="panel" rect="0 0 15 15" anchor="lm" tangible="0" inheritstate="1">
+			<widget anchor="lt" template="icon" rect="4 4 7 7" name="_icon"/>
+		</widget>
+		<widget inheritstate="1" class="Label" anchor="lrtb" rect="19 0 0 16" skin="none" align="13" name="_text"/>
+	</template>
+	<template category="Containers" class="SplitPane" rect="0 0 100 100" name="hsplit" skin="none" orientation="horizontal">
+		<widget anchor="tb" rect="46 0 2 100" name="_sash" skin="button"/>
+	</template>
+	<template class="Button" iconlist="editors" rect="936 60 24 24" name="iconbutton" icon="0" skin="button">
+		<widget anchor="cm" class="Icon" rect="4 4 16 16" iconlist="editors" skin="panel" name="_icon" autosize="1"/>
+	</template>
+	<template anchor="lt" class="Spinbox" name="spinbox" skin="panel" rect="422 678 64 20">
+		<widget anchor="lrtb" template="editbox" name="_text" skin="none" rect="3 0 49 20"/>
+		<widget anchor="rm" icon="1" rect="50 10 14 8" template="iconbutton" iconlist="glyphs" skin="none" name="_dec"/>
+		<widget anchor="rm" iconlist="glyphs" template="iconbutton" name="_inc" skin="none" rect="50 2 14 8"/>
+	</template>
+	<template anchor="lt" class="SpinboxFloat" name="spinboxf" skin="panel" rect="422 678 64 20">
+		<widget anchor="lrtb" template="editbox" name="_text" skin="none" rect="3 0 49 20"/>
+		<widget anchor="rm" icon="1" rect="50 10 14 8" template="iconbutton" iconlist="glyphs" skin="none" name="_dec"/>
+		<widget anchor="rm" iconlist="glyphs" template="iconbutton" name="_inc" skin="none" rect="50 2 14 8"/>
+	</template>
+	<template class="Window" rect="0 0 100 100" name="window" skin="panel" category="Containers">
+		<widget anchor="tr" class="Button" rect="84 0 16 16" name="_close" skin="button"/>
+		<widget anchor="tlr" class="Button" text="Caption" rect="10 0 70 20" skin="panel" name="_caption"/>
+		<widget anchor="trlb" rect="5 22 90 73" name="_client" skin="panel"/>
+		<widget anchor="br" rect="90 90 10 10" name="_sizebr" skin="panel"/>
+	</template>
+	<template name="vscroll" class="Scrollbar" rect="0 0 16 100" skin="panel" category="Input">
+		<widget class="Button" name="_dec" rect="0 0 16 16" skin="button" anchor="tlr"/>
+		<widget class="Button" name="_inc" rect="0 84 16 16" skin="button" anchor="blr"/>
+		<widget name="track" rect="0 16 16 68" anchor="tlrb" skin="none">
+			<widget class="Button" name="_block" rect="0 0 16 32" skin="button" anchor="lr"/>
+		</widget>
+	</template>
+	<template name="hscroll" class="Scrollbar" rect="0 0 100 16" skin="panel" orientation="horizontal" category="Input">
+		<widget class="Button" name="_dec" rect="0 0 16 16" skin="button" anchor="tbl"/>
+		<widget class="Button" name="_inc" rect="84 0 16 16" skin="button" anchor="tbr"/>
+		<widget name="track" rect="16 0 68 16" anchor="tlrb" skin="none">
+			<widget class="Button" name="_block" rect="0 0 32 16" skin="button" anchor="tb"/>
+		</widget>
+	</template>
+	<template class="Listbox" rect="0 0 100 100" name="listbox" skin="panel" category="Lists">
+		<widget anchor="tlrb" rect="1 1 86 98" name="_client" skin="none">
+			<widget class="Button" rect="0 0 20 20" name="_text" skin="listitem"/>
+		</widget>
+		<widget anchor="trb" template="vscroll" name="_scroll" rect="87 0 13 100"/>
+	</template>
+	<template class="Combobox" rect="0 0 100 20" name="droplist" skin="panel" category="Lists">
+		<widget anchor="blr" template="listbox" name="_list" rect="0 20 100 200" skin="panel"/>
+		<widget anchor="trlb" class="Label" rect="0 0 100 20" name="_text" skin="panel"/>
+	</template>
+	<template class="Combobox" rect="0 0 100 20" name="combobox" skin="panel" category="Lists">
+		<widget anchor="blr" template="listbox" name="_list" rect="0 20 100 200" skin="panel"/>
+		<widget anchor="trlb" class="Textbox" rect="0 0 80 20" name="_text" skin="panel"/>
+		<widget anchor="trb" class="Button" rect="80 0 20 20" name="_button" skin="panel"/>
+	</template>
+	<template class="Scrollpane" autosize="1" rect="0 0 100 100" name="scrollpane" skin="panel" category="Containers">
+		<widget anchor="trb" template="vscroll" name="_vscroll" rect="84 0 16 84"/>
+		<widget anchor="lrb" template="hscroll" name="_hscroll" rect="0 84 84 16"/>
+		<widget anchor="tlrb" rect="0 0 84 84" name="_client" skin="panel"/>
+	</template>
+	<template class="TreeView" rect="0 0 100 100" name="tree" skin="panel" category="Lists">
+		<widget anchor="tlrb" rect="1 1 86 98" name="_client" skin="none"/>
+		<widget anchor="trb" template="vscroll" name="_scroll" rect="87 0 13 100"/>
+		<widget rect="0 6 8 8" name="_expand" skin="panel"/>
+		<widget class="Label" rect="0 0 100 20" name="_item" skin="listitem"/>
+	</template>
+	<template name="hsplit" class="SplitPane" rect="0 0 100 100" skin="none" orientation="horizontal" category="Containers">
+		<widget name="_sash" skin="button" rect="46 0 2 100" anchor="tb"/>
+	</template>
+	<template name="vsplit" class="SplitPane" rect="0 0 100 100" skin="none" orientation="vertical" category="Containers">
+		<widget name="_sash" skin="button" rect="0 46 100 2" anchor="lr"/>
+	</template>
+
+	<template colour="#80ff80" class="Widget" layout="VerticalLayout" template="frame" rect="480 816 59 27" skin="nodeback" name="graphnode" autosize="1">
+		<widget colour="#80ff80" tangible="0" rect="0 0 59 19" template="button" skin="nodebar" name="_text" caption=" Emitter " autosize="1" anchor="lr"/>
+		<widget anchor="lr" class="Widget" layout="HorizontalLayout" tangible="2" template="frame" rect="0 19 59 4" skin="none" autosize="1">
+			<widget anchor="t" class="Widget" tangible="2" template="frame" rect="0 0 0 0" skin="none" name="_in" autosize="1"/>
+			<widget anchor="lrt" class="Widget" tangible="0" template="frame" rect="0 0 59 4" skin="none"/>
+			<widget anchor="t" class="Widget" tangible="2" template="frame" rect="59 0 0 0" skin="none" name="_out" autosize="1"/>
+		</widget>
+		<widget anchor="lr" class="Widget" tangible="2" template="frame" rect="0 23 59 4" skin="none"/>
+	</template>
+	<template class="CollapsePane" rect="0 0 100 100" name="category" skin="none" category="Containers">
+		<widget anchor="tlr" template="button" rect="0 0 100 20" name="_header"/>
+		<widget anchor="tlr" rect="0 20 100 90" name="_client" skin="none"/>
+	</template>
+	<template anchor="lt" icon="0" template="icon" rect="621 851 12 12" iconlist="connectors" name="connector" tangible="3"/>
+	<template class="TabbedPane" rect="0 0 100 100" name="tabbedpane" skin="panel" category="Containers">
+		<widget anchor="tlr" rect="0 0 100 24" name="_tabstrip" skin="none">
+			<widget class="Button" rect="0 0 38 24" name="_tab" skin="button"/>
+		</widget>
+		<widget anchor="tblr" rect="0 24 100 76" name="_client" skin="none"/>
+	</template>
+
+
+	<!--Widget Layout-->
+	<widget margin="2" layout="HorizontalLayout" name="editor" autosize="1" spacing="4" rect="870 0 154 26" anchor="rt" class="Widget" skin="mainmenu" colour="#232a5f" template="frame">
+		<widget class="Widget" template="frame" name="gap" skin="none" rect="2 2 10 22"/>
+	</widget>
+	<widget anchor="lt" class="Widget" layout="VerticalLayout" margin="4" template="frame" rect="936 12 46 27" skin="tooltip" name="tooltip" autosize="1" visible="0" tangible="0">
+		<widget anchor="lt" autosize="1" template="label" name="tooltiptext" skin="tooltip" rect="4 4 38 19"/>
+	</widget>
+</gui>

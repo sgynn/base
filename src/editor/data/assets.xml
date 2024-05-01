@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<gui height="1024" width="1024">
+	<external file="editor.xml"/>
+	<!--Icon sets-->
+	<iconlist name="assets">
+		<image file="data/editor/asseticons.png"/>
+		<icon rect="0 0 64 64" name="folder"/>
+		<icon rect="64 0 64 64" name="cube"/>
+		<icon rect="0 64 64 64" name="page"/>
+		<icon rect="64 64 64 64" name="sphere"/>
+		<icon rect="128 0 64 64" name="sound"/>
+		<icon rect="128 64 64 64" name="image"/>
+	</iconlist>
+	<!--Templates-->
+	<template anchor="m" autosize="1" template="button" name="breadcrumb" skin="listitem" rect="357 473 22 19"/>
+	<template anchor="lt" class="Button" tangible="3" rect="561 457 64 85" name="asset" skin="panel">
+		<widget anchor="lrtb" class="Icon" icon="3" rect="0 0 64 64" iconlist="assets" skin="panel" name="_icon"/>
+		<widget anchor="lrb" class="Label" rect="0 48 64 36" skin="panel" align="11" name="_text" caption="name" fontsize="12"/>
+	</template>
+	<!--Widget Layout-->
+	<widget anchor="lb" layout="VerticalLayout" template="window" name="assetbrowser" caption="Assets Browser" rect="36 792 960 212">
+		<widget anchor="lrt" class="Widget" template="frame" name="menu" skin="none" rect="0 0 950 32">
+			<widget anchor="lt" template="combobox" name="filters" rect="0 0 144 27"/>
+			<widget anchor="lrt" class="Widget" layout="HorizontalLayout" margin="2" template="frame" rect="144 0 756 28" name="breadcrumbs" spacing="5">
+				<widget anchor="lm" template="breadcrumb" caption="data" rect="2 3 30 19"/>
+				<widget anchor="lm" template="breadcrumb" caption=">" rect="37 3 10 19"/>
+				<widget anchor="lm" template="breadcrumb" caption="materials" rect="52 3 64 19"/>
+			</widget>
+			<widget anchor="rt" template="button" name="new" caption="NEW" rect="901 1 48 27"/>
+		</widget>
+		<widget anchor="lrtb" layout="FlowLayout" template="scrollpane" name="items" rect="0 32 950 153" showscrollbars="0"/>
+	</widget>
+	<widget anchor="lt" visible="0" template="window" name="filepreview" caption="Preview" rect="84 156 464 464">
+		<widget anchor="lrtb" template="image" name="previewscene" rect="0 0 454 437"/>
+	</widget>
+</gui>
