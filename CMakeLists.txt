@@ -43,6 +43,21 @@ set(src
 	src/model/primitives.cpp
 	src/model/skeleton.cpp
 	src/model/wavefront.cpp
+
+
+	src/navmesh/navdrawable.cpp
+	src/navmesh/navedit.cpp
+	src/navmesh/navmesh.cpp
+	src/navmesh/navpath.cpp
+
+	src/world/foliage.cpp
+	src/world/landscape.cpp
+	src/world/object.cpp
+	src/world/objectworld.cpp
+	src/world/particleinstance.cpp
+	src/world/skydome.cpp
+	src/world/terraindrawable.cpp
+	src/world/terrainfoliage.cpp
 )
 
 set(gui
@@ -84,6 +99,18 @@ set(particles
 	src/particles/particles.cpp
 	src/particles/renderers.cpp
 	src/particles/renderers.h
+)
+
+set(editor
+	src/editor/assetbrowser.cpp
+	src/editor/audioeditor.cpp
+	src/editor/compositoreditor.cpp
+	src/editor/editor.cpp
+	src/editor/gizmo.cpp
+	src/editor/layout.cpp
+	src/editor/nodeeditor.cpp
+	src/editor/particleeditor.cpp
+	src/editor/renderdoc.cpp
 )
 
 set( png
@@ -182,8 +209,23 @@ set(headers
 	include/base/script.h
 	include/base/console.h
 
+	include/base/navmesh.h
+	include/base/navpath.h
+	include/base/navdrawable.h
+
 	include/base/consolecomponent.h
 	include/base/guicomponent.h
+)
+
+set(worldheaders
+	include/base/world/foliage.h
+	include/base/world/landscape.h
+	include/base/world/object.h
+	include/base/world/objectworld.h
+	include/base/world/particleinstance.h
+	include/base/world/skydome.h
+	include/base/world/terraindrawable.h
+	include/base/world/terrainfoliage.h
 )
 
 set(guiheaders
@@ -199,6 +241,23 @@ set(guiheaders
 	include/base/gui/transform.h
 	include/base/gui/widgets.h
 	include/base/gui/colourpicker.h
+)
+
+set(editorheaders
+	include/base/editor/assetbrowser.h
+	include/base/editor/audioclass.h
+	include/base/editor/audioeditor.h
+	include/base/editor/compositoreditor.h
+	include/base/editor/editor.h
+	include/base/editor/embed.h
+	include/base/editor/gizmo.h
+	include/base/editor/gradientbox.h
+	include/base/editor/graphbox.h
+	include/base/editor/layout.h
+	include/base/editor/nodeeditor.h
+	include/base/editor/particleeditor.h
+	include/base/editor/renderdoc.h
+	include/base/editor/resources.h
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
@@ -219,10 +278,12 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
-add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${script} ${audio} ${particles} ${headers} ${guiheaders} )
+add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${script} ${audio} ${particles} ${headers} ${guiheaders} ${worldheaders} ${editor} ${editorheaders} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 install(FILES ${guiheaders} DESTINATION include/base/gui)
+install(FILES ${worldheaders} DESTINATION include/base/world)
+install(FILES ${editorheaders} DESTINATION include/base/editor)
 
 
 if(WEB)
