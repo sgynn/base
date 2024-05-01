@@ -1,6 +1,9 @@
 Repository for my personal c++ OpenGL game library.  
 Targets for Linux, Windows, and WebGL3
 
+It is designed to be more of a collection of separate modules
+rather than a fully intergrated game engine and editor
+
 Features:  
 - Window creation  
 - Game state manager  
@@ -11,12 +14,11 @@ Features:
 - Custom extensible model format, and obj loader  
 - Blender exporter included for model format  
 - Skeletal animation  
-- Animation controller handling animation based movement  
 - Node based compositor system  
-- Resource manager  
-- Powerful Audio system using openAL as a backend  
+- Resource manager
+- Particle system
+- Audio system using openAL as a backend
+- Navmesh generator
+- A collection of extra utilities and classes
 
-
-
-	
 
