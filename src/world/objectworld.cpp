@@ -51,7 +51,9 @@ void ObjectWorld::processMessages() {
 		case Message::Add:
 			if(o->m_world != this) {
 				o->m_world = this;
-				m_sceneNode->addChild(o);
+				bool alreadyAttached = false;
+				for(SceneNode* n = o->getParent(); n; n=n->getParent()) if(n==m_sceneNode) alreadyAttached=true;
+				if(!alreadyAttached) m_sceneNode->addChild(o);
 				if(o->m_hasUpdate) m_update.push_back(o);
 				m_objects.push_back(o);
 				objectAdded(o);
@@ -87,6 +89,8 @@ void ObjectWorld::processMessages() {
 
 TraceResult ObjectWorld::trace(uint64 mask, const Ray& ray, float radius, float limit) const {
 	TraceResult result;
+	traceCustom(mask, ray, radius, limit, result);
+
 	vec3 normal;
 	for(Object* o: m_objects) {
 		if(mask & 1<<o->m_traceGroup && o->trace(ray, radius, limit, normal)) {

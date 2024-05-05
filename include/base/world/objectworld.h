@@ -34,8 +34,9 @@ class ObjectWorld {
 	void addObject(Object*);
 	void removeObject(Object*, bool destroy=true);
 	void setUpdate(Object*, bool updates);
-	void update(float time);
 	void processMessages();
+
+	virtual void update(float time);
 
 	virtual TraceResult trace(uint64 mask, const Ray& ray, float radius=0, float limit=1e8f) const;
 	TraceResult trace(const Ray& ray, float radius=0, float limit=1e8f) const { return trace(~0u, ray, radius, limit); }
@@ -43,6 +44,8 @@ class ObjectWorld {
 	protected:
 	virtual void objectAdded(Object*) {}
 	virtual void objectRemoved(Object*) {}
+	/// Additional traces for non-objects - for stuff like terrain
+	virtual void traceCustom(uint64 mask, const Ray&, float radius, float limit, TraceResult& result) const {}
 
 	protected:
 	enum class Message { Add, Remove, Delete, StartUpdate, StopUpdate };
