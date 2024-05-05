@@ -134,7 +134,7 @@ class PointRangeIterator {
 struct PointRangeIteratorWrapper {
 	Point a, b;
 	PointRangeIterator begin() const { return PointRangeIterator(a,b,a); }
-	PointRangeIterator end() const { return PointRangeIterator(a,b,Point(a.x,b.y)); }
+	PointRangeIterator end() const { return PointRangeIterator(a,b, Point(a.x, a.x<b.x&&a.y<b.y? b.y: a.y)); }
 };
 inline PointRangeIteratorWrapper range(const Point& a, const Point& b) { return PointRangeIteratorWrapper{a, b}; }
 inline PointRangeIteratorWrapper range(const Point& r) { return PointRangeIteratorWrapper{Point(), r}; }
@@ -163,7 +163,7 @@ class Point3RangeIterator {
 struct Point3RangeIteratorWrapper {
 	Point3 a, b;
 	Point3RangeIterator begin() const { return Point3RangeIterator(a,b,a); }
-	Point3RangeIterator end() const { return Point3RangeIterator(a,b,Point3(a.x,a.y,b.z)); }
+	Point3RangeIterator end() const { return Point3RangeIterator(a,b,Point3(a.x,a.y, a.x<b.x&&a.y<b.y&&a.z<b.z? b.z: a.z)); }
 };
 inline Point3RangeIteratorWrapper range(const Point3& a, const Point3& b) { return Point3RangeIteratorWrapper{a, b}; }
 inline Point3RangeIteratorWrapper range(const Point3& r) { return Point3RangeIteratorWrapper{Point3(), r}; }
