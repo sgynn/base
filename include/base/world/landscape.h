@@ -27,12 +27,12 @@ class Patch;
 
 /** Geometry data of patch */
 struct PatchGeometry {
-	size_t       vertexCount;	// Number of vertices
-	size_t       indexCount;	// Number of indices
-	float*       vertices;      // Vertex data - Format: POSITION3 NORMAL3 BLEND_NORMAL3 BLEND_HEIGHT:1 (stride:10)
-	uint16*      indices;		// Index data
-	BoundingBox* bounds;		// Bounding box
-	void*        tag;			// User data
+	size_t       vertexCount = 0;      // Number of vertices
+	size_t       indexCount = 0;       // Number of indices
+	float*       vertices = nullptr;   // Vertex data - Format: POSITION3 NORMAL3 BLEND_NORMAL3 BLEND_HEIGHT:1 (stride:10)
+	uint16*      indices = nullptr;    // Index data
+	BoundingBox* bounds = nullptr;     // Bounding box
+	void*        tag = nullptr;        // User data
 };
 
 
