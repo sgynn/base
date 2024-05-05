@@ -18,6 +18,7 @@ set(src
 	src/png.cpp
 	src/resources.cpp
 	src/scenecomponent.cpp
+	src/tiff.cpp
 	src/dds.cpp
 	src/window.cpp
 	src/xml.cpp
@@ -171,6 +172,7 @@ set(headers
 	include/base/gamestate.h
 	include/base/hardwarebuffer.h
 	include/base/hashmap.h
+	include/base/image.h
 	include/base/inifile.h
 	include/base/input.h
 	include/base/material.h
@@ -200,6 +202,7 @@ set(headers
 	include/base/string.h
 	include/base/texture.h
 	include/base/thread.h
+	include/base/tiff.h
 	include/base/vec.h
 	include/base/wavefront.h
 	include/base/window.h
