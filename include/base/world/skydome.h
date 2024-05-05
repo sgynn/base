@@ -4,7 +4,7 @@
 #include <base/variable.h>
 #include <base/colour.h>
 
-namespace script { class Variable; }
+namespace base {
 
 // Dynamic skydome with atmospheric scattering shader
 class SkyDome : public base::DrawableMesh {
@@ -26,4 +26,6 @@ class SkyDome : public base::DrawableMesh {
 	vec3 m_sconst;
 	vec3 m_cconst;
 };
+
+}
 

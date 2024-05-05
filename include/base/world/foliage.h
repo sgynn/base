@@ -13,8 +13,12 @@
 #undef ABSOLUTE
 #undef RELATIVE
 
-namespace base { class Material; class DrawableMesh; }
-namespace base {  class Mesh;  class HardwareVertexBuffer; }
+namespace base {
+
+class Mesh;
+class Material;
+class DrawableMesh;
+class HardwareVertexBuffer;
 class FoliageSystem;
 
 class FoliageMap {
@@ -188,4 +192,7 @@ private:
 	std::vector<GenChunk> m_queue;
 	void threadFunc(int index);
 };
+
+}
+
 
