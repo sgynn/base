@@ -56,7 +56,7 @@ bool SceneEditor::addEmbeddedPNGImage(const char* name, const char& bin, unsigne
 void SceneEditor::initialiseComponents() {
 	printf("------ EDITOR ------\n");
 	m_gui = new Root(base::Game::getSize());
-	addEmbeddedPNGImage(editor_icons_file, editor_icons, editor_icons_len);
+	addEmbeddedPNGImage("data/editor/editoricons.png", editor_icons, editor_icons_len);
 	if(m_gui->load("data/editor/editor.xml") || m_gui->parse(&editor_gui)) {
 		m_toolTip.tip = m_gui->getWidget("tooltip");
 		for(auto& create: m_creation) {

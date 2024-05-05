@@ -44,7 +44,7 @@ bool matchWildcard(const char* s, const char* pattern) {
 
 void AssetBrowser::initialise() {
 	m_rootPath = "./data/";
-	getEditor()->addEmbeddedPNGImage(editor_assets_image_file, editor_assets_image, editor_assets_image_len);
+	getEditor()->addEmbeddedPNGImage("data/editor/asseticons.png", editor_assets_image, editor_assets_image_len);
 	m_panel = loadUI("assets.xml", editor_assets_gui);
 	addToggleButton(m_panel, "editors", "browser");
 
