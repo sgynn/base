@@ -95,6 +95,7 @@ class Console {
 	char   m_buffer[256];	// Current command being entered
 	int    m_caret;			// Caret position
 	int    m_cix;			// command history index
+	bool   m_doubleTab = false;
 
 	// Variables
 	script::Variable m_root;
@@ -106,9 +107,10 @@ class Console {
 	base::HashMap<ConsoleFunction> m_functions;
 
 	// Line parsing
-	static script::Variable parseValue(const char* s, int& len);
-	int                     autoComplete(char*) const;
-	static int              autoComplete(char* str, const char* match, int fix, bool&);
+	enum AutoCompleteState  { NONE=0, PARTIAL=1, FULL=2 };
+	static script::Variable  parseValue(const char* s, int& len);
+	int                      autoComplete(char*, bool print=false) const;
+	static AutoCompleteState autoComplete(char* str, const char* match, int fix, bool&);
 
 	// Preset functions
 	void listVariables(const char*);

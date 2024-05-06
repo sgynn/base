@@ -54,13 +54,14 @@ Console::Console(const gui::Font* font, const Point& s, int h) : m_out(h), m_cmd
 	#endif
 
 	m_root.makeObject();
+	auto noParams = []() { VariableName invalidName; invalidName += ~0u; return invalidName; };
 
-	addFunction("help", "Show this help", [this](const char*) {
+	addFunction("help", noParams(), "Show this help", [this](const char*) {
 		printf("Commands:\n");
 		for(auto& i: m_functions) printf("  %s - %s\n", i.key, i.value.description);
 	});
 
-	addFunction("ls", "List data", [this](const char*) { printf("%s\n", m_root.toString(1).str()); });
+	addFunction("ls", noParams(), "List data", [this](const char*) { printf("%s\n", m_root.toString(1).str()); });
 }
 
 Console::~Console() {
@@ -160,8 +161,9 @@ void Console::update() {
 	case KEY_END:
 		m_caret=len;
 		break;
-	case KEY_TAB:	// ToDo: Autocomplete
-		m_caret += autoComplete(m_buffer);
+	case KEY_TAB:
+		m_caret += autoComplete(m_buffer, m_doubleTab);
+		m_doubleTab = true;
 		break;
 	case KEY_UP:	// History previous
 		if(m_cix<(int)m_cmd.size()-1) strcpy(m_buffer, m_cmd.get(++m_cix));
@@ -186,6 +188,7 @@ void Console::update() {
 			++m_caret;
 		}
 	}
+	if(in->lastKey() && in->lastKey() != KEY_TAB) m_doubleTab = false;
 }
 
 
@@ -221,22 +224,23 @@ void Console::draw() {
 #define isAlpha(c) ((*c>='a' && *c<='z') || (*c>='A' && *c<='Z') || *c=='_')
 #define isDigit(c) (*c>='0' && *c<='9')
 
-int Console::autoComplete(char* str, const char* match, int fix, bool& first) {
+Console::AutoCompleteState Console::autoComplete(char* str, const char* match, int fix, bool& first) {
+	// fix = length of fixed part of str, ie the part that was typed
 	if(fix==0 || strncmp(str, match, fix)==0) {
 		if(first) {
 			strcpy(str, match);
 			first = false;
-			return strlen(match)-fix;
+			return FULL;
 		}
 		int c = fix;
 		while(str[c]==match[c]&&str[c]) ++c;
 		str[c] = 0;
-		return c-fix;
+		return match[c]? PARTIAL: FULL;
 	} 
-	return 0;
+	return NONE;
 }
 
-int Console::autoComplete(char* buffer) const {
+int Console::autoComplete(char* buffer, bool print) const {
 	if(!buffer[0]) return 0;
 	// read back from end of buffer
 	char* e = buffer + strlen(buffer);
@@ -265,16 +269,22 @@ int Console::autoComplete(char* buffer) const {
 		else return 0; // Wut?
 	}
 
+	bool stuffBefore = false;
+	for(char* tc=buffer; tc<c; ++tc) if(*tc != ' ') { stuffBefore = true; break; }
+
 
 	char t = *e; *e = 0;
 	char tmp[128]; 
 	strcpy(tmp, t? e+1: c); // tmp is the partial we are matching, c is the whole section
 	int fix = strlen(tmp);
 	bool first = true;
+	int state = NONE;
 	// Autocomplete functions
-	if(t==0) {
+	if(t==0 && !stuffBefore) {
 		for(const auto& i : m_functions) {
-			autoComplete(tmp, i.key, fix, first);
+			AutoCompleteState r = autoComplete(tmp, i.key, fix, first);
+			if(print && r) printf("%s ", i.key);
+			state |= r;
 		}
 	}
 	
@@ -297,8 +307,11 @@ int Console::autoComplete(char* buffer) const {
 	if(hasBrackets) {
 		if(Expression* e = Script::parseExpression(c)) {
 			Variable var = e->evaluate(m_root);
-			for(Variable::iterator i=var.begin(); i!=var.end(); ++i) {
-				autoComplete(tmp, i->key, fix, first);
+			for(auto& i: var) {
+				AutoCompleteState r = autoComplete(tmp, i.key, fix, first);
+				if(print && r) printf("%s ", i.key);
+				if(r==FULL && (i.value.isObject() || i.value.isArray())) r = PARTIAL;
+				state |= r;
 			}
 		}
 		else printf("Invalid expression %s\n", c);
@@ -307,8 +320,11 @@ int Console::autoComplete(char* buffer) const {
 		if(!source && t) source = c;
 		const Variable& var = source? m_root.get_const(source): m_root;
 		if(t) c = e+1;
-		for(Variable::iterator i=var.begin(); i!=var.end(); ++i) {
-			autoComplete(tmp, i->key, fix, first);
+		for(auto& i: var) {
+			AutoCompleteState r = autoComplete(tmp, i.key, fix, first);
+			if(print && r) printf("%s ", i.key);
+			if(r==FULL && (i.value.isObject() || i.value.isArray())) r = PARTIAL;
+			state |= r;
 		}
 	}
 
@@ -316,6 +332,8 @@ int Console::autoComplete(char* buffer) const {
 	*e = t;
 	int len = strlen(tmp) - fix;
 	if(len>0) strcat(buffer, tmp+fix);
+	if(state == FULL) { strcat(buffer, " "); ++len; }
+	if(print && state) printf("\n");
 	return len;
 }
 
@@ -374,7 +392,7 @@ bool Console::execute(const char* s) {
 	// Console functions
 	const char* e = s;
 	while((*e>='0' && *e<='9') || (*e>='A'&&*e<='Z') || (*e>='a'&&*e<='z') || *e=='_') ++e;
-	if(e > s) {
+	if(e > s && *e!='.' && *e!='[') {
 		script::String name(s, e-s);
 		if(m_functions.contains(name)) {
 			while(*e==' ') ++e;
