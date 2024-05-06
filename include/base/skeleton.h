@@ -19,6 +19,8 @@ namespace base {
 			FIXED,		/**< Bone absolute matrix set by user. Note: bone get() values will be wrong */
 		};
 
+		Skeleton* getSkeleton() { return m_skeleton; }
+		const Skeleton* getSkeleton() const { return m_skeleton; }
 
 		Mode        getMode() const;		/**< Get the update mode */
 		void        setMode(Mode m);		/**< Set the update mode */
@@ -33,7 +35,8 @@ namespace base {
 		const EulerAngles getEuler() const;		/**< Get the relative angle as Pitch,Yaw,Roll */
 		const Quaternion& getAngle() const;		/**< Get the relative rotation as a quaternion */
 		const Matrix&     getTransformation() const;			/**< Get the local transformation of the bone */
-		const Matrix&     getAbsoluteTransformation() const;	/**< Get absolute transformation */
+		const Matrix&     getAbsoluteTransformation() const;	/**< Get absolute transformation - position and rotation */
+		const vec3&       getDerivedScale() const { return m_combinedScale; } ///< Get derived scale
 
 		void setPosition(const vec3& pos);		/**< Set the relative position */
 		void setScale(float scale);				/**< Set the relative scale */
