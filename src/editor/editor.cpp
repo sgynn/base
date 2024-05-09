@@ -28,8 +28,8 @@ using namespace base;
 using namespace gui;
 
 #include <base/editor/embed.h>
-BINDATA(editor_gui, "../src/editor/data/editor.xml")
-BINDATA(editor_icons,  "../src/editor/data/editoricons.png")
+BINDATA(editor_gui, EDITOR_DATA "/editor.xml")
+BINDATA(editor_icons,  EDITOR_DATA "/editoricons.png")
 
 SceneEditor::SceneEditor() : GameStateComponent(-50, 80, PERSISTENT) {
 	m_toggleKey = KEY_F12;
@@ -68,6 +68,13 @@ void SceneEditor::initialiseComponents() {
 	}
 	m_creation.clear();
 	printf("--------------------\n");
+}
+
+void SceneEditor::addTransientComponent(EditorComponent* c) {
+	assert(!m_components.empty());
+	m_components.push_back(c);
+	c->m_editor = this;
+	c->initialise();
 }
 
 bool SceneEditor::detectScene() {
@@ -116,7 +123,7 @@ Button* EditorComponent::addToggleButton(gui::Widget* panel, const char* iconset
 
 Widget* EditorComponent::loadUI(const char* file, const char& embed) {
 	char path[64];
-	snprintf(path, 63, "./data/editor/%s", file);
+	snprintf(path, 63, EDITOR_DATA "/%s", file);
 	Widget* panel = m_editor->getGUI()->load(path);
 	if(!panel && embed) panel = m_editor->getGUI()->parse(&embed);
 	if(panel) panel->setVisible(false);
@@ -344,16 +351,9 @@ void SceneEditor::drop(const Point& p, int key, const char* data) {
 	}
 }
 
-bool SceneEditor::callHandler(const char* file) {
-	// Reversed so user handlers will execute first
-	for(int i=m_handlers.size() - 1; i>=0; --i) {
-		if(m_handlers[i](file)) return true;
-	}
-	return false;
-}
 SceneNode* SceneEditor::constructObject(const char* file) {
 	// Reversed so user handlers will execute first
-	for(int i=m_handlers.size() - 1; i>=0; --i) {
+	for(int i=m_construct.size() - 1; i>=0; --i) {
 		if(SceneNode* r = m_construct[i](file)) return r;
 	}
 	return nullptr;

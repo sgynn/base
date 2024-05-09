@@ -1,21 +1,14 @@
 #include <base/editor/assetbrowser.h>
 #include <base/resources.h>
 #include <base/directory.h>
-#include <base/gui/renderer.h>
 
-#include <base/texture.h>
-#include <base/material.h>
-#include <base/framebuffer.h>
-#include <base/drawablemesh.h>
-#include <base/model.h>
-#include <base/scene.h>
-#include <base/scenecomponent.h>
-#include <base/orbitcamera.h>
-#include <base/compositor.h>
+#include "imageviewer.h"
+#include "modelviewer.h"
+
 
 #include <base/editor/embed.h>
-BINDATA(editor_assets_gui, "../src/editor/data/assets.xml");
-BINDATA(editor_assets_image, "../src/editor/data/asseticons.png");
+BINDATA(editor_assets_gui, EDITOR_DATA "/assets.xml");
+BINDATA(editor_assets_image, EDITOR_DATA "/asseticons.png");
 
 using namespace gui;
 using namespace editor;
@@ -38,7 +31,6 @@ bool matchWildcard(const char* s, const char* pattern) {
 	while(*p=='*') ++p;
 	return *p==0;
 }
-
 
 
 
@@ -65,29 +57,53 @@ void AssetBrowser::initialise() {
 	m_fileTypes["wav"] = Asset::Sound;
 	m_fileTypes["ogg"] = Asset::Sound;
 
+
+	getEditor()->addTransientComponent(new ImageViewer());
+	getEditor()->addTransientComponent(new ModelViewer());
+	
+
+	getEditor()->assetChanged.bind([this](const char* asset, bool changed) {
+		for(size_t i=0; i<m_modifiedFiles.size(); ++i) {
+			if(strcmp(asset, m_modifiedFiles[i])==0) {
+				if(changed) return;
+				m_modifiedFiles[i] = std::move(m_modifiedFiles.back());
+				m_modifiedFiles.pop_back();
+				refreshItems();
+				return;
+			}
+		}
+		if(changed) {
+			m_modifiedFiles.push_back(asset);
+			refreshItems();
+		}
+	});
+
+
 	m_filter->eventTextChanged.bind([this](Combobox*, const char*) { refreshItems(); });
 	m_filter->eventSelected.bind([this](Combobox*, ListItem&) { refreshItems(); });
 
-	getEditor()->addHandler(this, &AssetBrowser::previewFile);
-	if(Button* add = m_panel->getWidget<Button>("new")) add->eventPressed.bind([this](Button* b) { m_newItemMenu->popup(b); });
+	if(Button* add = m_panel->getWidget<Button>("new")) add->eventPressed.bind([this](Button* b) {
+		if(!m_newItemMenu) populateCreateMenu();
+		m_newItemMenu->popup(b);
+	});
 
 	Root* root = m_panel->getRoot();
-	m_newItemMenu = new Popup(Rect(0,0,100,100), nullptr);
-	m_newItemMenu->addItem(root, "button", "", "Particles", [this](Button*) {
-		m_newItemMenu->hide();
-		String file = getUniqueFileName("particles.pt", m_localPath);
-		printf("New file: %s\n", file.str());
-		FILE* fp = fopen(file, "wb");
-		fprintf(fp, "system = { emitters = [] }");
-		fclose(fp);
-		refreshItems();
-	});
 
 	static auto getSelectedFileName = [this]() { return cast<Button>(m_selectedItem)->getCaption(); };
 	m_contextMenu = new Popup(Rect(0,0,100,100), nullptr);
 	m_contextMenu->addItem(root, "button", "open", "Open", [this](Button*) {
 		m_contextMenu->hide();
-		getEditor()->callHandler(m_localPath + getSelectedFileName());
+		openAsset(m_selectedItem);
+	});
+	m_contextMenu->addItem(root, "button", "save", "Save", [this](Button*) {
+		m_contextMenu->hide();
+		String file = m_localPath + getSelectedFileName();
+		for(EditorComponent* c: getEditor()) {
+			if(c->saveAsset(file)) {
+				getEditor()->assetChanged(file, false);
+				break;
+			}
+		}
 	});
 	m_contextMenu->addItem(root, "button", "rename", "Rename", [this](Button*) {
 		m_contextMenu->hide();
@@ -118,6 +134,29 @@ void AssetBrowser::initialise() {
 		remove(m_rootPath + m_localPath + getSelectedFileName());
 		refreshItems();
 	});
+}
+
+void AssetBrowser::populateCreateMenu() {
+	Root* root = m_panel->getRoot();
+	m_newItemMenu = new Popup(Rect(0,0,100,100), nullptr);
+	for(EditorComponent* handler: getEditor()) {
+		const char* name = nullptr;
+		const char* file = nullptr;
+		const char* data = nullptr;
+		if(handler->newAsset(name, file, data)) {
+			m_newItemMenu->addItem(root, "button", "", name, [this, file, data](Button*) {
+				m_newItemMenu->hide();
+				String filename = getUniqueFileName(file, m_localPath);
+				printf("New file: %s\n", filename.str());
+				if(data) {
+					FILE* fp = fopen(filename, "wb");
+					fputs(data, fp);
+					fclose(fp);
+				}
+				refreshItems();
+			});
+		}
+	}
 }
 
 void AssetBrowser::activate() {
@@ -258,7 +297,67 @@ void AssetBrowser::refreshItems() {
 		case Asset::Sound: asset->setIcon("sound"); break;
 		case Asset::Texture: asset->setIcon("image"); break;
 		}
+
+		Widget* mod = asset->getTemplateWidget("_modified");
+		mod->setVisible(false);
+		for(const char* s: m_modifiedFiles) {
+			if(strcmp(file.name, s)==0) {
+				mod->setVisible(true);
+				break;
+			}
+		}
 	}
+}
+
+bool AssetBrowser::openAsset(Widget* w) {
+	const char* file = cast<Button>(w)->getCaption();
+	String path = m_localPath + file;
+	
+	// Already open ?
+	for(Editor& e: m_activeEditors) {
+		if(e.file == path) {
+			e.widget->setVisible(true);
+			e.widget->raise();
+			Point p = e.widget->getPosition();
+			Point max = e.widget->getParent()->getSize() - e.widget->getSize();
+			if(p.x>max.x) p.x = max.x;
+			if(p.y>max.y) p.y = max.y;
+			if(p.x<0) p.x = 0;
+			if(p.y<0) p.y = 0;
+			e.widget->setPosition(p);
+			return true;
+		}
+	}
+
+
+	Widget* window = nullptr;
+	for(EditorComponent* c: getEditor()) {
+		window = c->openAsset(path);
+		if(window) {
+			if(!window->getParent()) {
+				window->setVisible(true);
+				if(gui::Window* w = cast<gui::Window>(window)) w->setCaption(file);
+				m_activeEditors.push_back({path, window});
+				getEditor()->getGUI()->getRootWidget()->add(window);
+				// cascade
+				bool overlap = true;
+				while(overlap) {
+					overlap = false;
+					for(Widget* w : getEditor()->getGUI()->getRootWidget()) {
+						if(w!=window && w->getPosition() == window->getPosition()) {
+							overlap = true;
+							break;
+						}
+					}
+					if(overlap) window->setPosition(window->getPosition() + 16);
+				}
+			}
+			break;
+		}
+	}
+	if(window) printf("Open file: %s\n", file);
+	else printf("No file handlers for %s\n", file);
+	return window;
 }
 
 void AssetBrowser::renameFile(Widget* item) {
@@ -327,118 +426,9 @@ void AssetBrowser::dropItem(Widget* w, const Point& p, int b) {
 		m_contextMenu->popup(w->getRoot(), w->getRoot()->getMousePos(), w);
 	}
 	else if(p == m_lastClick) {
-		const char* file = cast<Button>(w)->getCaption();
-		bool r = getEditor()->callHandler(m_localPath + file);
-		if(r) printf("Open file: %s\n", file);
-		else printf("No file handlers for %s\n", file);
+		openAsset(w);
 		m_lastClick.set(0, 0);
 	}
 	else m_lastClick = p;
-}
-
-
-
-
-// ============================================================================== //
-
-
-
-
-
-bool AssetBrowser::previewFile(const char* filename) {
-	const char* ext = strrchr(filename, '.');
-	if(!ext) return false;
-	
-	for(const Editor& e : m_activeEditors) {
-		if(e.file == filename) {
-			e.widget->setVisible(true); // ToDo destroy
-			e.widget->raise();
-			return true;
-		}
-	}
-
-	Widget* previewTemplate = getEditor()->getGUI()->getWidget("filepreview");
-	if(!previewTemplate) return false;
-	gui::Renderer& r = *getEditor()->getGUI()->getRenderer();
-	Widget* preview = nullptr;
-
-	// Image preview
-	if(strcmp(ext, ".png")==0 || strcmp(ext, ".dds")==0) {
-		int img = r.getImage(filename);
-		if(img < 0) {
-			Texture* tex = Resources::getInstance()->textures.get(filename);
-			if(tex) img = r.addImage(filename, tex->width(), tex->height(), tex->unit());
-		}
-		if(img > 0) {
-			Point size = r.getImageSize(img);
-			Point border = previewTemplate->getSize() - previewTemplate->getClientRect().size();
-			preview = previewTemplate->clone();
-			preview->getWidget(0)->as<Image>()->setImage(img);
-			preview->setSize(size + border);
-		}
-	}
-
-	// Model preview
-	if(strcmp(ext, ".bm")==0) {
-		Model* model = Resources::getInstance()->models.get(filename);
-		if(model) {
-			// Create a scene TODO: cleanup
-			Scene* scene = new Scene();
-			SceneNode* node = scene->add("mesh");
-			Material* mat = Resources::getInstance()->materials.get("object.mat"); // hax
-			BoundingBox bounds; bounds.setInvalid();
-			for(const auto& m : model->meshes()) {
-				bounds.include(m.mesh->calculateBounds());
-				node->attach(new DrawableMesh(m.mesh, mat));
-			}
-			float max = fmax(fmax(bounds.size().x, bounds.size().y), bounds.size().z);
-			base::Renderer* renderer = getEditor()->getState()->getComponent<SceneComponent>()->getRenderer();
-			FrameBuffer* target = new FrameBuffer(512, 512, Texture::RGBA8, Texture::D24S8);
-			OrbitCamera* camera = new OrbitCamera(90, 1, 0.1, 100);
-			camera->setPosition(2.5,2.5,max * 0.6);
-			camera->setTarget(bounds.centre());
-			Workspace* ws = createDefaultWorkspace();
-			ws->setCamera(camera);
-			ws->execute(target, scene, renderer);
-
-			int img = r.addImage(filename, 512, 512, target->texture().unit());
-			preview = previewTemplate->clone();
-			preview->getWidget(0)->as<Image>()->setImage(img);
-			preview->getWidget(0)->eventMouseMove.bind([camera, ws, target, scene, renderer](Widget* w, const Point& p, int b) {
-				if(b) {
-					camera->update(CU_MOUSE);
-					ws->execute(target, scene, renderer);
-				}
-			});
-			preview->getWidget(0)->eventMouseWheel.bind([camera, ws, target, scene, renderer](Widget* w, int delta) {
-				camera->update(CU_WHEEL);
-				ws->execute(target, scene, renderer);
-			});
-		}
-	}
-
-
-	if(preview) {
-		preview->setVisible(true);
-		cast<gui::Window>(preview)->setCaption(filename);
-		m_activeEditors.push_back({filename, preview});
-		getEditor()->getGUI()->getRootWidget()->add(preview);
-		// cascade
-		bool overlap = true;
-		while(overlap) {
-			overlap = false;
-			for(Widget* w : getEditor()->getGUI()->getRootWidget()) {
-				if(w!=preview && w->getPosition() == preview->getPosition()) {
-					overlap = true;
-					break;
-				}
-			}
-			if(overlap) preview->setPosition(preview->getPosition() + 16);
-		}
-		return true;
-	}
-
-	return false;
-
 }
 

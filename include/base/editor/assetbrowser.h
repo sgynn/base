@@ -11,6 +11,7 @@ struct Asset {
 	gui::String name;
 	int icon;
 	Type type;
+	bool changed = false;
 };
 
 
@@ -27,17 +28,17 @@ class AssetBrowser : public EditorComponent {
 	gui::String getUniqueFileName(const char* baseName, const char* localPath) const;
 
 	protected:
+	void populateCreateMenu();
 	int createTextureIcon(const char* name);
 	int createModelIcon(const char* name);
 	int createShaderIcon(const char* name);
 	int allocateIcon(const char* name);
 
+	bool openAsset(gui::Widget*);
 	void renameFile(gui::Widget*);
 	void pressedCrumb(gui::Button*);
 	void dragItem(gui::Widget*, const Point&, int);
 	void dropItem(gui::Widget*, const Point&, int);
-
-	bool previewFile(const char* filename);
 
 	protected:
 	gui::String m_rootPath;
@@ -55,6 +56,7 @@ class AssetBrowser : public EditorComponent {
 
 	struct Editor { gui::String file; gui::Widget* widget; };
 	std::vector<Editor> m_activeEditors;
+	std::vector<gui::String> m_modifiedFiles;
 
 	gui::Widget* m_panel = nullptr;
 	gui::Widget* m_breadcrumbs;

@@ -2,9 +2,10 @@
 
 #include <base/gui/delegate.h>
 #include <base/gamestate.h>
+#include <base/hashmap.h>
+#include <base/string.h>
 #include <base/point.h>
 #include <base/vec.h>
-#include <map>
 
 namespace gui { class Root; class Widget; class Button; class IconList; enum class KeyMask; }
 namespace base { class Camera; class FrameBuffer; class Workspace; class Drawable; class Scene; class SceneNode; struct Mouse; }
@@ -13,6 +14,7 @@ class vec3;
 namespace editor {
 
 class EditorComponent;
+class SceneEditor;
 
 // Global interface for editor
 class SceneEditor : public base::GameStateComponent {
@@ -54,9 +56,7 @@ class SceneEditor : public base::GameStateComponent {
 	void cancelActiveTools(EditorComponent* skip=nullptr); // An action can cancel effects of other editors
 
 	// Handlers for opening resources for edit/preview
-	template<class F> void addHandler(const F& lambda) { m_handlers.push_back({}); m_handlers.back().bind(lambda); }
-	template<class M> void addHandler(M* inst, bool(M::*func)(const char*)) { m_handlers.push_back(bind(inst, func)); }
-	bool callHandler(const char* file);
+	MultiDelegate<void(const char*, bool)> assetChanged;
 
 	// Scene object construction - dropping files on the world
 	template<class F> void addConstructor(const F& lambda) { m_construct.push_back({}); m_construct.back().bind(lambda); }
@@ -83,6 +83,11 @@ class SceneEditor : public base::GameStateComponent {
 		return nullptr;
 	}
 
+	void addTransientComponent(EditorComponent* c); // For sub-compoonents
+	const std::vector<EditorComponent*>& getComponents() const { return m_components; }
+	friend std::vector<EditorComponent*>::const_reverse_iterator begin(SceneEditor* e) { return e->m_components.rbegin(); }
+	friend std::vector<EditorComponent*>::const_reverse_iterator end(SceneEditor* e) { return e->m_components.rend(); }
+
 	protected:
 	void initialiseComponents();
 	bool detectScene();
@@ -103,7 +108,6 @@ class SceneEditor : public base::GameStateComponent {
 	base::FrameBuffer* m_selectionBuffer = nullptr;
 	std::vector<EditorComponent*> m_components;
 	std::vector<EditorComponent*(*)()> m_creation;
-	std::vector<Delegate<bool(const char*)>> m_handlers;
 	std::vector<Delegate<base::SceneNode*(const char*)>> m_construct;
 };
 
@@ -128,6 +132,10 @@ class EditorComponent {
 	virtual void activate() {}
 	virtual void deactivate() {}
 	SceneEditor* getEditor() { return m_editor; }
+	public:
+	virtual bool newAsset(const char*& name, const char*& file, const char*& body) const { return false; }
+	virtual bool saveAsset(const char* asset) { return false; }
+	virtual gui::Widget* openAsset(const char* asset) { return nullptr; }
 	protected:
 	gui::Button* addToggleButton(gui::Widget* panel, const char* iconset, const char* iconName);
 	gui::Widget* loadUI(const char* file) { char e=0; return loadUI(file, e); }
@@ -140,6 +148,7 @@ class EditorComponent {
 	virtual bool wheelEvent(const MouseEventData&) { return false; }
 	virtual bool keyEvent(int keyCode) { return false; }
 	void promoteEventHandler(); // Make sure this editor handles events first
+
 
 };
 

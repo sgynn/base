@@ -17,9 +17,13 @@ class ParticleEditorComponent : public EditorComponent {
 	public:
 	void initialise() override;
 	void setParticleManager(particle::Manager*);
-	void showParticleSystem(particle::System*, const char* name=0);
+	ParticleEditor* showParticleSystem(particle::System*, const char* name=0);
 	particle::Manager* getParticleManager() { return m_manager; }
 	void saveAll();
+	public:
+	bool newAsset(const char*& name, const char*& file, const char*& body) const override;
+	bool saveAsset(const char* asset) override;
+	gui::Widget* openAsset(const char* asset) override;
 	protected:
 	bool canDrop(const Point&, int) const override;
 	bool drop(const Point& p, int key, const char* data) override;

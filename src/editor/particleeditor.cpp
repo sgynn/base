@@ -16,7 +16,7 @@
 #include <map>
 
 #include <base/editor/embed.h>
-BINDATA(editor_particle_gui, "../src/editor/data/particles.xml")
+BINDATA(editor_particle_gui, EDITOR_DATA "/particles.xml")
 
 #define CONNECT_SOURCE m_panel 
 #define CONNECT_CLASS  ParticleEditor
@@ -65,16 +65,6 @@ class ParticleNode : public nodegraph::Node {
 void ParticleEditorComponent::initialise() {
 	Root::registerClass<ParticleNode>();
 	Root::registerClass<GradientBox>();
-	getEditor()->addHandler([this](const char* file) {
-		const char* ext = file + strlen(file) - 3;
-		if(strcmp(ext, ".pt")==0) {
-			particle::System* system = base::Resources::getInstance()->particles.get(file);
-			if(system) showParticleSystem(system, file);
-			return system != nullptr;
-		}
-		return false;
-	});
-
 	particle::registerInternalStructures(); // In case this was not done yet
 
 	m_panel = loadUI("particles.xml", editor_particle_gui);
@@ -85,12 +75,38 @@ void ParticleEditorComponent::setParticleManager(particle::Manager* manager) {
 	m_manager = manager;
 }
 
-void ParticleEditorComponent::showParticleSystem(particle::System* system, const char* name) {
+bool ParticleEditorComponent::newAsset(const char*& name, const char*& file, const char*& body) const {
+	name = "Particles";
+	file = "particles.pt";
+	body = "system = { emitters = [] }";
+	return true;
+}
+
+bool ParticleEditorComponent::saveAsset(const char* asset) {
+	char file[128];
+	particle::System* system = base::Resources::getInstance()->particles.get(asset);
+	if(system) {
+		base::Resources::getInstance()->particles.findFile(asset, file, 128);
+		ParticleEditor::save(system, file);
+		for(ParticleEditor* e: m_editors) if(e->m_system==system) e->m_modified = false;
+	}
+	return system;
+}
+
+Widget* ParticleEditorComponent::openAsset(const char* asset) {
+	particle::System* system = base::Resources::getInstance()->particles.get(asset);
+	ParticleEditor* editor = showParticleSystem(system, asset);
+	return editor? editor->getPanel(): nullptr;
+}
+
+ParticleEditor* ParticleEditorComponent::showParticleSystem(particle::System* system, const char* name) {
+	if(!system) return nullptr;
+
 	// Already open
 	for(ParticleEditor* e: m_editors) {
 		if(e->getParticleSystem() == system) {
 			e->getPanel()->raise();
-			return;
+			return e;
 		}
 	}
 
@@ -113,18 +129,21 @@ void ParticleEditorComponent::showParticleSystem(particle::System* system, const
 		}
 		if(overlap) panel->setPosition(panel->getPosition() + 16);
 	}
+	return editor;
 }
 
 void ParticleEditorComponent::saveAll() {
 	char file[256];
+	base::Resources& res = *base::Resources::getInstance();
 	for(ParticleEditor* e: m_editors) {
 		if(e->isModified()) {
-			const char* name = base::Resources::getInstance()->particles.getName(e->getParticleSystem());
+			const char* name = res.particles.getName(e->getParticleSystem());
 			if(name) {
-				sprintf(file, "data/%s", name);
+				res.particles.findFile(name, file, 256);
 				e->save(e->getParticleSystem(), file);
 				printf("Saved %s\n", file);
 				e->m_modified = false;
+				getEditor()->assetChanged(name, false);
 			}
 			else printf("Error: Particle system not in resourve manager\n");
 		}
@@ -543,7 +562,10 @@ ParticleNode* ParticleEditor::createGraphNode(NodeType type, const char* classNa
 // =================================================================================================== //
 
 void ParticleEditor::notifyChange() {
+	if(m_modified) return;
 	m_modified = true;
+	const char* asset = base::Resources::getInstance()->particles.getName(m_system);
+	if(asset) m_parent->getEditor()->assetChanged(asset, true);
 }
 
 void ParticleEditor::reinitialise() {
@@ -591,7 +613,7 @@ void ParticleEditor::linked(const nodegraph::Link& link) {
 	ParticleNode* b = cast<ParticleNode>(link.b);
 	if(a->getNodeType() == EmitterNode && b->getNodeType() == AffectorNode) {
 		((particle::Emitter*)a->getNodeData())->addAffector((particle::Affector*)b->getNodeData());
-		m_modified  = true;
+		notifyChange();
 	}
 	else if(a->getNodeType() == EmitterNode && b->getNodeType() == RenderDataNode) {
 		// Unlink existing render node
@@ -605,7 +627,7 @@ void ParticleEditor::linked(const nodegraph::Link& link) {
 		((particle::Emitter*)a->getNodeData())->setRenderer((particle::RenderData*)b->getNodeData());
 		if(!isRendererReferenced(m_system, (particle::RenderData*)b->getNodeData())) {
 			m_system->addRenderer((particle::RenderData*)b->getNodeData());
-			m_modified  = true;
+			notifyChange();
 		}
 		reinitialise();
 	}
@@ -613,14 +635,14 @@ void ParticleEditor::linked(const nodegraph::Link& link) {
 		particle::Emitter* emitter = getEmitter(b);
 		emitter->eventOnly = false;
 		m_system->addEmitter(emitter);
-		m_modified  = true;
+		notifyChange();
 		reinitialise();
 	}
 	else if(a->getNodeType() == EmitterNode && b->getNodeType() == EventNode) {
 		if(b->isLinked(nodegraph::OUTPUT, 0)) {
 			getEmitter(a)->addEvent((particle::Event*)b->getNodeData());
 			addEventTargetEmitters(b);
-			m_modified  = true;
+			notifyChange();
 		}
 	}
 	else if(a->getNodeType() == EventNode) {
@@ -630,7 +652,7 @@ void ParticleEditor::linked(const nodegraph::Link& link) {
 		for(const nodegraph::Link& link: a->getLinks(nodegraph::INPUT)) { // 0 or 1
 			if(particle::Emitter* emitter = getEmitter(link.a)) emitter->addEvent(event);
 			addEventTargetEmitters(a);
-			m_modified = true;
+			notifyChange();
 		}
 	}
 }
@@ -647,24 +669,24 @@ void ParticleEditor::unlinked(const nodegraph::Link& link) {
 		if(data->getSystem() && !isRendererReferenced(m_system, data)) {
 			m_system->removeRenderer((particle::RenderData*)b->getNodeData());
 		}
-		m_modified  = true;
+		notifyChange();
 		reinitialise();
 	}
 	else if(a->getNodeType() == SystemNode && b->getNodeType() == EmitterNode) {
 		particle::Emitter* emitter = getEmitter(b);
 		emitter->eventOnly = true;
-		m_modified  = true;
+		notifyChange();
 	}
 	else if(a->getNodeType() == EmitterNode && b->getNodeType() == EventNode) {
 		((particle::Emitter*)a->getNodeData())->removeEvent((particle::Event*)b->getNodeData());
-		m_modified  = true;
+		notifyChange();
 	}
 	else if(a->getNodeType() == EventNode) {
 		for(const nodegraph::Link& link: a->getLinks(nodegraph::INPUT)) { // 0 or 1
 			// Remove event if no target
 			if(particle::Emitter* emitter = getEmitter(link.a)) {
 				emitter->removeEvent((particle::Event*)a->getNodeData());
-				m_modified  = true;
+				notifyChange();
 			}
 		}
 		((particle::Event*)a->getNodeData())->target = nullptr;
@@ -845,7 +867,10 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 				value->setRange(0, 1000000);
 				value->setAnchor("lr");
 				value->setValue(var);
-				value->eventChanged.bind([this, &i, item](Spinbox*, int v) { i.set(item, v); m_modified=true; });
+				value->eventChanged.bind([this, &i, item](Spinbox*, int v) {
+					i.set(item, v);
+					notifyChange();
+				});
 				break;
 			}
 			case particle::PropertyType::Float:
@@ -853,7 +878,10 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 				SpinboxFloat* value = row->createChild<SpinboxFloat>("spinboxf");
 				value->setAnchor("lr");
 				value->setValue(var);
-				value->eventChanged.bind([this, &i, item](SpinboxFloat*, float v) { i.set(item, v); m_modified=true; });
+				value->eventChanged.bind([this, &i, item](SpinboxFloat*, float v) {
+					i.set(item, v);
+					notifyChange();
+				});
 				break;
 			}
 			case particle::PropertyType::Vector:
@@ -908,7 +936,10 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 					switch(getValueType(var)) {
 					case ValueType::Constant:
 						w = createSpinbox(var);
-						w->eventChanged.bind([this, &i, item](SpinboxFloat*, float v) { i.set(item, v); m_modified=true; });
+						w->eventChanged.bind([this, &i, item](SpinboxFloat*, float v) {
+							i.set(item, v);
+							notifyChange();
+						});
 						break;
 					case ValueType::Random:
 						w = createSpinbox(var.get("x"));
@@ -938,7 +969,7 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 						b->setAnchor("lr");
 						b->setCaption("Edit");
 						b->eventPressed.bind([this, &i, item](Button* b) {
-							m_changeValueDelegate.bind([this, &i, item](const Variable& var) { i.set(item, var); m_modified=true; });
+							m_changeValueDelegate.bind([this, &i, item](const Variable& var) { i.set(item, var); notifyChange(); });
 							showGraphEditor(i.get(item));
 						});
 						break;

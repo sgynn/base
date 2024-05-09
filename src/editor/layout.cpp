@@ -17,7 +17,7 @@
 #include <unordered_set>
 
 #include <base/editor/embed.h>
-BINDATA(editor_layout_gui, "../src/editor/data/layout.xml")
+BINDATA(editor_layout_gui, EDITOR_DATA "/layout.xml")
 
 using base::SceneNode;
 using base::Drawable;

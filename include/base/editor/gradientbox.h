@@ -87,6 +87,7 @@ class GradientBox : public gui::Widget {
 	// Create edit mrkers
 	void createMarkers() {
 		if(getWidgetCount() != (int)gradient.data.size() + 1) {
+			selected = 0;
 			pauseLayout();
 			deleteChildWidgets();
 			gui::Image* sel = new gui::Image(Rect(0,0,10,10), 0);

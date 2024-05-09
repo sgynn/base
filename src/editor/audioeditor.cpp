@@ -9,8 +9,8 @@
 #include <algorithm>
 
 #include <base/editor/embed.h>
-BINDATA(editor_audio_gui, "../src/editor/data/audio.xml")
-BINDATA(editor_audio_icons, "../src/editor/data/audio.png")
+BINDATA(editor_audio_gui, EDITOR_DATA "/audio.xml")
+BINDATA(editor_audio_icons, EDITOR_DATA "/audio.png")
 
 using namespace editor;
 using namespace gui;

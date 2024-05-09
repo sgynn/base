@@ -9,7 +9,7 @@
 #include <cstdio>
 
 #include <base/editor/embed.h>
-BINDATA(editor_compositor_gui, "../src/editor/data/compositor.xml")
+BINDATA(editor_compositor_gui, EDITOR_DATA "/compositor.xml")
 
 using namespace gui;
 using namespace base;
