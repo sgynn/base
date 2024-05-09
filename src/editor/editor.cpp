@@ -226,11 +226,17 @@ void SceneEditor::update() {
 		m_toolTip.target = m_gui->getWidgetUnderMouse();
 		if(m_toolTip.time<1) m_toolTip.tip->setVisible(false);
 		else if(m_toolTip.target && m_toolTip.target->getToolTip() && !m_toolTip.tip->isVisible()) {
-			m_toolTip.tip->getWidget<Label>(0)->setCaption(m_toolTip.target->getToolTip());
+			m_toolTip.tip->getWidget(0)->as<Label>()->setCaption(m_toolTip.target->getToolTip());
 			m_toolTip.tip->setVisible(true);
 			m_toolTip.tip->raise();
 		}
-		if(m_toolTip.tip->isVisible()) m_toolTip.tip->setPosition(m_gui->getMousePos() + Point(0, 16));
+		if(m_toolTip.tip->isVisible()) {
+			Point view = m_toolTip.tip->getParent()->getSize();
+			Point size = m_toolTip.tip->getSize();
+			Point pos = m_gui->getMousePos() + Point(1, 16);
+			if(pos.x + size.x > view.x) pos.x = view.x - size.x;
+			m_toolTip.tip->setPosition(pos);
+		}
 		m_toolTip.time += 3/60.f;
 	}
 }

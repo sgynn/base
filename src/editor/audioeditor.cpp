@@ -90,7 +90,7 @@ class VariableWidget : public Widget {
 
 void AudioEditor::initialise() {
 	Root::registerClass<VariableWidget>();
-	getEditor()->addEmbeddedPNGImage(editor_audio_icons_file, editor_audio_icons, editor_audio_icons_len);
+	getEditor()->addEmbeddedPNGImage("data/editor/audio.png", editor_audio_icons, editor_audio_icons_len);
 	m_panel = loadUI("audio.xml", editor_audio_gui);
 	addToggleButton(m_panel, "editors", "audio");
 	m_panel->setVisible(false);
