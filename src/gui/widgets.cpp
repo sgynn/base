@@ -1538,6 +1538,7 @@ void Window::sizeHandle(Widget* c, const Point& p, int b) {
 		if(s.y<m_minSize.y) s.y = m_minSize.y;
 
 		setSize(s.x, s.y);
+		if(eventResized) eventResized(this);
 	} else m_held.x=-1;
 }
 

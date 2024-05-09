@@ -443,6 +443,7 @@ class Window : public Widget, public IconInterface {
 	void setMinimumSize(int w, int h);
 	public:
 	Delegate<void(Window*)> eventClosed;
+	Delegate<void(Window*)> eventResized;
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;
 	void onMouseButton(const Point&, int, int) override;
