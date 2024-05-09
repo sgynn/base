@@ -197,25 +197,25 @@ template<typename R, typename...A>
 class MultiDelegate<R(A...)> {
 	public:
 	typedef Delegate<R(A...)> DelegateType;
-	MultiDelegate(): list(0), size(0), capacity(0) {}
+	MultiDelegate(): list(nullptr), size(0), capacity(0) {}
 	~MultiDelegate() { delete [] list; }
 
 	template<class F>
 	void bind(const F& func) {
-		list[ allocate() ].bind(func);
+		allocate().bind(func);
 	}
 	template<class T> void bind(T* inst, R(T::*func)(A...)) {
-		list[ allocate() ].bind(inst, func);
+		allocate().bind(inst, func);
 	}
 	template<class F, class...V> void bind(const F& func, V...args) {
-		list[ allocate() ].bind(func, args...);
+		allocate().bind(func, args...);
 	}
 	template<class T, class...CA, class...V> void bind(T* inst, R(T::*func)(CA...), V...args) {
-		list[ allocate() ].bind(inst, func, args...);
+		allocate().bind(inst, func, args...);
 	}
 
 	MultiDelegate& operator+=(R(*func)(A...)) { bind(func); return *this; }
-	MultiDelegate& operator+=(DelegateType& d) { list[allocate()] = d; }
+	MultiDelegate& operator+=(DelegateType& d) { allocate() = d; }
 
 	void unbindAll() {
 		for(int i=0; i<size; ++i) list[i].unbind();
@@ -237,13 +237,14 @@ class MultiDelegate<R(A...)> {
 	protected:
 	DelegateType* list;
 	int size, capacity;
-	int allocate() {
-		if(capacity>size) return size++;
+	DelegateType& allocate() {
+		if(capacity>size) return list[size++];
 		capacity = capacity? capacity+2: 1;
 		DelegateType* old = list;
 		list = new DelegateType[capacity];
 		for(int i=0; i<size; ++i) list[i] = old[i];
 		delete [] old;
+		return list[size++];
 	}
 	void erase(int index) {
 		for(int i=index+1; i<size; ++i) list[i-1] = list[i];
