@@ -109,6 +109,7 @@ set(editor
 	src/editor/editor.cpp
 	src/editor/gizmo.cpp
 	src/editor/layout.cpp
+	src/editor/modelviewer.cpp
 	src/editor/nodeeditor.cpp
 	src/editor/particleeditor.cpp
 	src/editor/renderdoc.cpp

@@ -28,7 +28,8 @@ class ImageViewer : public EditorComponent {
 				Point size = r.getImageSize(img);
 				Point border = previewTemplate->getSize() - previewTemplate->getClientRect().size();
 				gui::Widget* preview = previewTemplate->clone();
-				preview->getWidget(0)->as<gui::Image>()->setImage(img);
+				preview->getWidget(0)->setVisible(false);
+				preview->getWidget(1)->as<gui::Image>()->setImage(img);
 				preview->setSize(size + border);
 				return preview;
 			}
