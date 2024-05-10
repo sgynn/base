@@ -354,8 +354,11 @@ VecPair PathFollower::nextPoint() {
 	static constexpr float mult[2] = { 1, -1 };
 	if(m_pathIndex < end) {
 		edgeIndex = m_path.m_path[m_pathIndex].edge;
+		int otherSide = (edgeIndex+1) % p->size;
 		target[0] = insetPoint(p->points[edgeIndex], m_radius);
-		target[1] = insetPoint(p->points[(edgeIndex+1)%p->size], -m_radius);
+		target[1] = insetPoint(p->points[otherSide], -m_radius);
+		DebugLine(p->points[edgeIndex], target[0], 0xa000ff); DebugLine(m_position, target[0], 0xa000ff);
+		DebugLine(p->points[otherSide], target[1], 0xffa000); DebugLine(m_position, target[1], 0xffa000);
 	}
 	else {
 		target[0] = target[1] = m_goal;

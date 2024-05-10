@@ -149,6 +149,7 @@ int nav::inside(const NavPoly* a, const vec2& p) {
 	float u, v;
 	int count=0;
 	for(int i=a->size-1, j=0; j<a->size; i=j, ++j) {
+		v = -1; // in case intersect lines failes to to being parallel
 		base::intersectLines(p,q, a->points[i].xz(), a->points[j].xz(), u, v);
 		if(v>=0 && v<=1) {
 			if(fabs(u)<EPSILON) return 2; // Touching
