@@ -210,6 +210,7 @@ class Widget {
 	virtual void onLoseFocus() {}
 	virtual void onChildChanged(Widget*);	// Child widget moved, resized added or removed
 	virtual void onAdded() {}
+	virtual void onChildMouseDown(Widget* child, int b) { if(m_parent) m_parent->onChildMouseDown(this, b); }
 
 	virtual void updateAutosize();
 

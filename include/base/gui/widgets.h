@@ -448,6 +448,7 @@ class Window : public Widget, public IconInterface {
 	void initialise(const Root*, const PropertyMap&) override;
 	void onMouseButton(const Point&, int, int) override;
 	void onMouseMove(const Point&, const Point&, int) override;
+	void onChildMouseDown(Widget* c, int b) override;
 	Button* m_title;
 	private:
 	void pressClose(Button*);

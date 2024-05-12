@@ -1503,6 +1503,11 @@ void Window::setMinimumSize(int w, int h) {
 	}
 }
 
+void Window::onChildMouseDown(Widget* c, int b) {
+	if(b==1) raise();
+	Super::onChildMouseDown(c, b);
+}
+
 void Window::onMouseButton(const Point& p, int d, int u) {
 	raise();
 	Widget::onMouseButton(p,d,u);

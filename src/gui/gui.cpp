@@ -181,6 +181,7 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 
 	// Mouse event
 	if(m_mouseFocus && m_mouseFocus->isEnabled() && m_mouseFocus->isParentEnabled() && (mdown || mup))  {
+		if(Widget* p =m_mouseFocus->getParent(true)) p->onChildMouseDown(m_mouseFocus, mdown);
 		m_mouseFocus->onMouseButton(m_mouseFocus->m_derivedTransform.untransform(p), mdown, mup);
 	}
 	
