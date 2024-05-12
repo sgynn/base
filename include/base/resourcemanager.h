@@ -12,6 +12,7 @@ class ResourceManagerBase {
 	void  addPath(const char* path);                         /// Add search path
 	bool  findFile(const char* name, char* out, size_t s) const; /// Find a resource file
 	void  error(const char* message, const char* name) const; /// error message
+	const std::vector<char*>& getSearchPaths() const { return m_paths; }
 	private:
 	std::vector<char*> m_paths;
 };

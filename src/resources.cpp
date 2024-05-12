@@ -33,7 +33,7 @@ ResourceManagerBase::~ResourceManagerBase() {
 	for(size_t i=0; i<m_paths.size(); ++i) free(m_paths[i]);
 }
 void ResourceManagerBase::addPath(const char* path) {
-	if(path && path[0]) m_paths.push_back( strdup(path) );
+	if(path && path[0]) m_paths.insert(m_paths.begin(), strdup(path) );
 }
 
 bool ResourceManagerBase::findFile(const char* name, char* out, size_t s) const {
@@ -45,8 +45,8 @@ bool ResourceManagerBase::findFile(const char* name, char* out, size_t s) const 
 			return true;
 		}
 	}
-	else for(size_t i=0; i<m_paths.size(); ++i) {
-		snprintf(out, s, "%s/%s", m_paths[i], name);
+	else for(const char* path: m_paths) {
+		snprintf(out, s-1, "%s/%s", path, name);
 		out[s-1] = 0;
 		FILE* fp = fopen(out, "rb");
 		if(fp) {
