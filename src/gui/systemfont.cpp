@@ -4,6 +4,7 @@
 
 #ifdef LINUX
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #endif
 
 #ifdef WIN32
@@ -83,6 +84,7 @@ bool gui::SystemFont::build(int size) {
 	addImage(width, height, data);
 
 	// Cleanup
+	XDestroyImage(img);
 	XFreePixmap(display, pix);
 	XFreeGC(display, gc);
 	XFreeFont(display, font);
