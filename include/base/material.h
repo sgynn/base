@@ -100,6 +100,8 @@ namespace base {
 		int    getElements(const char* name) const;				// get the number of values stored
 		bool   contains(const char* name) const;				// is a variable defined
 		int    getIndexCount() const;							// get the index count for mapping shader locations
+		int    getAutoKey(const char* name) const;
+		std::vector<const char*> getNames() const;
 
 		int getLocationData(const Shader*, int* map, int size, bool complain=true) const;
 		int bindVariables(const Shader*, int* map, int size, AutoVariableSource* =0, bool autosOnly=false) const;

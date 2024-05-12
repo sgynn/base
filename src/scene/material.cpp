@@ -127,6 +127,17 @@ const int* ShaderVars::getIntPointer(const char* name) const{ return getPointer<
 const int* ShaderVars::getSamplerPointer(const char* name) const { return getPointer<int>(name, 1<<VT_SAMPLER); }
 const float* ShaderVars::getFloatPointer(const char* name) const{ return getPointer<float>(name, 1<<VT_FLOAT | 1<<VT_MATRIX); }
 
+int ShaderVars::getAutoKey(const char* name) const {
+	auto v = m_variables.find(name);
+	return v->value.type == VT_AUTO? v->value.i: -1;
+}
+
+std::vector<const char*> ShaderVars::getNames() const {
+	std::vector<const char*> result;
+	result.reserve(m_variables.size());
+	for(auto& i: m_variables) result.push_back(i.key);
+	return result;
+}
 
 // ============================================================================== //
 
