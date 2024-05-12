@@ -73,9 +73,11 @@ Widget* Root::createWidget(const char* skin, const char* type, const char* name,
 	Widget* w;
 	if(m_templates.contains(skin)) {
 		Widget* src = m_templates[skin];
-		if(forceType && src->getType()!=Widget::staticType() && strcmp(src->getTypeName(), type)!=0)
-			printf("Warning: Creating %s widget as %s\n", src->getTypeName(), type);
 		w = src->clone(forceType? type: 0);
+		
+		if(forceType && !w->isType(src->getType())) {
+			printf("Warning: Creating %s widget as %s\n", src->getTypeName(), type);
+		}
 	}
 	else if(m_skins.contains(skin) && s_constuct.contains(type)) {
 		w = s_constuct[ type ] (Rect(0,0,100,100), m_skins[skin]);
