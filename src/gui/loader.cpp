@@ -331,6 +331,7 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 	if(rescale) {
 		root->setSize(rescale->getSize());
 		while(root->getWidgetCount()) rescale->add(root->getWidget(0));
+		delete root;
 	}
 
 	return first;

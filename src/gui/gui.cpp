@@ -5,6 +5,7 @@
 #include <base/gui/lists.h>
 #include <base/gui/tree.h>
 #include <base/gui/layouts.h>
+#include <base/gui/font.h>
 #include <cstdio>
 
 using namespace gui;
@@ -59,8 +60,10 @@ Root::Root(int w, int h, Renderer* renderer) : m_focus(0), m_mouseFocus(0), m_ke
 Root::~Root() {
 	setRenderer(0);
 	delete m_root;
-	for(base::HashMap<Skin*>::iterator i=m_skins.begin(); i!=m_skins.end(); ++i) delete i->value;
-	for(base::HashMap<Widget*>::iterator i=m_templates.begin(); i!=m_templates.end(); ++i) delete i->value;
+	for(auto& i: m_fonts) delete i.value;
+	for(auto& i: m_skins) delete i.value;
+	for(auto& i: m_iconLists) delete i.value;
+	for(auto& i: m_templates) delete i.value;
 }
 
 void Root::setRenderer(Renderer* r) {
@@ -347,7 +350,8 @@ Widget::~Widget() {
 	pauseLayout();
 	if(m_relative) delete [] m_relative;
 	if(m_parent && m_parent->getRoot()) removeFromParent();
-	for(uint i=0; i<m_children.size(); ++i) delete m_children[i];
+	else if(m_root) setRoot(nullptr);
+	for(Widget* w: m_children) delete w;
 	if(m_layout && --m_layout->ref<=0) delete m_layout;
 }
 
