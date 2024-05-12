@@ -478,6 +478,8 @@ class Popup : public Widget {
 		if(Button* b = cast<Button>(w)) b->eventPressed.bind(func);
 		return w;
 	}
+	Widget* getOwner() { return m_owner; }
+	void hideOwnedPopups();
 	void hide();
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;

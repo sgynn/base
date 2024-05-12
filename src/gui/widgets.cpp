@@ -1560,10 +1560,11 @@ void Popup::popup(Root* root, const Point& abs, Widget* owner) {
 	if(m_parent) m_parent->remove(this);
 	root->getRootWidget()->add(this, abs.x, abs.y);
 	setVisible(true);
-	while(owner && !cast<Popup>(owner)) owner = owner->getParent();
-	if(owner) {
-		cast<Popup>(owner)->m_owned.push_back(this);
-		m_owner = owner;
+	Widget* ownerPopup = owner;
+	while(ownerPopup && !cast<Popup>(ownerPopup)) ownerPopup = ownerPopup->getParent();
+	if(ownerPopup) {
+		cast<Popup>(ownerPopup)->m_owned.push_back(this);
+		m_owner = ownerPopup;
 	}
 	else {
 		eventLostFocus.bind(this, &Popup::lostFocus);
@@ -1582,9 +1583,14 @@ void Popup::popup(Widget* owner, Side side) {
 	popup(owner->getRoot(), pos, owner);
 }
 
-void Popup::hide() {
-	setVisible(false);
+void Popup::hideOwnedPopups() {
 	for(Popup* w: m_owned) w->hide();
+}
+
+void Popup::hide() {
+	hideOwnedPopups();
+	setVisible(false);
+	m_owner = nullptr;
 }
 
 void Popup::lostFocus(Widget* w) {
