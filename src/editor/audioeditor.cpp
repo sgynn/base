@@ -50,6 +50,9 @@ class VariableWidget : public Widget {
 	audio::Value* m_variable;
 };
 
+AudioEditor::~AudioEditor() {
+	delete m_menu;
+}
 
 void AudioEditor::initialise() {
 	Root::registerClass<VariableWidget>();

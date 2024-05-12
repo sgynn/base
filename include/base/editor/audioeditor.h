@@ -8,6 +8,7 @@ namespace gui { class Widget; class TreeView; class TreeNode; class ItemList; cl
 namespace editor {
 class AudioEditor : public EditorComponent {
 	public:
+	~AudioEditor();
 	void initialise() override;
 	void activate() override;
 	void deactivate() override;

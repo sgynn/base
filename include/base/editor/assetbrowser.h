@@ -8,6 +8,7 @@ namespace editor {
 
 class AssetBrowser : public EditorComponent {
 	public:
+	~AssetBrowser();
 	void initialise() override;
 	bool isActive() const override;
 	void activate() override;
@@ -63,7 +64,7 @@ class AssetBrowser : public EditorComponent {
 	gui::Widget* m_selectedItem = nullptr;
 	gui::Widget* m_dragWidget = nullptr;
 	gui::Popup*  m_newItemMenu = nullptr;
-	std::vector<gui::Popup*> m_contextMenu;
+	gui::Popup*  m_contextMenu = nullptr;
 	Point m_lastClick;
 };
 

@@ -21,6 +21,7 @@ class CompositorEditor : public EditorComponent {
 	};
 
 	public:
+	~CompositorEditor();
 	void initialise() override;
 	bool isActive() const override;
 	void activate() override;

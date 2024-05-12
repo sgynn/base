@@ -9,6 +9,7 @@ namespace editor {
 
 class MaterialEditor : public EditorComponent {
 	public:
+	~MaterialEditor();
 	void initialise() override;
 	bool newAsset(const char*& name, const char*& file, const char*& body) const override;
 	bool assetActions(gui::MenuBuilder&, const Asset&) override;

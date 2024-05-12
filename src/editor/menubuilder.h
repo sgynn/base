@@ -40,20 +40,12 @@ namespace gui {
 				if(!menu->getAbsoluteRect().contains(w->getRoot()->getMousePos())) menu->hide();
 			});
 			m_subMenus.push_back(b);
+			m_popup->addOwnedPopup(b->menu());
 			return *b;
 		}
 		Popup* menu() { return m_popup; };
 		operator Popup*() { return m_popup; }
 
-		std::vector<Popup*> getAllMenus() {
-			std::vector<Popup*> menus;
-			std::vector<MenuBuilder*> stack = {this};
-			for(size_t i=0; i<stack.size(); ++i) {
-				menus.push_back(stack[i]->m_popup);
-				stack.insert(stack.end(), stack[i]->m_subMenus.begin(), stack[i]->m_subMenus.end());
-			}
-			return menus;
-		}
 		private:
 		Root* m_root;
 		const char* m_button;

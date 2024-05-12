@@ -114,6 +114,11 @@ void CompositorEditor::initialise() {
 	setCompositor(0);
 }
 
+CompositorEditor::~CompositorEditor() {
+	delete m_targets;
+	delete m_formats;
+}
+
 void CompositorEditor::activate() {
 	if(m_panel) m_panel->setVisible(true);
 }

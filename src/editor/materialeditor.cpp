@@ -28,6 +28,10 @@ void MaterialEditor::initialise() {
 	for(int i=0; i<AUTO_CUSTOM; ++i) m_autoVarList->addItem(AutoVariableSource::getKeyString(i));
 }
 
+MaterialEditor::~MaterialEditor() {
+	delete m_autoVarList;
+}
+
 bool MaterialEditor::newAsset(const char*& name, const char*& file, const char*& body) const {
 	name = "Material";
 	file = "material.mat";

@@ -56,6 +56,10 @@ const char* AssetBrowser::getAssetName(const Asset& asset) {
 }
 
 
+AssetBrowser::~AssetBrowser() {
+	delete m_contextMenu;
+	delete m_newItemMenu;
+}
 
 void AssetBrowser::initialise() {
 	Root::registerClass<AssetTile>();
@@ -513,8 +517,8 @@ void AssetBrowser::dropItem(Widget* w, const Point& p, int b) {
 			menu.addAction("Duplicate", [this, w]() { duplicateAsset(w); });
 			menu.addAction("Delete",    [this, w]() { deleteAsset(w); });
 
-			for(Popup* m: m_contextMenu) delete m;
-			m_contextMenu = menu.getAllMenus();
+			delete m_contextMenu;
+			m_contextMenu = menu;
 			menu.menu()->popup(w->getRoot(), w->getRoot()->getMousePos(), w);
 		}
 	}
