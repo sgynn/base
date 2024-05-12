@@ -109,6 +109,7 @@ set(editor
 	src/editor/editor.cpp
 	src/editor/gizmo.cpp
 	src/editor/layout.cpp
+	src/editor/materialeditor.cpp
 	src/editor/modelviewer.cpp
 	src/editor/nodeeditor.cpp
 	src/editor/particleeditor.cpp
@@ -249,7 +250,6 @@ set(guiheaders
 
 set(editorheaders
 	include/base/editor/assetbrowser.h
-	include/base/editor/audioclass.h
 	include/base/editor/audioeditor.h
 	include/base/editor/compositoreditor.h
 	include/base/editor/editor.h

@@ -130,6 +130,22 @@ Widget* EditorComponent::loadUI(const char* file, const char& embed) {
 	return panel;
 }
 
+const char* EditorComponent::getResourceNameFromFile(base::ResourceManagerBase& rc, const char* filename) {
+	if(!filename || !filename[0]) return nullptr;
+	if(filename[0]=='.' && filename[1]=='/') filename += 2;
+
+	StringView file(filename);
+	for(const char* path: rc.getSearchPaths()) {
+		if(path[0]=='.' && path[1]=='/') path += 2;
+		if(file.startsWith(path)) {
+			return filename + strlen(path);
+		}
+	}
+	return nullptr;
+}
+
+// ====================================================================== //
+
 void SceneEditor::resized(const Point& s) {
 	if(m_gui) m_gui->resize(s);
 }

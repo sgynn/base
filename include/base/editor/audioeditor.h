@@ -16,6 +16,10 @@ class AudioEditor : public EditorComponent {
 
 	void refreshDataTree();
 	void refreshFileList();
+
+	bool newAsset(const char*& name, const char*& file, const char*& body) const override;
+	bool assetActions(gui::MenuBuilder&, const Asset&) override;
+	gui::Widget* openAsset(const Asset&) override;
 	
 	protected:
 	using objectID = unsigned;
@@ -36,7 +40,6 @@ class AudioEditor : public EditorComponent {
 
 	void setupSoundCaster(Object);
 	void playSound(gui::Button*);
-	
 	void save(const char* file);
 
 	protected:

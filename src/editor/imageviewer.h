@@ -11,28 +11,34 @@ namespace editor {
 class ImageViewer : public EditorComponent {
 	public:
 	void initialise() override {}
-	gui::Widget* openAsset(const char* asset) override {
-		const char* ext = strrchr(asset, '.');
-		if(ext && (strcmp(ext, ".png")==0 || strcmp(ext, ".dds")==0)) {
+	gui::Widget* openAsset(const Asset& asset) override {
+		if(asset.type == ResourceType::None) {
+			base::StringView ext = strrchr(asset.file, '.');
+			if(ext != ".png" && ext != ".dds") return nullptr;
+		}
+		else if(asset.type != ResourceType::Texture) return nullptr;
 
-			gui::Widget* previewTemplate = getEditor()->getGUI()->getWidget("filepreview");
-			if(!previewTemplate) return nullptr;
-			gui::Renderer& r = *getEditor()->getGUI()->getRenderer();
+		gui::Widget* previewTemplate = getEditor()->getGUI()->getWidget("filepreview");
+		if(!previewTemplate) return nullptr;
+		gui::Renderer& r = *getEditor()->getGUI()->getRenderer();
 
-			int img = r.getImage(asset);
-			if(img < 0) {
-				base::Texture* tex = base::Resources::getInstance()->textures.get(asset);
-				if(tex) img = r.addImage(asset, tex->width(), tex->height(), tex->unit());
-			}
-			if(img > 0) {
-				Point size = r.getImageSize(img);
-				Point border = previewTemplate->getSize() - previewTemplate->getClientRect().size();
-				gui::Widget* preview = previewTemplate->clone();
-				preview->getWidget(0)->setVisible(false);
-				preview->getWidget(1)->as<gui::Image>()->setImage(img);
-				preview->setSize(size + border);
-				return preview;
-			}
+		const char* name = asset.resource;
+		if(!name) name = getResourceNameFromFile(base::Resources::getInstance()->textures, asset.file);
+
+		int img = r.getImage(name);
+		if(img < 0) {
+			base::Texture* tex = base::Resources::getInstance()->textures.get(name);
+			if(tex) img = r.addImage(name, tex->width(), tex->height(), tex->unit());
+		}
+		if(img > 0) {
+			Point size = r.getImageSize(img);
+			if(size.x==1 && size.y==1) size.set(32,32);
+			Point border = previewTemplate->getSize() - previewTemplate->getClientRect().size();
+			gui::Widget* preview = previewTemplate->clone();
+			preview->getWidget(0)->setVisible(false);
+			preview->getWidget(1)->as<gui::Image>()->setImage(img);
+			preview->setSize(size + border);
+			return preview;
 		}
 		return nullptr;
 	}

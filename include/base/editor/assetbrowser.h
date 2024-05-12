@@ -6,15 +6,6 @@
 
 namespace editor {
 
-struct Asset {
-	enum Type { Folder, Texture, Shader, Model, Material, Text, Sound };
-	gui::String name;
-	int icon;
-	Type type;
-	bool changed = false;
-};
-
-
 class AssetBrowser : public EditorComponent {
 	public:
 	void initialise() override;
@@ -35,11 +26,16 @@ class AssetBrowser : public EditorComponent {
 	int allocateIcon(const char* name);
 
 	bool openAsset(gui::Widget*);
-	void renameFile(gui::Widget*);
+	void duplicateAsset(gui::Widget*);
+	void renameAsset(gui::Widget*);
+	void deleteAsset(gui::Widget*);
 	void pressedCrumb(gui::Button*);
 	void dragItem(gui::Widget*, const Point&, int);
 	void dropItem(gui::Widget*, const Point&, int);
 
+	void buildResourceTree();
+	gui::Widget* addAssetTile(const Asset& asset, bool isFolder=false);
+	static const char* getAssetName(const Asset&);
 	protected:
 	gui::String m_rootPath;
 	gui::String m_localPath;
@@ -52,11 +48,13 @@ class AssetBrowser : public EditorComponent {
 	base::HashMap<int> m_iconMap;
 	int m_iconImage;
 
-	base::HashMap<int> m_fileTypes;
+	base::HashMap<const char*> m_fileTypes; // Icon names for file extensions
+	std::vector<Asset> m_resources;
 
-	struct Editor { gui::String file; gui::Widget* widget; };
+	struct Editor { Asset asset; gui::Widget* widget; };
 	std::vector<Editor> m_activeEditors;
-	std::vector<gui::String> m_modifiedFiles;
+	std::vector<gui::String> m_modifiedFiles; // Files tagged as modified
+	std::vector<gui::String> m_newFiles; // Files requested for new assets not yet saved
 
 	gui::Widget* m_panel = nullptr;
 	gui::Widget* m_breadcrumbs;
@@ -65,7 +63,7 @@ class AssetBrowser : public EditorComponent {
 	gui::Widget* m_selectedItem = nullptr;
 	gui::Widget* m_dragWidget = nullptr;
 	gui::Popup*  m_newItemMenu = nullptr;
-	gui::Popup*  m_contextMenu = nullptr;
+	std::vector<gui::Popup*> m_contextMenu;
 	Point m_lastClick;
 };
 

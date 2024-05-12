@@ -7,8 +7,8 @@
 #include <base/point.h>
 #include <base/vec.h>
 
-namespace gui { class Root; class Widget; class Button; class IconList; enum class KeyMask; }
-namespace base { class Camera; class FrameBuffer; class Workspace; class Drawable; class Scene; class SceneNode; struct Mouse; }
+namespace gui { class Root; class Widget; class Button; class IconList; enum class KeyMask; class MenuBuilder; }
+namespace base { class Camera; class FrameBuffer; class Workspace; class Drawable; class Scene; class SceneNode; struct Mouse; class ResourceManagerBase; }
 class vec3;
 
 namespace editor {
@@ -118,6 +118,14 @@ struct MouseEventData {
 	bool overGUI;
 };
 
+// Matches resource manager types
+enum class ResourceType { None, Model, Texture, Material, Shader, ShaderVar, Compositor, Graph, Particle };
+struct Asset {
+	ResourceType type = ResourceType::None;
+	base::String resource; // Resource name
+	base::String file; // Full path
+};
+
 class EditorComponent {
 	private:
 	friend class SceneEditor;
@@ -134,8 +142,10 @@ class EditorComponent {
 	SceneEditor* getEditor() { return m_editor; }
 	public:
 	virtual bool newAsset(const char*& name, const char*& file, const char*& body) const { return false; }
-	virtual bool saveAsset(const char* asset) { return false; }
-	virtual gui::Widget* openAsset(const char* asset) { return nullptr; }
+	virtual gui::Widget* openAsset(const Asset&) { return nullptr; }
+	virtual bool assetActions(gui::MenuBuilder& menu, const Asset&) { return false; }
+	virtual int assetThumbnail(const Asset&) { return 0; }
+	static const char* getResourceNameFromFile(base::ResourceManagerBase& rc, const char* file);
 	protected:
 	gui::Button* addToggleButton(gui::Widget* panel, const char* iconset, const char* iconName);
 	gui::Widget* loadUI(const char* file) { char e=0; return loadUI(file, e); }

@@ -22,8 +22,8 @@ class ParticleEditorComponent : public EditorComponent {
 	void saveAll();
 	public:
 	bool newAsset(const char*& name, const char*& file, const char*& body) const override;
-	bool saveAsset(const char* asset) override;
-	gui::Widget* openAsset(const char* asset) override;
+	bool assetActions(gui::MenuBuilder& menu, const Asset&) override;
+	gui::Widget* openAsset(const Asset&) override;
 	protected:
 	bool canDrop(const Point&, int) const override;
 	bool drop(const Point& p, int key, const char* data) override;

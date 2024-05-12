@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<gui height="1024" width="1280">
+	<external file="editor.xml"/>
+	<!--Templates-->
+	<template anchor="ltr" class="Widget" layout="HorizontalLayout" template="frame" rect="672 408 228 20" name="textureslot" autosize="1">
+		<widget anchor="lt" template="editbox" name="name" rect="0 0 104 20"/>
+		<widget anchor="lrt" template="editbox" name="tex" rect="104 0 104 20"/>
+		<widget anchor="lt" template="button" name="del" caption="x" rect="208 0 20 20"/>
+	</template>
+	<template anchor="ltr" class="Widget" layout="HorizontalLayout" template="frame" rect="672 456 228 20" name="variableslot" autosize="1">
+		<widget anchor="lt" template="editbox" name="name" rect="0 0 104 20"/>
+		<widget anchor="lrt" template="combobox" name="value" rect="104 0 104 20"/>
+		<widget anchor="lt" template="button" name="del" caption="x" rect="208 0 20 20"/>
+	</template>
+	<!--Widget Layout-->
+	<widget anchor="lt" template="window" name="materialeditor" caption="Material Editor" rect="228 192 396 468">
+		<widget anchor="lt" template="label" caption="Technique" rect="12 12 42 20"/>
+		<widget anchor="lrt" template="combobox" name="technique" rect="96 12 228 20"/>
+		<widget anchor="rt" template="button" name="newtechnique" caption="+" rect="327 13 20 20"/>
+		<widget anchor="rt" template="button" name="removetechnique" caption="-" rect="348 13 20 20"/>
+		<widget anchor="lrtb" class="Widget" layout="VerticalLayout" margin="4" template="frame" rect="12 48 360 384" name="data" spacing="8" autosize="1">
+			<widget anchor="lrt" class="Widget" rect="4 4 352 20" skin="none">
+				<widget anchor="lt" template="label" caption="Shader" rect="8 0 42 20"/>
+				<widget anchor="lrt" template="combobox" name="shader" rect="60 0 292 20"/>
+			</widget>
+			<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 32 352 20" name="textures" caption="Textures" spacing="2"/>
+			<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 60 352 20" name="variables" caption="Variables" spacing="2"/>
+			<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 88 352 20" name="shared" caption="Shared" spacing="2"/>
+			<widget anchor="lrt" class="Widget" template="frame" rect="4 116 352 172">
+				<widget anchor="lt" template="label" caption="Blend Mode" rect="12 12 42 20"/>
+				<widget anchor="lrt" template="droplist" name="blend" rect="96 12 244 20">
+					<item>None</item>
+					<item>Alpha Blend</item>
+					<item>Additive</item>
+					<item>Multiply</item>
+				</widget>
+				<widget anchor="lt" template="label" caption="Culling" rect="12 36 42 20"/>
+				<widget anchor="lrt" template="droplist" name="cull" rect="96 36 244 20">
+					<item>Double Sided</item>
+					<item>Back Face Culling</item>
+					<item>Front Face Culling</item>
+				</widget>
+				<widget anchor="lt" template="label" caption="Depth Test" rect="12 60 42 20"/>
+				<widget anchor="lrt" template="droplist" name="depthtest" rect="96 60 244 20">
+					<item>Always Pass</item>
+					<item>Less</item>
+					<item>Less or Equal</item>
+					<item>Greater</item>
+					<item>Greater or Equal</item>
+					<item>Equal</item>
+					<item>Disabled</item>
+				</widget>
+				<widget anchor="lrt" class="Widget" layout="HorizontalLayout" rect="10 90 337 22" skin="none">
+					<widget anchor="lrt" checked="1" template="checkbox" name="depthmask" caption="Depth" rect="0 0 67 20"/>
+					<widget anchor="lrt" checked="1" template="checkbox" name="redmask" caption="Red" rect="67 0 67 20"/>
+					<widget anchor="lrt" checked="1" template="checkbox" name="greenmask" caption="Green" rect="134 0 67 20"/>
+					<widget anchor="lrt" checked="1" template="checkbox" name="bluemask" caption="Blue" rect="201 0 67 20"/>
+					<widget anchor="lrt" checked="1" template="checkbox" name="alphamask" caption="Alpha" rect="268 0 67 20"/>
+				</widget>
+				<widget anchor="lt" template="label" caption="Depth Offset" rect="12 120 42 20"/>
+				<widget anchor="lrt" template="spinboxf" name="depthoffset" rect="108 120 228 20"/>
+				<widget anchor="lt" template="checkbox" name="wireframe" caption="Wireframe" rect="12 144 96 28"/>
+			</widget>
+		</widget>
+	</widget>
+</gui>

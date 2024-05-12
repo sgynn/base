@@ -1,5 +1,5 @@
 #include <base/editor/audioeditor.h>
-#include <base/editor/audioclass.h>	// Private engine header
+#include "../audio/audioclass.h"	// Private engine header
 #include <base/camera.h>
 #include <base/directory.h>
 #include <base/gui/widgets.h>
@@ -8,6 +8,8 @@
 #include <base/xml.h>
 #include <algorithm>
 
+#include "menubuilder.h"
+
 #include <base/editor/embed.h>
 BINDATA(editor_audio_gui, EDITOR_DATA "/audio.xml")
 BINDATA(editor_audio_icons, EDITOR_DATA "/audio.png")
@@ -15,45 +17,6 @@ BINDATA(editor_audio_icons, EDITOR_DATA "/audio.png")
 using namespace editor;
 using namespace gui;
 using namespace audio;
-
-
-class MenuBuilder {
-	public:
-	MenuBuilder(Root* r, const char* b, const char* m="", const char* icons="") : m_root(r), m_button(b), m_menu(m) {
-		m_popup = new Popup(Rect(0,0,100,100), r->getSkin("button"));
-		m_iconList = r->getIconList(icons);
-	}
-	~MenuBuilder() { for(MenuBuilder* m: m_subMenus) delete m; }
-	template<class F>
-	Button* addAction(const char* text, const char* icon, const F& lambda) {
-		Widget* w = m_popup->addItem(m_root, m_button, "", text, lambda);
-		Button* b = cast<Button>(w);
-		if(icon && b) b->setIcon(m_iconList, icon);
-		return b;
-	}
-	template<class F>
-	Button* addAction(const char* text, const F& lambda) {
-		return addAction(text, nullptr, lambda);
-	}
-	MenuBuilder& addMenu(const char* text) {
-		MenuBuilder* b = new MenuBuilder(m_root, m_button, m_menu);
-		b->m_iconList = m_iconList;
-		Popup::ButtonDelegate callback;
-		callback.bind([menu=b->m_popup](Button* b) { menu->popup(b, Popup::RIGHT); });
-		m_popup->addItem(m_root, m_menu, "", text, callback);
-		m_subMenus.push_back(b);
-		return *b;
-	}
-	Popup* menu() { return m_popup; };
-	operator Popup*() { return m_popup; }
-	private:
-	Root* m_root;
-	const char* m_button;
-	const char* m_menu;
-	IconList* m_iconList;
-	Popup* m_popup;
-	std::vector<MenuBuilder*> m_subMenus;
-};
 
 
 class VariableWidget : public Widget {
@@ -101,19 +64,19 @@ void AudioEditor::initialise() {
 	setupPropertyEvents();
 
 	// Context menu
-	MenuBuilder menu(m_panel->getRoot(), "menuitem", "submenu", "audioicons");
+	MenuBuilder menu(m_panel->getRoot(), "button", "menuitem", "submenu", "audioicons");
 	MenuBuilder& addMenu = menu.addMenu("Add");
-	menu.addAction("Delete", "delete", [this](Button*) { deleteItem(); });
-	addMenu.addAction("Mixer", "mixer", [this](Button*) { addItem(Type::Mixer); });
-	addMenu.addAction("Group", "folder", [this](Button*) { addItem(Type::Folder); });
-	addMenu.addAction("Random", "random", [this](Button*) { addItem(Type::Random); });
-	addMenu.addAction("Sequence", "sequence", [this](Button*) { addItem(Type::Sequence); });
-	addMenu.addAction("Switch", "switch", [this](Button*) { addItem(Type::Switch); });
-	addMenu.addAction("Sound", "sound", [this](Button*) { addItem(Type::Sound); });
-	addMenu.addAction("Attenuation", "attenuation", [this](Button*) { addItem(Type::Attenuation); });
-	addMenu.addAction("Variable", "variable", [this](Button*) { addItem(Type::Variable); });
-	addMenu.addAction("Enum", "variable", [this](Button*) { addItem(Type::Enum); });
-	addMenu.addAction("Event", "event", [this](Button*) { addItem(Type::Event); });
+	menu.addAction("Delete", "delete", [this]() { deleteItem(); });
+	addMenu.addAction("Mixer", "mixer", [this]() { addItem(Type::Mixer); });
+	addMenu.addAction("Group", "folder", [this]() { addItem(Type::Folder); });
+	addMenu.addAction("Random", "random", [this]() { addItem(Type::Random); });
+	addMenu.addAction("Sequence", "sequence", [this]() { addItem(Type::Sequence); });
+	addMenu.addAction("Switch", "switch", [this]() { addItem(Type::Switch); });
+	addMenu.addAction("Sound", "sound", [this]() { addItem(Type::Sound); });
+	addMenu.addAction("Attenuation", "attenuation", [this]() { addItem(Type::Attenuation); });
+	addMenu.addAction("Variable", "variable", [this]() { addItem(Type::Variable); });
+	addMenu.addAction("Enum", "variable", [this]() { addItem(Type::Enum); });
+	addMenu.addAction("Event", "event", [this]() { addItem(Type::Event); });
 	m_menu = menu;
 
 	m_data->eventMouseDown.bind([this](Widget* w, const Point& p, int b) {
@@ -121,6 +84,9 @@ void AudioEditor::initialise() {
 			TreeNode* over = m_data->getNodeAt(p);
 			if(over) over->select();
 			else m_data->clearSelection();
+			bool sel = getSelectedObject().id != INVALID;
+			m_menu->getWidget("Add")->setEnabled(audio::Data::instance);
+			m_menu->getWidget("Delete")->setEnabled(sel);
 			m_menu->popup(w->getRoot(), w->getDerivedTransform().transform(p));
 		}
 	});
@@ -147,6 +113,20 @@ void AudioEditor::activate() { m_panel->setVisible(true); refreshDataTree(); ref
 void AudioEditor::deactivate() { }
 bool AudioEditor::isActive() const { return m_panel->isVisible(); }
 
+bool AudioEditor::newAsset(const char*& name, const char*& file, const char*& body) const {
+	name = "Soundbank";
+	file = "audio.xml";
+	body = "<?xml version='1.0'/>\n<soundbank>\n</soundbank>\n";
+	return true;
+}
+
+Widget* AudioEditor::openAsset(const Asset& asset) {
+	return nullptr;
+}
+
+bool AudioEditor::assetActions(MenuBuilder& menu, const Asset& asset) {
+	return false;
+}
 
 TreeNode* AudioEditor::findNode(Object obj, TreeNode* node) {
 	for(TreeNode* n: *node) {
@@ -327,7 +307,7 @@ void AudioEditor::addItem(Type type) {
 			data.m_events.push_back({});
 			break;
 		// Audio objects are more complicated
-		// They need to be in a soundbank, and registered with thier parent
+		// They need to be in a soundbank, and registered with their parent
 		case Type::Folder: case Type::Random: case Type::Sequence: case Type::Switch: case Type::Sound:
 		{
 			Object parent = getSelectedObject();

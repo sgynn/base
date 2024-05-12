@@ -6,13 +6,6 @@
 		<font name="helvetica" size="12"/>
 		<state coord="0 0 42 20" name="normal"/>
 	</skin>
-	<skin name="expand">
-		<font name="helvetica" size="0"/>
-		<image file="glyphs"/>
-		<state coord="0 16 11 11" name="normal"/>
-		<state coord="16 1 11 11" name="selected normal"/>
-		<state coord="16 1 11 11" name="selected disabled"/>
-	</skin>
 	<!--Templates-->
 	<template class="Button" autosize="1" rect="769 900 27 16" name="nodeinput" skin="none">
 		<widget anchor="lm" class="Icon" icon="4" rect="0 0 16 16" iconlist="glyphs" skin="panel" name="_icon"/>
@@ -21,16 +14,6 @@
 	<template class="Button" rect="0 0 60 20" name="nodeoutput" skin="none">
 		<widget anchor="rm" iconlist="glyphs" template="icon" name="_icon" rect="44 2 16 16" icon="4"/>
 		<widget anchor="tlrb" class="Label" rect="0 0 42 20" skin="smallfont" align="2" name="_text" autosize="1"/>
-	</template>
-	<template class="CollapsePane" rect="340 427 213 100" name="expandproperty" skin="none">
-		<widget template="button" name="_header" skin="none" rect="0 0 84 20">
-			<widget anchor="lrtb" name="_text" align="12" template="label" skin="none" rect="14 0 70 20"/>
-			<widget class="Widget" tangible="0" template="frame" name="_state" skin="expand" rect="3 5 9 9"/>
-		</widget>
-		<widget anchor="lrtb" class="Widget" layout="VerticalLayout" template="frame" rect="84 20 129 80" skin="none" name="_client" spacing="2" autosize="1"/>
-		<widget anchor="lr" colour="#8f8f8f" rect="84 0 87 20" template="label" skin="none" name="info" caption="Info"/>
-		<widget anchor="r" template="button" name="clear" caption="x" rect="193 0 18 20"/>
-		<widget anchor="r" template="button" name="add" caption="+" rect="172 0 18 20"/>
 	</template>
 	<!--Widget Layout-->
 	<widget anchor="lt" template="window" name="compositor" caption="Compositor Editor" rect="36 36 960 767">

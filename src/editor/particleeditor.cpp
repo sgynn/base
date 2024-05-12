@@ -15,6 +15,8 @@
 #include <list>
 #include <map>
 
+#include "menubuilder.h"
+
 #include <base/editor/embed.h>
 BINDATA(editor_particle_gui, EDITOR_DATA "/particles.xml")
 
@@ -82,20 +84,28 @@ bool ParticleEditorComponent::newAsset(const char*& name, const char*& file, con
 	return true;
 }
 
-bool ParticleEditorComponent::saveAsset(const char* asset) {
-	char file[128];
-	particle::System* system = base::Resources::getInstance()->particles.get(asset);
-	if(system) {
-		base::Resources::getInstance()->particles.findFile(asset, file, 128);
-		ParticleEditor::save(system, file);
-		for(ParticleEditor* e: m_editors) if(e->m_system==system) e->m_modified = false;
-	}
-	return system;
+bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset) {
+	if(!base::StringView(asset.file).endsWith(".pt")) return false;
+
+	menu.addAction("Save", [this, &asset]() {
+		particle::System* system = base::Resources::getInstance()->particles.get(asset.resource);
+		if(system) {
+			ParticleEditor::save(system, asset.file);
+			for(ParticleEditor* e: m_editors) if(e->m_system==system) e->m_modified = false;
+			//getEditor()->assetChanged(asset, false);
+		}
+	});
+
+	return true;
 }
 
-Widget* ParticleEditorComponent::openAsset(const char* asset) {
-	particle::System* system = base::Resources::getInstance()->particles.get(asset);
-	ParticleEditor* editor = showParticleSystem(system, asset);
+Widget* ParticleEditorComponent::openAsset(const Asset& asset) {
+	if(!base::StringView(asset.file).endsWith(".pt")) return nullptr;
+	auto& res = base::Resources::getInstance()->particles;
+	const char* name = asset.resource;
+	if(!name) name = getResourceNameFromFile(res, asset.file);
+	particle::System* system = res.get(name);
+	ParticleEditor* editor = showParticleSystem(system, asset.resource);
 	return editor? editor->getPanel(): nullptr;
 }
 

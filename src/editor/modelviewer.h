@@ -21,7 +21,7 @@ class ModelViewer : public EditorComponent {
 		Point last;
 	};
 	void initialise() override {}
-	gui::Widget* openAsset(const char* asset) override;
+	gui::Widget* openAsset(const Asset&) override;
 	void update() override;
 	protected:
 	base::Scene* createScene(base::Model* model, base::Material*);

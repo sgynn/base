@@ -106,6 +106,13 @@
 		<image file="tooltip"/>
 		<state border="3 3 3 3" coord="0 0 5 5" backcolour="#caef78" name="normal"/>
 	</skin>
+	<skin name="expand">
+		<font name="helvetica" size="0"/>
+		<image file="glyphs"/>
+		<state coord="0 16 11 11" name="normal"/>
+		<state coord="16 1 11 11" name="selected normal"/>
+		<state coord="16 1 11 11" name="selected disabled"/>
+	</skin>
 	<!--Icon sets-->
 	<iconlist name="glyphs">
 		<image file="glyphs"/>
@@ -230,7 +237,15 @@
 		</widget>
 		<widget anchor="tblr" rect="0 24 100 76" name="_client" skin="none"/>
 	</template>
-
+	<template class="CollapsePane" rect="340 427 213 100" name="expandproperty" skin="none">
+		<widget template="button" name="_header" skin="none" rect="0 0 84 20">
+			<widget anchor="lrtb" name="_text" align="12" template="label" skin="none" rect="14 0 70 20"/>
+			<widget class="Widget" tangible="0" template="frame" name="_state" skin="expand" rect="3 5 9 9"/>
+		</widget>
+		<widget anchor="lrtb" class="Widget" layout="VerticalLayout" template="frame" rect="84 20 129 80" skin="none" name="_client" spacing="2" autosize="1"/>
+		<widget anchor="lr" colour="#8f8f8f" alpha="0.6" rect="84 0 87 20" template="label" skin="none" name="info" caption="Info"/>
+		<widget anchor="r" template="button" name="add" caption="+" rect="192 0 18 20"/>
+	</template>
 
 	<!--Widget Layout-->
 	<widget margin="2" layout="HorizontalLayout" name="editor" autosize="1" spacing="4" rect="870 0 154 26" anchor="rt" class="Widget" skin="mainmenu" colour="#232a5f" template="frame">

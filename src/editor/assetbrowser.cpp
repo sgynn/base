@@ -4,6 +4,9 @@
 
 #include "imageviewer.h"
 #include "modelviewer.h"
+#include "menubuilder.h"
+
+#include "materialeditor.h"
 
 
 #include <base/editor/embed.h>
@@ -32,9 +35,29 @@ bool matchWildcard(const char* s, const char* pattern) {
 	return *p==0;
 }
 
+class AssetTile : public Button {
+	WIDGET_TYPE(AssetTile);
+	AssetTile(const Rect& r, Skin* s) : Super(r,s) {}
+	Asset asset;
+};
+
+inline bool operator==(const Asset& a, const Asset& b) {
+	if(a.file && a.file == b.file) return true;
+	return a.type==b.type && a.resource==b.resource && a.file==b.file;
+}
+
+const char* AssetBrowser::getAssetName(const Asset& asset) {
+	const char* name = asset.resource;
+	if(!name) name = asset.file;
+	if(const char* f = strrchr(name, '/')) name = f+1;
+	return name;
+}
+
 
 
 void AssetBrowser::initialise() {
+	Root::registerClass<AssetTile>();
+
 	m_rootPath = "./data/";
 	getEditor()->addEmbeddedPNGImage("data/editor/asseticons.png", editor_assets_image, editor_assets_image_len);
 	m_panel = loadUI("assets.xml", editor_assets_gui);
@@ -44,22 +67,24 @@ void AssetBrowser::initialise() {
 	m_filter = m_panel->getWidget<Combobox>("filters");
 	m_items = m_panel->getWidget("items");
 
-	m_fileTypes["bm"] = Asset::Model;
-	m_fileTypes["png"] = Asset::Texture;
-	m_fileTypes["dds"] = Asset::Texture;
-	m_fileTypes["glsl"] = Asset::Shader;
-	m_fileTypes["vert"] = Asset::Shader;
-	m_fileTypes["frag"] = Asset::Shader;
-	m_fileTypes["ini"] = Asset::Text;
-	m_fileTypes["def"] = Asset::Text;
-	m_fileTypes["xml"] = Asset::Text;
-	m_fileTypes["mat"] = Asset::Material;
-	m_fileTypes["wav"] = Asset::Sound;
-	m_fileTypes["ogg"] = Asset::Sound;
+	// Default icons for matched file types
+	m_fileTypes[".bm"] = "cube";
+	m_fileTypes[".png"] = "image";
+	m_fileTypes[".dds"] = "image";
+	m_fileTypes[".glsl"] = "page";
+	m_fileTypes[".vert"] = "page";
+	m_fileTypes[".frag"] = "page";
+	m_fileTypes[".ini"] = "page";
+	m_fileTypes[".def"] = "page";
+	m_fileTypes[".xml"] = "page";
+	m_fileTypes[".mat"] = "sphere";
+	m_fileTypes[".wav"] = "sound";
+	m_fileTypes[".ogg"] = "sound";
 
 
 	getEditor()->addTransientComponent(new ImageViewer());
 	getEditor()->addTransientComponent(new ModelViewer());
+	getEditor()->addTransientComponent(new MaterialEditor());
 	
 
 	getEditor()->assetChanged.bind([this](const char* asset, bool changed) {
@@ -85,54 +110,6 @@ void AssetBrowser::initialise() {
 	if(Button* add = m_panel->getWidget<Button>("new")) add->eventPressed.bind([this](Button* b) {
 		if(!m_newItemMenu) populateCreateMenu();
 		m_newItemMenu->popup(b);
-	});
-
-	Root* root = m_panel->getRoot();
-
-	static auto getSelectedFileName = [this]() { return cast<Button>(m_selectedItem)->getCaption(); };
-	m_contextMenu = new Popup(Rect(0,0,100,100), nullptr);
-	m_contextMenu->addItem(root, "button", "open", "Open", [this](Button*) {
-		m_contextMenu->hide();
-		openAsset(m_selectedItem);
-	});
-	m_contextMenu->addItem(root, "button", "save", "Save", [this](Button*) {
-		m_contextMenu->hide();
-		String file = m_localPath + getSelectedFileName();
-		for(EditorComponent* c: getEditor()) {
-			if(c->saveAsset(file)) {
-				getEditor()->assetChanged(file, false);
-				break;
-			}
-		}
-	});
-	m_contextMenu->addItem(root, "button", "rename", "Rename", [this](Button*) {
-		m_contextMenu->hide();
-		renameFile(m_selectedItem);
-	});
-	m_contextMenu->addItem(root, "button", "duplicate", "Duplicate", [this](Button*) {
-		m_contextMenu->hide();
-		String src = m_rootPath + m_localPath + getSelectedFileName();
-		String dst = getUniqueFileName(getSelectedFileName(), m_localPath.str());
-		printf("Copy %s -> %s\n", src.str(), dst.str());
-		FILE* sp = fopen(src, "rb");
-		FILE* dp = fopen(dst, "wb");
-		if(sp && dp) {
-			fseek(sp, 0, SEEK_END);
-			size_t len = ftell(sp);
-			rewind(sp);
-			char* buffer = new char[len];
-			fread(buffer, 1, len, sp);
-			fwrite(buffer, 1, len, dp);
-			delete [] buffer;
-		}
-		fclose(sp);
-		fclose(dp);
-		refreshItems();
-	});
-	m_contextMenu->addItem(root, "button", "delete", "Delete", [this](Button*) {
-		m_contextMenu->hide();
-		remove(m_rootPath + m_localPath + getSelectedFileName());
-		refreshItems();
 	});
 }
 
@@ -264,58 +241,103 @@ String AssetBrowser::getUniqueFileName(const char* base, const char* localPath) 
 
 void AssetBrowser::refreshItems() {
 	m_items->deleteChildWidgets();
+	buildResourceTree();
+	String filter = m_filter->getText()[0]? String::format("*%s*", m_filter->getText()): nullptr;
 
-	char buffer[1024];
-	sprintf(buffer, "%s%s", m_rootPath.str(), m_localPath.str());
-	for(auto& file: Directory(buffer)) {
+	// Scan the folder for files
+	String fullPath = m_rootPath + m_localPath;
+	for(auto& file: Directory(fullPath)) {
 		if(file.name[0]=='.') continue;
-		const char* ext = file.name + file.ext;
-		int type;
-		if(file.type == Directory::DIRECTORY) type = Asset::Folder;
-		else type = m_fileTypes.get(ext, -1);
-
-		if(m_filter && m_filter->getText()[0]) {
-			String filter = String::format("*%s*", m_filter->getText());
-			if(!matchWildcard(file.name, filter)) continue;
-		}
-
-		Button* asset = m_items->createChild<Button>("asset");
-		if(!asset) return;
-
-		if(type == Asset::Folder) {
-			asset->eventPressed.bind([this](Button* b) { setPath(m_localPath + b->getCaption()); });
-		}
-
-		asset->eventMouseMove.bind(this, &AssetBrowser::dragItem);
-		asset->eventMouseUp.bind(this, &AssetBrowser::dropItem);
-
-		asset->setCaption(file.name);
-		switch(type) {
-		case Asset::Folder: asset->setIcon("folder"); break;
-		case Asset::Text: asset->setIcon("page"); break;
-		case Asset::Model: asset->setIcon("cube"); break;
-		case Asset::Sound: asset->setIcon("sound"); break;
-		case Asset::Texture: asset->setIcon("image"); break;
-		}
-
-		Widget* mod = asset->getTemplateWidget("_modified");
-		mod->setVisible(false);
-		for(const char* s: m_modifiedFiles) {
-			if(strcmp(file.name, s)==0) {
-				mod->setVisible(true);
-				break;
+		if(filter && !matchWildcard(file.name, filter)) continue;
+		bool isFolder = file.type == Directory::DIRECTORY;
+		addAssetTile(Asset{ResourceType::None, "", fullPath + file.name}, isFolder);
+	}
+	
+	// Then get the resource assets
+	int pathLength = m_localPath.length();
+	for(const Asset& asset: m_resources) {
+		if(asset.resource.startsWith(m_localPath)) {
+			// Make sure it is not already added by the file search
+			for(Widget* w: m_items) {
+				if(w->as<AssetTile>()->asset == asset) goto next;
 			}
+			if(filter && !matchWildcard(asset.resource + pathLength, filter)) continue;
+			addAssetTile(asset);
 		}
+		next:;
 	}
 }
 
-bool AssetBrowser::openAsset(Widget* w) {
-	const char* file = cast<Button>(w)->getCaption();
-	String path = m_localPath + file;
+void AssetBrowser::buildResourceTree() {
+	m_resources.clear();
+	Resources& res = *Resources::getInstance();
+	static char buffer[512];
+	strcpy(buffer, "./");
+	auto addAsset = [this](ResourceType type, const char* name, ResourceManagerBase& rc) {
+		Asset a { type, name };
+		if(rc.findFile(name+1, buffer+2, 512)) {
+			if(buffer[2] == '.') a.file = buffer + 2;
+			else a.file = buffer;
+		}
+		m_resources.push_back(a);
+	};
+
+	for(const auto& i: res.models)    if(i.value) addAsset(ResourceType::Model, i.key, res.models);
+	for(const auto& i: res.textures)  if(i.value) addAsset(ResourceType::Texture, i.key, res.textures);
+	for(const auto& i: res.materials) if(i.value) addAsset(ResourceType::Material, i.key, res.materials);
+	for(const auto& i: res.particles) if(i.value) addAsset(ResourceType::Particle, i.key, res.particles);
+}
+
+Widget* AssetBrowser::addAssetTile(const Asset& asset, bool folder) {
+	AssetTile* tile = m_items->createChild<AssetTile>("asset");
+	if(!tile) return nullptr;
+
+	tile->eventMouseMove.bind(this, &AssetBrowser::dragItem);
+	tile->eventMouseUp.bind(this, &AssetBrowser::dropItem);
 	
+	const char* title = getAssetName(asset);
+	const char* ext = strrchr(title, '.');
+	if(!ext) ext = "";
+	
+	tile->setCaption(title);
+	if(folder) tile->setIcon("folder");
+	else switch(asset.type) {
+		case ResourceType::None: tile->setIcon(m_fileTypes.get(ext, "page")); break;
+		case ResourceType::Model:     tile->setIcon("cube"); break;
+		case ResourceType::Texture:   tile->setIcon("image"); break;
+		case ResourceType::Material:  tile->setIcon("sphere"); break;
+		case ResourceType::Shader:    tile->setIcon("sphere"); break;
+		case ResourceType::ShaderVar: tile->setIcon("page"); break;
+		case ResourceType::Particle:  tile->setIcon("page"); break;
+		default: break;
+	}
+
+
+	Widget* mod = tile->getTemplateWidget("_modified");
+	mod->setVisible(!asset.file);
+	if(!mod->isVisible()) for(const char* s: m_modifiedFiles) {
+		if(asset.file == s) {
+			mod->setVisible(true);
+			break;
+		}
+	}
+
+	tile->asset = asset;
+	return tile;
+}
+
+bool AssetBrowser::openAsset(Widget* w) {
+	AssetTile* tile = cast<AssetTile>(w);
+	if(tile->getIcon() == 0) { // Folder
+		setPath(m_localPath + tile->getCaption());
+		return false;
+	}
+
+	const Asset& asset = tile->asset;
+
 	// Already open ?
 	for(Editor& e: m_activeEditors) {
-		if(e.file == path) {
+		if(e.asset == asset) {
 			e.widget->setVisible(true);
 			e.widget->raise();
 			Point p = e.widget->getPosition();
@@ -329,15 +351,16 @@ bool AssetBrowser::openAsset(Widget* w) {
 		}
 	}
 
+	const char* name = getAssetName(asset);
 
 	Widget* window = nullptr;
 	for(EditorComponent* c: getEditor()) {
-		window = c->openAsset(path);
+		window = c->openAsset(asset);
 		if(window) {
 			if(!window->getParent()) {
 				window->setVisible(true);
-				if(gui::Window* w = cast<gui::Window>(window)) w->setCaption(file);
-				m_activeEditors.push_back({path, window});
+				if(gui::Window* w = cast<gui::Window>(window)) w->setCaption(name);
+				m_activeEditors.push_back({asset, window});
 				getEditor()->getGUI()->getRootWidget()->add(window);
 				// cascade
 				bool overlap = true;
@@ -355,12 +378,43 @@ bool AssetBrowser::openAsset(Widget* w) {
 			break;
 		}
 	}
-	if(window) printf("Open file: %s\n", file);
-	else printf("No file handlers for %s\n", file);
+	if(window) printf("Open file: %s\n", name);
+	else printf("No file handlers for %s\n", name);
+
+	if(window) refreshItems(); // Opening an asset can change stuff
 	return window;
 }
 
-void AssetBrowser::renameFile(Widget* item) {
+void AssetBrowser::deleteAsset(Widget* item) {
+	const Asset& asset = cast<AssetTile>(item)->asset;
+	if(asset.file) remove(m_rootPath + asset.file);
+	refreshItems();
+}
+
+void AssetBrowser::duplicateAsset(Widget* item) {
+	const Asset& asset = cast<AssetTile>(item)->asset;
+	const char* name = getAssetName(asset);
+	if(!name) name = asset.file;
+	String src = m_rootPath + asset.file;
+	String dst = getUniqueFileName(name, m_localPath.str());
+	printf("Copy %s -> %s\n", src.str(), dst.str());
+	FILE* sp = fopen(src, "rb");
+	FILE* dp = fopen(dst, "wb");
+	if(sp && dp) {
+		fseek(sp, 0, SEEK_END);
+		size_t len = ftell(sp);
+		rewind(sp);
+		char* buffer = new char[len];
+		fread(buffer, 1, len, sp);
+		fwrite(buffer, 1, len, dp);
+		delete [] buffer;
+	}
+	fclose(sp);
+	fclose(dp);
+	refreshItems();
+}
+
+void AssetBrowser::renameAsset(Widget* item) {
 	Textbox* box = item->createChild<Textbox>("editbox");
 	Label* lbl = item->getTemplateWidget<Label>("_text");
 	if(!box || !lbl) return;
@@ -421,9 +475,23 @@ void AssetBrowser::dropItem(Widget* w, const Point& p, int b) {
 		Point pos = w->getRoot()->getMousePos();
 		getEditor()->drop(pos, 0, m_localPath + cast<Button>(w)->getCaption());
 	}
-	else if(b==4) {
+	else if(b==4) { // Item context menu
 		m_selectedItem = w;
-		m_contextMenu->popup(w->getRoot(), w->getRoot()->getMousePos(), w);
+		if(cast<Button>(w)->getIcon() != 0) { // Not a Folder
+			const Asset& asset = cast<AssetTile>(w)->asset;
+			MenuBuilder menu(w->getRoot(), "button", "button");
+			menu.addAction("Open", [this, w]() { openAsset(w); });
+			for(EditorComponent* c: getEditor()) {
+				if(c->assetActions(menu, asset)) break;
+			}
+			menu.addAction("Rename",    [this, w]() { renameAsset(w); });
+			menu.addAction("Duplicate", [this, w]() { duplicateAsset(w); });
+			menu.addAction("Delete",    [this, w]() { deleteAsset(w); });
+
+			for(Popup* m: m_contextMenu) delete m;
+			m_contextMenu = menu.getAllMenus();
+			menu.menu()->popup(w->getRoot(), w->getRoot()->getMousePos(), w);
+		}
 	}
 	else if(p == m_lastClick) {
 		openAsset(w);
