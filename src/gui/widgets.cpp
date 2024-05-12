@@ -1553,6 +1553,9 @@ void Window::sizeHandle(Widget* c, const Point& p, int b) {
 
 Popup::Popup(const Rect& r, Skin* s) : Widget(r,s), m_owner(0) {
 }
+Popup::~Popup() {
+	for(Widget* w: m_owned) delete w;
+}
 void Popup::initialise(const Root*, const PropertyMap& p) {
 	setVisible(false);
 }
@@ -1563,10 +1566,14 @@ void Popup::popup(Root* root, const Point& abs, Widget* owner) {
 	Widget* ownerPopup = owner;
 	while(ownerPopup && !cast<Popup>(ownerPopup)) ownerPopup = ownerPopup->getParent();
 	if(ownerPopup) {
-		cast<Popup>(ownerPopup)->m_owned.push_back(this);
+		if(m_owner != ownerPopup) {
+			assert(!m_owner); // FIXME Do we need to handle submenus popping up elsewhere
+			cast<Popup>(ownerPopup)->m_owned.push_back(this);
+		}
 		m_owner = ownerPopup;
 	}
 	else {
+		assert(!m_owner);
 		eventLostFocus.bind(this, &Popup::lostFocus);
 		setFocus();
 	}
@@ -1583,6 +1590,12 @@ void Popup::popup(Widget* owner, Side side) {
 	popup(owner->getRoot(), pos, owner);
 }
 
+void Popup::addOwnedPopup(Popup* p) {
+	assert(!p->m_owner);
+	p->m_owner = this;
+	m_owned.push_back(p);
+}
+
 void Popup::hideOwnedPopups() {
 	for(Popup* w: m_owned) w->hide();
 }
@@ -1590,7 +1603,6 @@ void Popup::hideOwnedPopups() {
 void Popup::hide() {
 	hideOwnedPopups();
 	setVisible(false);
-	m_owner = nullptr;
 }
 
 void Popup::lostFocus(Widget* w) {
@@ -1602,7 +1614,7 @@ void Popup::lostFocus(Widget* w) {
 		// Bind lost focus event to this function
 		Widget* newItem = getRoot()->getFocusedWidget();
 		newItem->eventLostFocus.bind(this, &Popup::lostFocus);
-		for(Popup* w: cast<Popup>(newPopup)->m_owned) w->hide();
+		hideOwnedPopups();
 	}
 }
 

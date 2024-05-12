@@ -470,6 +470,7 @@ class Popup : public Widget {
 	typedef Delegate<void(Button*)> ButtonDelegate;
 	public:
 	Popup(const Rect& r, Skin*);
+	~Popup();
 	void popup(Widget* owner, Side side=BELOW);
 	void popup(Root* root, const Point& absolutePosition, Widget* owner=0);
 	Widget* addItem(Root* root, const char* button, const char* name="", const char* caption="", ButtonDelegate event=ButtonDelegate());
@@ -479,6 +480,7 @@ class Popup : public Widget {
 		return w;
 	}
 	Widget* getOwner() { return m_owner; }
+	void addOwnedPopup(Popup*);
 	void hideOwnedPopups();
 	void hide();
 	protected:
