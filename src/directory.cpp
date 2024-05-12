@@ -207,6 +207,7 @@ int Directory::scan() {
 			}
 			m_files.push_back(file);
 		}
+		closedir(dp);
 	}
 	#endif
 	std::sort(m_files.begin(), m_files.end(), SortFiles());
