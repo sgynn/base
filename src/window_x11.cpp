@@ -139,6 +139,7 @@ bool X11Window::createWindow() {
 	//Map close button event
 	Atom wmDelete = XInternAtom(m_display, "WM_DELETE_WINDOW", true);
 	XSetWMProtocols(m_display, m_window, &wmDelete, 1);
+	XFree(m_visual);
 	return true;
 }
 
