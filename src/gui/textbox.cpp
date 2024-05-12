@@ -42,6 +42,7 @@ void Textbox::copyData(const Widget* from) {
 		m_multiline = t->m_multiline;
 		m_readOnly = t->m_readOnly;
 		m_password = t->m_password;
+		m_submitAction = t->m_submitAction;
 	}
 }
 
@@ -74,6 +75,7 @@ void Textbox::setText(const char* t) {
 	select(tmp);
 	updateLineData();
 	updateAutosize();
+	m_offset = 0;
 }
 
 void Textbox::setMultiLine(bool m) {
@@ -94,6 +96,10 @@ void Textbox::setSuffix(const char* s) {
 
 void Textbox::setHint(const char* s) {
 	m_hint = s;
+}
+
+void Textbox::setSubmitAction(SubmitOption s) {
+	m_submitAction = s;
 }
 
 int Textbox::getLineCount() const {
@@ -240,8 +246,13 @@ int Textbox::getLineNumber(uint characterIndex) const {
 	return start;
 }
 
+void Textbox::onLoseFocus() {
+	if(m_submitAction == SubmitOnLoseFocus && eventSubmit) eventSubmit(this);
+}
+
 void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 	if(code == base::KEY_ENTER && !m_multiline) {
+		if(m_submitAction == ClearFocus) getRoot()->getRootWidget()->setFocus(); 
 		if(eventSubmit) eventSubmit(this);
 	}
 	else if(code == base::KEY_LEFT)  select(m_cursor-1, 0, mask==KeyMask::Shift);

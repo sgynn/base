@@ -172,6 +172,7 @@ class ProgressBar : public Widget {
 /** Textbox - editable text */
 class Textbox : public Widget {
 	WIDGET_TYPE(Textbox);
+	enum SubmitOption { KeepFocus, ClearFocus, SubmitOnLoseFocus };
 	Textbox(const Rect& r, Skin*);
 	~Textbox();
 	void draw() const override;
@@ -189,6 +190,7 @@ class Textbox : public Widget {
 	void setPassword(char character);
 	void setSuffix(const char*);
 	void setHint(const char*);
+	void setSubmitAction(SubmitOption);
 	public:
 	Delegate<void(Textbox*, const char*)> eventChanged;
 	Delegate<void(Textbox*)>              eventSubmit;
@@ -199,6 +201,7 @@ class Textbox : public Widget {
 	void onKey(int code, wchar_t key, KeyMask mask) override;
 	void onMouseButton(const Point&, int, int) override;
 	void onMouseMove(const Point&, const Point&, int) override;
+	void onLoseFocus() override;
 	void drawText(Point& p, const char* t, uint len, uint col) const;
 	int  indexAt(const Point&) const;
 	void updateOffset(bool end);
@@ -217,6 +220,7 @@ class Textbox : public Widget {
 	String m_suffix;
 	int    m_held;
 	int    m_offset;
+	SubmitOption m_submitAction = KeepFocus;
 	String m_hint;
 	mutable char* m_selection;
 	std::vector<int> m_lines; // Start of each line
