@@ -416,7 +416,7 @@ bool AssetBrowser::openAsset(Widget* w) {
 
 void AssetBrowser::deleteAsset(Widget* item) {
 	const Asset& asset = cast<AssetTile>(item)->asset;
-	if(asset.file) remove(m_rootPath + asset.file);
+	if(asset.file) remove(asset.file);
 	refreshItems();
 }
 
@@ -424,8 +424,9 @@ void AssetBrowser::duplicateAsset(Widget* item) {
 	const Asset& asset = cast<AssetTile>(item)->asset;
 	const char* name = getAssetName(asset);
 	if(!name) name = asset.file;
-	String src = m_rootPath + asset.file;
+	String src = asset.file;
 	String dst = getUniqueFileName(name, m_localPath.str());
+	if(!src) return;
 	printf("Copy %s -> %s\n", src.str(), dst.str());
 	FILE* sp = fopen(src, "rb");
 	FILE* dp = fopen(dst, "wb");
