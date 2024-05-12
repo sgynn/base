@@ -19,12 +19,12 @@
 		<corner style="round" name="tr"/>
 		<state back="#ffb0b0b0" name="normal" line="#ffb0b0b0"/>
 	</genimage>
-	<genimage radius="2" name="tooltip" core="1 1" line="1">
+	<genimage radius="4" name="tooltip" core="1 1" line="1">
 		<corner style="round" name="tl"/>
 		<corner style="round" name="tr"/>
 		<corner style="round" name="bl"/>
 		<corner style="round" name="br"/>
-		<state back="#a0ffffff" name="normal" line="#ffffffff"/>
+		<state back="#f0ffffff" name="normal" line="#ffffffff"/>
 	</genimage>
 	<genimage radius="3" name="default" core="2 2" line="1">
 		<corner style="round" name="tl"/>
@@ -104,7 +104,7 @@
 	<skin name="tooltip">
 		<font name="helvetica" size="16"/>
 		<image file="tooltip"/>
-		<state border="3 3 3 3" coord="0 0 5 5" backcolour="#caef78" name="normal"/>
+		<state border="3 3 3 3" coord="0 0 9 9" backcolour="#808010" name="normal"/>
 	</skin>
 	<skin name="expand">
 		<font name="helvetica" size="0"/>

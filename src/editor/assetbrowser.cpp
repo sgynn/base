@@ -39,6 +39,8 @@ class AssetTile : public Button {
 	WIDGET_TYPE(AssetTile);
 	AssetTile(const Rect& r, Skin* s) : Super(r,s) {}
 	Asset asset;
+	// Skip the Button::onMouseButton() one as it crashes since the callback can delete this widget
+	void onMouseButton(const Point& p, int d, int u) override { Widget::onMouseButton(p,d,u); }
 };
 
 inline bool operator==(const Asset& a, const Asset& b) {
@@ -159,6 +161,7 @@ void AssetBrowser::setPath(const char* path) {
 	if(!path) path="";
 	else if(path[0]=='.' && path[1]=='/') path += 2;
 	m_localPath = path;
+	if(m_localPath && !m_localPath.endsWith("/")) m_localPath += "/";
 
 	// create breadcrumbs
 	if(m_breadcrumbs) {
@@ -256,15 +259,37 @@ void AssetBrowser::refreshItems() {
 	// Then get the resource assets
 	int pathLength = m_localPath.length();
 	for(const Asset& asset: m_resources) {
-		if(asset.resource.startsWith(m_localPath)) {
+		if(asset.resource.startsWith(m_localPath) && !strchr(asset.resource+pathLength, '/')) {
 			// Make sure it is not already added by the file search
 			for(Widget* w: m_items) {
-				if(w->as<AssetTile>()->asset == asset) goto next;
+				Asset& tileAsset = w->as<AssetTile>()->asset;
+				if(tileAsset == asset) {
+					tileAsset.type = asset.type;
+					tileAsset.resource = asset.resource;
+					goto next;
+				}
 			}
 			if(filter && !matchWildcard(asset.resource + pathLength, filter)) continue;
 			addAssetTile(asset);
 		}
 		next:;
+	}
+
+	// Tooltips
+	for(Widget* w: m_items) {
+		AssetTile* tile = cast<AssetTile>(w);
+		if(tile->getIcon() == 0) continue; // Folder
+		String tip = tile->getCaption();
+		switch(tile->asset.type) {
+		case ResourceType::Model: tip += "\nModel: " + tile->asset.resource; break;
+		case ResourceType::Shader: tip += "\nShader: " + tile->asset.resource; break;
+		case ResourceType::Texture: tip += "\nTexture: " + tile->asset.resource; break;
+		case ResourceType::Material: tip += "\nMaterial: " + tile->asset.resource; break;
+		case ResourceType::Particle: tip += "\nparticle: " + tile->asset.resource; break;
+		default: break;
+		}
+		if(tile->asset.file) tip += "\nPath: " + tile->asset.file;
+		w->setToolTip(tip);
 	}
 }
 
@@ -275,7 +300,7 @@ void AssetBrowser::buildResourceTree() {
 	strcpy(buffer, "./");
 	auto addAsset = [this](ResourceType type, const char* name, ResourceManagerBase& rc) {
 		Asset a { type, name };
-		if(rc.findFile(name+1, buffer+2, 512)) {
+		if(rc.findFile(name, buffer+2, 512)) {
 			if(buffer[2] == '.') a.file = buffer + 2;
 			else a.file = buffer;
 		}

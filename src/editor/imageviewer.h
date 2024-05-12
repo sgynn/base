@@ -38,6 +38,7 @@ class ImageViewer : public EditorComponent {
 			preview->getWidget(0)->setVisible(false);
 			preview->getWidget(1)->as<gui::Image>()->setImage(img);
 			preview->setSize(size + border);
+			preview->setName(name);
 			return preview;
 		}
 		return nullptr;

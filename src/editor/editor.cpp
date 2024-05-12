@@ -138,7 +138,9 @@ const char* EditorComponent::getResourceNameFromFile(base::ResourceManagerBase& 
 	for(const char* path: rc.getSearchPaths()) {
 		if(path[0]=='.' && path[1]=='/') path += 2;
 		if(file.startsWith(path)) {
-			return filename + strlen(path);
+			filename += strlen(path);
+			if(filename[0]=='/') ++filename;
+			return filename;
 		}
 	}
 	return nullptr;
@@ -360,7 +362,7 @@ bool SceneEditor::canDrop(const Point& p, const Asset& asset) const {
 	if(target) {
 		Point localPos = target->getDerivedTransform().untransform(p);
 		for(EditorComponent* c: m_components) {
-			if(c->drop(target, p, asset, false)) return true;
+			if(c->drop(target, localPos, asset, false)) return true;
 		}
 	}
 	return false;
@@ -371,7 +373,7 @@ void SceneEditor::drop(const Point& p, const Asset& asset) {
 	if(target) {
 		Point localPos = target->getDerivedTransform().untransform(p);
 		for(EditorComponent* c: m_components) {
-			if(c->drop(target, p, asset, true)) return;
+			if(c->drop(target, localPos, asset, true)) return;
 		}
 	}
 	if(!m_gui->getRootWidget()->getWidget(p)) {
