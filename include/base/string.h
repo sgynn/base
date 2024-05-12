@@ -19,10 +19,10 @@ namespace base {
 		const String& operator=(const String& s)	{ set(s); return *this; }
 		const String& operator=(String&& s)	        { if(m_data) free(m_data); m_data=s.m_data; s.m_data=0; return *this; }
 
-		bool operator==(const char* s) const		{ return m_data==s || (!m_data&&!*s) || (m_data && strcmp(m_data, s)==0); }
-		bool operator==(const String& s) const		{ return m_data==s.m_data || (m_data && strcmp(m_data, s.m_data)==0); }
-		bool operator!=(const char* s) const		{ return m_data!=s && (m_data||*s) && (!m_data || strcmp(m_data, s)); }
-		bool operator!=(const String& s) const		{ return m_data!=s.m_data && (!m_data || strcmp(m_data, s.m_data)); }
+		bool operator==(const char* s) const		{ return m_data==s || (!m_data&&!*s) || (m_data && s && strcmp(m_data, s)==0); }
+		bool operator==(const String& s) const		{ return operator==(s.m_data); }
+		bool operator!=(const char* s) const		{ return m_data!=s && (m_data||*s) && (!m_data || !s || strcmp(m_data, s)); }
+		bool operator!=(const String& s) const		{ return operator!=(s.m_data); }
 		friend bool operator==(const char* a, const String& s) { return s == a; }
 		friend bool operator!=(const char* a, const String& s) { return s != a; }
 
@@ -34,16 +34,17 @@ namespace base {
 		bool empty() const							{ return !m_data || !m_data[0]; }
 		void clear()                                { set(0); }
 
-		bool startsWith(const char* s) const        { return s && strncmp(str(), s, strlen(s))==0; }
-		bool endsWith(const char* s) const          { if(!s||!m_data) return false; int sl=strlen(s); return strncmp(str() + length() - sl, s, sl) == 0; }
+		bool startsWith(const char* s) const        { return !s || strncmp(str(), s, strlen(s))==0; }
+		bool endsWith(const char* s) const          { if(!s) return true; if(!m_data) return false; int sl=strlen(s); return strncmp(str() + length() - sl, s, sl) == 0; }
 		const char* contains(const char* s) const   { if(!s) return nullptr; return strstr(str(), s); }
 
+		char operator[](unsigned i) const           { return m_data[i]; }
 		char& operator[](unsigned i)                { return m_data[i]; }
 		String& operator+=(const char* s)           { if(s&&s[0]) *this = *this + s; return *this; }
 		String& operator+=(const String& s)         { if(!s.empty()) *this = *this + s; return *this; }
-		String operator+(const char* s) const       { if(empty()) return String(s); if(!s||!s[0]) return *this; String r; r.m_data=(char*)malloc(length() + strlen(s) + 1); sprintf(r.m_data, "%s%s", m_data,s); return r; }
-		String operator+(const String& s) const     { if(empty()) return s; if(s.empty()) return *this; String r; r.m_data=(char*)malloc(length() + s.length() + 1); sprintf(r.m_data, "%s%s", m_data,s.m_data); return r; }
-		friend String operator+(const char* a, const String& s) { if(!a&&!a[0]) return s; if(s.empty()) return String(a); String r; r.m_data=(char*)malloc(strlen(a)+s.length()+1); sprintf(r.m_data, "%s%s", a, s.m_data); return r; }
+		String operator+(const char* s) const       { return cat(m_data, length(), s, s?strlen(s):0); }
+		String operator+(const String& s) const     { return cat(m_data, length(), s, s.length()); }
+		friend String operator+(const char* a, const String& s) { return cat(a, a?strlen(a):0, s, s.length()); }
 
 		String& toUpper() {
 			if(m_data) for(char* c=m_data; *c; ++c) if(*c&0x60) *c &= 0xd;
@@ -68,6 +69,17 @@ namespace base {
 			String result;
 			result.m_data = big;
 			return result;
+		}
+
+		static String cat(const char* a, int alen, const char* b, int blen) {
+			if(alen==0) return String(b, blen);
+			if(blen==0) return String(a, alen);
+			String r;
+			r.m_data = (char*)malloc(alen + blen + 1);
+			memcpy(r.m_data, a, alen);
+			memcpy(r.m_data+alen, b, blen);
+			r.m_data[alen+blen] = 0;
+			return r;
 		}
 
 		template<class List>
@@ -118,8 +130,47 @@ namespace base {
 		}
 
 		private:
+		friend class StringView;
 		void set(const char* s) { if(m_data==s) return; if(m_data) free(m_data); m_data = s && s[0]? strdup(s): 0; }
 		char* m_data;
+	};
+
+
+	// A wrapper for char* that does NOT make a copy, Just points to an existing char array. Careful with scope
+	class StringView {
+		public:
+		StringView(const char* s = nullptr) : m_data(s), m_length(s?strlen(s):0) {}
+		StringView(const char* s, size_t len)   : m_data(s), m_length(len) {}
+		StringView(const StringView& s) : m_data(s.m_data), m_length(s.m_length) {}
+		const StringView& operator=(const char* s)  { m_data=s; m_length=s? strlen(s): 0; return *this; }
+
+		bool operator==(const char* s) const        { return  m_data==s || (!m_data&&!*s) || (m_data && strcmp(m_data, s)==0); }
+		bool operator==(const StringView& s) const  { return m_data==s.m_data || (m_data && strcmp(m_data, s.m_data)==0); }
+		bool operator!=(const char* s) const        { return !operator==(s); }
+		bool operator!=(const StringView& s) const  { return !operator==(s); }
+		friend bool operator==(const char* a, const StringView& s) { return s == a; }
+		friend bool operator!=(const char* a, const StringView& s) { return s != a; }
+
+		size_t length() const                       { return m_length; }
+		bool empty() const                          { return m_length==0; }
+		void clear()                                { m_data=nullptr; m_length=0; }
+
+		bool startsWith(const char* s) const        { if(!s) return true; size_t l=strlen(s); return l<=m_length && strncmp(m_data, s, l)==0; }
+		bool endsWith(const char* s) const          { if(!s) return true; size_t l=strlen(s); return l<m_length && strncmp(m_data + m_length - l, s, l) == 0; }
+		const char* contains(const char* s) const   {
+			if(!s || !s[0] || m_length==0) return nullptr;
+			const char* end = m_data + m_length - strlen(s);
+			for(const char* c = m_data; c<=end; ++c) if(strcmp(c, s)==0) return c;
+			return nullptr;
+		}
+
+		char operator[](unsigned i) const           { return m_data[i]; }
+		String operator+(const char* s) const       { return String::cat(m_data, m_length, s, s?strlen(s):0); }
+		String operator+(const StringView& s) const { return String::cat(m_data, m_length, s.m_data, s.m_length); }
+		friend String operator+(const char* a, const StringView& s) { return String::cat(a, a? strlen(a): 0, s.m_data, s.m_length); }
+		private:
+		const char* m_data;
+		size_t m_length;
 	};
 }
 
