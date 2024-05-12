@@ -14,8 +14,7 @@ class MaterialEditor : public EditorComponent {
 	bool assetActions(gui::MenuBuilder&, const Asset&) override;
 	gui::Widget* openAsset(const Asset&) override;
 	protected:
-	bool canDrop(const Point&, int) const override;
-	bool drop(const Point& p, int key, const char* data) override;
+	bool drop(gui::Widget*, const Point& p, const Asset&, bool) override;
 	void addTexture(gui::Widget* w, base::Pass* pass, const char* key, const char* value);
 	void addVariable(gui::Widget* w, base::Pass* pass, const char* name, const char* value);
 	void addShared(gui::Widget* w, base::Pass* pass, const char* name);

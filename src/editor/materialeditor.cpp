@@ -201,11 +201,49 @@ void MaterialEditor::addShared(Widget* w, Pass* pass, const char* name) {
 
 
 
-bool MaterialEditor::canDrop(const Point& p, int key) const {
-	return false;
-}
+bool MaterialEditor::drop(Widget* target, const Point& p, const Asset& asset, bool apply) {
+	if(!target) return false;
+	Resources& res = *Resources::getInstance();
+	StringView ext = asset.file? strrchr(asset.file, '.'): 0;
 
-bool MaterialEditor::drop(const Point& p, int key, const char* data) {
+	if(Combobox* c = cast<Combobox>(target)) {
+		if(c->getName() == "shader") {
+			if(asset.type == ResourceType::Shader || (asset.type == ResourceType::None && ext==".glsl")) {
+				const char* name = asset.resource;
+				if(!name) name = getResourceNameFromFile(res.textures, asset.file);
+				if(name[0] == '/') ++name;
+				c->setText(name);
+				if(c->eventSubmit) c->eventSubmit(c);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	
+	Widget* list = target->getParent();
+	if(!cast<CollapsePane>(list)) return false;
+
+	if(list->getName() == "textures") {
+		if(asset.type == ResourceType::Texture || (asset.type == ResourceType::None && (ext==".png" || ext==".dds"))) {
+			const char* name = asset.resource;
+			if(!name) name = getResourceNameFromFile(res.textures, asset.file);
+			if(name[0] == '/') ++name;
+			Textbox* tex = target->getTemplateWidget<Textbox>("tex");
+			tex->setText(name);
+			if(tex->eventSubmit) tex->eventSubmit(tex);
+			return true;
+		}
+	}
+	else if(list->getName() == "shared") {
+		if(asset.type == ResourceType::ShaderVars) {
+			Textbox* tex = target->getTemplateWidget<Textbox>("tex");
+			tex->setText(asset.resource + 1);
+			if(tex->eventSubmit) tex->eventSubmit(tex);
+			return true;
+		}
+	}
+
 	return false;
 }
 

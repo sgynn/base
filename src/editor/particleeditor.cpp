@@ -160,16 +160,15 @@ void ParticleEditorComponent::saveAll() {
 	}
 }
 
-bool ParticleEditorComponent::canDrop(const Point& p, int key) const {
-	for(ParticleEditor* e: m_editors) {
-		if(e->canDrop(p, key)) return true;
-	}
-	return false;
-}
-
-bool ParticleEditorComponent::drop(const Point& p, int key, const char* data) {
-	for(ParticleEditor* e: m_editors) {
-		if(e->drop(p, key, data)) return true;
+bool ParticleEditorComponent::drop(Widget* w, const Point& p, const Asset& asset, bool apply) {
+	if(!cast<Textbox>(w)) return false;
+	for(Widget* parent = w; parent; parent=parent->getParent()) {
+		if(cast<gui::Window>(parent)) {
+			for(ParticleEditor* e: m_editors) {
+				if(e->m_panel == parent) return e->drop(w,p,asset,apply);
+			}
+			return false;
+		}
 	}
 	return false;
 }
@@ -362,17 +361,26 @@ ParticleEditor::~ParticleEditor() {
 	}
 }
 
-bool ParticleEditor::canDrop(const Point& p, int) const {
-	return m_panel->getParent()->getWidget<Textbox>(p);
-}
+bool ParticleEditor::drop(Widget* w, const Point& p, const Asset& asset, bool apply) {
+	Textbox* target = cast<Textbox>(w);
+	const char* name = nullptr;
+	if(asset.type == ResourceType::Texture) name = asset.resource;
+	else if(asset.type == ResourceType::Material) name = asset.resource;
+	else if(asset.type == ResourceType::Model) name = asset.resource;
+	else if(asset.type == ResourceType::None) {
+		base::Resources& res = *base::Resources::getInstance();
+		base::StringView ext = strrchr(asset.file, '.');
+		if(ext==".png" || ext==".dds") name = m_parent->getResourceNameFromFile(res.textures, asset.file);
+		else if(ext==".bm" || ext==".obj") name = m_parent->getResourceNameFromFile(res.models, asset.file);
+		else if(ext==".mat") name = m_parent->getResourceNameFromFile(res.materials, asset.file);
+	}
 
-bool ParticleEditor::drop(const Point& p, int key, const char* data) {
-	Textbox* target = m_panel->getParent()->getWidget<Textbox>(p);
-	if(target) {
-		target->setText(data);
+	if(name && apply) {
+		if(name[0]=='/') ++name;
+		target->setText(name);
 		target->eventSubmit(target);
 	}
-	return target;
+	return name;
 }
 
 

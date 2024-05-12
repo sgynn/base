@@ -25,8 +25,7 @@ class ParticleEditorComponent : public EditorComponent {
 	bool assetActions(gui::MenuBuilder& menu, const Asset&) override;
 	gui::Widget* openAsset(const Asset&) override;
 	protected:
-	bool canDrop(const Point&, int) const override;
-	bool drop(const Point& p, int key, const char* data) override;
+	bool drop(gui::Widget* target, const Point& p, const Asset&, bool) override;
 	protected:
 	gui::Widget* m_panel = nullptr;
 	particle::Manager* m_manager = nullptr;
@@ -48,8 +47,7 @@ class ParticleEditor {
 
 	static bool save(particle::System* system, const char* file);
 
-	bool canDrop(const Point&, int) const;
-	bool drop(const Point& p, int key, const char* data);
+	bool drop(gui::Widget*, const Point& p, const Asset&, bool);
 	bool isModified() const { return m_modified; }
 
 	protected:

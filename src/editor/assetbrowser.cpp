@@ -307,7 +307,7 @@ Widget* AssetBrowser::addAssetTile(const Asset& asset, bool folder) {
 		case ResourceType::Texture:   tile->setIcon("image"); break;
 		case ResourceType::Material:  tile->setIcon("sphere"); break;
 		case ResourceType::Shader:    tile->setIcon("sphere"); break;
-		case ResourceType::ShaderVar: tile->setIcon("page"); break;
+		case ResourceType::ShaderVars:tile->setIcon("page"); break;
 		case ResourceType::Particle:  tile->setIcon("page"); break;
 		default: break;
 	}
@@ -473,7 +473,7 @@ void AssetBrowser::dropItem(Widget* w, const Point& p, int b) {
 		
 		// Drop function
 		Point pos = w->getRoot()->getMousePos();
-		getEditor()->drop(pos, 0, m_localPath + cast<Button>(w)->getCaption());
+		getEditor()->drop(pos, cast<AssetTile>(w)->asset);
 	}
 	else if(b==4) { // Item context menu
 		m_selectedItem = w;

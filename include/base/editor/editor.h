@@ -16,6 +16,14 @@ namespace editor {
 class EditorComponent;
 class SceneEditor;
 
+// Matches resource manager types
+enum class ResourceType { None, Model, Texture, Material, Shader, ShaderVars, Compositor, Graph, Particle };
+struct Asset {
+	ResourceType type = ResourceType::None;
+	base::String resource; // Resource name
+	base::String file; // Full path
+};
+
 // Global interface for editor
 class SceneEditor : public base::GameStateComponent {
 	public:
@@ -51,8 +59,8 @@ class SceneEditor : public base::GameStateComponent {
 	gui::Button* addButton(const char* iconset, const char* icon);
 	gui::Root* getGUI() { return m_gui; }
 
-	bool canDrop(const Point& p, int key) const;
-	void drop(const Point& p, int key, const char* data);
+	bool canDrop(const Point& p, const Asset&) const;
+	void drop(const Point& p, const Asset&);
 	void cancelActiveTools(EditorComponent* skip=nullptr); // An action can cancel effects of other editors
 
 	// Handlers for opening resources for edit/preview
@@ -60,8 +68,8 @@ class SceneEditor : public base::GameStateComponent {
 
 	// Scene object construction - dropping files on the world
 	template<class F> void addConstructor(const F& lambda) { m_construct.push_back({}); m_construct.back().bind(lambda); }
-	template<class M> void addConstructor(M* inst, bool(M::*func)(const char*)) { m_construct.push_back(bind(inst, func)); }
-	base::SceneNode* constructObject(const char* source);
+	template<class M> void addConstructor(M* inst, bool(M::*func)(const Asset&)) { m_construct.push_back(bind(inst, func)); }
+	base::SceneNode* constructObject(const Asset&);
 
 	bool addEmbeddedPNGImage(const char* name, const char& bin, unsigned length);
 
@@ -108,7 +116,7 @@ class SceneEditor : public base::GameStateComponent {
 	base::FrameBuffer* m_selectionBuffer = nullptr;
 	std::vector<EditorComponent*> m_components;
 	std::vector<EditorComponent*(*)()> m_creation;
-	std::vector<Delegate<base::SceneNode*(const char*)>> m_construct;
+	std::vector<Delegate<base::SceneNode*(const Asset&)>> m_construct;
 };
 
 struct MouseEventData {
@@ -116,14 +124,6 @@ struct MouseEventData {
 	Ray ray;
 	gui::KeyMask keyMask;
 	bool overGUI;
-};
-
-// Matches resource manager types
-enum class ResourceType { None, Model, Texture, Material, Shader, ShaderVar, Compositor, Graph, Particle };
-struct Asset {
-	ResourceType type = ResourceType::None;
-	base::String resource; // Resource name
-	base::String file; // Full path
 };
 
 class EditorComponent {
@@ -150,8 +150,7 @@ class EditorComponent {
 	gui::Button* addToggleButton(gui::Widget* panel, const char* iconset, const char* iconName);
 	gui::Widget* loadUI(const char* file) { char e=0; return loadUI(file, e); }
 	gui::Widget* loadUI(const char* file, const char& embed);
-	virtual bool canDrop(const Point& p, int key) const { return false;  }
-	virtual bool drop(const Point& p, int key, const char* file) { return false; }
+	virtual bool drop(gui::Widget* target, const Point& p, const Asset&, bool apply) { return false; }
 
 	// Use these for editors that interact with the viewport. Return true to stop processing
 	virtual bool mouseEvent(const MouseEventData&) { return false; }

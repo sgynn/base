@@ -355,28 +355,36 @@ SceneEditor::TraceResult SceneEditor::trace(const Point& pos) {
 
 // --------------------------------- //
 
-bool SceneEditor::canDrop(const Point& p, int key) const {
-	for(EditorComponent* c: m_components) {
-		if(c->canDrop(p, key)) return true;
+bool SceneEditor::canDrop(const Point& p, const Asset& asset) const {
+	Widget* target = m_gui->getRootWidget()->getWidget(p);
+	if(target) {
+		Point localPos = target->getDerivedTransform().untransform(p);
+		for(EditorComponent* c: m_components) {
+			if(c->drop(target, p, asset, false)) return true;
+		}
 	}
 	return false;
 }
 
-void SceneEditor::drop(const Point& p, int key, const char* data) {
-	for(EditorComponent* c: m_components) {
-		if(c->drop(p, key, data)) return;
+void SceneEditor::drop(const Point& p, const Asset& asset) {
+	Widget* target = m_gui->getRootWidget()->getWidget(p);
+	if(target) {
+		Point localPos = target->getDerivedTransform().untransform(p);
+		for(EditorComponent* c: m_components) {
+			if(c->drop(target, p, asset, true)) return;
+		}
 	}
 	if(!m_gui->getRootWidget()->getWidget(p)) {
 		for(auto& func: m_construct) {
-			if(func(data)) return;
+			if(func(asset)) return;
 		}
 	}
 }
 
-SceneNode* SceneEditor::constructObject(const char* file) {
+SceneNode* SceneEditor::constructObject(const Asset& asset) {
 	// Reversed so user handlers will execute first
 	for(int i=m_construct.size() - 1; i>=0; --i) {
-		if(SceneNode* r = m_construct[i](file)) return r;
+		if(SceneNode* r = m_construct[i](asset)) return r;
 	}
 	return nullptr;
 }
