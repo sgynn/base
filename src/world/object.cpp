@@ -106,7 +106,7 @@ Material* Object::loadMaterial(const char* name, int weights, const char* base) 
 		char temp[64];
 		const char* matName = name;
 		Material* mat;
-		if(strstr(name, ".mat")) mat = res.materials.get(name);
+		if(strstr(name, ".mat")) return res.materials.get(name);
 		else {
 			if(weights > 0) { // Ensure weight count cannot be wrong
 				sprintf(temp, "%s_W%d", name, weights);

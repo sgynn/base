@@ -66,6 +66,19 @@ void FoliageLayer::setDensity(float d) { m_density = d; }
 void FoliageLayer::setHeightRange(float min, float max) { m_heightRange.set(min, max); }
 void FoliageLayer::setSlopeRange(float min, float max)  { m_slopeRange.set(min, max); }
 void FoliageLayer::setScaleRange(float min, float max)  { m_scaleRange.set(min, max); }
+
+void FoliageLayer::setCluster(int seed, float density, const Rangef& radius, float falloff) {
+	m_clusterSeed = seed;
+	m_clusterDensity = density;
+	m_clusterRadius = radius;
+	m_clusterFalloff = falloff;
+}
+void FoliageLayer::setClusterGap(const Rangef& r) { m_clusterGap = r; }
+void FoliageLayer::setClusterShape(int points, float scale) {
+	m_clusterShapeOctaves = points;
+	m_clusterShapeMult = fmax(0, 1 - scale);
+}
+
 void FoliageLayer::setMaterial(Material* m) {
 	m_material = m;
 	for(auto& c: m_chunks) {
@@ -149,14 +162,79 @@ int FoliageLayer::generatePoints(const Index& index, int count, vec3* corners, c
 
 int FoliageLayer::generatePoints(const Index& index, PointList& points, vec3& up) const {
 	vec3 corners[4];
-	float amount = m_density * m_chunkSize * m_chunkSize;
-
 	RNG rng(m_parent->getSeed(index, m_chunkSize));
-	if(rng.randf() < amount-floor(amount)) ++amount;
-	if(amount < 1) return 0;
-	
-	m_parent->getCorners(index, m_chunkSize, corners, up);
-	return generatePoints(index, (int)amount, corners, up, points);
+
+	GenPoint point;
+	bool testHeight = m_heightRange.isValid();
+	bool testSlope = m_slopeRange.isValid();
+	auto addPointIfValid = [this, testHeight, testSlope, &point, &points, &up, &rng](const vec3& pos) {
+		float height;
+		const vec3& offset = *reinterpret_cast<const vec3*>(&getDerivedTransform()[12]);
+		m_parent->resolvePosition(pos+offset, point.position, height);
+		if(testHeight && !m_heightRange.contains(height)) return false;
+		m_parent->resolveNormal(pos, point.normal);
+		if(testSlope && !m_slopeRange.contains(1 - point.normal.dot(up))) return false;
+		point.position -= offset;
+		if(m_densityMap) {
+			float d = getMapValue(m_densityMap, point.position);
+			if(rng.randf() > d) return false;
+		}
+		points.push_back(point);
+		return true;
+	};
+
+
+	size_t start = points.size();
+	if(m_clusterDensity > 0) {
+		float clusterAmount = m_clusterDensity * m_chunkSize * m_chunkSize;
+		if(rng.randf() < clusterAmount-floor(clusterAmount)) ++clusterAmount;
+		if(clusterAmount < 1) return 0;
+
+		// Generate cluster points
+		PointList clusters;
+		m_parent->getCorners(index, m_chunkSize, corners, up);
+		if(!generatePoints(index, (int)clusterAmount, corners, up, clusters)) return 0;
+
+		// Generate the actual points around the clusters
+		const vec3 dx = (corners[1] - corners[0]).normalise();
+		const vec3 dz = (corners[2] - corners[0]).normalise();
+		int shapePoints = m_clusterShapeMult<1 && m_clusterShapeOctaves>0? m_clusterShapeOctaves: 0;
+		float* shape = shapePoints? new float[shapePoints+1]: nullptr;
+		for(const GenPoint& centre: clusters) {
+			for(int i=1; i<=shapePoints; ++i) shape[i] = rng.randf();
+			if(shapePoints) shape[0] = shape[shapePoints];
+			float min = rng.randf(m_clusterGap);
+			float max = rng.randf(m_clusterRadius);
+			float area = PI*max*max - PI*min*min;
+			int amount = m_density * area;
+			if(amount <= 0) return 0;
+			float variance = max - min;
+			vec3 pos;
+			while(--amount>=0) {
+				float angle = rng.randf() * TWOPI;
+				float distance = min + rng.randf() * variance;
+				if(shapePoints) {
+					float t = shapePoints * angle / TWOPI;
+					float a = shape[(int)floor(t)];
+					float b = shape[(int)ceil(t)];
+					distance *= flerp(a, b, t-floor(t)) * m_clusterShapeMult;
+				}
+				pos.set(distance * cos(angle), 0, distance * sin(angle));
+				pos = centre.position + dx * pos.x + dz * pos.z;
+				addPointIfValid(pos);
+			}
+		}
+		delete [] shape;
+		return points.size() - start;
+	}
+	else { // Uniform
+		float amount = m_density * m_chunkSize * m_chunkSize;
+		if(rng.randf() < amount-floor(amount)) ++amount;
+		if(amount < 1) return 0;
+		
+		m_parent->getCorners(index, m_chunkSize, corners, up);
+		return generatePoints(index, (int)amount, corners, up, points);
+	}
 }
 
 // ----------------------------------------------------------------------------------------------------- //

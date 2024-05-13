@@ -65,6 +65,10 @@ class FoliageLayer : protected base::SceneNode {
 	void shift(const vec3& offset);
 	void setName(const char* name);
 
+	void setCluster(int seed, float density, const Rangef& radius, float falloff=0);
+	void setClusterGap(const Rangef&);
+	void setClusterShape(int points, float scale);
+
 	// Allow removing individual items - chopping down trees etc
 	const std::vector<FoliageItemRef> getItems(const vec3& point, float radius) const;
 	void removeItems(const Point& cell, const std::vector<int>& indices);
@@ -83,6 +87,15 @@ class FoliageLayer : protected base::SceneNode {
 	Rangef           m_scaleRange;
 	BoundingBox2D    m_mapBounds;
 	FoliageMap*      m_densityMap;
+
+	// Clustered distribution
+	int  m_clusterSeed = 0; // Use a non-zero value to match cluster points with another layer (tile size must match)
+	float m_clusterDensity = 0;
+	Rangef m_clusterRadius;
+	Rangef m_clusterGap; // no-spawn area in cluster centre
+	int m_clusterShapeOctaves = 0;
+	float m_clusterShapeMult = 1;
+	float m_clusterFalloff = 0;
 
 	protected:
 	typedef Point Index;
