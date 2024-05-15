@@ -1,10 +1,10 @@
 #include "modelviewer.h"
-#include "menubuilder.h"
 #include <base/editor/editor.h>
 #include <base/resources.h>
 #include <base/gui/widgets.h>
 #include <base/gui/lists.h>
 #include <base/gui/renderer.h>
+#include <base/gui/menubuilder.h>
 
 #include <base/shader.h>
 #include <base/material.h>

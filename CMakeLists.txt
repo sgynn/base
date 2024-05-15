@@ -246,6 +246,7 @@ set(guiheaders
 	include/base/gui/transform.h
 	include/base/gui/widgets.h
 	include/base/gui/colourpicker.h
+	include/base/gui/menubuilder.h
 )
 
 set(editorheaders

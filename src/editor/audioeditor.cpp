@@ -5,10 +5,10 @@
 #include <base/gui/widgets.h>
 #include <base/gui/lists.h>
 #include <base/gui/tree.h>
+#include <base/gui/menubuilder.h>
 #include <base/xml.h>
 #include <algorithm>
 
-#include "menubuilder.h"
 
 #include <base/editor/embed.h>
 BINDATA(editor_audio_gui, EDITOR_DATA "/audio.xml")

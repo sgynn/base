@@ -1,11 +1,10 @@
 #include <base/editor/assetbrowser.h>
 #include <base/resources.h>
 #include <base/directory.h>
+#include <base/gui/menubuilder.h>
 
 #include "imageviewer.h"
 #include "modelviewer.h"
-#include "menubuilder.h"
-
 #include "materialeditor.h"
 
 

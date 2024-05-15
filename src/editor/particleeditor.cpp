@@ -5,6 +5,7 @@
 #include <base/gui/widgets.h>
 #include <base/gui/lists.h>
 #include <base/gui/colourpicker.h>
+#include <base/gui/menubuilder.h>
 #include <base/resources.h>
 #include <base/script.h>
 #include <base/file.h>
@@ -15,7 +16,6 @@
 #include <list>
 #include <map>
 
-#include "menubuilder.h"
 
 #include <base/editor/embed.h>
 BINDATA(editor_particle_gui, EDITOR_DATA "/particles.xml")
