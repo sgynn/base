@@ -162,7 +162,7 @@ namespace script {
 	template<class F> struct UnpackFunctionCall<F, 0> {
 		template<class...Args> static Variable call(const F& func, const uint* argn, Context&& c, const Args&...args) { return func(args...); }
 	};
-	template<class F> Function* Function::bind(const F& f) { return new CFunction<0, F>(0, f); }
+	template<class F> Function* Function::bind(const F& f) { return new CFunction<0, F>({}, f); }
 	template<int N, class F> Function* Function::bind(const char* const (&params)[N], const F& f) { return new CFunction<N, F>(params, f); }
 	template<int N, class F> Variable CFunction<N,F>::evaluate(Context&& c) const { 
 		return UnpackFunctionCall<F, N>::call(m_function, getArgs(), std::forward<Context>(c));
