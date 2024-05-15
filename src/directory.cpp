@@ -66,6 +66,7 @@ int Directory::clean(const char* in, char* out, int lim) {
 		else if(strncmp(c, "/../", 4)==0 || strncmp(c, "/..", 4)==0) { //up
 			if((k==2 && strncmp(out, "..", 2)) || (k>2 && strncmp(&out[k-3], "/..", 3))) {
 				//remove segment
+				out[k] = 0;
 				while(k>0 && out[k]!='/') k--;
 				out[k] = 0;
 				c+=2;
@@ -124,6 +125,9 @@ int Directory::getRelativePath(const char* in, const char* root, char* out, int 
 	if(!isRelative(in)) {
 		char buffer[PATH_MAX];
 		strncpy(buffer, root, PATH_MAX-1);
+		int rootLen = strlen(root);
+		if(buffer[rootLen-1] != '/') strcpy(buffer+rootLen, "/");
+
 		// match ...
 		int m=0, up=0;
 		while(buffer[m] == in[m]) ++m;
