@@ -50,7 +50,15 @@ class PropertyMap : public base::HashMap<const char*> {
 	bool readValue(const char* key, int& value) const   { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
 
 	template<typename T> 
-	T getValue(const char* key, T fallback) const { readValue(key, fallback); return fallback; }
+	T getValue(const char* key, T fallback={}) const { readValue(key, fallback); return fallback; }
+
+	template<class R=int,int N>
+	R getEnum(const char* key, const char* const (&values)[N], R fallback={}) const {
+		if(const char* s = get(key, 0)) {
+			for(int i=0;i<N;++i) if(strcmp(values[i], s)==0) return (R)i;
+		}
+		return fallback;
+	}
 };
 
 
