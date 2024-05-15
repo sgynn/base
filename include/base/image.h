@@ -17,13 +17,13 @@ namespace base {
 		Image& operator=(const Image&);
 		Image& operator=(Image&&);
 
-		Mode getMode { return m_mode; }
+		Mode getMode() { return m_mode; }
 		Format getFormat() { return m_format; }
 		int getFaces() const { return m_faces; }
 		int getWidth() const { return m_width; }
 		int getHeight() const { return m_height; }
 		int getDepth() const { return m_depth; }
-		const byte* getData(int face=0) const { return face<faces?m_data[face]: nullptr; }
+		const byte* getData(int face=0) const { return face<m_faces? m_data[face]: nullptr; }
 		bool isCompressed() const { return m_format>=BC1 && m_format<=BC5; }
 		void decompress();
 		protected:
