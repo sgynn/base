@@ -31,7 +31,7 @@ namespace base {
 		void setMaterialPass(Pass*);
 		void setMaterial(Material*);
 		void setMaterialOverride(Material*);
-		void setMaterialTechnique(size_t);
+		void setMaterialTechnique(unsigned);
 		void setMaterialTechnique(const char*);
 		void setMaterialBlendOverride(const Blend& blend);
 		void setMaterialStateOverride(const MacroState&);
@@ -47,7 +47,7 @@ namespace base {
 		base::Camera*        m_camera = nullptr;
 		Pass*                m_activePass = nullptr;
 		Material*            m_materialOverride = nullptr;
-		size_t               m_materialTechnique = 0;
+		unsigned             m_materialTechnique = 0;
 		Blend*               m_blendOverride = nullptr;
 		MacroState*          m_stateOverride = nullptr;
 		StencilState*        m_stencilOverride = nullptr;

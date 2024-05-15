@@ -29,13 +29,8 @@ inline void eraseFast(std::vector<T>& list, T& item) {
 
 // ================================================================================= //
 
-#ifndef EMSCRIPTEN
 template<> constexpr float ValueGraph<float>::getDefault() { return 0.f; }
 template<> constexpr uint ValueGraph<uint>::getDefault() { return 0xffffffffu; }
-#else
-template<> float ValueGraph<float>::getDefault() { return 0.f; }
-template<> uint ValueGraph<uint>::getDefault() { return 0xffffffffu; }
-#endif
 
 template<>
 inline float ValueGraph<float>::lerp(float a, float b, float t) { return a*(1-t) + b*t; }

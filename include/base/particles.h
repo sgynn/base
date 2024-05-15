@@ -48,7 +48,7 @@ class ValueGraph {
 	int add(float key, T value);
 	T getValue(float key) const;
 	static T lerp(T a, T b, float t);
-	static T getDefault();
+	static constexpr T getDefault();
 	struct Pair { float key; T value; };
 	std::vector<Pair> data;
 	enum { Linear, Stepped, Spline } interpolation = Linear;;

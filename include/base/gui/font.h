@@ -32,7 +32,7 @@ class Font {
 	friend class FontLoader;
 	
 	struct GlyphRange {
-		size_t start;
+		unsigned start;
 		std::vector<Rect> glyphs;
 	};
 	struct Face {

@@ -139,7 +139,7 @@ int FontLoader::countGlyphs() const {
 
 void FontLoader::allocateGlyphs() {
 	for(const Range& r: m_glyphs) {
-		m_face->groups.push_back({(size_t)r.start});
+		m_face->groups.push_back({(unsigned)r.start});
 		m_face->groups.back().glyphs.resize(r.end - r.start + 1, Rect()); 
 	}
 }

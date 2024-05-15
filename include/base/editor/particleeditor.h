@@ -3,7 +3,7 @@
 #include <base/gui/gui.h>
 #include "editor.h"
 
-namespace particle { class Manager; class Object; class System; class Emitter; class Affector; class RenderData; template<class T>class Definition; }
+namespace particle { class Manager; class Object; class System; class Emitter; class Affector; class RenderData; template<class T>struct Definition; }
 namespace nodegraph { class NodeEditor; class Node; struct Link; }
 namespace gui { class Button; class Popup; }
 namespace script { class Variable; }

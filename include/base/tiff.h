@@ -15,14 +15,15 @@ class Tiff {
 /** Allow streaming - only uncompressed images */
 class TiffStream {
 	public:
+	typedef unsigned uint;
 	enum Mode { READ=1, WRITE=2, READWRITE=3 };
 	static TiffStream* openStream(const char* filename, Mode mode=READ);
 	static TiffStream* createStream(const char* filename, int width, int height, int channels, int bitsPerChannel=8, Mode mode=WRITE, void* data=0, size_t length=0);
 	bool   good() const     { return m_stream!=0; }
-	uint   bpp()  const     { return m_bitsPerSample * m_samplesPerPixel; }
-	uint   width() const    { return m_width; }
-	uint   height() const   { return m_height; }
-	uint   channels() const { return m_samplesPerPixel; }
+	uint    bpp()  const     { return m_bitsPerSample * m_samplesPerPixel; }
+	uint    width() const    { return m_width; }
+	uint    height() const   { return m_height; }
+	uint    channels() const { return m_samplesPerPixel; }
 
 	size_t getPixel(int x, int y, void* data) const;
 	size_t readBlock(int x, int y, int width, int height, void* data) const;

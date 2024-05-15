@@ -142,7 +142,7 @@ void RenderState::setStencilOverride(const StencilState& s) {
 	else *m_stencilOverride = s;
 }
 
-void RenderState::setMaterialTechnique(size_t id) {
+void RenderState::setMaterialTechnique(unsigned id) {
 	m_materialTechnique = id;
 }
 
