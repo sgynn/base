@@ -48,6 +48,7 @@ Root::Root(int w, int h, Renderer* renderer) : m_focus(0), m_mouseFocus(0), m_ke
 		registerClass<CollapsePane>();
 		registerClass<Popup>();
 		registerClass<ScaleBox>();
+		registerClass<Slider>();
 
 		registerLayout<HorizontalLayout>();
 		registerLayout<VerticalLayout>();

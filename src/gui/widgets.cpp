@@ -980,6 +980,115 @@ void Scrollpane::scrollChanged(Scrollbar*, int) {
 
 // ===================================================================================== //
 
+Slider::Slider(const Rect& r, Skin* s) : Widget(r, s) {
+}
+
+void Slider::initialise(const Root*, const PropertyMap& p) {
+	p.readValue("min", m_range.min);
+	p.readValue("min", m_range.max);
+	m_block[0] = getTemplateWidget("_block");
+	m_block[1] = getTemplateWidget("_block2");
+	m_orientation = p.getEnum("orientaton", {"horizontal", "vertical"}, HORIZONTAL);
+	for(Widget* w: m_block) {
+		if(w) {
+			w->eventMouseDown.bind(this, &Slider::pressBlock);
+			w->eventMouseMove.bind(this, &Slider::moveBlock);
+		}
+	}
+}
+void Slider::copyData(const Widget* from) {
+	if(const Slider* s = cast<Slider>(from)) {
+		m_orientation = s->m_orientation;
+		m_quantise = s->m_quantise;
+		m_range = s->m_range;
+		m_value = s->m_value;
+	}
+}
+void Slider::setSize(int w, int h) {
+	Super::setSize(w, h);
+	updateBlock();
+}
+void Slider::setRange(float min, float max) {
+	m_range.min = min;
+	m_range.max = fmax(min, max);
+	updateBlock();
+}
+void Slider::setQuantise(float step) {
+	m_quantise = fmax(0, step);
+	setValue(m_value);
+}
+void Slider::setValue(float min, float max, bool trigger) {
+	auto clamp = [this](float v) { return v<m_range.min? m_range.min: v>m_range.max? m_range.max: v; };
+	min = clamp(min);
+	max = clamp(max);
+	if(max < min || !m_block[1]) max = min;
+	if(m_quantise>0) {
+		min = floor(min/m_quantise+0.5)*m_quantise;
+		max = floor(max/m_quantise+0.5)*m_quantise;
+	}
+	if(min==m_value.min && max==m_value.max) return;
+	m_value.min = min;
+	m_value.max = max;
+	updateBlock();
+	if(trigger && eventChanged) eventChanged(this, m_value);
+}
+void Slider::setValue(float v, bool trigger) { setValue(v,v,trigger); }
+
+bool Slider::onMouseWheel(int w) {
+	float diff = m_quantise? w*m_quantise: w * (m_range.max - m_range.min) * 0.05;
+	setValue(m_value.min+diff, m_value.max+diff, true);
+	return true;
+}
+
+void Slider::pressBlock(Widget*, const Point& p, int b) {
+	if(m_range.max == m_range.min) return;
+	m_held = p[m_orientation];
+}
+
+void Slider::moveBlock(Widget* c, const Point& p, int b) {
+	if(b && m_held>=0) {
+		int pmin=0, pmax=getSize()[m_orientation] - c->getSize()[m_orientation];
+		if(c==m_block[0] && m_block[1]) pmax -= m_block[1]->getSize()[m_orientation];
+		if(c==m_block[1] && m_block[0]) pmin += m_block[0]->getSize()[m_orientation];
+		if(pmax <= pmin) return; // error
+
+		int np = p[m_orientation] - m_held + c->getPosition()[m_orientation];
+		float normalisedValue = (float)(np - pmin) / (pmax-pmin);
+		float value = m_range.min + normalisedValue * (m_range.max-m_range.min);
+		if(value<m_range.min) value = m_range.min;
+		if(value>m_range.max) value = m_range.max;
+
+		if(c==m_block[0]) setValue(value, fmax(value, m_value.max), true);
+		if(c==m_block[1]) setValue(fmin(value, m_value.min), value, true);
+	}
+	else m_held = -1;
+}
+
+void Slider::updateBlock() {
+	int w = getSize()[m_orientation];
+	if(m_block[0]) {
+		int pmax = w - m_block[0]->getSize()[m_orientation];
+		if(m_block[1]) pmax -= m_block[1]->getSize()[m_orientation];
+		float p = (m_value.min - m_range.min) / (m_range.max - m_range.min);
+		Point pos = m_block[0]->getPosition();
+		pos[m_orientation] = p * pmax;
+		m_block[0]->setPosition(pos);
+	}
+
+	if(m_block[1]) {
+		int pmin = m_block[0]? m_block[0]->getSize()[m_orientation]: 0;
+		int pmax = w - m_block[1]->getSize()[m_orientation];
+		float p = (m_value.max - m_range.min) / (m_range.max - m_range.min);
+		Point pos = m_block[1]->getPosition();
+		pos[m_orientation] = pmin + p * (pmax-pmin);
+		m_block[1]->setPosition(pos);
+	}
+}
+
+
+
+// ===================================================================================== //
+
 
 TabbedPane::TabbedPane(const Rect& r, Skin* s) : Widget(r, s), m_buttonTemplate(0), m_tabStrip(0), m_tabFrame(0), m_currentTab(-1), m_autoSizeTabs(true) {}
 void TabbedPane::initialise(const Root* r, const PropertyMap& p) {

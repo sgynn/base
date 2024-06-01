@@ -340,6 +340,42 @@ class Scrollpane : public Widget {
 	Scrollbar* m_hScroll;
 };
 
+/** Slider - For float value input. Can have two blocks for min and max */
+class Slider : public Widget {
+	WIDGET_TYPE(Slider);
+	struct Range { float min, max; operator float() const { return min; } operator float*() { return &min; } };
+	Slider(const Rect& r, gui::Skin* s);
+	void setValue(float value, bool triggerEvent=false);
+	void setValue(float min, float max, bool triggerEvent=false);
+	void setRange(float min, float max);
+	void setSize(int width, int height) override;
+	void setQuantise(float step);
+	float getQuantise() const { return m_quantise; }
+	const Range& getValue() const { return m_value; }
+	const Range& getRange() const { return m_range; }
+	Orientation getOrientation() const { return m_orientation; }
+	using Widget::setSize;
+	public:
+	Delegate<void(Slider*, const Range&)> eventChanged;
+	private:
+	void initialise(const gui::Root*, const gui::PropertyMap&) override;
+	void copyData(const Widget*) override;
+	bool onMouseWheel(int w) override;
+	void pressBlock(Widget*, const Point&, int);
+	void moveBlock(Widget*, const Point&, int);
+	void updateBlock();
+	int  getPixelRange() const;
+	protected:
+	Orientation m_orientation;
+	Widget* m_block[2];
+	int     m_held = -1;
+	Range   m_range = {0,1};
+	Range   m_value = {0,1};
+	float   m_quantise=0;
+};
+
+
+
 /** TabbedPane */
 class TabbedPane : public Widget {
 	WIDGET_TYPE(TabbedPane);
