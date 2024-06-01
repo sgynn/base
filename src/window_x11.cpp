@@ -255,14 +255,16 @@ uint X11Window::pumpEvents(Input* input) {
 	XKeyEvent *keyevent;
 	XButtonEvent *buttonevent;
 	bool down;
-	char* atom;
 	while(XPending(getXDisplay())) {
 		XNextEvent(getXDisplay(), &event);
 		switch (event.type) {
 			case ClientMessage:
-				atom = XGetAtomName(getXDisplay(), event.xclient.message_type);
-				//printf("Close Window\n");
-				if(*atom==*"WM_PROTOCOLS") return 0x100;
+				{
+				char* atom = XGetAtomName(getXDisplay(), event.xclient.message_type);
+				bool closeMessage = strcmp(atom, "WM_PROTOCOLS") == 0;
+				XFree(atom);
+				if(closeMessage) return 0x100;
+				}
 				break;
 			case ConfigureNotify:
 				if(event.xconfigure.width!=m_size.x || event.xconfigure.height!=m_size.y) {

@@ -130,6 +130,7 @@ IconList* ColourPicker::createImages(Root* root, int size) {
 	images->addIcon("checker", bar);
 	images->addIcon("dot", Rect(size+1, 1, 1, 1));
 	root->addIconList("colourpicker", images);
+	delete [] imageData;
 	return images;
 }
 
