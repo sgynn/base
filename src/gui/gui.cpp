@@ -32,6 +32,7 @@ Root::Root(int w, int h, Renderer* renderer) : m_focus(0), m_mouseFocus(0), m_ke
 	m_root->setTangible(Tangible::CHILDREN);
 	m_root->m_root = this;
 	if(!m_renderer) setRenderer(new Renderer());
+	else ++m_renderer->m_references;
 
 	// Register defaut widgets
 	if(!s_constuct.contains("Widget")) {
