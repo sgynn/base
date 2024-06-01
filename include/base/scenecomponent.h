@@ -25,6 +25,7 @@ class SceneComponent : public base::GameStateComponent {
 	Scene*     m_scene;
 	Workspace* m_workspace;
 	Renderer*  m_renderer;
+	float      m_time = 0;
 };
 
 }

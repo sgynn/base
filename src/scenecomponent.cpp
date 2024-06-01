@@ -15,6 +15,7 @@ SceneComponent::SceneComponent(Scene* scene, Camera* camera, CompositorGraph* gr
 	DebugGeometryManager::getInstance()->initialise(scene, 10, false);
 	setCompositor(graph);
 	m_workspace->setCamera(camera);
+	m_time = Game::gameTime();
 }
 
 SceneComponent::~SceneComponent() {
@@ -23,8 +24,9 @@ SceneComponent::~SceneComponent() {
 }
 
 void SceneComponent::update() {
+	if(!getState()->isPaused()) m_time += Game::frameTime();
 	m_scene->updateSceneGraph();
-	m_renderer->getState().getVariableSource()->setTime(Game::gameTime());
+	m_renderer->getState().getVariableSource()->setTime(m_time, Game::frameTime());
 }
 
 void SceneComponent::draw() {

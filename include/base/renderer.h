@@ -67,7 +67,7 @@ namespace base {
 		void setQueueMode(unsigned char queue, RenderQueueMode mode);
 
 		void render(unsigned char first=0, unsigned char last=255);
-		void clearScreen();
+		static void clearScreen();
 
 		RenderState& getState() { return m_state; }
 		RenderQueueMode getQueueMode(unsigned char queue) const { return m_queueMode[queue]; }

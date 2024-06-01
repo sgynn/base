@@ -55,37 +55,42 @@ class GameState : public GameStateComponent {
 	friend class GameStateManager;
 	friend class GameStateComponent;
 	public:
-		GameState(StateMode mode=TRANSIENT);
-		virtual ~GameState();
+	GameState(StateMode mode=TRANSIENT);
+	virtual ~GameState();
 
-		void update() {}
-		void draw() {}
+	void update() {}
+	void draw() {}
 
-		void addComponent(GameStateComponent*);
-		void removeComponent(GameStateComponent*);
+	void addComponent(GameStateComponent*);
+	void removeComponent(GameStateComponent*);
 
-		template<class T> T* getComponent() {
-			for(GameStateComponent* c: m_updateComponents) if(T* r = dynamic_cast<T*>(c)) return r;
-			return 0;
-		}
+	template<class T> T* getComponent() {
+		for(GameStateComponent* c: m_updateComponents) if(T* r = dynamic_cast<T*>(c)) return r;
+		return 0;
+	}
 
-	//protected:
-		/** Set the next state to change to and start transitions */
-		void changeState(GameState* state);
+	bool isPaused() const { return m_paused; }
+	virtual void setPaused(bool p) { m_paused = p; }
 
-		/** Get the previous state */
-		GameState* previousState() const;
+	/** Set the next state to change to and start transitions */
+	void changeState(GameState* state);
+
+	/** Get the previous state */
+	GameState* previousState() const;
+
+	protected:
+	bool m_paused = false;
 
 	private:
-		void updateState();
-		void drawState();
+	void updateState();
+	void drawState();
 
 	private:
-		GameStateManager* m_stateManager;
-		unsigned m_componentFlags;
-		std::vector<GameStateComponent*> m_updateComponents;
-		std::vector<GameStateComponent*> m_drawComponents;
-		bool m_transient = false;
+	GameStateManager* m_stateManager;
+	unsigned m_componentFlags;
+	std::vector<GameStateComponent*> m_updateComponents;
+	std::vector<GameStateComponent*> m_drawComponents;
+	bool m_transient = false;
 };
 
 /** Game State manager - Handles transitions and control */
