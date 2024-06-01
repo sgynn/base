@@ -92,7 +92,7 @@ bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset
 		if(system) {
 			ParticleEditor::save(system, asset.file);
 			for(ParticleEditor* e: m_editors) if(e->m_system==system) e->m_modified = false;
-			//getEditor()->assetChanged(asset, false);
+			getEditor()->assetChanged(asset.file, false);
 		}
 	});
 
@@ -105,7 +105,7 @@ Widget* ParticleEditorComponent::openAsset(const Asset& asset) {
 	const char* name = asset.resource;
 	if(!name) name = getResourceNameFromFile(res, asset.file);
 	particle::System* system = res.get(name);
-	ParticleEditor* editor = showParticleSystem(system, asset.resource);
+	ParticleEditor* editor = showParticleSystem(system, name);
 	return editor? editor->getPanel(): nullptr;
 }
 
@@ -582,8 +582,12 @@ ParticleNode* ParticleEditor::createGraphNode(NodeType type, const char* classNa
 void ParticleEditor::notifyChange() {
 	if(m_modified) return;
 	m_modified = true;
+	char file[256];
+	sprintf(file, "./");
 	const char* asset = base::Resources::getInstance()->particles.getName(m_system);
-	if(asset) m_parent->getEditor()->assetChanged(asset, true);
+	if(asset && base::Resources::getInstance()->particles.findFile(asset, file+2, 256)) {
+		m_parent->getEditor()->assetChanged(file[2]=='.' || file[2]=='/'? file+2: file, true);
+	}
 }
 
 void ParticleEditor::reinitialise() {

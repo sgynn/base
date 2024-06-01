@@ -71,6 +71,7 @@ namespace base {
 			return result;
 		}
 
+		static String cat(const char* a, const char* b) { return cat(a, strlen(a), b, strlen(b)); }
 		static String cat(const char* a, int alen, const char* b, int blen) {
 			if(alen==0) return String(b, blen);
 			if(blen==0) return String(a, alen);

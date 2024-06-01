@@ -262,7 +262,7 @@ void AssetBrowser::refreshItems() {
 	// Then get the resource assets
 	int pathLength = m_localPath.length();
 	for(const Asset& asset: m_resources) {
-		if(asset.resource.startsWith(m_localPath) && !strchr(asset.resource+pathLength, '/')) {
+		if(asset.resource && asset.resource.startsWith(m_localPath) && !strchr(asset.resource+pathLength, '/')) {
 			// Make sure it is not already added by the file search
 			for(Widget* w: m_items) {
 				Asset& tileAsset = w->as<AssetTile>()->asset;
