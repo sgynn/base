@@ -14,7 +14,8 @@ struct PatchTag {
 };
 
 
-TerrainDrawable::TerrainDrawable(Landscape* land) : m_land(land) {
+TerrainDrawable::TerrainDrawable(Landscape* land, Material* mat) : m_land(land) {
+	setMaterial(mat);
 	m_land->setPatchCallbacks( ::bind(this, &TerrainDrawable::patchCreated),
 							   ::bind(this, &TerrainDrawable::patchDetroyed),
 							   ::bind(this, &TerrainDrawable::patchUpdated));

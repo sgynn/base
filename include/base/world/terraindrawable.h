@@ -10,7 +10,7 @@ struct PatchGeometry;
 // Terrain class wraps landscape module
 class TerrainDrawable : public base::Drawable {
 	public:
-	TerrainDrawable(Landscape*);
+	TerrainDrawable(Landscape* land, Material* mat=nullptr);
 	void draw(RenderState&) override;
 	Landscape* getLandscape() { return m_land; }
 	private:
