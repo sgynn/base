@@ -1673,9 +1673,13 @@ void Popup::initialise(const Root*, const PropertyMap& p) {
 	setVisible(false);
 }
 void Popup::popup(Root* root, const Point& abs, Widget* owner) {
-	if(m_parent) m_parent->remove(this);
-	root->getRootWidget()->add(this, abs.x, abs.y);
+	if(m_parent == root->getRootWidget()) setPosition(abs);
+	else {
+		if(m_parent) m_parent->remove(this);
+		root->getRootWidget()->add(this, abs.x, abs.y);
+	}
 	setVisible(true);
+	raise();
 	Widget* ownerPopup = owner;
 	while(ownerPopup && !cast<Popup>(ownerPopup)) ownerPopup = ownerPopup->getParent();
 	if(ownerPopup) {
