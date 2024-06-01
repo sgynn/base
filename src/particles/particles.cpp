@@ -136,7 +136,7 @@ void Emitter::updateT(int thread, int count, Instance* instance, float time) con
 		Particle& particle = instance->m_pool[ data[i] ];
 		for(const Affector* a: m_affectors) {
 			if(particle.affectorMask & a->getDataIndex())
-				a->update(particle, instance->m_time, time);
+				a->update(*instance, particle, time);
 		}
 		particle.position += particle.velocity * time;
 		if(particle.dieTime < instance->m_time) instance->m_destroy[thread].push_back( Instance::DestroyMessage{this, &particle, i} );
@@ -240,7 +240,7 @@ void Emitter::trigger(Instance* instance, Particle& p) const {
 }
 
 void Affector::trigger(Instance* inst, Particle& p) const {
-	update(p, inst->getTime(), 1.f);
+	update(*inst, p, 1.f);
 }
 
 // ===================================================================================== //
@@ -414,7 +414,6 @@ void Instance::shift(const vec3& delta) {
 }
 
 void Instance::update(float time) {
-	if(!m_enabled) return;
 	// Need to reset head pointers if paused
 	if(time==0) {
 		for(RenderInstance& r: m_renderers) r.render->setCount(this, r.count, m_threads);
@@ -424,8 +423,10 @@ void Instance::update(float time) {
 	m_time += time;
 
 	// Update spawns
-	for(EmitterInstance& e: m_emitters) {
-		if(e.enabled && !e.emitter->eventOnly) e.emitter->update(this, time);
+	if(m_enabled) {
+		for(EmitterInstance& e: m_emitters) {
+			if(e.enabled && !e.emitter->eventOnly) e.emitter->update(this, time);
+		}
 	}
 
 	// Fire threaded events

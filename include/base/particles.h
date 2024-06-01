@@ -120,7 +120,7 @@ class RenderData : public Object {
 // Affector base class - modifies particles over time
 class Affector : public Object {
 	public:
-	virtual void update(Particle&, float systemTime, float deltaTime) const = 0;
+	virtual void update(Instance&, Particle&, float deltaTime) const = 0;
 	void trigger(Instance*, Particle&) const;
 	bool startEnabled = true;
 };
@@ -238,6 +238,9 @@ class Instance {
 	void reset();
 	void shift(const vec3&);
 
+	virtual const Matrix& getTransform() const = 0;
+	virtual vec3 getVelocity() const { return vec3(); }
+
 	protected:
 	void initialiseThreadData(int m_threads);
 	Particle& allocate(const Emitter*);
@@ -246,8 +249,6 @@ class Instance {
 	void updateT(int threadIndex, int threadCount, float time, const Matrix& view);
 
 	virtual void updateGeometry() = 0;
-	virtual const Matrix& getTransform() const = 0;
-	virtual vec3 getVelocity() const { return vec3(); }
 
 	protected:
 	friend class Emitter;
