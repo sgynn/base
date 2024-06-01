@@ -118,7 +118,8 @@ class Widget {
 	bool hasMouseFocus() const;	// Does this widget have mouse focus
 	bool isVisible() const;		// Is this widget visible
 	bool isEnabled() const;		// Is this widget enabled
-	Tangible isTangible() const;	// Do mouse clicks register on this widget, or go to the one behind
+	Tangible getTangible() const;	// Do mouse clicks register on this widget, or go to the one behind
+	bool isTangible() const;	// Do mouse clicks register - this one checks parent states too
 	bool isParentEnabled() const; // False if any parent is disabled
 	bool isSelected() const;	// Is this widget's state selected
 	bool isTemplate() const;	// Is this a template sub-widget

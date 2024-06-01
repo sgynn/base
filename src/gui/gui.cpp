@@ -595,9 +595,17 @@ void Widget::setAutosize(bool v) {
 	}
 }
 
+Tangible Widget::getTangible() const { return (Tangible)(m_states>>2 & 3); }
+bool Widget::isTangible() const {
+	if(~m_states&4) return false; // Not SELF
+	for(Widget* p=m_parent; p; p=p->m_parent) {
+		if(~p->m_states&8) return false; // CHILDREN
+	}
+	return true;
+}
+
 bool Widget::isVisible() const { return m_states&1; }
 bool Widget::isEnabled() const { return m_states&2; }
-Tangible Widget::isTangible() const { return (Tangible)(m_states>>2 & 3); }
 bool Widget::isSelected() const { return m_states&0x10; }
 bool Widget::isTemplate() const { return m_states&0x20; }
 bool Widget::isParentEnabled() const { return !m_parent || (m_parent->isEnabled() && m_parent->isParentEnabled()); }
@@ -714,7 +722,7 @@ Widget* Widget::getWidget(const Point& p, int typeMask, bool tg, bool tm, bool c
 	for(Widget* w = client; w!=this; w=w->m_parent) clientOffset += w->m_rect.position();
 	for(int i=client->m_children.size()-1; i>=0; --i) {
 		Widget* child = client->m_children[i];
-		if(child->isVisible() && (tg || child->isTangible()!=Tangible::NONE)) {
+		if(child->isVisible() && (tg || child->getTangible()!=Tangible::NONE)) {
 			Point local = p - clientOffset - child->m_rect.position();
 			if(child->contains(local)) {
 				if(tg || (child->m_states&8)) {
