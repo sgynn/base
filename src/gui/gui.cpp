@@ -10,6 +10,16 @@
 
 using namespace gui;
 
+#ifdef WIDGET_LEAK_CHECK
+#include <set>
+static std::set<Widget*> s_widgetLeakList;
+void dumpLeakedWidgets() {
+	if(s_widgetLeakList.empty()) return;
+	printf("--- %d leaked widgets ---\n", s_widgetLeakList.size());
+	for(auto i: s_widgetLeakList) printf("[%s] %s (%dx%d)\n", i->getTypeName(), i->getName(), i->getSize().x, i->getSize().y);
+	printf("---\n");
+}
+#endif
 
 
 /** Static definitions */
@@ -55,6 +65,10 @@ Root::Root(int w, int h, Renderer* renderer) : m_focus(0), m_mouseFocus(0), m_ke
 		registerLayout<FlowLayout>();
 		registerLayout<FixedGridLayout>();
 		registerLayout<DynamicGridLayout>();
+
+		#ifdef WIDGET_LEAK_CHECK
+		atexit(dumpLeakedWidgets);
+		#endif
 	}
 }
 
@@ -345,6 +359,9 @@ Widget* Widget::clone(const char* newType) const {
 Widget::Widget(const Rect& r, Skin* s): m_rect(r), m_skin(s), m_colour(-1), m_anchor(0), m_layout(0), m_relative(0),
 		m_states(0xf), m_skipTemplate(0), m_parent(0), m_root(0) {
 	m_client = this;
+	#ifdef WIDGET_LEAK_CHECK
+	s_widgetLeakList.insert(this);
+	#endif
 }
 
 Widget::~Widget() {
@@ -354,6 +371,9 @@ Widget::~Widget() {
 	else if(m_root) setRoot(nullptr);
 	for(Widget* w: m_children) delete w;
 	if(m_layout && --m_layout->ref<=0) delete m_layout;
+	#ifdef WIDGET_LEAK_CHECK
+	s_widgetLeakList.erase(this);
+	#endif
 }
 
 void Widget::initialise(const Root*, const PropertyMap&) {
