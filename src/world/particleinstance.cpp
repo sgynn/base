@@ -10,12 +10,17 @@
 using namespace base;
 using namespace particle;
 
-ParticleInstance::ParticleInstance(Manager* m, System* system, const char* name) : Instance(system), SceneNode(name) {
+ParticleInstance::ParticleInstance(Manager* m, System* system, const char* name, int queue) : Instance(system), SceneNode(name), m_renderQueue(queue) {
 	m->add(this);
 }
 
 ParticleInstance::~ParticleInstance() {
 	destroyDrawables();
+}
+
+void ParticleInstance::setRenderQueue(int q) {
+	m_renderQueue = q;
+	for(Drawable* d: m_drawables) d->setRenderQueue(q);
 }
 
 void ParticleInstance::initialise() {
@@ -41,7 +46,7 @@ void* ParticleInstance::createDrawable(const RenderData* data) {
 			tag->drawable->setMaterial(Resources::getInstance()->materials.get("particleinst.mat"));
 			tag->drawable->setInstanceBuffer(tag->buffer);
 			tag->drawable->setInstanceCount(0);
-			tag->drawable->setRenderQueue(10);
+			tag->drawable->setRenderQueue(m_renderQueue);
 		}
 		else printf("Failed to load mesh '%s'\n", data->getInstancedMesh());
 	}
@@ -49,7 +54,7 @@ void* ParticleInstance::createDrawable(const RenderData* data) {
 		Mesh* mesh = new Mesh();
 		mesh->setVertexBuffer(tag->buffer);
 		tag->drawable = new DrawableMesh(mesh);
-		tag->drawable->setRenderQueue(10);
+		tag->drawable->setRenderQueue(m_renderQueue);
 		tag->instanced = false;
 		switch(data->getDataType()) {
 		case RenderData::QUADS: mesh->setPolygonMode(PolygonMode::QUADS); break;
