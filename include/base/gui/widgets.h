@@ -116,6 +116,7 @@ class Checkbox : public Button {
 	void setSelected(bool) override;
 	bool isChecked() const { return isSelected(); }
 	void setChecked(bool c) { setSelected(c); }
+	void setDragSelect(int s) { m_dragMode = s; }
 	void setIcon(IconList* list, int checked, int unchecked=-1);
 	void setIcon(IconList* list, const char* checked, const char* unchecked=0);
 	void setIcon(int checked, int unchecked=-1) { setIcon(getIconList(), checked, unchecked); }
@@ -129,7 +130,7 @@ class Checkbox : public Button {
 	void onKey(int code, wchar_t chr, KeyMask mask) override;
 	void copyData(const Widget*) override;
 	protected:
-	bool m_dragMode = false;
+	int m_dragMode = 0;
 	int m_checkedIcon = -1;
 	int m_uncheckedIcon = -1;
 };

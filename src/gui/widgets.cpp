@@ -410,12 +410,16 @@ void Checkbox::onMouseMove(const Point& last, const Point& pos, int b) {
 		Point global = m_derivedTransform.transform(pos);
 		if(Checkbox* target = getRoot()->getRootWidget()->getWidget<Checkbox>(global, false, true)) {
 			if(target->isChecked() != isChecked()) {
-				Widget* p0 = m_parent;
-				Widget* p1 = target->getParent();
-				if(p0 != p1) { p0=p0->getParent(); p1=p1->getParent(); }
-				if(p0 == p1) {
-					target->setChecked(isChecked());
-					if(target->eventChanged) target->eventChanged(target);
+				Widget* p0 = this;
+				Widget* p1 = target;
+				for(int i=0; i<m_dragMode; ++i) {
+					p0 = p0->getParent();
+					p1 = p1->getParent();
+					if(p0 == p1) {
+						target->setChecked(isChecked());
+						if(target->eventChanged) target->eventChanged(target);
+						break;
+					}
 				}
 			}
 		}
