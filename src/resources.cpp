@@ -41,7 +41,7 @@ bool ResourceManagerBase::findFile(const char* name, char* out, size_t s) const 
 		FILE* fp = fopen(name, "rb");
 		if(fp) {
 			fclose(fp);
-			strcpy(out, name);
+			strncpy(out, name, s-1);
 			return true;
 		}
 	}

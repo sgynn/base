@@ -92,9 +92,13 @@ void AssetBrowser::initialise() {
 	getEditor()->addTransientComponent(new MaterialEditor());
 	
 
-	getEditor()->assetChanged.bind([this](const char* asset, bool changed) {
+	getEditor()->assetChanged.bind([this](const Asset& asset, bool changed) {
+		if(!asset.file) return;
+		String file = asset.file;
+		if(!asset.file.startsWith("./") && !asset.file.startsWith("../")) file = "./" + file;
+		if(!changed) printf("NotifySaved %s\n", file.str());
 		for(size_t i=0; i<m_modifiedFiles.size(); ++i) {
-			if(strcmp(asset, m_modifiedFiles[i])==0) {
+			if(m_modifiedFiles[i] == file) {
 				if(changed) return;
 				m_modifiedFiles[i] = std::move(m_modifiedFiles.back());
 				m_modifiedFiles.pop_back();
@@ -103,7 +107,7 @@ void AssetBrowser::initialise() {
 			}
 		}
 		if(changed) {
-			m_modifiedFiles.push_back(asset);
+			m_modifiedFiles.push_back(std::move(file));
 			refreshItems();
 		}
 	});

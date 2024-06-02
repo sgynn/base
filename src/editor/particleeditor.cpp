@@ -88,11 +88,11 @@ bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset
 	if(!base::StringView(asset.file).endsWith(".pt")) return false;
 
 	menu.addAction("Save", [this, &asset]() {
-		particle::System* system = base::Resources::getInstance()->particles.get(asset.resource);
+		particle::System* system = base::Resources::getInstance()->particles.get(asset.resource? asset.resource: asset.file);
 		if(system) {
 			ParticleEditor::save(system, asset.file);
 			for(ParticleEditor* e: m_editors) if(e->m_system==system) e->m_modified = false;
-			getEditor()->assetChanged(asset.file, false);
+			getEditor()->assetChanged(asset, false);
 		}
 	});
 
@@ -153,7 +153,7 @@ void ParticleEditorComponent::saveAll() {
 				e->save(e->getParticleSystem(), file);
 				printf("Saved %s\n", file);
 				e->m_modified = false;
-				getEditor()->assetChanged(name, false);
+				getEditor()->assetChanged(Asset{ResourceType::Particle, name, file}, false);
 			}
 			else printf("Error: Particle system not in resourve manager\n");
 		}
@@ -583,10 +583,9 @@ void ParticleEditor::notifyChange() {
 	if(m_modified) return;
 	m_modified = true;
 	char file[256];
-	sprintf(file, "./");
-	const char* asset = base::Resources::getInstance()->particles.getName(m_system);
-	if(asset && base::Resources::getInstance()->particles.findFile(asset, file+2, 256)) {
-		m_parent->getEditor()->assetChanged(file[2]=='.' || file[2]=='/'? file+2: file, true);
+	const char* resource = base::Resources::getInstance()->particles.getName(m_system);
+	if(resource && base::Resources::getInstance()->particles.findFile(resource, file, 256)) {
+		m_parent->getEditor()->assetChanged({ ResourceType::Particle, resource, file }, true);
 	}
 }
 
@@ -684,6 +683,7 @@ void ParticleEditor::unlinked(const nodegraph::Link& link) {
 	ParticleNode* b = cast<ParticleNode>(link.b);
 	if(a->getNodeType() == EmitterNode && b->getNodeType() == AffectorNode) {
 		((particle::Emitter*)a->getNodeData())->removeAffector((particle::Affector*)b->getNodeData());
+		notifyChange();
 	}
 	else if(a->getNodeType() == EmitterNode && b->getNodeType() == RenderDataNode) {
 		particle::RenderData* data = (particle::RenderData*)b->getNodeData();

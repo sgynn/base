@@ -64,7 +64,7 @@ class SceneEditor : public base::GameStateComponent {
 	void cancelActiveTools(EditorComponent* skip=nullptr); // An action can cancel effects of other editors
 
 	// Handlers for opening resources for edit/preview
-	MultiDelegate<void(const char*, bool)> assetChanged;
+	MultiDelegate<void(const Asset&, bool)> assetChanged;
 
 	// Scene object construction - dropping files on the world
 	template<class F> void addConstructor(const F& lambda) { m_construct.push_back({}); m_construct.back().bind(lambda); }
