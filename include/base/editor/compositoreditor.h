@@ -68,7 +68,6 @@ class CompositorEditor : public EditorComponent {
 	void removePass(gui::Button*);
 
 	void addConnector(int mode, gui::Widget* list, const char* name);
-	void clearConnectors(int mode, gui::Widget* list);
 	void renameConnector(gui::Textbox*);
 	void removeItem(gui::Button*);
 
@@ -82,6 +81,7 @@ class CompositorEditor : public EditorComponent {
 	void buildInputConnectors(gui::Widget* list);
 	void buildOutputConnectors(gui::Widget* list);
 
+	template<class F> void eachActiveNode(F&& func);
 
 	protected:
 	gui::Widget* m_panel = 0;

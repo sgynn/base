@@ -381,6 +381,32 @@ unsigned Node::getConnectorType(ConnectorMode mode, unsigned index) const {
 	return list[index].type;
 }
 
+bool Node::editConnector(ConnectorMode mode, unsigned index, const char* name, unsigned type, bool single) {
+	std::vector<Connector>& list = mode==INPUT? m_inputs: m_outputs;
+	if(index >= list.size()) return false;
+	cast<Button>(list[index].widget)->setCaption(name);
+	list[index].single = single;
+	list[index].type = type;
+	return true;
+}
+
+bool Node::editConnector(ConnectorMode mode, unsigned index, const char* name, unsigned type) {
+	return editConnector(mode, index, name, type, mode==INPUT);
+}
+
+bool Node::removeConnector(ConnectorMode mode, unsigned index) {
+	std::vector<Connector>& list = mode==INPUT? m_inputs: m_outputs;
+	if(index>=list.size()) return false;
+	disconnect(mode, index);
+	delete list[index].widget;
+	list.erase(list.begin() + index);
+	for(Link* link: m_links) {
+		if(mode==INPUT && link->b == this && link->ib > index) --link->ib;
+		if(mode==OUTPUT && link->a == this && link->ia > index) --link->ia;
+	}
+	return true;
+}
+
 void Node::setScale(float s) {
 	for(int i=0; i<getTemplateCount(); ++i) {
 		if(Label* l = getTemplateWidget(i)->as<Label>()) {

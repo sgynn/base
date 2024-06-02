@@ -94,6 +94,9 @@ class Node : public gui::Button {
 	unsigned getConnectorType(ConnectorMode mode, unsigned index) const;
 	void forceStartDrag();
 	void setPersistant(bool persist) { m_canBeDeleted = !persist; }
+	bool editConnector(ConnectorMode, unsigned index, const char* name, unsigned type, bool single);
+	bool editConnector(ConnectorMode, unsigned index, const char* name, unsigned type=0);
+	bool removeConnector(ConnectorMode, unsigned);
 
 	// Const accesors for iteration
 	const std::vector<Connector>& getInputs() const { return m_inputs; }

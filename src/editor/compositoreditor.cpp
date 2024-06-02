@@ -31,6 +31,15 @@ class CompositorNode : public nodegraph::Node {
 };
 }
 
+void updateExpandProperyInfo(Widget* p) {
+	if(Label* info = cast<Label>(p->getTemplateWidget("info"))) {
+		switch(p->getWidgetCount()) {
+		case 0: info->setCaption("Empty"); break;
+		case 1: info->setCaption("1 Item"); break;
+		default: info->setCaption(String::format("%d Items", p->getWidgetCount())); break;
+		}
+	}
+}
 
 
 #define CONNECT(Type, name, event, callback) { Type* w = m_panel->getWidget<Type>(name); if(w) w->event.bind(this, &CompositorEditor::callback); }
@@ -203,7 +212,7 @@ void CompositorEditor::dragCompositor(Widget* w, const Point& pos, int b) {
 const char* CompositorEditor::getCompositorName(Compositor* c, const char* outputName) const {
 	if(c == Compositor::Output) return outputName;
 	const ListItem* item = m_nodeList->findItem(1, c);
-	return item? item->getText(): "";
+	return item? item->getText(): " ";
 }
 
 void CompositorEditor::setCompositor(Compositor* c) {
@@ -227,6 +236,7 @@ void CompositorEditor::setCompositor(Compositor* c) {
 	uint index = 0;
 	while(const char* name = c->getInputName(index++)) addConnectorWidget(inputs, name);
 	inputs->resumeLayout();
+	updateExpandProperyInfo(inputs);
 
 	index = 0;
 	Widget* outputs = m_panel->getWidget("outputs");
@@ -235,6 +245,7 @@ void CompositorEditor::setCompositor(Compositor* c) {
 	clearItemPanel(outputs);
 	while(const char* name = c->getOutputName(index++)) addConnectorWidget(outputs, name);
 	outputs->resumeLayout();
+	updateExpandProperyInfo(outputs);
 
 
 	index = 0;
@@ -306,6 +317,7 @@ Widget* CompositorEditor::addDataWidget(const char* name, Widget* parent) {
 Widget* CompositorEditor::addConnectorWidget(Widget* parent, const char* name) {
 	Widget* w = addDataWidget("textitem", parent);
 	w->getWidget<Textbox>("value")->setText(name);
+	w->getWidget<Textbox>("value")->eventSubmit.bind(this, &CompositorEditor::renameConnector);
 	return w;
 }
 Widget* CompositorEditor::addBufferWidget(Widget* parent) {
@@ -326,6 +338,14 @@ template<class F> const char* makeUnique(const char* name, F&& isUnique) {
 	return name;
 }
 
+template<class F>
+void CompositorEditor::eachActiveNode(F&& func) {
+	for(Widget* n: m_graphEditor) {
+		CompositorNode* node = cast<CompositorNode>(n);
+		if(node->getCompositor() == m_compositor) func(node);
+	}
+}
+
 void CompositorEditor::addConnector(int mode, Widget* list, const char* name) {
 	if(mode) name = makeUnique(name, [this](const char* n) { return m_compositor->getOutput(n)<0; });
 	else name = makeUnique(name, [this](const char* n) { return m_compositor->getInput(n)<0; });
@@ -333,47 +353,54 @@ void CompositorEditor::addConnector(int mode, Widget* list, const char* name) {
 	addConnectorWidget(list, name);
 	if(mode) m_compositor->addOutput(name);
 	else m_compositor->addInput(name);
+	updateExpandProperyInfo(list);
+
+	eachActiveNode([mode, name](CompositorNode* node) {
+		if(mode) node->addOutput(name);
+		else node->addInput(name);
+	});
 }
-void CompositorEditor::clearConnectors(int mode, Widget* list) {
-	list->deleteChildWidgets();
-	if(mode) buildOutputConnectors(list);
-	else buildInputConnectors(list);
-}
+
 void CompositorEditor::renameConnector(Textbox* t) {
 	Widget* list = t->getParent()->getParent();
 	bool input = list->getName()[0] == 'i';
+	int index = t->getParent()->getIndex();
 	if(input) buildInputConnectors(list);
 	else buildOutputConnectors(list);
 	// ToDo: Make sure name is unique
+	eachActiveNode([input, index, t](CompositorNode* node) {
+		if(input) cast<Button>(node->getInputs()[index].widget)->setCaption(t->getText());
+		else cast<Button>(node->getOutputs()[index].widget)->setCaption(t->getText());
+	});
 }
 
 void CompositorEditor::removeItem(Button* b) {
 	Widget* item = b->getParent();
-	String listName = item->getParent()->getName();
-	if(listName == "inputs") {
+	Widget* list = item->getParent();
+	if(list->getName() == "inputs") {
 		m_compositor->removeInput(item->getWidget<Textbox>("value")->getText());
+		eachActiveNode([i = item->getIndex()](CompositorNode* n) { n->removeConnector(nodegraph::INPUT, i); });
 	}
-	else if(listName == "outputs") {
+	else if(list->getName() == "outputs") {
 		m_compositor->removeOutput(item->getWidget<Textbox>("value")->getText());
+		eachActiveNode([i = item->getIndex()](CompositorNode* n) { n->removeConnector(nodegraph::OUTPUT, i); });
 	}
-	else if(listName == "buffers") {
+	else if(list->getName() == "buffers") {
 	}
-	else if(listName == "textures") {
+	else if(list->getName() == "textures") {
 	}
 
-	item->getParent()->remove(item);
 	delete item;
+	updateExpandProperyInfo(list);
 }
 
 void CompositorEditor::buildInputConnectors(Widget* list) {
 	while(const char* name = m_compositor->getInputName(0)) m_compositor->removeInput(name);
 	for(Widget* w: list) m_compositor->addInput(w->getWidget<Textbox>("value")->getText());
-	// ToDo: update any existing graph nodes
 }
 void CompositorEditor::buildOutputConnectors(Widget* list) {
 	while(const char* name = m_compositor->getOutputName(0)) m_compositor->removeOutput(name);
 	for(Widget* w: list) m_compositor->addInput(w->getWidget<Textbox>("value")->getText());
-	// ToDo: update any existing graph nodes
 }
 
 // ------------------------------------------------ //

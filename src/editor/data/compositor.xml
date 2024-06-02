@@ -22,39 +22,39 @@
 				<widget anchor="lrt" class="Widget" template="frame" rect="0 0 308 148">
 					<widget anchor="lrtb" template="listbox" name="graphlist" rect="0 0 308 123"/>
 					<widget anchor="lb" template="button" name="newgraph" caption="New Graph" rect="12 126 96 20"/>
-					<widget anchor="lrb" class="DragHandle" template="frame" mode="scale" rect="126 127 126 17"/>
+					<widget anchor="lrb" class="DragHandle" rect="126 127 126 17" skin="panel"/>
 				</widget>
 				<widget anchor="lrt" class="Widget" template="frame" rect="0 148 308 176">
 					<widget anchor="lrtb" template="listbox" name="nodelist" rect="0 0 308 150"/>
 					<widget anchor="lb" template="button" name="newnode" caption="New Node" rect="11 153 96 20"/>
 					<widget anchor="lrb" class="DragHandle" template="frame" mode="scale" rect="132 156 126 17"/>
 				</widget>
-				<widget anchor="lrtb" layout="VerticalLayout" template="scrollpane" name="details" rect="0 324 308 416">
-					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 0 292 68" name="connectors" caption="Connectors" spacing="4">
-						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 4 284 20" name="inputs" caption="Inputs" spacing="2"/>
-						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 28 284 20" name="outputs" caption="Outputs" spacing="2"/>
+				<widget anchor="lrtb" layout="VerticalLayout" template="scrollpane" name="details" rect="0 324 308 416" showscrollbars="0">
+					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 0 308 72" name="connectors" caption="Connectors" spacing="4">
+						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 4 300 20" name="inputs" caption="Inputs" spacing="2"/>
+						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 28 300 20" name="outputs" caption="Outputs" spacing="2"/>
 					</widget>
-					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 68 292 44" name="buffers" caption="Buffers" spacing="4">
-						<widget anchor="rt" template="button" name="addbuffer" caption="Add" rect="144 4 144 20"/>
+					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 72 308 48" name="buffers" caption="Buffers" spacing="4">
+						<widget anchor="rt" template="button" name="addbuffer" caption="Add" rect="160 4 144 20"/>
 					</widget>
-					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 112 292 44" name="passes" caption="Passes" spacing="4">
-						<widget anchor="rt" template="button" name="addpass" caption="Add" rect="148 4 140 20"/>
+					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 120 308 48" name="passes" caption="Passes" spacing="4">
+						<widget anchor="rt" template="button" name="addpass" caption="Add" rect="164 4 140 20"/>
 					</widget>
 				</widget>
 			</widget>
 			<widget anchor="lt" class="ScaleBox" rect="310 0 640 740" name="graph" skin="panel">
-				<widget anchor="lrt" class="Widget" rect="372 84 235 20" name="textitem" skin="panel">
-					<widget anchor="lrt" template="editbox" name="value" rect="0 0 213 20"/>
-					<widget anchor="rt" class="Button" rect="217 0 18 20" name="remove" caption="X" skin="button"/>
+				<widget anchor="lrt" class="Widget" rect="372 84 235 20" name="textitem" skin="none">
+					<widget anchor="lrt" submit="2" template="editbox" name="value" rect="0 0 213 20"/>
+					<widget anchor="rt" icon="5" rect="217 0 18 20" template="iconbutton" iconlist="glyphs" skin="listitem" name="remove"/>
 				</widget>
-				<widget anchor="lrt" class="Widget" rect="372 108 235 20" name="listitem" skin="panel">
+				<widget anchor="lrt" class="Widget" rect="372 108 235 20" name="listitem" skin="none">
 					<widget anchor="lrt" template="droplist" name="value" rect="0 0 213 20"/>
-					<widget anchor="rt" class="Button" rect="217 0 18 20" name="remove" caption="X" skin="button"/>
+					<widget anchor="rt" icon="5" rect="217 0 18 20" template="iconbutton" iconlist="glyphs" skin="listitem" name="remove"/>
 				</widget>
-				<widget anchor="lrt" class="Widget" layout="HorizontalLayout" rect="372 132 235 20" name="textureitem" skin="panel">
-					<widget anchor="lrt" template="editbox" name="value" rect="0 0 108 20"/>
+				<widget anchor="lrt" class="Widget" layout="HorizontalLayout" rect="372 132 235 20" name="textureitem" skin="none">
+					<widget anchor="lrt" submit="2" template="editbox" name="value" rect="0 0 108 20"/>
 					<widget anchor="lrt" template="droplist" name="value2" rect="108 0 108 20"/>
-					<widget anchor="rt" class="Button" rect="216 0 18 20" name="remove" caption="X" skin="button"/>
+					<widget anchor="rt" icon="5" rect="216 0 18 20" template="iconbutton" iconlist="glyphs" skin="listitem" name="remove"/>
 				</widget>
 				<widget anchor="lt" class="Popup" rect="312 204 92 80" name="passtypes" skin="panel" visible="0">
 					<widget anchor="lt" template="button" name="newscene" caption="Scene pass" rect="0 0 92 20"/>
@@ -122,7 +122,7 @@
 						<widget anchor="lt" template="label" caption="Shader" skin="none" rect="15 48 49 19"/>
 						<widget anchor="lrt" class="Combobox" rect="84 48 200 20" name="shader" skin="panel"/>
 						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="0 72 276 20" name="textures" caption="Textures" spacing="2"/>
-						<widget anchor="rt" class="Button" rect="272 2 17 19" name="remove" caption="X" skin="button"/>
+						<widget anchor="rt" class="Button" rect="272 2 17 19" name="remove" skin="button"/>
 					</widget>
 				</widget>
 			</widget>

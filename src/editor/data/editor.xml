@@ -152,7 +152,7 @@
 		<widget anchor="tb" rect="46 0 2 100" name="_sash" skin="button"/>
 	</template>
 	<template class="Button" iconlist="editors" rect="936 60 24 24" name="iconbutton" icon="0" skin="button">
-		<widget anchor="cm" class="Icon" rect="4 4 16 16" iconlist="editors" skin="panel" name="_icon" autosize="1"/>
+		<widget anchor="cm" class="Icon" rect="4 4 16 16" iconlist="editors" skin="button" name="_icon" autosize="1"/>
 	</template>
 	<template anchor="lt" class="Spinbox" name="spinbox" skin="panel" rect="422 678 64 20">
 		<widget anchor="lrtb" template="editbox" name="_text" skin="none" rect="3 0 49 20"/>
