@@ -431,6 +431,7 @@ class CollapsePane : public Widget {
 	void dragStart(Widget*, const Point&, int);
 	void dragMove(Widget*, const Point&, int);
 	void updateAutosize() override;
+	void onChildChanged(Widget*) override;
 	protected:
 	Button* m_header;
 	Checkbox* m_check;

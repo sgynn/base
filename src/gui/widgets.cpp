@@ -1302,6 +1302,10 @@ void CollapsePane::updateAutosize() {
 		if(Widget* parent = getParent()) parent->refreshLayout();
 	}
 }
+void CollapsePane::onChildChanged(Widget* w) {
+	if(isExpanded()) Super::onChildChanged(w);
+	else if(!isLayoutPaused()) refreshLayout();
+}
 void CollapsePane::toggle(Button*) {
 	expand(m_collapsed);
 }
