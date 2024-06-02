@@ -196,6 +196,7 @@ void TreeView::initialise(const Root*, const PropertyMap& p) {
 	if(m_expand) m_expand->setVisible(false);
 	if(item) {
 		item->setVisible(false);
+		item->setAnchor(item->getAnchor()&0xf); // Align top
 		m_itemHeight = item->getSize().y;
 		for(ItemWidget& w: m_itemWidgets) {
 			w.widget->setVisible(false);
