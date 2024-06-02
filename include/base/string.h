@@ -47,11 +47,17 @@ namespace base {
 		friend String operator+(const char* a, const String& s) { return cat(a, a?strlen(a):0, s, s.length()); }
 
 		String& toUpper() {
-			if(m_data) for(char* c=m_data; *c; ++c) if(*c&0x60) *c &= 0xd;
+			if(m_data) for(char* c=m_data; *c; ++c) if(*c>96) *c &= 0xdf;
 			return *this;
 		}
 		String& toLower() {
-			if(m_data) for(char* c=m_data; *c; ++c) if(~*c&0x60) *c |= 0xd;
+			if(m_data) for(char* c=m_data; *c; ++c) if(*c>64) *c |= 0x20;
+			return *this;
+		}
+		String& toTitle() {
+			if(m_data) for(char* c=m_data; *c; ++c) {
+				if((c==m_data || c[-1]==' ') && *c>96) *c &= 0xdf;
+			}
 			return *this;
 		}
 
