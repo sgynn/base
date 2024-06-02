@@ -63,10 +63,10 @@ namespace base {
 		void setColour(int buffer, float r, float g, float b, float a);
 		void setColour(int buffer, unsigned rgba);
 		void setDepth(float value) { mDepth=value; }
-		void setBits(ClearBits bits) { mBits=bits; }
+		void setBits(ClearBits bits);
 		const float* getColour(int buffer=0) const;
 		float getDepth() const { return mDepth; }
-		unsigned getBits() const { return mBits; }
+		ClearBits getBits() const;
 		protected:
 		float    mDepth;
 		unsigned mBits;
@@ -107,6 +107,7 @@ namespace base {
 		CompositorPassScene(uint8 first, uint8 last, Material* material, const char* technique=0);
 		~CompositorPassScene();
 
+		void setRenderQueueRange(uint8 first, uint8 last) { mFirst=first; mLast=last; }
 		void setMaterial(Material* m, const char* technique);
 		void setCamera(const char* camera);
 		void setMaterial(Material* m) { mMaterial=m; }
@@ -117,6 +118,8 @@ namespace base {
 
 		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
 		const char* getCamera() const override { return mCameraName; }
+		size_t getTechniqueId() const { return mTechnique; }
+		std::pair<uint8, uint8> getRenderQueueRange() const { return {mFirst,mLast}; }
 		void resolveExternals(MaterialResolver*) override;
 
 		protected:

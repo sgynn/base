@@ -37,7 +37,6 @@ class CompositorEditor : public EditorComponent {
 	void exportGraph(base::CompositorGraph*) const;
 
 	protected:
-	void clearItemPanel(gui::Widget*);
 	gui::Widget* addDataWidget(const char* name, gui::Widget* parent);
 	gui::Widget* addConnectorWidget(gui::Widget* parent, const char*);
 	gui::Widget* addBufferWidget(gui::Widget* parent);

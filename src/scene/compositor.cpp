@@ -18,16 +18,25 @@ Compositor* Compositor::Output = new Compositor();
 CompositorPassClear::CompositorPassClear(ClearBits bits, uint c, float d) : mDepth(d), mBits(0) {
 	mColour.resize(4, 0.f);
 	setColour(c, (c>>24)/255.f);
-	if(bits & CLEAR_COLOUR)  mBits |= GL_COLOR_BUFFER_BIT;
-	if(bits & CLEAR_DEPTH)   mBits |= GL_DEPTH_BUFFER_BIT;
-	if(bits & CLEAR_STENCIL) mBits |= GL_STENCIL_BUFFER_BIT;
+	setBits(bits);
 }
 CompositorPassClear::CompositorPassClear(ClearBits bits, const float* c, float d) : mDepth(d), mBits(0) {
 	mColour.resize(4, 0.f);
 	if(c) memcpy(mColour.data(), c, 4*sizeof(float));
+	setBits(bits);
+}
+void CompositorPassClear::setBits(ClearBits bits) {
+	mBits = 0;
 	if(bits & CLEAR_COLOUR)  mBits |= GL_COLOR_BUFFER_BIT;
 	if(bits & CLEAR_DEPTH)   mBits |= GL_DEPTH_BUFFER_BIT;
 	if(bits & CLEAR_STENCIL) mBits |= GL_STENCIL_BUFFER_BIT;
+}
+ClearBits CompositorPassClear::getBits() const {
+	int r = 0;
+	if(mBits & GL_COLOR_BUFFER_BIT) r |= CLEAR_COLOUR;
+	if(mBits & GL_DEPTH_BUFFER_BIT) r |= CLEAR_DEPTH;
+	if(mBits & GL_STENCIL_BUFFER_BIT) r |= CLEAR_STENCIL;
+	return (ClearBits)r;
 }
 void CompositorPassClear::setColour(unsigned rgba) { setColour(0, rgba); }
 void CompositorPassClear::setColour(unsigned rgb, float alpha) {
@@ -1066,9 +1075,9 @@ CompositorGraph* base::getDefaultCompositor() {
 	static CompositorGraph* graph = 0;
 	if(graph) return graph;
 	Compositor* c = new Compositor();
-	c->addPass("0", new CompositorPassClear(CLEAR_DEPTH | CLEAR_COLOUR, 0x000020, 1) );
-	c->addPass("0", new CompositorPassScene(0,255) );
-	c->addOutput("0");
+	c->addPass("out", new CompositorPassClear(CLEAR_DEPTH | CLEAR_COLOUR, 0x000020, 1) );
+	c->addPass("out", new CompositorPassScene(0,255) );
+	c->addOutput("out");
 	graph = new CompositorGraph;
 	graph->link(c, Compositor::Output);
 	return graph;

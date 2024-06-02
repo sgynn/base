@@ -34,11 +34,13 @@
 						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 4 300 20" name="inputs" caption="Inputs" spacing="2"/>
 						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="4 28 300 20" name="outputs" caption="Outputs" spacing="2"/>
 					</widget>
-					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 72 308 48" name="buffers" caption="Buffers" spacing="4">
-						<widget anchor="rt" template="button" name="addbuffer" caption="Add" rect="160 4 144 20"/>
+					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 72 308 52" name="buffers" caption="Buffers" spacing="4">
+						<widget anchor="lrt" class="Widget" layout="VerticalLayout" template="frame" rect="4 4 300 0" name="bufferlist" spacing="4" autosize="1"/>
+						<widget anchor="rt" template="button" name="addbuffer" caption="Add" rect="160 8 144 20"/>
 					</widget>
-					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 120 308 48" name="passes" caption="Passes" spacing="4">
-						<widget anchor="rt" template="button" name="addpass" caption="Add" rect="164 4 140 20"/>
+					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 124 308 52" name="passes" caption="Passes" spacing="4">
+						<widget anchor="lrt" class="Widget" layout="VerticalLayout" template="frame" rect="4 4 300 0" skin="none" name="passlist" spacing="4" autosize="1"/>
+						<widget anchor="rt" template="button" name="addpass" caption="Add" rect="164 8 140 20"/>
 					</widget>
 				</widget>
 			</widget>
@@ -84,28 +86,30 @@
 						<widget anchor="lrt" class="Textbox" rect="84 48 196 20" name="technique" skin="panel"/>
 						<widget anchor="lrt" class="Textbox" rect="84 72 196 20" name="camera" skin="panel"/>
 						<widget anchor="lt" template="label" caption="Target" skin="none" rect="13 24 42 20"/>
-						<widget anchor="lrt" class="Combobox" rect="84 24 196 20" name="target" skin="panel"/>
+						<widget anchor="lrt" template="droplist" name="target" rect="84 24 196 20"/>
 						<widget anchor="lrt" class="Widget" layout="HorizontalLayout" rect="84 96 196 20" spacing="6" skin="none">
-							<widget anchor="lrt" class="Spinbox" rect="0 0 85 20" name="first" skin="panel"/>
+							<widget anchor="lrt" template="spinbox" name="first" rect="0 0 85 20"/>
 							<widget anchor="lt" class="Label" rect="91 0 13 20" skin="panel"/>
-							<widget anchor="lrt" class="Spinbox" rect="110 0 85 20" name="last" skin="panel"/>
+							<widget anchor="lrt" template="spinbox" name="last" rect="110 0 85 20"/>
 						</widget>
 						<widget anchor="rt" class="Button" rect="272 3 18 20" name="remove" caption="X" skin="button"/>
 					</widget>
-					<widget anchor="lrt" class="Widget" rect="4 213 292 74" name="clearpass" skin="panel">
+					<widget anchor="lrt" class="Widget" rect="4 213 292 123" name="clearpass" skin="panel">
 						<widget anchor="lt" template="checkbox" name="visible" rect="4 5 16 16"/>
 						<widget anchor="lt" template="label" caption="Clear Pass" rect="25 4 76 19"/>
-						<widget anchor="lt" template="label" caption="Target" skin="none" rect="12 24 42 20"/>
-						<widget anchor="lrt" class="Combobox" rect="84 25 200 20" name="target" skin="panel"/>
-						<widget anchor="lt" template="label" caption="Colour" skin="none" rect="84 48 42 20"/>
-						<widget anchor="lt" template="label" caption="Depth" skin="none" rect="14 48 42 20"/>
-						<widget anchor="lt" template="label" caption="Stencil" skin="none" rect="168 48 42 20"/>
-						<widget anchor="lt" template="checkbox" name="depthbit" rect="57 48 16 16"/>
-						<widget anchor="lt" template="checkbox" name="colourbit" rect="132 48 16 16"/>
-						<widget anchor="lt" template="checkbox" name="stencilbit" rect="216 48 16 16"/>
+						<widget anchor="lt" template="label" caption="Target" skin="none" rect="24 24 42 20"/>
+						<widget anchor="lrt" template="droplist" name="target" rect="84 25 200 20"/>
+						<widget anchor="lt" template="label" caption="Colour" skin="none" rect="24 72 42 20"/>
+						<widget anchor="lt" template="label" caption="Depth" skin="none" rect="26 48 42 20"/>
+						<widget anchor="lt" template="label" caption="Stencil" skin="none" rect="24 96 42 20"/>
+						<widget anchor="lt" template="checkbox" name="depthbit" rect="84 51 16 16" drag="1"/>
+						<widget anchor="lt" template="checkbox" name="colourbit" rect="84 72 16 16" drag="1"/>
+						<widget anchor="lt" template="checkbox" name="stencilbit" rect="84 96 16 16" drag="1"/>
 						<widget anchor="rt" class="Button" rect="272 2 18 20" name="remove" caption="X" skin="button"/>
+						<widget max="1" step="0.1" value="1" name="depth" template="spinboxf" rect="108 48 60 20"/>
+						<widget anchor="lt" template="image" name="colour" rect="108 72 59 15"/>
 					</widget>
-					<widget anchor="lrt" class="Widget" rect="4 291 292 80" name="copypass" skin="panel">
+					<widget anchor="lrt" class="Widget" rect="4 340 292 80" name="copypass" skin="panel">
 						<widget anchor="lt" template="checkbox" rect="4 5 16 16"/>
 						<widget anchor="lt" template="label" caption="Copy Pass" rect="25 4 75 19"/>
 						<widget anchor="lt" template="label" caption="Source" skin="none" rect="16 25 42 20"/>
@@ -114,7 +118,7 @@
 						<widget anchor="lrt" template="droplist" name="source" rect="84 48 200 20"/>
 						<widget anchor="rt" class="Button" rect="272 3 18 20" name="remove" caption="X" skin="button"/>
 					</widget>
-					<widget anchor="lrt" class="Widget" rect="4 375 292 108" name="quadpass" skin="panel">
+					<widget anchor="lrt" class="Widget" rect="4 424 292 108" name="quadpass" skin="panel">
 						<widget anchor="lt" template="checkbox" name="visible" rect="4 5 16 16"/>
 						<widget anchor="lt" class="Label" rect="25 4 76 19" caption="Quad Pass" skin="panel"/>
 						<widget anchor="lt" template="label" caption="Target" skin="none" rect="15 24 42 20"/>
@@ -122,7 +126,7 @@
 						<widget anchor="lt" template="label" caption="Shader" skin="none" rect="15 48 49 19"/>
 						<widget anchor="lrt" class="Combobox" rect="84 48 200 20" name="shader" skin="panel"/>
 						<widget anchor="lrt" autosize="1" layout="VerticalLayout" template="expandproperty" rect="0 72 276 20" name="textures" caption="Textures" spacing="2"/>
-						<widget anchor="rt" class="Button" rect="272 2 17 19" name="remove" skin="button"/>
+						<widget anchor="rt" class="Button" rect="272 2 17 19" name="remove" caption="X" skin="button"/>
 					</widget>
 				</widget>
 			</widget>

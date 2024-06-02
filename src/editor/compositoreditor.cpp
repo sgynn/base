@@ -1,5 +1,6 @@
 #include <base/editor/compositoreditor.h>
 #include <base/editor/nodeeditor.h>
+#include <base/gui/colourpicker.h>
 #include <base/compositor.h>
 #include <base/material.h>
 #include <base/resources.h>
@@ -242,15 +243,14 @@ void CompositorEditor::setCompositor(Compositor* c) {
 	Widget* outputs = m_panel->getWidget("outputs");
 	outputs->pauseLayout();
 	outputs->deleteChildWidgets();
-	clearItemPanel(outputs);
 	while(const char* name = c->getOutputName(index++)) addConnectorWidget(outputs, name);
 	outputs->resumeLayout();
 	updateExpandProperyInfo(outputs);
 
 
 	index = 0;
-	Widget* buffers = m_panel->getWidget("buffers");
-	clearItemPanel(buffers);
+	Widget* buffers = m_panel->getWidget("bufferlist");
+	buffers->deleteChildWidgets();
 	while(Compositor::Buffer* buffer = c->getBuffer(index++)) {
 		Widget* w = addBufferWidget(buffers);
 		bool relative = buffer->relativeWidth != 0;
@@ -275,16 +275,49 @@ void CompositorEditor::setCompositor(Compositor* c) {
 	}
 
 	index = 0;
-	Widget* passes = m_panel->getWidget("passes");
-	clearItemPanel(passes);
+	Widget* passes = m_panel->getWidget("passlist");
+	passes->deleteChildWidgets();
 	while(CompositorPass* pass = c->getPass(index++)) {
 		Widget* w = 0;
 		if(CompositorPassClear* clear = dynamic_cast<CompositorPassClear*>(pass)) {
+			static auto setBit = [](CompositorPassClear* c, ClearBits bit, Button* b) {
+				c->setBits((ClearBits)(((int)c->getBits()&~(int)bit) | (b->isSelected()? (int)bit: 0)));
+			};
 			w = addDataWidget("clearpass", passes);
-			w->getWidget<Checkbox>("colourbit")->setEnabled(clear->getBits()&CLEAR_COLOUR);
-			w->getWidget<Checkbox>("depthbit")->setEnabled(clear->getBits()&CLEAR_DEPTH);
-			w->getWidget<Checkbox>("stencilbit")->setEnabled(clear->getBits()&CLEAR_STENCIL);
+			Checkbox* depthBit = w->getWidget<Checkbox>("depthbit");
+			Checkbox* colourBit = w->getWidget<Checkbox>("colourbit");
+			Checkbox* stencilBit = w->getWidget<Checkbox>("stencilbit");
+
+			depthBit->setChecked(clear->getBits()&CLEAR_DEPTH);
+			colourBit->setChecked(clear->getBits()&CLEAR_COLOUR);
+			stencilBit->setChecked(clear->getBits()&CLEAR_STENCIL);
+
+			SpinboxFloat* depth = w->getWidget<SpinboxFloat>("depth");
+			depth->setValue(clear->getDepth());
+			depth->setEnabled(depthBit->isChecked());
+			depth->eventChanged.bind([clear](SpinboxFloat*, float v) { clear->setDepth(v); });
+
+			const float* c = clear->getColour();
+			Widget* colour = w->getWidget("colour");
+			colour->setVisible(colourBit->isChecked());
+			colour->setColour(Colour(c[0], c[1], c[2], c[3]).toARGB());
+			
+			depthBit->eventChanged.bind([clear, depth](Button* b) { setBit(clear, CLEAR_DEPTH, b); depth->setEnabled(b->isSelected()); });
+			colourBit->eventChanged.bind([clear, colour](Button* b) { setBit(clear, CLEAR_COLOUR, b); colour->setVisible(b->isSelected()); });
+			stencilBit->eventChanged.bind([clear](Button* b) { setBit(clear, CLEAR_STENCIL, b); });
+
+			colour->eventMouseDown.bind([clear, colour](Widget* w, const Point&, int) {
+				const float* c = clear->getColour();
+				ColourPicker* picker = new ColourPicker(Rect(0,0,100,80), 0);
+				picker->initialise(w->getRoot(), PropertyMap());
+				picker->setHasAlpha(true);
+				picker->setColour(Colour(c[0], c[1], c[2], c[3]));
+				picker->eventChanged.bind([clear, colour](const Colour& c) { clear->setColour(c); colour->setColour(c.toARGB()); });
+				(new Popup(picker, true))->popup(w);
+			});
+
 		}
+
 		if(CompositorPassQuad* quad = dynamic_cast<CompositorPassQuad*>(pass)) {
 			w = addDataWidget("quadpass", passes);
 			quad = 0;
@@ -292,17 +325,29 @@ void CompositorEditor::setCompositor(Compositor* c) {
 		if(CompositorPassScene* scene = dynamic_cast<CompositorPassScene*>(pass)) {
 			w = addDataWidget("scenepass", passes);
 			w->getWidget<Textbox>("camera")->setText(scene->getCamera());
+			Spinbox* first = w->getWidget<Spinbox>("first");
+			Spinbox* last = w->getWidget<Spinbox>("last");
+			first->setValue(scene->getRenderQueueRange().first);
+			last->setValue(scene->getRenderQueueRange().second);
+			first->eventChanged.bind([scene,last](Spinbox*, int v) {
+				if(last->getValue()<v) last->setValue(v);
+				scene->setRenderQueueRange(v, last->getValue());
+			});
+			last->eventChanged.bind([scene,first](Spinbox*, int v) {
+				if(first->getValue()>v) first->setValue(v);
+				scene->setRenderQueueRange(first->getValue(), v);
+			});
+
+			Textbox* cam = w->getWidget<Textbox>("camera");
+			cam->setText(scene->getCamera());
+			cam->eventSubmit.bind([scene](Textbox* t) { scene->setCamera(t->getText()); });
+			
 		}
 
-		if(w) w->getWidget<Combobox>("target")->setText(c->getPassTarget(index-1));
-	}
-}
-
-void CompositorEditor::clearItemPanel(Widget* panel) {
-	while(panel->getWidgetCount()>1) {
-		Widget* w = panel->getWidget( panel->getWidgetCount() - 2);
-		w->removeFromParent();
-		delete w;
+		if(w) {
+			Combobox* target = w->getWidget<Combobox>("target");
+			target->setText(c->getPassTarget(index - 1));
+		}
 	}
 }
 
@@ -406,7 +451,7 @@ void CompositorEditor::buildOutputConnectors(Widget* list) {
 // ------------------------------------------------ //
 
 void CompositorEditor::addBuffer(Button*) {
-	Widget* buffers = m_panel->getWidget("buffers");
+	Widget* buffers = m_panel->getWidget("bufferlist");
 	addBufferWidget(buffers);
 }
 void CompositorEditor::removeBuffer(Button* b) {
@@ -428,8 +473,7 @@ void CompositorEditor::addPass(const char* widget, CompositorPass* pass) {
 	Widget* w = m_panel->getWidget(widget)->clone();
 	w->getWidget<Button>("remove")->eventPressed.bind(this, &CompositorEditor::removePass);
 	w->setVisible(true);
-	Widget* passes = m_panel->getWidget("passes");
-	passes->add(w, passes->getWidgetCount() - 1);
+	m_panel->getWidget("passlist")->add(w);
 	w->getWidget<Combobox>("target")->shareList(m_targets);
 	m_compositor->addPass("", pass);
 	m_passTypePopup->hide();
