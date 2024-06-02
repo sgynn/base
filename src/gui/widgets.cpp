@@ -565,13 +565,14 @@ void ProgressBar::copyData(const Widget* from) {
 // ===================================================================================== //
 
 template<typename T> SpinboxT<T>::SpinboxT(const Rect& r, Skin* s, const char* format) 
-	: Widget(r,s), m_text(0), m_value(0), m_min(0), m_max(0), m_buttonStep(1), m_wheelStep(1), m_textChanged(false), m_format(format) {
+	: Widget(r,s), m_text(0), m_value(0), m_min(0), m_max(100), m_buttonStep(1), m_wheelStep(1), m_textChanged(false), m_format(format) {
 }
 template<typename T> void SpinboxT<T>::initialise(const Root*, const PropertyMap& p) {
-	if(p.contains("value")) m_value = atof(p["value"]);
-	if(p.contains("min")) m_min = atof(p["min"]);
-	if(p.contains("max")) m_max = atof(p["max"]);
-	if(p.contains("step")) m_buttonStep = m_wheelStep = atof(p["step"]);
+	p.readValue("value", m_value);
+	p.readValue("min", m_min);
+	p.readValue("max", m_max);
+	if(p.readValue("step", m_buttonStep)) m_wheelStep = m_buttonStep;
+
 	m_text = getTemplateWidget<Textbox>("_text");
 	if(m_text && p.contains("suffix")) m_text->setSuffix(p["suffix"]);
 	Button* inc = getTemplateWidget<Button>("_inc");
@@ -590,6 +591,7 @@ template<typename T> void SpinboxT<T>::initialise(const Root*, const PropertyMap
 template<typename T> void SpinboxT<T>::copyData(const Widget* from) {
 	if(const SpinboxT<T>* s = dynamic_cast<const SpinboxT<T>*>(from)) {
 		m_min = s->m_min;
+		m_max = s->m_max;
 		m_value = s->m_value;
 		m_wheelStep = s->m_wheelStep;
 		m_buttonStep = s->m_buttonStep;
@@ -658,8 +660,8 @@ namespace gui {
 template class SpinboxT<int>;
 template class SpinboxT<float>;
 }
-Spinbox::Spinbox(const Rect& r, Skin* s) : SpinboxT(r,s, "%d%n") { setRange(-100000, 100000); }
-SpinboxFloat::SpinboxFloat(const Rect& r, Skin* s) : SpinboxT(r,s, "%g%n") { setRange(-1e6, 1e6); }
+Spinbox::Spinbox(const Rect& r, Skin* s) : SpinboxT(r,s, "%d%n") { }
+SpinboxFloat::SpinboxFloat(const Rect& r, Skin* s) : SpinboxT(r,s, "%g%n") { }
 void Spinbox::fireChanged() { if(eventChanged) eventChanged(this, m_value); }
 void SpinboxFloat::fireChanged() { if(eventChanged) eventChanged(this, m_value); }
 
@@ -1668,7 +1670,10 @@ void Window::sizeHandle(Widget* c, const Point& p, int b) {
 // ===================================================================================== //
 
 
-Popup::Popup(const Rect& r, Skin* s) : Widget(r,s), m_owner(0) {
+Popup::Popup(const Rect& r, Skin* s) : Widget(r,s) {
+}
+Popup::Popup(Widget* child, bool destroyOnClose) : Widget(child->getRect(), nullptr), m_destroyOnClose(destroyOnClose) {
+	add(child);
 }
 Popup::~Popup() {
 	for(Widget* w: m_owned) delete w;
@@ -1724,6 +1729,7 @@ void Popup::hideOwnedPopups() {
 void Popup::hide() {
 	hideOwnedPopups();
 	setVisible(false);
+	if(m_destroyOnClose) delete this;
 }
 
 void Popup::lostFocus(Widget* w) {

@@ -508,6 +508,7 @@ class Popup : public Widget {
 	typedef Delegate<void(Button*)> ButtonDelegate;
 	public:
 	Popup(const Rect& r, Skin*);
+	Popup(Widget* contents, bool destroyOnClose);
 	~Popup();
 	void popup(Widget* owner, Side side=BELOW);
 	void popup(Root* root, const Point& absolutePosition, Widget* owner=0);
@@ -525,7 +526,8 @@ class Popup : public Widget {
 	void initialise(const Root*, const PropertyMap&) override;
 	void lostFocus(Widget*);
 	protected:
-	Widget* m_owner;
+	bool m_destroyOnClose = false;
+	Widget* m_owner = nullptr;
 	std::vector<Popup*> m_owned; // Used for child popups
 	Delegate<void(Widget*)> ownerLoseFocus;
 };
