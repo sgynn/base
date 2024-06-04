@@ -483,11 +483,6 @@ Compositor::Buffer* Compositor::getBuffer(const char* name) const {
 
 // ----------------------------------------------- //
 
-const char* Compositor::getInputName(uint i) const { return i<m_inputs.size()? m_inputs[i].name: 0; }
-const char* Compositor::getOutputName(uint i) const { return i<m_outputs.size()? m_outputs[i].name: 0; }
-const char* Compositor::getPassTarget(uint i) const { return i<m_passes.size()? m_passes[i].target: 0; }
-CompositorPass* Compositor::getPass(uint i) { return i<m_passes.size()? m_passes[i].pass: 0; }
-Compositor::Buffer* Compositor::getBuffer(uint i) { return i<m_buffers.size()? m_buffers[i]: 0; }
 void Compositor::removeInput(const char* name) { removeConnector(m_inputs, getInput(name)); }
 void Compositor::removeOutput(const char* name) { removeConnector(m_outputs, getOutput(name)); }
 void Compositor::removeConnector(std::vector<Connector>& list, int index) {
@@ -511,6 +506,16 @@ void Compositor::removePass(uint index) {
 	delete m_passes[index].pass;
 	free(m_passes[index].target);
 	m_passes.erase(m_passes.begin()+index);
+}
+
+void Compositor::setPassTarget(CompositorPass* pass, const char* target) {
+	for(Pass& p: m_passes) {
+		if(pass == p.pass) {
+			free(p.target);
+			p.target = strdup(target);
+			break;
+		}
+	}
 }
 
 // ================================================================================ //
@@ -737,7 +742,7 @@ bool Workspace::compile(int w, int h) {
 				CLink& link = links[c.inputs[i]];
 				int b = c.compositor->m_inputs[i].part;
 				int a = compositors[link.from].compositor->m_outputs[link.out].part;
-				if(a&&b) printf("Error: Invalid compositor input %s:%s\n", c.compositor->m_name, c.compositor->getInputName(i));
+				if(a&&b) printf("Error: Invalid compositor input %s:%s\n", c.compositor->m_name, c.compositor->m_inputs[i].name);
 				else link.part = a? a: b;
 			}
 		}
@@ -888,7 +893,7 @@ bool Workspace::compile(int w, int h) {
 			for(int i: buffer.links) {
 				if(!data || !data->buffer) data = links[i].data;
 				else if(links[i].data && links[i].data->buffer && !compareBuffers(data->buffer, links[i].data->buffer)) {
-					printf("Error: Buffer mismatch within links from %s : %s\n", info.compositor->m_name, info.compositor->getOutputName(links[i].out));
+					printf("Error: Buffer mismatch within links from %s : %s\n", info.compositor->m_name, info.compositor->m_outputs[links[i].out].name);
 					return false;
 				}
 			}
@@ -910,7 +915,7 @@ bool Workspace::compile(int w, int h) {
 	// Valiate buffers
 	for(CLink& l: links) if(l.used && !(l.data && l.data->buffer)) {
 		Compositor* c = compositors[l.from].compositor;
-		printf("Error: Compositor output %s:%s has no data\n", c->m_name, c->getOutputName(l.out));
+		printf("Error: Compositor output %s:%s has no data\n", c->m_name, c->m_outputs[l.out].name);
 		return false;
 	}
 	for(uint ci=0; ci<compositors.size(); ++ci) for(size_t i=0; i<compositors[ci].inputs.size(); ++i) {
@@ -960,11 +965,11 @@ bool Workspace::compile(int w, int h) {
 			else {
 				size_t index = 0;
 				for(auto b: info.compositor->m_buffers) { if(strcmp(b->name, src.target)==0) break; else ++index; }
-				Compositor::Buffer* bufferData = info.compositor->getBuffer(index);
-				if(!bufferData) {
+				if(index >= info.compositor->m_buffers.size()) {
 					printf("Error: Compositor has no target buffer %s\n", src.target);
 					continue;
 				}
+				Compositor::Buffer* bufferData = info.compositor->m_buffers[index];
 				if(bufferData->texture) {
 					printf("Error: Compositor target %s is read only in %s\n", bufferData->name, info.compositor->m_name);
 					continue;

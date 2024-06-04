@@ -79,6 +79,7 @@ class CompositorEditor : public EditorComponent {
 
 	void buildInputConnectors(gui::Widget* list);
 	void buildOutputConnectors(gui::Widget* list);
+	void refreshTargetsList();
 
 	template<class F> void eachActiveNode(F&& func);
 

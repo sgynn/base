@@ -172,6 +172,9 @@ namespace base {
 			base::Texture* texture; // use this instead - read only
 		};
 
+		// Inputs and outputs
+		struct Connector { char* name; char* buffer; char part; };
+		struct Pass { char* target; CompositorPass* pass; };
 
 
 		// Check compositor for errors
@@ -203,11 +206,13 @@ namespace base {
 		int     getOutput(const char* name) const;
 		Buffer* getBuffer(const char* name) const;
 
-		const char* getInputName(uint index) const;
-		const char* getOutputName(uint index) const;
-		const char* getPassTarget(uint index) const;
-		CompositorPass* getPass(uint index);
-		Buffer* getBuffer(uint index);
+		public: // Accessors for editor
+		const std::vector<Pass>& getPasses() const { return m_passes; }
+		const std::vector<Buffer*>& getBuffers() const { return m_buffers; }
+		const std::vector<Connector>& getInputs() const { return m_inputs; }
+		const std::vector<Connector>& getOutputs() const { return m_outputs; }
+
+		void setPassTarget(CompositorPass*, const char*);
 		void removeInput(const char*);
 		void removeOutput(const char*);
 		void removeBuffer(const char*);
@@ -216,8 +221,6 @@ namespace base {
 		private:
 		friend class Workspace;
 		friend class CompositorGraph;
-		struct Pass { char* target; CompositorPass* pass; };
-		struct Connector { char* name; char* buffer; char part; };
 		void addConnector(std::vector<Connector>& list, const char* name, const char* buffer);
 		void removeConnector(std::vector<Connector>& list, int index);
 		std::vector<Pass>      m_passes;

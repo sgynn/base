@@ -234,24 +234,21 @@ void CompositorEditor::setCompositor(Compositor* c) {
 	Widget* inputs = m_panel->getWidget("inputs");
 	inputs->pauseLayout();
 	inputs->deleteChildWidgets();
-	uint index = 0;
-	while(const char* name = c->getInputName(index++)) addConnectorWidget(inputs, name);
+	for(const auto& in: c->getInputs()) addConnectorWidget(inputs, in.name);
 	inputs->resumeLayout();
 	updateExpandProperyInfo(inputs);
 
-	index = 0;
 	Widget* outputs = m_panel->getWidget("outputs");
 	outputs->pauseLayout();
 	outputs->deleteChildWidgets();
-	while(const char* name = c->getOutputName(index++)) addConnectorWidget(outputs, name);
+	for(const auto& out: c->getOutputs()) addConnectorWidget(outputs, out.name);
 	outputs->resumeLayout();
 	updateExpandProperyInfo(outputs);
 
 
-	index = 0;
 	Widget* buffers = m_panel->getWidget("bufferlist");
 	buffers->deleteChildWidgets();
-	while(Compositor::Buffer* buffer = c->getBuffer(index++)) {
+	for(Compositor::Buffer* buffer: c->getBuffers()) {
 		Widget* w = addBufferWidget(buffers);
 		bool relative = buffer->relativeWidth != 0;
 		w->getWidget<Textbox>("name")->setText(buffer->name);
@@ -274,12 +271,12 @@ void CompositorEditor::setCompositor(Compositor* c) {
 		addBuffer(buffer->colour[3].format);
 	}
 
-	index = 0;
+	refreshTargetsList();
 	Widget* passes = m_panel->getWidget("passlist");
 	passes->deleteChildWidgets();
-	while(CompositorPass* pass = c->getPass(index++)) {
+	for(const Compositor::Pass& pass : c->getPasses()) {
 		Widget* w = 0;
-		if(CompositorPassClear* clear = dynamic_cast<CompositorPassClear*>(pass)) {
+		if(CompositorPassClear* clear = dynamic_cast<CompositorPassClear*>(pass.pass)) {
 			static auto setBit = [](CompositorPassClear* c, ClearBits bit, Button* b) {
 				c->setBits((ClearBits)(((int)c->getBits()&~(int)bit) | (b->isSelected()? (int)bit: 0)));
 			};
@@ -315,14 +312,13 @@ void CompositorEditor::setCompositor(Compositor* c) {
 				picker->eventChanged.bind([clear, colour](const Colour& c) { clear->setColour(c); colour->setColour(c.toARGB()); });
 				(new Popup(picker, true))->popup(w);
 			});
-
 		}
 
-		if(CompositorPassQuad* quad = dynamic_cast<CompositorPassQuad*>(pass)) {
+		if(CompositorPassQuad* quad = dynamic_cast<CompositorPassQuad*>(pass.pass)) {
 			w = addDataWidget("quadpass", passes);
 			quad = 0;
 		}
-		if(CompositorPassScene* scene = dynamic_cast<CompositorPassScene*>(pass)) {
+		if(CompositorPassScene* scene = dynamic_cast<CompositorPassScene*>(pass.pass)) {
 			w = addDataWidget("scenepass", passes);
 			w->getWidget<Textbox>("camera")->setText(scene->getCamera());
 			Spinbox* first = w->getWidget<Spinbox>("first");
@@ -341,13 +337,29 @@ void CompositorEditor::setCompositor(Compositor* c) {
 			Textbox* cam = w->getWidget<Textbox>("camera");
 			cam->setText(scene->getCamera());
 			cam->eventSubmit.bind([scene](Textbox* t) { scene->setCamera(t->getText()); });
-			
 		}
 
 		if(w) {
 			Combobox* target = w->getWidget<Combobox>("target");
-			target->setText(c->getPassTarget(index - 1));
+			target->shareList(m_targets);
+			target->setText(pass.target);
+			target->eventSelected.bind([this, pass=pass.pass](Combobox*, ListItem& item) {
+				m_compositor->setPassTarget(pass, item);
+			});
 		}
+	}
+}
+
+void CompositorEditor::refreshTargetsList() {
+	m_targets->clearItems();
+	for(Compositor::Buffer* buffer: m_compositor->getBuffers()) {
+		m_targets->addItem(buffer->name);
+	}
+	for(const Compositor::Connector& in: m_compositor->getInputs()) {
+		if(in.buffer && !m_targets->findItem(in.buffer)) m_targets->addItem(in.buffer);
+	}
+	for(const Compositor::Connector& out: m_compositor->getOutputs()) {
+		if(out.buffer && !m_targets->findItem(out.buffer)) m_targets->addItem(out.buffer);
 	}
 }
 
@@ -404,6 +416,7 @@ void CompositorEditor::addConnector(int mode, Widget* list, const char* name) {
 		if(mode) node->addOutput(name);
 		else node->addInput(name);
 	});
+	refreshTargetsList();
 }
 
 void CompositorEditor::renameConnector(Textbox* t) {
@@ -437,15 +450,16 @@ void CompositorEditor::removeItem(Button* b) {
 
 	delete item;
 	updateExpandProperyInfo(list);
+	refreshTargetsList();
 }
 
 void CompositorEditor::buildInputConnectors(Widget* list) {
-	while(const char* name = m_compositor->getInputName(0)) m_compositor->removeInput(name);
+	while(!m_compositor->getInputs().empty()) m_compositor->removeInput(m_compositor->getInputs()[0].name);
 	for(Widget* w: list) m_compositor->addInput(w->getWidget<Textbox>("value")->getText());
 }
 void CompositorEditor::buildOutputConnectors(Widget* list) {
-	while(const char* name = m_compositor->getOutputName(0)) m_compositor->removeOutput(name);
-	for(Widget* w: list) m_compositor->addInput(w->getWidget<Textbox>("value")->getText());
+	while(!m_compositor->getOutputs().empty()) m_compositor->removeOutput(m_compositor->getOutputs()[0].name);
+	for(Widget* w: list) m_compositor->addOutput(w->getWidget<Textbox>("value")->getText());
 }
 
 // ------------------------------------------------ //
@@ -453,10 +467,12 @@ void CompositorEditor::buildOutputConnectors(Widget* list) {
 void CompositorEditor::addBuffer(Button*) {
 	Widget* buffers = m_panel->getWidget("bufferlist");
 	addBufferWidget(buffers);
+	refreshTargetsList();
 }
 void CompositorEditor::removeBuffer(Button* b) {
 	b->getParent()->removeFromParent();
 	delete b->getParent();
+	refreshTargetsList();
 }
 
 // ------------------------------------------------ //
@@ -517,12 +533,13 @@ void CompositorEditor::setGraph(const GraphInfo& g) {
 			m_graphEditor->link(from, link.out, to, link.in);
 		}
 		// Only one possible connector
-		else if(!from->getCompositor()->getOutputName(1) && !to->getCompositor()->getInputName(1)) {
+		else if(from->getCompositor()->getOutputs().size() == 1 && to->getCompositor()->getInputs().size() == 1) {
 			m_graphEditor->link(from, 0, to, 0);
 		}
 		// All matching pairs
-		else for(int o=0; from->getCompositor()->getOutputName(o); ++o) {
-			int t = to->getCompositor()->getInput(from->getCompositor()->getOutputName(o));
+		else for(const Compositor::Connector& out: from->getCompositor()->getOutputs()) {
+			int t = to->getCompositor()->getInput(out.name);
+			int o = &out - from->getCompositor()->getOutputs().data();
 			if(t>=0) m_graphEditor->link(from, o, to, t);
 		}
 	}
@@ -571,10 +588,8 @@ CompositorNode* CompositorEditor::createGraphNode(Compositor* c, int alias) {
 	node->setConnectorTemplates(m_panel->getRoot()->getTemplate("nodeinput"), m_panel->getRoot()->getTemplate("nodeoutput"));
 	node->eventPressed.bind(this, &CompositorEditor::selectNode);
 	if(c == Compositor::Output) node->setPersistant(true);
-	uint index = 0;
-	while(const char* name = c->getInputName(index++)) node->addInput(name);
-	index = 0;
-	while(const char* name = c->getOutputName(index++)) node->addOutput(name);
+	for(const Compositor::Connector& in : c->getInputs()) node->addInput(in.name);
+	for(const Compositor::Connector& out : c->getOutputs()) node->addOutput(out.name);
 	return node;
 }
 
@@ -688,8 +703,8 @@ void CompositorEditor::exportGraph(CompositorGraph* graph) const {
 	for(const CompositorGraph::Link& link: graph->links()) {
 		Compositor* a = graph->getCompositor(link.a);
 		Compositor* b = graph->getCompositor(link.b);
-		const char* out = a->getOutputName(link.out);
-		const char* in = b->getInputName(link.in);
+		const char* out = a->getOutputs()[link.out].name;
+		const char* in = b->getInputs()[link.in].name;
 
 		XMLElement& l = g.add("link");
 		l.setAttribute("a", names[link.a].str());
