@@ -430,6 +430,8 @@ void CompositorEditor::renameConnector(Textbox* t) {
 		if(input) cast<Button>(node->getInputs()[index].widget)->setCaption(t->getText());
 		else cast<Button>(node->getOutputs()[index].widget)->setCaption(t->getText());
 	});
+	refreshTargetsList();
+	//ToDo: Update pass targets
 }
 
 void CompositorEditor::removeItem(Button* b) {
@@ -516,6 +518,15 @@ void CompositorEditor::setGraph(const GraphInfo& g) {
 	m_graph = g.graph;
 	if(!m_graph) return;
 	CompositorGraph* graph = m_graph;
+
+	// Make sure it is selected in graph list
+	ListItem* item = m_graphList->findItem(1, g);
+	if(item) m_graphList->selectItem(item->getIndex());
+	else {
+		m_graphList->addItem("Unknown", g);
+		m_graphList->selectItem(m_graphList->getItemCount()-1);
+	}
+
 
 	// Nodes
 	for(uint i=0; i<graph->size(); ++i) {
