@@ -285,7 +285,7 @@ void AssetBrowser::refreshItems() {
 	// Tooltips
 	for(Widget* w: m_items) {
 		AssetTile* tile = cast<AssetTile>(w);
-		if(tile->getIcon() == 0) continue; // Folder
+		if(tile->getIconIndex() == 0) continue; // Folder
 		String tip = tile->getCaption();
 		switch(tile->asset.type) {
 		case ResourceType::Model: tip += "\nModel: " + tile->asset.resource; break;
@@ -360,7 +360,7 @@ Widget* AssetBrowser::addAssetTile(const Asset& asset, bool folder) {
 
 bool AssetBrowser::openAsset(Widget* w) {
 	AssetTile* tile = cast<AssetTile>(w);
-	if(tile->getIcon() == 0) { // Folder
+	if(tile->getIconIndex() == 0) { // Folder
 		setPath(m_localPath + tile->getCaption());
 		return false;
 	}
@@ -510,7 +510,7 @@ void AssetBrowser::dropItem(Widget* w, const Point& p, int b) {
 	}
 	else if(b==4) { // Item context menu
 		m_selectedItem = w;
-		if(cast<Button>(w)->getIcon() != 0) { // Not a Folder
+		if(cast<Button>(w)->getIconIndex() != 0) { // Not a Folder
 			const Asset& asset = cast<AssetTile>(w)->asset;
 			MenuBuilder menu(w->getRoot(), "button", "button");
 			menu.addAction("Open", [this, w]() { openAsset(w); });

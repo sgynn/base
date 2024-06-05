@@ -359,9 +359,9 @@ void Table::cacheItem(uint row, uint column) {
 		else if(cast<Label>(w)) cast<Label>(w)->setCaption(anyToString(value));
 		else if(cast<Textbox>(w)) cast<Textbox>(w)->setText(anyToString(value));
 		else if(cast<Combobox>(w)) cast<Combobox>(w)->setText(anyToString(value));
-		else if(cast<Icon>(w)) {
-			if(value.isType<int>()) cast<Icon>(w)->setIcon(*value.cast<int>());
-			else cast<Icon>(w)->setIcon(anyToString(value));
+		else if(cast<Image>(w)) {
+			if(value.isType<int>()) cast<Image>(w)->setImage(*value.cast<int>());
+			else cast<Image>(w)->setImage(anyToString(value));
 		}
 	}
 }

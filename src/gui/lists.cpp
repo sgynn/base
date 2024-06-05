@@ -365,9 +365,9 @@ void Listbox::cacheItem(ListItem& item, Widget* w) const {
 			else if(const String* text = value.cast<String>()) {
 				if(Label* l = cast<Label>(w)) l->setCaption(*text);
 				else if(Textbox* t = cast<Textbox>(w)) t->setText(*text);
-				else if(Icon* i = cast<Icon>(w)) i->setIcon(*text);
+				else if(Image* i = cast<Image>(w)) i->setImage(*text);
 			}
-			else if(Icon* i = cast<Icon>(w)) i->setIcon(value.getValue<int>(-1));
+			else if(Image* i = cast<Image>(w)) i->setImage(value.getValue<int>(-1));
 			else if(Spinbox* s = cast<Spinbox>(w)) s->setValue(value.getValue<int>(0));
 			else if(SpinboxFloat* s = cast<SpinboxFloat>(w)) s->setValue(value.getValue<float>(0));
 		};

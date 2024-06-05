@@ -146,70 +146,87 @@ void Label::draw() const {
 
 // ===================================================================================== //
 
-Icon::Icon(const Rect& r, Skin* s) : Widget(r, s), m_iconList(0), m_iconIndex(0), m_angle(0) {
-	m_states = 0x43; // intangible, inherit state
+Image::Image(const Rect& r, Skin* s) : Widget(r, s), m_group(nullptr), m_image(0), m_angle(0) {
+	m_states |= 0x40; // add inherit state
 }
-IconList* Icon::getIconList() const { return m_iconList; }
-int Icon::getIcon() const { return m_iconIndex; }
-void Icon::setIcon(IconList* list, const char* name) {
-	int icon = list->getIconIndex(name);
-	setIcon(list, icon);
-}
-void Icon::setIcon(IconList* list, int index) {
-	m_iconList = list;
-	m_iconIndex = index;
-	updateAutosize();
-}
-void Icon::setIcon(int index) {
-	m_iconIndex = index;
-	updateAutosize();
-}
-void Icon::setIcon(const char* name) {
-	if(m_iconList) {
-		m_iconIndex = m_iconList->getIconIndex(name);
-		if(m_iconIndex<0 && name[0]) printf("Error: Icon %s not found\n", name);
-		updateAutosize();
-	}
-}
-const char* Icon::getIconName() const {
-	return m_iconList? m_iconList->getIconName(m_iconIndex): 0;
-}
-void Icon::initialise(const Root* root, const PropertyMap& p) {
-	if(root && p.contains("iconlist")) m_iconList = root->getIconList( p["iconlist"]);
-	char* e;
-	if(const char* icon = p.get("icon", 0)) {
-		m_iconIndex = strtol(icon, &e, 10);
-		if(e==icon) setIcon(icon);
-	}
+void Image::initialise(const Root* root, const PropertyMap& p) {
 	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
-	updateAutosize();
-}
-void Icon::copyData(const Widget* from) {
-	if(const Icon* icon = cast<Icon>(from)) {
-		m_iconList = icon->m_iconList;
-		m_iconIndex = icon->m_iconIndex;
+	if(root && p.contains("group")) m_group = root->getIconList( p["group"]);
+	if(root && p.contains("image")) {
+		if(p.readValue("image", m_image)) setImage(m_image);
+		else if(m_group) setImage(p["image"]);
+		else setImage(root->getRenderer()->getImage(p["image"]));
+		// This is here because m_root may be null in updateAutosize()
+		if(isAutosize() && m_image>=0) {
+			Root* tmp = m_root;
+			m_root = const_cast<Root*>(root);
+			setSizeAnchored(getPreferredSize());
+			m_root = tmp;
+		}
 	}
 }
-Point Icon::getPreferredSize(const Point& hint) const {
-	if(isAutosize() && m_iconList && m_iconIndex>=0 && m_iconIndex < m_iconList->size()) {
+void Image::copyData(const Widget* from) {
+	if(const Image* img = cast<Image>(from)) {
+		m_group = img->m_group;
+		m_image = img->m_image;
+		m_angle = img->m_angle;
+	}
+}
+void Image::setImage(const char* name) {
+	if(m_group) {
+		setImage(m_group->getIconIndex(name));
+	}
+	else if(m_root) {
+		int index = m_root->getRenderer()->getImage(name);
+		if(index<0) index = m_root->getRenderer()->addImage(name);
+		setImage(index);
+	}
+}
+void Image::setImage(int image) {
+	m_image = image;
+	updateAutosize();
+}
+
+void Image::setImage(IconList* group, int index) {
+	m_group = group;
+	setImage(index);
+}
+void Image::setImage(IconList* group, const char* name) {
+	m_group = group;
+	setImage(name);
+}
+
+int Image::getImageIndex() const {
+	return m_image;
+}
+const char* Image::getImageName() const {
+	if(m_image < 0) return "";
+	if(m_group) return m_group->getIconName(m_image);
+	if(m_root) return m_root->getRenderer()->getImageName(m_image);
+	return nullptr;
+}
+IconList* Image::getGroup() const {
+	return m_group;
+}
+
+Point Image::getPreferredSize(const Point& hint) const {
+	if(isAutosize() && m_image>=0) {
+		if(!m_root && !m_group) return getSize();
+		Point size = m_group? m_group->getIconRect(m_image).size(): m_root->getRenderer()->getImageSize(m_image);
+
+		// Maintain aspect ratio
 		if(m_anchor!=0x33) {
-			if((m_anchor&0xf) == 3) {
-				Point s = m_iconList->getIconRect(m_iconIndex).size();
-				s.y = s.y * m_rect.width / s.x;
-				return s;
-			}
-			if((m_anchor>>4) == 3) {
-				Point s = m_iconList->getIconRect(m_iconIndex).size();
-				s.x = s.x * m_rect.height / s.y;
-				return s;
-			}
+			if((m_anchor&0xf) == 3) size.y = size.y * m_rect.width / size.x;
+			if((m_anchor>>4) == 3)  size.x = size.x * m_rect.height / size.y;
 		}
-		return m_iconList->getIconRect(m_iconIndex).size();
+
+		return size;
 	}
 	return getSize();
 }
-void Icon::draw() const {
-	if(!isVisible() || !m_iconList) return;
+
+void Image::draw() const {
+	if(!isVisible() || m_image < 0) return;
 	Rect r = m_rect;
 	unsigned colour = m_colour;
 	int stateIndex = getState();
@@ -218,100 +235,37 @@ void Icon::draw() const {
 		r.position() += state.textPos;
 		colour = deriveColour(state.foreColour, m_colour, m_states);
 	}
-	m_root->getRenderer()->drawIcon(m_iconList, m_iconIndex, r, m_angle, colour);
-	drawChildren();
-}
-
-// ===================================================================================== //
-
-Image::Image(const Rect& r, Skin* s) : Widget(r, s), m_image(-1), m_angle(0) {
-	m_states |= 0x40; // add inherit state
-}
-void Image::initialise(const Root* root, const PropertyMap& p) {
-	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
-	if(root && p.contains("image")) {
-		const char* file = p["image"];
-		int index = root->getRenderer()->getImage(file);
-		if(index<0) index = root->getRenderer()->addImage(file);
-		setImage(index);
-		// This is here because m_root may be null in updateAutosize()
-		if(isAutosize() && m_image>=0) setSizeAnchored(root->getRenderer()->getImageSize(index));
-	}
-}
-void Image::copyData(const Widget* from) {
-	if(const Image* img = cast<Image>(from)) {
-		m_image = img->m_image;
-		m_angle = img->m_angle;
-	}
-}
-void Image::setImage(const char* file) {
-	int index = m_root->getRenderer()->getImage(file);
-	if(index<0) index = m_root->getRenderer()->addImage(file);
-	setImage(index);
-}
-void Image::setImage(int image) {
-	m_image = image;
-	updateAutosize();
-}
-int Image::getImage() const {
-	return m_image;
-}
-
-Point Image::getPreferredSize(const Point& hint) const {
-	if(isAutosize() && m_image>=0 && m_root) {
-		// Maintain aspect ratio
-		if(m_anchor!=0x33) {
-			if((m_anchor&0xf) == 3) {
-				Point s = m_root->getRenderer()->getImageSize(m_image);
-				s.y = s.y * m_rect.width / s.x;
-				return s;
-			}
-			if((m_anchor>>4) == 3) {
-				Point s = m_root->getRenderer()->getImageSize(m_image);
-				s.x = s.x * m_rect.height / s.y;
-				return s;
-			}
-		}
-
-		return m_root->getRenderer()->getImageSize(m_image);
-	}
-	return getSize();
-}
-
-void Image::draw() const {
-	if(!isVisible() /*|| m_image<0*/) return;
-	Rect r = m_rect;
-	if(m_skin) r.position() += m_skin->getState( getState() ).textPos;
-	m_root->getRenderer()->drawImage(m_image, r, m_angle, m_colour, (m_colour>>24)/255.0);
+	if(m_group) m_root->getRenderer()->drawIcon(m_group, m_image, r, m_angle, colour);
+	else m_root->getRenderer()->drawImage(m_image, r, m_angle, colour, (m_colour>>24)/255.0);
 	drawChildren();
 }
 
 // ===================================================================================== //
 
 void IconInterface::initialiseIcon(Widget* w, const Root* root, const PropertyMap& p) {
-	m_icon = w->getTemplateWidget<Icon>("_icon");
-	if(m_icon) m_icon->initialise(root, p);
+	m_icon = w->getTemplateWidget<Image>("_icon");
+	if(m_icon) static_cast<Widget*>(m_icon)->initialise(root, p);
 }
 void IconInterface::setIcon(IconList* list, int index) {
-	if(m_icon) m_icon->setIcon(list, index);
+	if(m_icon) m_icon->setImage(list, index);
 }
 void IconInterface::setIcon(IconList* list, const char* name) {
-	if(m_icon) m_icon->setIcon(list, name);
+	if(m_icon) m_icon->setImage(list, name);
 }
 void IconInterface::setIcon(int index) {
-	if(m_icon) m_icon->setIcon(index);
+	if(m_icon) m_icon->setImage(index);
 }
 void IconInterface::setIcon(const char* name) {
-	if(m_icon) m_icon->setIcon(name);
+	if(m_icon) m_icon->setImage(name);
 }
-int IconInterface::getIcon() const {
-	return m_icon? m_icon->getIcon(): 0;
+int IconInterface::getIconIndex() const {
+	return m_icon? m_icon->getImageIndex(): 0;
 }
 const char* IconInterface::getIconName() const {
-	return m_icon? m_icon->getIconName(): 0;
+	return m_icon? m_icon->getImageName(): 0;
 }
-IconList* IconInterface::getIconList() const {
-	return m_icon? m_icon->getIconList(): 0;
+IconList* IconInterface::getIconGroup() const {
+	return m_icon? m_icon->getGroup(): 0;
 }
 void IconInterface::setIconColour(unsigned rgb, float a) {
 	if(m_icon) m_icon->setColour(rgb, a);

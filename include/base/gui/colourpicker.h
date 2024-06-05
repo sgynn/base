@@ -4,7 +4,7 @@
 #include <base/math.h>
 #include <base/colour.h>
 
-namespace gui { class Icon; }
+namespace gui { class Image; }
 
 class ColourPicker : public gui::Widget {
 	WIDGET_TYPE(ColourPicker);
@@ -30,11 +30,11 @@ class ColourPicker : public gui::Widget {
 	static gui::IconList* createImages(gui::Root*, int size);
 
 	private:
-	gui::Icon* m_wheel = 0;
-	gui::Icon* m_value = 0;
-	gui::Icon* m_alpha = 0;
-	gui::Icon* m_wheelMark = 0;
-	gui::Icon* m_valueMark = 0;
-	gui::Icon* m_alphaMark = 0;
+	gui::Image* m_wheel = 0;
+	gui::Image* m_value = 0;
+	gui::Image* m_alpha = 0;
+	gui::Image* m_wheelMark = 0;
+	gui::Image* m_valueMark = 0;
+	gui::Image* m_alphaMark = 0;
 };
 

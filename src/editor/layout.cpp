@@ -294,7 +294,7 @@ void LayoutViewer::refreshItem(gui::TreeNode* n, gui::Widget* w) {
 		if(type) type->getValues(drawable, name, icon, visible);
 	}
 
-	w->getWidget(0)->as<Icon>()->setIcon(icon);
+	w->getWidget(0)->as<Image>()->setImage(icon);
 	w->getWidget(1)->as<Label>()->setCaption(name);
 	w->getWidget(2)->as<Checkbox>()->setChecked(visible);
 	w->getWidget(2)->setVisible(isNode);

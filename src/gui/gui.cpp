@@ -37,7 +37,6 @@ Root::Root(int w, int h, Renderer* renderer) : m_focus(0), m_mouseFocus(0), m_ke
 	// Register defaut widgets
 	if(!s_constuct.contains("Widget")) {
 		registerClass<Widget>();
-		registerClass<Icon>();
 		registerClass<Image>();
 		registerClass<Label>();
 		registerClass<Button>();

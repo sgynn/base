@@ -480,9 +480,9 @@ inline void setFromData(Widget* w, const Any& value) {
 		cast<Label>(w)->setCaption(text? text: "");
 	else if(w->isType(Textbox::staticType()))
 		cast<Textbox>(w)->setText(text);
-	else if(w->isType(Icon::staticType())) {
-		if(text) cast<Icon>(w)->setIcon(text);
-		else cast<Icon>(w)->setIcon( value.getValue<int>(-1) );
+	else if(w->isType(Image::staticType())) {
+		if(text) cast<Image>(w)->setImage(text);
+		else cast<Image>(w)->setImage( value.getValue<int>(-1) );
 	}
 }
 

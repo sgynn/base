@@ -28,7 +28,7 @@
 				<widget anchor="lrt" template="editbox" name="filter" rect="0 0 247 20"/>
 				<widget anchor="lrtb" template="tree" name="tree" rect="0 21 262 487">
 					<widget margin="2" layout="HorizontalLayout" name="_item" spacing="2" rect="20 0 228 22" anchor="lrt" class="Widget" skin="none" template="frame" tangible="2">
-						<widget anchor="lt" iconlist="editoricons" template="icon" name="icon" icon="0" rect="2 2 20 18"/>
+						<widget anchor="lt" group="editoricons" template="icon" name="icon" image="0" rect="2 2 20 18"/>
 						<widget inheritstate="1" class="Label" anchor="lrt" rect="24 2 184 18" name="name" skin="listitem"/>
 						<widget anchor="lt" template="checkbox" name="visible" rect="210 2 16 18" drag="1"/>
 					</widget>
@@ -42,13 +42,13 @@
 					<widget template="spinboxf" name="pz" rect="144 60 60 20"/>
 					<widget anchor="lt" fontsize="12" caption="Position" template="label" rect="8 45 56 19"/>
 					<widget anchor="lt" class="Widget" layout="HorizontalLayout" margin="1" template="frame" rect="5 3 254 38" name="gizmo" spacing="4" autosize="1">
-						<widget anchor="lt" iconlist="transform" template="iconbutton" name="move" rect="1 1 36 36"/>
-						<widget anchor="lt" iconlist="transform" template="iconbutton" name="rotate" icon="1" rect="41 1 36 36"/>
-						<widget anchor="lt" iconlist="transform" template="iconbutton" name="scale" icon="2" rect="81 1 36 36"/>
+						<widget anchor="lt" group="transform" template="iconbutton" name="move" image="0" rect="1 1 36 36"/>
+						<widget anchor="lt" group="transform" template="iconbutton" name="rotate" image="1" rect="41 1 36 36"/>
+						<widget anchor="lt" group="transform" template="iconbutton" name="scale" image="2" rect="81 1 36 36"/>
 						<widget anchor="lt" class="Widget" template="frame" rect="121 1 12 11" skin="none"/>
-						<widget anchor="lt" iconlist="transform" template="iconbutton" name="global" icon="3" rect="137 1 36 36"/>
-						<widget anchor="lt" iconlist="transform" template="iconbutton" name="parent" icon="4" rect="177 1 36 36"/>
-						<widget anchor="lt" iconlist="transform" template="iconbutton" name="local" icon="5" rect="217 1 36 36"/>
+						<widget anchor="lt" group="transform" template="iconbutton" name="global" image="3" rect="137 1 36 36"/>
+						<widget anchor="lt" group="transform" template="iconbutton" name="parent" image="4" rect="177 1 36 36"/>
+						<widget anchor="lt" group="transform" template="iconbutton" name="local" image="5" rect="217 1 36 36"/>
 					</widget>
 				</widget>
 			</widget>

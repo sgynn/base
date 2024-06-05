@@ -8,11 +8,11 @@
 	</skin>
 	<!--Templates-->
 	<template class="Button" autosize="1" rect="769 900 27 16" name="nodeinput" skin="none">
-		<widget anchor="lm" class="Icon" icon="4" rect="0 0 16 16" iconlist="glyphs" skin="panel" name="_icon"/>
+		<widget anchor="lm" template="icon" image="4" rect="0 0 16 16" group="glyphs" name="_icon"/>
 		<widget anchor="lt" class="Label" rect="16 0 11 14" skin="smallfont" name="_text" caption="In" autosize="1"/>
 	</template>
 	<template class="Button" rect="0 0 60 20" name="nodeoutput" skin="none">
-		<widget anchor="rm" iconlist="glyphs" template="icon" name="_icon" rect="44 2 16 16" icon="4"/>
+		<widget anchor="rm" group="glyphs" template="icon" name="_icon" rect="44 2 16 16" image="4"/>
 		<widget anchor="tlrb" class="Label" rect="0 0 42 20" skin="smallfont" align="2" name="_text" autosize="1"/>
 	</template>
 	<!--Widget Layout-->

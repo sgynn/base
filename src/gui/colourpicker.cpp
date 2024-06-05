@@ -20,30 +20,30 @@ void ColourPicker::initialise(const Root* root, const PropertyMap& p) {
 
 		int size = getSize().y;
 		int bar = size / 8 + 4;
-		m_wheel = new Icon(Rect(0,0,size,size), m_skin);
-		m_value = new Icon(Rect(size+4,0,bar,size), m_skin);
-		m_alpha = new Icon(Rect(size+bar+8,0,bar,size), m_skin);
-		Icon* alphaGradient = new Icon(Rect(0,0,bar,size), m_skin);
+		m_wheel = new Image(Rect(0,0,size,size), m_skin);
+		m_value = new Image(Rect(size+4,0,bar,size), m_skin);
+		m_alpha = new Image(Rect(size+bar+8,0,bar,size), m_skin);
+		Image* alphaGradient = new Image(Rect(0,0,bar,size), m_skin);
 
-		m_wheelMark = new Icon(Rect(0,0,3,3), m_skin);
-		m_valueMark = new Icon(Rect(0,0,bar,1), m_skin);
-		m_alphaMark = new Icon(Rect(0,0,bar,1), m_skin);
+		m_wheelMark = new Image(Rect(0,0,3,3), m_skin);
+		m_valueMark = new Image(Rect(0,0,bar,1), m_skin);
+		m_alphaMark = new Image(Rect(0,0,bar,1), m_skin);
 
-		m_wheel->setIcon(images, 0);
+		m_wheel->setImage(images, 0);
 		m_wheel->setTangible(Tangible::SELF);
 		m_wheel->setAsTemplate();
-		m_value->setIcon(images, 1);
+		m_value->setImage(images, 1);
 		m_value->setTangible(Tangible::SELF);
 		m_value->setAsTemplate();
-		m_alpha->setIcon(images, 3);
+		m_alpha->setImage(images, 3);
 		m_alpha->setTangible(Tangible::SELF);
 		m_alpha->setAsTemplate();
-		alphaGradient->setIcon(images, 2);
+		alphaGradient->setImage(images, 2);
 		alphaGradient->setAsTemplate();
 		alphaGradient->setAnchor("tlrb");
-		m_wheelMark->setIcon(images, 4);
-		m_valueMark->setIcon(images, 4);
-		m_alphaMark->setIcon(images, 4);
+		m_wheelMark->setImage(images, 4);
+		m_valueMark->setImage(images, 4);
+		m_alphaMark->setImage(images, 4);
 		m_valueMark->setAnchor("tlr");
 		m_alphaMark->setAnchor("tlr");
 

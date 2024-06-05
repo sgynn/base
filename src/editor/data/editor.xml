@@ -140,9 +140,9 @@
 	<template class="Textbox" name="editbox" skin="panel" category="Input"/>
 	<template class="Button" name="button" skin="button" category="Input"/>
 	<template name="image" class="Image" skin="panel" rect="0 0 64 64" image="blank" category="Display"/>
-	<template name="icon" class="Icon" skin="panel" rect="0 0 32 32" iconlist="glyphs" category="Display"/>
+	<template name="icon" class="Image" skin="panel" rect="0 0 32 32" group="glyphs" category="Display"/>
 	<template category="Display" class="Label" name="label" skin="panel" caption="Label"/>
-	<template name="checkbox" class="Checkbox" skin="none" rect="0 0 16 16" category="Input" iconlist="glyphs" icon="4">
+	<template name="checkbox" class="Checkbox" skin="none" rect="0 0 16 16" category="Input" group="glyphs" image="4">
 		<widget name="_box" skin="panel" rect="0 0 15 15" anchor="lm" tangible="0" inheritstate="1">
 			<widget anchor="lt" template="icon" rect="4 4 7 7" name="_icon"/>
 		</widget>
@@ -151,21 +151,21 @@
 	<template category="Containers" class="SplitPane" rect="0 0 100 100" name="hsplit" skin="none" orientation="horizontal">
 		<widget anchor="tb" rect="46 0 2 100" name="_sash" skin="button"/>
 	</template>
-	<template class="Button" iconlist="editors" rect="936 60 24 24" name="iconbutton" icon="0" skin="button">
-		<widget anchor="cm" class="Icon" rect="4 4 16 16" iconlist="editors" skin="button" name="_icon" autosize="1"/>
+	<template class="Button" group="editors" rect="936 60 24 24" name="iconbutton" image="0" skin="button">
+		<widget anchor="cm" class="Image" rect="4 4 16 16" group="editors" skin="button" name="_icon" autosize="1"/>
 	</template>
 	<template anchor="lt" class="Spinbox" name="spinbox" skin="panel" rect="422 678 64 20">
 		<widget anchor="lrtb" template="editbox" name="_text" skin="none" rect="3 0 49 20"/>
-		<widget anchor="rm" icon="1" rect="50 10 14 8" template="iconbutton" iconlist="glyphs" skin="none" name="_dec"/>
-		<widget anchor="rm" iconlist="glyphs" template="iconbutton" name="_inc" skin="none" rect="50 2 14 8"/>
+		<widget anchor="rm" image="1" rect="50 10 14 8" template="iconbutton" group="glyphs" skin="none" name="_dec"/>
+		<widget anchor="rm" image="0" group="glyphs" template="iconbutton" name="_inc" skin="none" rect="50 2 14 8"/>
 	</template>
 	<template anchor="lt" class="SpinboxFloat" name="spinboxf" skin="panel" rect="422 678 64 20">
 		<widget anchor="lrtb" template="editbox" name="_text" skin="none" rect="3 0 49 20"/>
-		<widget anchor="rm" icon="1" rect="50 10 14 8" template="iconbutton" iconlist="glyphs" skin="none" name="_dec"/>
-		<widget anchor="rm" iconlist="glyphs" template="iconbutton" name="_inc" skin="none" rect="50 2 14 8"/>
+		<widget anchor="rm" image="1" rect="50 10 14 8" template="iconbutton" group="glyphs" skin="none" name="_dec"/>
+		<widget anchor="rm" image="0" group="glyphs" template="iconbutton" name="_inc" skin="none" rect="50 2 14 8"/>
 	</template>
 	<template class="Window" rect="0 0 100 100" name="window" skin="panel" category="Containers">
-		<widget anchor="tr" class="Button" rect="84 0 16 16" name="_close" skin="button"/>
+		<widget anchor="tr" template="iconbutton" rect="84 0 16 16" name="_close" skin="button" group="glyphs" image="5"/>
 		<widget anchor="tlr" class="Button" text="Caption" rect="10 0 70 20" skin="panel" name="_caption"/>
 		<widget anchor="trlb" rect="5 22 90 73" name="_client" skin="panel"/>
 		<widget anchor="br" rect="90 90 10 10" name="_sizebr" skin="panel"/>
@@ -230,7 +230,7 @@
 		<widget anchor="tlr" template="button" rect="0 0 100 20" name="_header"/>
 		<widget anchor="tlr" rect="0 20 100 90" name="_client" skin="none"/>
 	</template>
-	<template anchor="lt" icon="0" template="icon" rect="621 851 12 12" iconlist="connectors" name="connector" tangible="3"/>
+	<template anchor="lt" image="0" template="icon" rect="621 851 12 12" group="connectors" name="connector" tangible="3"/>
 	<template class="TabbedPane" rect="0 0 100 100" name="tabbedpane" skin="panel" category="Containers">
 		<widget anchor="tlr" rect="0 0 100 24" name="_tabstrip" skin="none">
 			<widget class="Button" rect="0 0 38 24" name="_tab" skin="button"/>

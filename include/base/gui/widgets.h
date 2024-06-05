@@ -35,52 +35,18 @@ class Label : public Widget {
 
 };
 
-/** Icon image */
-class Icon : public Widget {
-	WIDGET_TYPE(Icon);
-	Icon(const Rect& r, Skin*);
-	IconList* getIconList() const;							// Get icon set
-	void setIcon(IconList* list, const char* name);			// Set icon by name
-	void setIcon(IconList* list, int index);				// Set iconSet and index
-	void setIcon(const char* name);							// Set icon index by name
-	void setIcon(int index);								// Set icon index
-	int  getIcon() const;									// Get icon index
-	const char* getIconName() const;
-	void  setAngle(float a) { m_angle=a; }
-	float getAngle() const { return m_angle; }
-	void draw() const override;
-	void initialise(const Root*, const PropertyMap&) override;
-	Point getPreferredSize(const Point& hint=Point()) const override;
-	protected:
-	void copyData(const Widget*) override;
-	IconList* m_iconList;
-	int       m_iconIndex;
-	float     m_angle;
-};
-
-/** Interface for accessing an icon subwidget called '_icon' */
-class IconInterface {
-	public:
-	void initialiseIcon(Widget*, const Root*, const PropertyMap&);
-	void setIcon(IconList* list, int index);
-	void setIcon(IconList* list, const char* name);
-	void setIcon(const char* name);
-	void setIcon(int index);
-	int  getIcon() const;
-	const char* getIconName() const;
-	IconList* getIconList() const;
-	void setIconColour(unsigned rgb, float a=1);
-	private:
-	Icon* m_icon = nullptr;
-};
-
 /** Image */
 class Image : public Widget {
 	WIDGET_TYPE(Image);
 	Image(const Rect&, Skin*);
-	void  setImage(const char* file);	// Set image - uses renderer::addImage();
-	void  setImage(int imageID);			// Set image to renderer image index
-	int   getImage() const;
+	void  setImage(int key);
+	void  setImage(const char* name);
+	void  setImage(IconList* group, int index);
+	void  setImage(IconList* group, const char* name);
+	int   getImageIndex() const;
+	const char* getImageName() const;
+	IconList* getGroup() const;
+
 	void  setAngle(float a) { m_angle=a; }
 	float getAngle() const { return m_angle; }
 	void  draw() const override;
@@ -88,8 +54,27 @@ class Image : public Widget {
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
-	int      m_image;
-	float    m_angle;
+	IconList* m_group;
+	int       m_image;
+	float     m_angle;
+};
+
+// Accessor interface for widgets that contain an icon
+class IconInterface {
+	public:
+	void  setIcon(int key);
+	void  setIcon(const char* name);
+	void  setIcon(IconList* group, int index);
+	void  setIcon(IconList* group, const char* name);
+	void  setIconColour(unsigned rgb, float a=1);
+	int   getIconIndex() const;
+	IconList* getIconGroup() const;
+	const char* getIconName() const;
+	protected:
+	IconInterface() {}
+	void initialiseIcon(Widget*, const Root*, const PropertyMap&);
+	private:
+	Image* m_icon = nullptr;
 };
 
 /** Basic Button */
@@ -119,8 +104,8 @@ class Checkbox : public Button {
 	void setDragSelect(int s) { m_dragMode = s; }
 	void setIcon(IconList* list, int checked, int unchecked=-1);
 	void setIcon(IconList* list, const char* checked, const char* unchecked=0);
-	void setIcon(int checked, int unchecked=-1) { setIcon(getIconList(), checked, unchecked); }
-	void setIcon(const char* checked, const char* unchecked=0) { setIcon(getIconList(), checked, unchecked); }
+	void setIcon(int checked, int unchecked=-1) { setIcon(getIconGroup(), checked, unchecked); }
+	void setIcon(const char* checked, const char* unchecked=0) { setIcon(getIconGroup(), checked, unchecked); }
 	public:
 	Delegate<void(Button*)> eventChanged;
 	protected:
