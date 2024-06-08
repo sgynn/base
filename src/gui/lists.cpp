@@ -125,9 +125,11 @@ ListItem& ItemList::getItem(uint index) {
 }
 
 ListItem* ItemList::findItem(const char* text) {
+	if(!text) text = "";
 	return findItem([text](const ListItem& i) { return strcmp(text, i.getText())==0; });
 }
 const ListItem* ItemList::findItem(const char* text) const {
+	if(!text) text = "";
 	return findItem([text](const ListItem& i) { return strcmp(text, i.getText())==0; });
 }
 
@@ -204,8 +206,10 @@ void ItemList::initialise(const PropertyMap& p) {
 // ------------------------------- //
 
 const char* ListItem::getText(uint index) const {
-	String* str = getData(index).cast<String>();
-	return str? str->str(): 0;
+	const Any& value = getData(index);
+	if(value.isType<String>()) return value.cast<String>()->str();
+	if(value.isType<const char*>()) return *value.cast<const char*>();
+	return nullptr;
 }
 const Any& ListItem::getData(uint index) const {
 	static const Any null;
@@ -456,11 +460,17 @@ void Listbox::itemSelectionChanged() {
 	updateCache(false);
 }
 
+ListItem* Listbox::getItemAt(const Point& p) {
+	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
+	int index = (p.y + offset) / m_itemHeight;
+	if(index >=0 && index < (int)getItemCount()) return &getItem(index);
+	return nullptr;
+}
+
 void Listbox::onMouseButton(const Point& p, int d, int u) {
 	if(d==1) {
-		int offset = m_scrollbar? m_scrollbar->getValue(): 0;
-		int index = (p.y + offset) / m_itemHeight;
-		if(index >=0 && index < (int)getItemCount()) {
+		if(ListItem* item = getItemAt(p)) {
+			int index = item->getIndex();
 			if(!isItemSelected(index)) {
 				if(!m_multiSelect || getRoot()->getKeyMask()!=KeyMask::Shift) clearSelection();
 				selectItem(index);

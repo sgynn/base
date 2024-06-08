@@ -168,6 +168,7 @@ class Listbox : public Widget, public ItemList {
 	int       getItemHeight() const;
 	void      ensureVisible(int index);
 	void      selectItem(uint index, bool events=false);
+	ListItem* getItemAt(const Point& pos);
 
 	Widget*  getItemWidget(); // This may be in use by an item, or just be a template. Can be null.
 	void     setItemWidget(Widget*);
