@@ -89,7 +89,15 @@ void Root::setRenderer(Renderer* r) {
 
 Widget* Root::createWidget(const char* skin, const char* type, const char* name, bool forceType) const {
 	Widget* w;
-	if(m_templates.contains(skin)) {
+	if(!skin || !skin[0]) {
+		if(!type || !type[0]) type = Widget::staticName();
+		if(s_constuct.contains(type)) w = s_constuct[type](Rect(0,0,100,100), nullptr);
+		else {
+			printf("Error: Widget type %s not found\n", type);
+			return nullptr;
+		}
+	}
+	else if(m_templates.contains(skin)) {
 		Widget* src = m_templates[skin];
 		w = src->clone(forceType? type: 0);
 		

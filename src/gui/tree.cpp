@@ -507,7 +507,7 @@ void TreeView::cacheItem(TreeNode* node, Widget* w) const {
 
 void TreeView::refresh() {
 	for(CacheItem& i: m_drawCache) {
-		cacheItem(i.node, i.node->m_cached);
+		if(i.node->m_cached) cacheItem(i.node, i.node->m_cached);
 	}
 }
 
