@@ -140,9 +140,9 @@
 	<template class="Textbox" name="editbox" skin="panel" category="Input"/>
 	<template class="Button" name="button" skin="button" category="Input"/>
 	<template name="image" class="Image" skin="panel" rect="0 0 64 64" image="blank" category="Display"/>
-	<template name="icon" class="Image" skin="panel" rect="0 0 32 32" group="glyphs" category="Display"/>
+	<template name="icon" class="Image" skin="panel" rect="0 0 32 32" group="glyphs" tangible="0" category="Display"/>
 	<template category="Display" class="Label" name="label" skin="panel" caption="Label"/>
-	<template name="checkbox" class="Checkbox" skin="none" rect="0 0 16 16" category="Input" group="glyphs" image="4">
+	<template name="checkbox" class="Checkbox" skin="none" rect="0 0 16 16" category="Input" group="glyphs" icon="4">
 		<widget name="_box" skin="panel" rect="0 0 15 15" anchor="lm" tangible="0" inheritstate="1">
 			<widget anchor="lt" template="icon" rect="4 4 7 7" name="_icon"/>
 		</widget>

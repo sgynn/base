@@ -47,7 +47,7 @@
 			<widget anchor="lt" class="Widget" template="frame" rect="0 0 244 429">
 				<widget anchor="lrtb" resize="last" template="vsplit" rect="0 0 244 429">
 					<widget anchor="lt" class="Widget" template="frame" rect="0 0 244 59">
-						<widget anchor="lrtb" template="listbox" name="mixers" rect="0 24 244 35"/>
+						<widget anchor="lrtb" template="listbox" name="banks" rect="0 24 244 35"/>
 						<widget anchor="lrt" class="Widget" layout="HorizontalLayout" margin="2" rect="0 -1 244 27" skin="none" spacing="3">
 							<widget tip="Add Mixer" anchor="lt" image="1" template="iconbutton" rect="2 2 24 23" group="audioicons" name="addmixer"/>
 							<widget tip="Add Variable" anchor="lt" image="8" template="iconbutton" rect="29 2 24 23" group="audioicons" name="addfolder"/>

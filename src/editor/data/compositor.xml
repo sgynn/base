@@ -47,16 +47,16 @@
 			<widget anchor="lt" class="ScaleBox" rect="310 0 640 740" name="graph" skin="panel">
 				<widget anchor="lrt" class="Widget" rect="372 84 235 20" name="textitem" skin="none">
 					<widget anchor="lrt" submit="2" template="editbox" name="value" rect="0 0 213 20"/>
-					<widget anchor="rt" icon="5" rect="217 0 18 20" template="iconbutton" iconlist="glyphs" skin="listitem" name="remove"/>
+					<widget anchor="rt" image="5" rect="217 0 18 20" template="iconbutton" group="glyphs" skin="listitem" name="remove"/>
 				</widget>
 				<widget anchor="lrt" class="Widget" rect="372 108 235 20" name="listitem" skin="none">
 					<widget anchor="lrt" template="droplist" name="value" rect="0 0 213 20"/>
-					<widget anchor="rt" icon="5" rect="217 0 18 20" template="iconbutton" iconlist="glyphs" skin="listitem" name="remove"/>
+					<widget anchor="rt" image="5" rect="217 0 18 20" template="iconbutton" group="glyphs" skin="listitem" name="remove"/>
 				</widget>
 				<widget anchor="lrt" class="Widget" layout="HorizontalLayout" rect="372 132 235 20" name="textureitem" skin="none">
 					<widget anchor="lrt" submit="2" template="editbox" name="value" rect="0 0 108 20"/>
 					<widget anchor="lrt" template="droplist" name="value2" rect="108 0 108 20"/>
-					<widget anchor="rt" icon="5" rect="216 0 18 20" template="iconbutton" iconlist="glyphs" skin="listitem" name="remove"/>
+					<widget anchor="rt" image="5" rect="216 0 18 20" template="iconbutton" group="glyphs" skin="listitem" name="remove"/>
 				</widget>
 				<widget anchor="lt" class="Popup" rect="312 204 92 80" name="passtypes" skin="panel" visible="0">
 					<widget anchor="lt" template="button" name="newscene" caption="Scene pass" rect="0 0 92 20"/>
