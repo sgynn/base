@@ -52,34 +52,57 @@ class VariableWidget : public Widget {
 
 AudioEditor::~AudioEditor() {
 	delete m_menu;
+	delete m_bankMenu;
 }
 
 void AudioEditor::initialise() {
 	Root::registerClass<VariableWidget>();
 	getEditor()->addEmbeddedPNGImage("data/editor/audio.png", editor_audio_icons, editor_audio_icons_len);
 	m_panel = loadUI("audio.xml", editor_audio_gui);
-	addToggleButton(m_panel, "editors", "audio");
+	Button* button = addToggleButton(m_panel, "editors", "audio");
 	m_panel->setVisible(false);
 	m_data = m_panel->getWidget<TreeView>("objects");
 	m_data->eventSelected.bind(this, &AudioEditor::selectObject);
+	m_bankList = m_panel->getWidget<Listbox>("banks");
 	TabbedPane* tabs = m_panel->getWidget<TabbedPane>("tabs");
 	m_properties = tabs->getTab(0)->getWidget("objectdata");
 	setupPropertyEvents();
+
+	if(!audio::Data::instance) button->setEnabled(false);
+
+	MenuBuilder bankMenu(m_panel->getRoot(), "button", "button");
+	bankMenu.menu()->setSize(150, 0);
+	bankMenu.addAction("New Soundbank",    [this]() { });
+	bankMenu.addAction("Unload Soundbank", [this]() { audio::unload(m_bankList->getSelectedItem()->getText()); m_loadMessage=2; });
+	bankMenu.addAction("Save Soundbank",   [this]() { save(m_bankList->getSelectedItem()->getText()); });
+	m_bankMenu = bankMenu;
+
+	m_bankList->eventMouseDown.bind([this](Widget* w, const Point& p, int b) {
+		if(b==4) {
+			ListItem* item = m_bankList->getItemAt(p);
+			if(item) m_bankList->selectItem(item->getIndex());
+			else m_bankList->clearSelection();
+			m_bankMenu->getWidget("Unload Soundbank")->setEnabled(item);
+			m_bankMenu->getWidget("Save Soundbank")->setEnabled(item);
+			m_bankMenu->popup(w->getRoot(), w->getDerivedTransform().transform(p));
+		}
+	});
+
 
 	// Context menu
 	MenuBuilder menu(m_panel->getRoot(), "button", "menuitem", "submenu", "audioicons");
 	MenuBuilder& addMenu = menu.addMenu("Add");
 	menu.addAction("Delete", "delete", [this]() { deleteItem(); });
-	addMenu.addAction("Mixer", "mixer", [this]() { addItem(Type::Mixer); });
-	addMenu.addAction("Group", "folder", [this]() { addItem(Type::Folder); });
-	addMenu.addAction("Random", "random", [this]() { addItem(Type::Random); });
-	addMenu.addAction("Sequence", "sequence", [this]() { addItem(Type::Sequence); });
-	addMenu.addAction("Switch", "switch", [this]() { addItem(Type::Switch); });
-	addMenu.addAction("Sound", "sound", [this]() { addItem(Type::Sound); });
+	addMenu.addAction("Mixer",       "mixer",       [this]() { addItem(Type::Mixer); });
+	addMenu.addAction("Group",       "folder",      [this]() { addItem(Type::Folder); });
+	addMenu.addAction("Random",      "random",      [this]() { addItem(Type::Random); });
+	addMenu.addAction("Sequence",    "sequence",    [this]() { addItem(Type::Sequence); });
+	addMenu.addAction("Switch",      "switch",      [this]() { addItem(Type::Switch); });
+	addMenu.addAction("Sound",       "sound",       [this]() { addItem(Type::Sound); });
 	addMenu.addAction("Attenuation", "attenuation", [this]() { addItem(Type::Attenuation); });
-	addMenu.addAction("Variable", "variable", [this]() { addItem(Type::Variable); });
-	addMenu.addAction("Enum", "variable", [this]() { addItem(Type::Enum); });
-	addMenu.addAction("Event", "event", [this]() { addItem(Type::Event); });
+	addMenu.addAction("Variable",    "variable",    [this]() { addItem(Type::Variable); });
+	addMenu.addAction("Enum",        "variable",    [this]() { addItem(Type::Enum); });
+	addMenu.addAction("Event",       "event",       [this]() { addItem(Type::Event); });
 	m_menu = menu;
 
 	m_data->eventMouseDown.bind([this](Widget* w, const Point& p, int b) {
@@ -123,11 +146,46 @@ bool AudioEditor::newAsset(const char*& name, const char*& file, const char*& bo
 	return true;
 }
 
+bool isSoundbankFile(const Asset& asset) {
+	if(!asset.file.endsWith(".xml")) return false;
+	FILE* fp = fopen(asset.file, "rb");
+	char buffer[64]; // <?xml version="1.0"/><soundbank>
+	fread(buffer, 63, 1, fp);
+	fclose(fp);
+	buffer[63] = 0;
+	const char* c = strchr(buffer, '<');
+	if(!c) return false;
+	if(c[1] == '?') c=strchr(c+1, '<');
+	if(!c) return false;
+	return strncmp(c, "<soundbank>", 11)==0;
+}
+
 Widget* AudioEditor::openAsset(const Asset& asset) {
-	return nullptr;
+	if(!audio::Data::instance) return nullptr;
+	if(!isSoundbankFile(asset)) return nullptr;
+	// So, this is a soundbank - load it
+	audio::load(asset.file);
+	if(!isActive()) activate();
+	m_loadMessage = 2;
+	return m_panel;
 }
 
 bool AudioEditor::assetActions(MenuBuilder& menu, const Asset& asset) {
+	if(isSoundbankFile(asset)) {
+		menu.addAction("Load", [this, &asset]() {
+			audio::load(asset.file);
+			m_loadMessage = 2;
+		});
+		menu.addAction("Unload", [this, &asset]() {
+			audio::unload(asset.file);
+			m_loadMessage = 2;
+		});
+		menu.addAction("Save", [this, &asset]() {
+			save(asset.file);
+			getEditor()->assetChanged(asset, false);
+		});
+		return true;
+	}
 	return false;
 }
 
@@ -145,7 +203,9 @@ void AudioEditor::refreshDataTree() {
 	if(!data) return;
 
 	Object selected = getSelectedObject();
-	
+
+	m_bankList->clearItems();
+	for(SoundBank* bank: data->m_banks) m_bankList->addItem(bank->file);
 
 	TreeNode* root = m_data->getRootNode();
 	root->clear();
@@ -637,6 +697,8 @@ void AudioEditor::update() {
 		for(const SoundInstance& i: object->playing) if(i.sound) isPlaying=true;
 		if(!isPlaying && ++m_playing > 4) playSound(0);
 	}
+	// Check if something loaded
+	if(m_loadMessage && --m_loadMessage==0) refreshDataTree();
 }
 
 
