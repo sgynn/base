@@ -438,6 +438,7 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 		m_target->getParent()->pauseLayout();
 		m_target->raise();
 		Point p = m_target->getPosition() + delta;
+		int m = parent->getLayout()->getMargin();
 		
 		// Figure out our new index
 		int index = 0;
@@ -457,7 +458,7 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 			m_target->raise();
 		}
 
-		if(m_clamp) p = Rect(0, 0, view - m_target->getSize()).clamp(p);
+		if(m_clamp) p = Rect(m, m, view - m_target->getSize() - Point(m*2, m*2)).clamp(p);
 		if(p!=m_target->getPosition()) m_target->setPosition(p);
 	}
 	else if(m_mode == SIZE) {
