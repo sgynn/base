@@ -149,19 +149,23 @@ void Label::draw() const {
 Image::Image(const Rect& r, Skin* s) : Widget(r, s), m_group(nullptr), m_image(0), m_angle(0) {
 	m_states |= 0x40; // add inherit state
 }
+
+int Image::findImage(const Root* root, IconList* list, const char* name) {
+	if(!name || !name[0]) return -1;
+	char* end;
+	int id = strtol(name, &end, 10);
+	if(end > name) return id;
+	if(list) return list->getIconIndex(name);
+	id = root->getRenderer()->getImage(name);
+	if(id<0) id = root->getRenderer()->addImage(name);
+	return id;
+}
+
 void Image::initialise(const Root* root, const PropertyMap& p) {
 	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
 	if(root) {
 		if(p.contains("group")) m_group = root->getIconList( p["group"]);
-		if(p.contains("image")) {
-			const char* name = p["image"];
-			char* end;
-			m_image = strtol(name, &end, 10);
-			if(end == name) {
-				if(m_group) setImage(p["image"]);
-				else setImage(root->getRenderer()->getImage(p["image"]));
-			}
-		}
+		if(p.contains("image")) setImage(findImage(root, m_group, p["image"]));
 		// This is here because m_root may be null in updateAutosize()
 		if(isAutosize() && m_image>=0) {
 			Root* tmp = m_root;
@@ -232,17 +236,19 @@ Point Image::getPreferredSize(const Point& hint) const {
 }
 
 void Image::draw() const {
-	if(!isVisible() || m_image < 0) return;
-	Rect r = m_rect;
-	unsigned colour = m_colour;
-	int stateIndex = getState();
-	if(m_skin) {
-		const Skin::State& state = m_skin->getState(stateIndex);
-		r.position() += state.textPos;
-		colour = deriveColour(state.foreColour, m_colour, m_states);
+	if(!isVisible()) return;
+	if(m_image >= 0) {
+		Rect r = m_rect;
+		unsigned colour = m_colour;
+		int stateIndex = getState();
+		if(m_skin) {
+			const Skin::State& state = m_skin->getState(stateIndex);
+			r.position() += state.textPos;
+			colour = deriveColour(state.foreColour, m_colour, m_states);
+		}
+		if(m_group) m_root->getRenderer()->drawIcon(m_group, m_image, r, m_angle, colour);
+		else m_root->getRenderer()->drawImage(m_image, r, m_angle, colour, (m_colour>>24)/255.0);
 	}
-	if(m_group) m_root->getRenderer()->drawIcon(m_group, m_image, r, m_angle, colour);
-	else m_root->getRenderer()->drawImage(m_image, r, m_angle, colour, (m_colour>>24)/255.0);
 	drawChildren();
 }
 
@@ -319,8 +325,8 @@ const char* Button::getCaption() const {
 
 void Checkbox::initialise(const Root* root, const PropertyMap& p) {
 	Button::initialise(root, p);
-	p.readValue("icon", m_checkedIcon);
-	p.readValue("nicon", m_uncheckedIcon);
+	if(p.contains("icon")) m_checkedIcon = findImage(root, getIconGroup(), p["icon"]);
+	if(p.contains("nicon")) m_uncheckedIcon = findImage(root, getIconGroup(), p["nicon"]);
 	p.readValue("drag", m_dragMode);
 	setChecked(p.getValue("checked", isChecked()));
 }
@@ -389,9 +395,7 @@ void Checkbox::onMouseMove(const Point& last, const Point& pos, int b) {
 // ===================================================================================== //
 
 void DragHandle::initialise(const Root*, const PropertyMap& p) {
-	const char* mode = p.get("mode", 0);
-	if(mode && strcmp(mode, "size")) m_mode = SIZE;
-	else if(mode && strcmp(mode, "move")) m_mode = MOVE;
+	m_mode = p.getEnum("mode", {"move", "size", "order"}, MOVE);
 	m_clamp = p.getValue("clamp", m_clamp);
 }
 
@@ -404,28 +408,62 @@ void DragHandle::copyData(const Widget* from) {
 
 void DragHandle::onMouseButton(const Point& p, int d, int u) {
 	Widget::onMouseButton(p,d,u);
-	if(d) m_held = p;
+	if(d) {
+		m_held = p;
+		m_target = getParent();
+		while(m_target->isTemplate()) m_target = m_target->getParent();
+		if(m_mode==ORDER && !m_target->getParent()->getLayout()) m_mode = MOVE;
+		if(m_mode==MOVE && m_target->getParent()->getLayout()) m_mode = ORDER;
+		m_index = m_target->getIndex();
+	}
+	if(u && m_target) {
+		if(m_mode == ORDER) m_target->getParent(true)->add(m_target, m_index);
+		m_target->getParent()->resumeLayout();
+		if(eventEndDrag) eventEndDrag(m_target, m_mode);
+		m_target = nullptr;
+	}
 }
 
 void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
-	if(!b || !hasMouseFocus()) return;
-	Point delta = m_held - pos;
-	Widget* target = getParent();
-	const Point& view = target->getParent()->getSize();
+	if(!b || !hasMouseFocus() || !m_target) return;
+	Point delta = pos - m_held;
+	Widget* parent = m_target->getParent(true);
+	const Point& view = parent->getSize();
 	if(m_mode == MOVE) {
-		Point p = target->getPosition() + delta;
-		if(m_clamp && m_parent) {
-			if(p.x + m_rect.width > view.x) p.x = view.x - m_rect.width;
-			if(p.y + m_rect.height > view.y) p.x = view.y - m_rect.height;
-			if(p.x<0) p.x=0;
-			if(p.y<0) p.y=0;
-		}
-		if(p!=target->getPosition()) target->setPosition(p);
+		Point p = m_target->getPosition() + delta;
+		if(m_clamp) p = Rect(0, 0, view - m_target->getSize()).clamp(p);
+		if(p!=m_target->getPosition()) m_target->setPosition(p);
 	}
-	else {
-		Point p = target->getPosition();
-		Point size = target->getSize();
-		const Rect& targetRect = target->getRect();
+	else if(m_mode == ORDER) {
+		m_target->getParent()->pauseLayout();
+		m_target->raise();
+		Point p = m_target->getPosition() + delta;
+		
+		// Figure out our new index
+		int index = 0;
+		Rect t(p, m_target->getSize());
+		for(Widget* w: parent) {
+			const Rect& r = w->getRect();
+			if(r.bottom() <= t.bottom()) ++index;
+			else if(r.right() <= t.right() && r.top() <= t.top()) ++index;
+			else break;
+		}
+		if(index != m_index) {
+			m_index = index;
+			parent->add(m_target, index);
+			parent->refreshLayout();
+			setMouseFocus();
+			m_target->getParent(true)->pauseLayout();
+			m_target->raise();
+		}
+
+		if(m_clamp) p = Rect(0, 0, view - m_target->getSize()).clamp(p);
+		if(p!=m_target->getPosition()) m_target->setPosition(p);
+	}
+	else if(m_mode == SIZE) {
+		Point p = m_target->getPosition();
+		Point size = m_target->getSize();
+		const Rect& targetRect = m_target->getRect();
 		int anchor[2] = { m_anchor&0xf, m_anchor>>4 };
 		auto resize = [&](int axis) {
 			if(anchor[axis] == 0) { // Size min
@@ -437,7 +475,7 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 				if(m_clamp && size[axis] > maxSize) { p[axis] += size[axis] - maxSize; size[axis] = maxSize; }
 			}
 			else if(anchor[axis]==1) { // Size max
-				size[axis] -= delta[axis];
+				size[axis] += delta[axis];
 				int minSize = targetRect.size()[axis] - getPosition()[axis];
 				int maxSize = view[axis] - targetRect.position()[axis];
 				if(size[axis] < minSize) size[axis] = minSize;
@@ -447,8 +485,8 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 		resize(0);
 		resize(1);
 
-		if(p != target->getPosition()) target->setPosition(p);
-		if(size != target->getSize()) target->setSize(size);
+		if(p != m_target->getPosition()) m_target->setPosition(p);
+		if(size != m_target->getSize()) m_target->setSize(size);
 	}
 }
 

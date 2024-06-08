@@ -51,7 +51,10 @@ class Image : public Widget {
 	float getAngle() const { return m_angle; }
 	void  draw() const override;
 	Point getPreferredSize(const Point& hint=Point()) const override;
+
 	protected:
+	friend class IconInterface;
+	static int findImage(const Root*, IconList* list, const char* property);
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
 	IconList* m_group;
@@ -73,6 +76,7 @@ class IconInterface {
 	protected:
 	IconInterface() {}
 	void initialiseIcon(Widget*, const Root*, const PropertyMap&);
+	static int findImage(const Root* r, IconList* list, const char* property) { return Image::findImage(r,list,property); }
 	private:
 	Image* m_icon = nullptr;
 };
@@ -123,16 +127,19 @@ class Checkbox : public Button {
 /** Drag / resize handle component */
 class DragHandle : public Widget {
 	WIDGET_TYPE(DragHandle);
-	enum Mode { MOVE, SIZE };
+	enum Mode { MOVE, SIZE, ORDER };
 	DragHandle(const Rect& r, Skin* s, Mode mode=MOVE) : Widget(r,s), m_mode(mode) {}
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
+	Mode getMode() const { return m_mode; }
 	protected:
 	void onMouseMove(const Point&, const Point&, int) override;
 	void onMouseButton(const Point&, int, int) override;
+	Widget* m_target = nullptr;
 	Mode m_mode;
 	bool m_clamp = false;
 	Point m_held;
+	int m_index;
 };
 
 /** Progress bar */

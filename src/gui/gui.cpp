@@ -681,7 +681,7 @@ int Widget::getAnchor(char* s) const {
 
 void Widget::raise() {
 	// Move to the end of parents widget list
-	if(m_parent && !m_parent->m_children.empty()) {
+	if(m_parent && !m_parent->m_children.empty() && m_parent->m_children.back() != this) {
 		std::vector<Widget*>& list = m_parent->m_children;
 		for(uint i=0; i<list.size(); ++i){
 			if(list[i]==this) {
@@ -690,7 +690,7 @@ void Widget::raise() {
 			}
 		}
 		list.push_back(this);
-		m_parent->refreshLayout();
+		if(!m_parent->isLayoutPaused()) m_parent->refreshLayout();
 	}
 }
 void Widget::setFocus() {
