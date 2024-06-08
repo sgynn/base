@@ -52,9 +52,9 @@ namespace script {
 		Variable();								// Constructor - creates null object
 		~Variable();							// Destructor
 		Variable(const Variable&);				// Copy constructor
-		Variable(Variable&&);					// Move constructor
+		Variable(Variable&&) noexcept;					// Move constructor
 		const Variable& operator=(const Variable&);
-		Variable& operator=(Variable&&);		// Move operator
+		Variable& operator=(Variable&&) noexcept;		// Move operator
 		Variable copy(uint depth) const;		// Make a deep copy
 
 		template<typename T>Variable(T v): type(0) { *this=v; }

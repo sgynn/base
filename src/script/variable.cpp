@@ -94,13 +94,13 @@ Variable::~Variable() {
 	if(isFunction() && func && --func->ref==0) delete func;
 	if(type == STRING && s) free((char*)s);
 }
-//// Move constructor ////
-Variable::Variable(Variable&& v) : type(v.type) {
+//// Move constructor - needs noexcept to be used in vector resize ////
+Variable::Variable(Variable&& v) noexcept : type(v.type) {
 	obj = v.obj;
 	v.obj = 0;
 	v.type = 0;
 }
-Variable& Variable::operator=(Variable&& v) {
+Variable& Variable::operator=(Variable&& v) noexcept {
 	obj = v.obj;
 	type = v.type;
 	v.obj = 0;
@@ -463,18 +463,7 @@ inline Variable& Variable::_set(uint id, const Variable& var) {
 	// Add item
 	obj->lookup[id] = obj->items.size();
 	obj->keys.push_back(id);
-	// Vector resize breaks linked variables as that is lost when using operator=
-	// So here is a horrible solution to resize the vector using memcpy() instead
-	// Vector uses operator=() so not really a way around this - Actually, move semantics can work
-	if(!obj->items.empty() && obj->items.size() == obj->items.capacity()) {
-		std::vector<Variable> temp;
-		temp.swap(obj->items);
-		obj->items.resize(temp.size(), nullVar);
-		obj->items.push_back(var);
-		memcpy(&obj->items[0], &temp[0], temp.size() * sizeof(Variable)); // May throw warnings - ignore them
-		memset(&temp[0], 0, temp.size() * sizeof(Variable)); // make sure reference counters dont screw up
-	}
-	else obj->items.push_back(var);
+	obj->items.push_back(var);
 	return obj->items.back();
 }
 
