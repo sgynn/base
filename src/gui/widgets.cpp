@@ -151,11 +151,17 @@ Image::Image(const Rect& r, Skin* s) : Widget(r, s), m_group(nullptr), m_image(0
 }
 void Image::initialise(const Root* root, const PropertyMap& p) {
 	if(p.contains("angle")) m_angle = atof(p["angle"]) * 0.0174532;
-	if(root && p.contains("group")) m_group = root->getIconList( p["group"]);
-	if(root && p.contains("image")) {
-		if(p.readValue("image", m_image)) setImage(m_image);
-		else if(m_group) setImage(p["image"]);
-		else setImage(root->getRenderer()->getImage(p["image"]));
+	if(root) {
+		if(p.contains("group")) m_group = root->getIconList( p["group"]);
+		if(p.contains("image")) {
+			const char* name = p["image"];
+			char* end;
+			m_image = strtol(name, &end, 10);
+			if(end == name) {
+				if(m_group) setImage(p["image"]);
+				else setImage(root->getRenderer()->getImage(p["image"]));
+			}
+		}
 		// This is here because m_root may be null in updateAutosize()
 		if(isAutosize() && m_image>=0) {
 			Root* tmp = m_root;
