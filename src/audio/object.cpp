@@ -71,16 +71,16 @@ int Object::play(soundID id) {
 	const SoundBase* sound = base;
 	
 	SoundInstance inst;
-	const Group* group;
-	unsigned index;
+	const Group* group = nullptr;
+	unsigned index = 0;
 
 	// Select sound
 	while(sound) {
 		switch(sound->type) {
 		case SOUND:
 			inst.sound = static_cast<const Sound*>(sound);
+			group = nullptr;
 			sound = 0;
-			group = 0;
 			break;
 		case GROUP: return -2;// Should not be playing this
 		case RANDOM:
@@ -89,7 +89,6 @@ int Object::play(soundID id) {
 			break;
 		case SEQUENCE:
 			group = static_cast<const Group*>(sound);
-			index = 0;
 			break;
 		case SWITCH:
 			group = static_cast<const Group*>(sound);
