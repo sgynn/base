@@ -15,15 +15,18 @@ namespace audio {
 		map[name] = ix;
 		return ix;
 	}
-	// Declare a sound or group - returns local id
-	objectID Data::declareSound(SoundBank* bank, const char* name) {
+	// Declare a sound or group
+	objectID Data::declareSound(SoundBank* bank, const char* name, bool create) {
 		if(name[0]) {
 			LookupMap::iterator it = m_soundMap.find(name);
-			if(it!=m_soundMap.end()) return it->value;
+			if(it != m_soundMap.end()) {
+				if(!create) return it->value;
+				else printf("Warning: sound %s already created by %s\n", name, getBank(it->value)->file);
+			}
 		}
-		soundID id = bank->data.size();
-		bank->data.push_back(0);
-		if(name[0]) m_soundMap[name] = Data::getSoundID(id, bank);
+		soundID id = Data::getSoundID(bank->data.size(), bank);
+		bank->data.push_back(nullptr);
+		if(name[0]) m_soundMap[name] = id;
 		return id;
 	}
 
@@ -95,108 +98,111 @@ namespace audio {
 		loadSoundParams(&inherit, xml);
 
 		// 
-		for(base::XML::iterator i = xml.begin(); i!=xml.end(); ++i) {
-			if(*i=="sound") {
+		for(const base::XMLElement& i : xml) {
+			if(i=="sound") {
 				// Referenced sound
-				if(i->hasAttribute("ref")) {
+				if(i.hasAttribute("ref")) {
 					if(!group) { printf("Error: Referenced sound outside group\n"); continue; }
-					const char* name = i->attribute("ref");
+					const char* name = i.attribute("ref");
 					printf("Sound '%s' referenced from '%s'\n", name, prefix);
 					group->sounds.push_back( data->declareSound(bank, name) );
 				}
 				// Defined sound
 				else {
-					const char* name = translateName(prefix, i->attribute("name"));
+					const char* name = translateName(prefix, i.attribute("name"));
 					if(!name) { printf("Error: Sound must have a name\n"); continue; }
-					int ix = data->declareSound(bank, name);
+					objectID id = data->declareSound(bank, name, true);
+					unsigned ix = Data::getLocalIndex(id);
 					printf("Creating sound '%s' as %d\n", name, ix);
 					Sound* s = new Sound(inherit);
 					s->type = SOUND;
-					if(bank->data[ix]) { printf("Warning: sound %s already exists\n", name); delete bank->data[ix]; }
 					bank->data[ix] = s;
-					if(group) group->sounds.push_back( ix );
+					if(group) group->sounds.push_back(id);
 
 					// Sound source parameters
-					loadSoundParams(s, *i);
+					loadSoundParams(s, i);
 				}
 			}
-			else if(*i=="mixer") {
-				const char* name = translateName( prefix, i->attribute("name") );
+			else if(i=="mixer") {
+				const char* name = translateName( prefix, i.attribute("name") );
 				if(name) {
 					int id = data->declare( name, data->m_mixerMap, data->m_mixers );
 					if(id==0) { printf("Error: Mixer must be named\n"); continue; }
 					printf("Creating mixer '%s' as %d\n", name, id);
 					Mixer& m = data->m_mixers[id];
 					m.mixerID = id;
-					for(base::XML::iterator j=i->begin(); j!=i->end(); ++j) {
-						if(*j=="volume") m.volume = parseVariableValue(*j);
-						else if(*j=="target") m.targetID = data->declare( j->attribute("mixer"), data->m_mixerMap,data->m_mixers );
+					for(const base::XMLElement& j: i) {
+						if(j=="volume") m.volume = parseVariableValue(j);
+						else if(j=="target") m.targetID = data->declare( j.attribute("mixer"), data->m_mixerMap, data->m_mixers );
 					}
 				}
 			}
-			else if(*i=="group") {
-				const char* name = translateName( prefix, i->attribute("name") );
-				const char* type = i->attribute("type");
+			else if(i=="group") {
+				const char* name = translateName( prefix, i.attribute("name") );
+				const char* type = i.attribute("type");
+				// TODO: If group is already defined from another bank, check if it the same
+				// and copy children to new one, or share the pointer ?
 				Group* g = new Group();	g->type = GROUP;
 				if(strcmp(type, "random")==0) g->type = RANDOM;
 				else if(strcmp(type, "sequence")==0) g->type = SEQUENCE;
 				else if(strcmp(type, "switch")==0) {
 					g->type = SWITCH;
-					g->switchID = data->declare( i->attribute("enum"), data->m_enumMap, data->m_enums );
+					g->switchID = data->declare( i.attribute("enum"), data->m_enumMap, data->m_enums );
 				}
 				else if(type[0]) printf("Warning: Undefined group type '%s'\n", type);
 				// Add to lists
-				int ix = name? data->declareSound(bank, name): bank->data.size();
-				if(group) group->sounds.push_back( ix );
-				if(name && bank->data[ix]) { printf("Warning: group %s already exists\n", name); delete bank->data[ix]; }
-				if(name) bank->data[ix] = g;
-				else bank->data.push_back(g);
+				objectID id = data->declareSound(bank, name, true);
+				unsigned ix = Data::getLocalIndex(id);
+				if(group) group->sounds.push_back(id);
+				bank->data[ix] = g;
 				const char* grouptypes[] = { "basic", "random", "sequence", "switch" };
 				printf("Creating %s group '%s' as %d\n", grouptypes[g->type-GROUP], name, ix);
 				// Recurse group
 				if(name) {
 					char* tmp = strdup(name);
-					loadGroup(bank, g, tmp, *i, inherit);
+					loadGroup(bank, g, tmp, i, inherit);
 					free(tmp);
-				} else loadGroup(bank, g, prefix, *i, inherit);
+				}
+				else loadGroup(bank, g, prefix, i, inherit);
 			}
-			else if(*i=="attenuation") {
-				const char* name = translateName(prefix, i->attribute("name"));
+			else if(i=="attenuation") {
+				const char* name = translateName(prefix, i.attribute("name"));
 				int ix = data->declare(name, data->m_attenuationMap, data->m_attenuations);
 				if(ix==0) { printf("Invalid attenuation name\n"); continue; }
-				data->m_attenuations[ix].falloff  = i->attribute("fallloff", 0.f);
-				data->m_attenuations[ix].distance = i->attribute("distance", 0.f);
+				data->m_attenuations[ix].falloff  = i.attribute("fallloff", 0.f);
+				data->m_attenuations[ix].distance = i.attribute("distance", 0.f);
 			}
-			else if(*i=="enum") {
-				const char* name = translateName(prefix, i->attribute("name"));
+			else if(i=="enum") {
+				const char* name = translateName(prefix, i.attribute("name"));
 				if(!name) { printf("Invalid enum name\n"); continue; }
 				int k = 0, ix = data->declare(name, data->m_enumMap, data->m_enums);
-				data->m_enums[ix].value = i->attribute("default", 0);
-				for(base::XML::iterator j=i->begin(); j!=i->end(); ++j) {
-					name = j->text()? j->text(): j->attribute("name");
+				data->m_enums[ix].value = i.attribute("default", 0);
+				for(const base::XMLElement& j: i) {
+					name = j.text()? j.text(): j.attribute("name");
 					if(name[0]) data->m_enums[ix].names[ name ] = k++;
 				}
 			}
-			else if(*i=="variable") {
-				const char* name = translateName(prefix, i->attribute("name"));
+			else if(i=="variable") {
+				const char* name = translateName(prefix, i.attribute("name"));
 				int ix = data->declare(name, data->m_variableMap, data->m_variables);
 				if(ix==0) { printf("Invalid variable name\n"); continue; }
-				data->m_variables[ix].value = i->attribute("value", 0.f);
-				data->m_variables[ix].min = i->attribute("min", 0.f);
-				data->m_variables[ix].max = i->attribute("max", 0.f);
+				data->m_variables[ix].value = i.attribute("value", 0.f);
+				data->m_variables[ix].min = i.attribute("min", 0.f);
+				data->m_variables[ix].max = i.attribute("max", 0.f);
 			}
-			else if(*i=="event") {
-				const char* name = translateName(prefix, i->attribute("name"));
+			else if(i=="event") {
+				const char* name = translateName(prefix, i.attribute("name"));
 				if(!name) { printf("Invalid event name\n"); continue; }
 				int ix = data->declare(name, data->m_eventMap, data->m_events);
 				EventList& list = data->m_events[ix];
-				for(base::XML::iterator j=i->begin(); j!=i->end(); ++j) {
+				for(const base::XMLElement& j: i) {
 					Event e;
-					if(*j=="play" || *j=="stop") {
-						e.type = *j=="play"? 1: 2;
-						e.target = data->declareSound(bank, j->attribute("sound"));
+					if(j=="play" || j=="stop") {
+						e.type = j=="play"? 1: 2;
+						e.target = data->declareSound(bank, j.attribute("sound"));
 						list.push_back(e);
-					} else if(*j=="set") {
+					}
+					else if(j=="set") {
 						e.type = 3;
 						// variable or enum - needs more design.
 					}
@@ -213,7 +219,7 @@ namespace audio {
 		for(bank->id=0; bank->id < m_banks.size(); ++bank->id) {
 			if(strcmp(file, m_banks[ bank->id ]->file)==0) break;
 		}
-		bank->file = file;
+		bank->file = strdup(file);
 		printf("Loading '%s' as soundbank %u\n", file, bank->id);
 		Sound soundTemplate;
 		audio::loadGroup(bank, 0, 0, xml.getRoot(), soundTemplate);

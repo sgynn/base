@@ -112,7 +112,7 @@ namespace audio {
 
 		static Data* instance;
 		template<typename T> objectID declare(const char* name, LookupMap& map, vector<T>& list);
-		objectID declareSound(SoundBank* bank, const char* name);
+		objectID declareSound(SoundBank* bank, const char* name, bool create=false);
 
 		static soundID   getSoundID(unsigned local, const SoundBank* bank) { return local | bank->id<<20; }
 		static unsigned  getLocalIndex(soundID id) { return id&0xfffff; }
