@@ -97,18 +97,14 @@ Variable::~Variable() {
 //// Move constructor ////
 Variable::Variable(Variable&& v) : type(v.type) {
 	obj = v.obj;
-	callback = v.callback;
 	v.obj = 0;
 	v.type = 0;
-	v.callback.unbind();
 }
 Variable& Variable::operator=(Variable&& v) {
 	obj = v.obj;
 	type = v.type;
-	callback = v.callback;
 	v.obj = 0;
 	v.type = 0;
-	v.callback.unbind();
 	return *this;
 }
 
@@ -378,21 +374,6 @@ bool Variable::isLinked() const {
 }
 bool Variable::isExplicit() const {
 	return type & EXPLICIT;
-}
-
-void Variable::setCallback(const VariableCallback& c) {
-	callback = c;
-	// Vector types need the callback on child elements
-	switch(type&0xf) {
-	case VEC4: get("w").setCallback(c);
-	case VEC3: get("z").setCallback(c);
-	case VEC2: get("y").setCallback(c);
-	           get("x").setCallback(c);
-			   break;
-	}
-}
-void Variable::fireCallback() {
-	if(callback) callback(*this);
 }
 
 bool Variable::operator==(const Variable& v) const {

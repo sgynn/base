@@ -31,7 +31,6 @@ namespace script {
 			Function* func;															// Function
 			Object* obj;															// Object
 		};
-		Delegate<void(Variable&)> callback;	// Called when variable changed by a script
 		template<typename T> T getValue() const;
 		template<typename T> bool setValue(const T&);
 		template<typename T> bool linkValue(uint t, T*& p, T& v, int flags);
@@ -111,10 +110,6 @@ namespace script {
 		template<typename T> bool link(const char* n, T& v, int f=0) { return find(n).link(v,f); } // Alternative syntax
 		template<typename T> bool link(uint n, T& v, int f) { return get(n).link(v,f); }
 		template<typename T> bool link(const VariableName& n, T& v, int f) { return get(n).link(v,f); }
-
-		typedef Delegate<void(Variable&)> VariableCallback;
-		void setCallback( const VariableCallback& );
-		void fireCallback();
 
 		bool isObject() const;					// Is this variable an object
 		bool isArray() const;					// Is this variable an array
