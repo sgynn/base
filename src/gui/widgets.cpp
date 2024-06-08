@@ -1233,14 +1233,15 @@ int TabbedPane::getTabIndex(const char* name) const {
 
 // ===================================================================================== //
 
-CollapsePane::CollapsePane(const Rect& r, Skin* s) : Widget(r,s), m_collapsed(false), m_moveable(false), m_expandAnchor(0) {}
+CollapsePane::CollapsePane(const Rect& r, Skin* s) : Widget(r,s), m_collapsed(false), m_expandAnchor(0) {}
 void CollapsePane::initialise(const Root* root, const PropertyMap& p) {
-	if(p.contains("moveable")) m_moveable = atoi(p["moveable"]);
-
 	m_client = getTemplateWidget("_client");
 	m_header = getTemplateWidget<Button>("_header");
 	m_check = getTemplateWidget<Checkbox>("_check");
-	if(m_header) m_header->eventPressed.bind(this, &CollapsePane::toggle);
+	m_stateWidget = getTemplateWidget("_state");
+	if(cast<Checkbox>(m_stateWidget) && m_stateWidget->isTangible()) cast<Checkbox>(m_stateWidget)->eventPressed.bind(this, &CollapsePane::toggle);
+	else if(Checkbox* c = cast<Checkbox>(m_header)) c->eventChanged.bind(this, &CollapsePane::toggle);
+	else if(m_header) m_header->eventPressed.bind(this, &CollapsePane::toggle);
 	if(m_check) m_check->eventChanged.bind(this, &CollapsePane::checkChanged);
 	if(!m_client) m_client = this;
 
@@ -1254,7 +1255,6 @@ void CollapsePane::copyData(const Widget* from) {
 	if(const CollapsePane* c = cast<CollapsePane>(from)) {
 		m_expandAnchor = c->m_expandAnchor;
 		m_collapsed = c->m_collapsed;
-		m_moveable = c->m_moveable;
 	}
 }
 void CollapsePane::setCaption(const char* c) {
@@ -1291,8 +1291,7 @@ void CollapsePane::expand(bool e) {
 	m_client->setVisible(e);
 	m_client->resumeLayout();
 	
-	Widget* state = getTemplateWidget("_state");
-	if(state) state->setSelected(e);
+	if(m_stateWidget) m_stateWidget->setSelected(e);
 	if(Widget* parent = getParent()) parent->refreshLayout();
 }
 void CollapsePane::updateAutosize() {
@@ -1318,28 +1317,6 @@ void CollapsePane::checkChanged(Button* b) {
 bool CollapsePane::isChecked() const {
 	return m_check && m_check->isChecked();
 }
-void CollapsePane::setMoveable(bool m) {
-	if(m_header && m && !m_moveable) {
-		m_header->eventMouseDown.bind(this, &CollapsePane::dragStart);
-		m_header->eventMouseMove.bind(this, &CollapsePane::dragMove);
-	}
-	else if(m_header && !m && m_moveable) {
-		m_header->eventMouseDown.unbind();
-		m_header->eventMouseMove.unbind();
-	}
-	m_moveable = m;
-}
-void CollapsePane::dragStart(Widget*, const Point& p, int b) {
-	if(b==1) m_held = p;
-}
-void CollapsePane::dragMove(Widget*, const Point& p, int b) {
-	if(b!=1 || m_held.x<0) m_held.x = -1;
-	else {
-		setPosition(0, p.y - m_held.y);
-		// Todo: reorder layout
-	}
-}
-
 
 // ===================================================================================== //
 

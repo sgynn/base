@@ -132,6 +132,7 @@ class DragHandle : public Widget {
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
 	Mode getMode() const { return m_mode; }
+	Delegate<void(Widget*, Mode mode)> eventEndDrag; // Widget is target
 	protected:
 	void onMouseMove(const Point&, const Point&, int) override;
 	void onMouseButton(const Point&, int, int) override;
@@ -407,11 +408,10 @@ class CollapsePane : public Widget {
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
 	bool isExpanded() const;
+	bool isChecked() const;
 	void expand(bool);
 	void setCaption(const char*);
-	void setChecked(bool c);
-	void setMoveable(bool);
-	bool isChecked() const;
+	void setChecked(bool);
 	const char* getCaption() const;
 	public:
 	Delegate<void(CollapsePane*, int)> eventReordered;
@@ -420,16 +420,13 @@ class CollapsePane : public Widget {
 	protected:
 	void toggle(Button*);
 	void checkChanged(Button*);
-	void dragStart(Widget*, const Point&, int);
-	void dragMove(Widget*, const Point&, int);
 	void updateAutosize() override;
 	void onChildChanged(Widget*) override;
 	protected:
 	Button* m_header;
 	Checkbox* m_check;
+	Widget* m_stateWidget;
 	bool m_collapsed;
-	bool m_moveable;
-	Point m_held;
 	char m_expandAnchor;
 };
 
