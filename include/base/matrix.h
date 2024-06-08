@@ -19,7 +19,7 @@ class Matrix {
 
 	operator float*();
 	operator const float*() const;
-	Matrix&  operator=  (const Matrix&);
+	Matrix&  operator=  (const Matrix&) = default;
 	Matrix&  operator*= (const Matrix& m);
 	Matrix   operator*  (const Matrix&) const;
 	vec4     operator*  (const vec4&) const;
@@ -77,10 +77,6 @@ inline Matrix& Matrix::set(const vec3& t, const vec3& b, const vec3& n, const ve
 
 inline Matrix::operator float*() { return &m[0]; }
 inline Matrix::operator const float*() const { return &m[0]; }
-inline Matrix& Matrix::operator=(const Matrix& a) {
-	for(uint i=0; i<16; i++) m[i]=a.m[i];
-	return *this;
-}
 inline Matrix Matrix::operator*(const Matrix& mat) const {
 	Matrix result;
 	result.m[0] = m[0]*mat.m[0] + m[4]*mat.m[1] + m[8]*mat.m[2] + m[12]*mat.m[3];

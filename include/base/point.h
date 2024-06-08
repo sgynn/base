@@ -77,6 +77,8 @@ struct Rect {
 	const Point& size() const     { return *reinterpret_cast<const Point*>(&width); }
 	Point bottomRight() const     { return Point(x+width, y+height); }
 
+	Point clamp(const Point& p) const;
+
 	bool valid      () const { return width >= 0 && height >= 0; }
 	bool empty      () const { return width == 0 && height == 0; }
 	bool contains   (int px, int py) const  { return px>=x && px<x+width && py>=y && py<y+height; }
@@ -114,6 +116,14 @@ inline Rect Rect::intersection(const Rect& r) const {
 	return result; 
 }
 
+inline Point Rect::clamp(const Point& p) const {
+	Point r = p;
+	if(r.x > x + width) r.x = x + width;
+	if(r.y > y + height) r.y = y + height;
+	if(r.x < x) r.x = x;
+	if(r.y < y) r.y = y;
+	return r;
+}
 
 
 // ------------------------ Range iterators --------------------------------- //

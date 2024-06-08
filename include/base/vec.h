@@ -18,7 +18,7 @@ class vec2 {
 	operator float*();
 	operator const float*() const;
 
-	vec2& operator= (const vec2& v);
+	vec2& operator= (const vec2& v) = default;
 	vec2& operator+=(const vec2& v);
 	vec2& operator-=(const vec2& v);
 	vec2& operator*=(const float v);
@@ -70,7 +70,7 @@ class vec3 {
 	operator float*();
 	operator const float*() const;
 
-	vec3& operator= (const vec3& v);
+	vec3& operator= (const vec3& v) = default;
 	vec3& operator+=(const vec3& v);
 	vec3& operator-=(const vec3& v);
 	vec3& operator*=(const float v);
@@ -118,7 +118,7 @@ class vec4 {
 	operator float*();
 	operator const float*() const;
 
-	vec4& operator= (const vec4& v);
+	vec4& operator= (const vec4& v) = default;
 	vec4& operator+=(const vec4& v);
 	vec4& operator-=(const vec4& v);
 	vec4& operator*=(const float v);
@@ -253,7 +253,6 @@ inline bool  vec4::operator!=(const vec4& v) const { return x!=v.x || y!=v.y || 
 inline bool  vec4::isZero() const { return x==0 && y==0 && z==0 && w==0; }
 
 
-ImplementMutateOp(=);
 ImplementMutateOp(+=);
 ImplementMutateOp(-=);
 ImplementMutateOp(*=);

@@ -183,10 +183,10 @@ Animation* Animation::subAnimation(int start, int end) const {
 		// count keys
 		int rc=0, pc=0, sc=0;
 		int ri=-1, pi=-1, si=-1;
-		#define IN(v,a,b) (v>=a&&v<=b)
-		for(uint j=0; j<list->rotation.size(); ++j) if( IN(list->rotation[j].frame,start,end) ) { ++rc; if(ri<0) ri=j; }
-		for(uint j=0; j<list->position.size(); ++j) if( IN(list->position[j].frame,start,end) ) { ++pc; if(pi<0) pi=j; }
-		for(uint j=0; j<list->scale.size(); ++j)    if( IN(list->scale[j].frame,start,end) )    { ++sc; if(si<0) si=j; }
+		auto in = [](float v, float a, float b) { return v>=a && v<=b; };
+		for(uint j=0; j<list->rotation.size(); ++j) if( in(list->rotation[j].frame,start,end) ) { ++rc; if(ri<0) ri=j; }
+		for(uint j=0; j<list->position.size(); ++j) if( in(list->position[j].frame,start,end) ) { ++pc; if(pi<0) pi=j; }
+		for(uint j=0; j<list->scale.size(); ++j)    if( in(list->scale[j].frame,start,end) )    { ++sc; if(si<0) si=j; }
 		// Rotation
 		if(rc) {
 			out->rotation.insert(out->rotation.begin(), list->rotation.begin()+ri, list->rotation.begin()+ri+rc);
