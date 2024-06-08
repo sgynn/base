@@ -7,7 +7,7 @@ namespace base {
 	class Input;
 
 	enum CursorType { CURSOR_NONE, CURSOR_DEFAULT, CURSOR_BUSY, CURSOR_HAND, CURSOR_CROSSHAIR, CURSOR_I, CURSOR_NO,
-						CURSOR_MOVE, CURSOR_NS, CURSOR_EW, CURSOR_NESW, CURSOR_NWSE, CURSOR_CUSTOM };
+	                  CURSOR_MOVE, CURSOR_SIZE_V, CURSOR_SIZE_H, CURSOR_SIZE_FD, CURSOR_SIZE_BD, CURSOR_CUSTOM };
 
 	/// Window interface. Implementations in X11Window or Win32Window
 	class Window {

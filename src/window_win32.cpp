@@ -364,10 +364,10 @@ void Win32Window::setCursor(unsigned c) {
 		case CURSOR_I:         m_cursors[c] = LoadCursor(s_hInst, IDC_IBEAM); break;
 		case CURSOR_NO:        m_cursors[c] = LoadCursor(s_hInst, IDC_NO); break;
 		case CURSOR_MOVE:      m_cursors[c] = LoadCursor(s_hInst, IDC_SIZEALL); break;
-		case CURSOR_NS:        m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENS); break;
-		case CURSOR_EW:        m_cursors[c] = LoadCursor(s_hInst, IDC_SIZEWE); break;
-		case CURSOR_NESW:      m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENESW); break;
-		case CURSOR_NWSE:      m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENWSE); break;
+		case CURSOR_SIZE_V:    m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENS); break;
+		case CURSOR_SIZE_H:    m_cursors[c] = LoadCursor(s_hInst, IDC_SIZEWE); break;
+		case CURSOR_SIZE_BD:   m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENESW); break;
+		case CURSOR_SIZE_FD:   m_cursors[c] = LoadCursor(s_hInst, IDC_SIZENWSE); break;
 		}
 	}
 	SetCursor(m_cursors[c]);

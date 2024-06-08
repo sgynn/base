@@ -353,6 +353,7 @@ void X11Window::setCursor(unsigned c) {
 	m_cursor = c;
 	if(!m_cursors[c]) {
 		switch(c) {
+		default:               c = CURSOR_DEFAULT; break;
 		case CURSOR_NONE:      m_cursors[c] = createBlankCursor(m_display);  break;
 		case CURSOR_DEFAULT:   m_cursors[c] = XCreateFontCursor(m_display, XC_left_ptr); break;
 		case CURSOR_BUSY:      m_cursors[c] = XCreateFontCursor(m_display, XC_watch); break;
@@ -361,11 +362,16 @@ void X11Window::setCursor(unsigned c) {
 		case CURSOR_I:         m_cursors[c] = XCreateFontCursor(m_display, XC_xterm); break;
 		case CURSOR_NO:        m_cursors[c] = XCreateFontCursor(m_display, XC_X_cursor); break;
 		case CURSOR_MOVE:      m_cursors[c] = XCreateFontCursor(m_display, XC_fleur); break;
-		case CURSOR_NS:        m_cursors[c] = XCreateFontCursor(m_display, XC_sb_v_double_arrow); break;
-		case CURSOR_EW:        m_cursors[c] = XCreateFontCursor(m_display, XC_sb_h_double_arrow); break;
-		case CURSOR_NESW:
-		case CURSOR_NWSE:      c = CURSOR_NS; break; // CursorFont doesn't seem to have these ??
-		default:               c = CURSOR_DEFAULT; break;
+		case CURSOR_SIZE_V:    m_cursors[c] = XCreateFontCursor(m_display, XC_sb_v_double_arrow); break;
+		case CURSOR_SIZE_H:    m_cursors[c] = XCreateFontCursor(m_display, XC_sb_h_double_arrow); break;
+		case CURSOR_SIZE_BD:
+			m_cursors[c] = XcursorLibraryLoadCursor(m_display, "bd_double_arrow");
+			if(!m_cursors[c]) m_cursors[c] = XcursorLibraryLoadCursor(m_display, "size_bdiag");
+			break;
+		case CURSOR_SIZE_FD:
+			m_cursors[c] = XcursorLibraryLoadCursor(m_display, "fd_double_arrow");
+			if(!m_cursors[c]) m_cursors[c] = XcursorLibraryLoadCursor(m_display, "size_fdiag");
+			break;
 		}
 	}
 	if(m_cursors[c]) XDefineCursor(m_display, m_window, m_cursors[c]);
