@@ -1717,7 +1717,7 @@ void Popup::lostFocus(Widget* w) {
 		// Bind lost focus event to this function
 		Widget* newItem = getRoot()->getFocusedWidget();
 		newItem->eventLostFocus.bind(this, &Popup::lostFocus);
-		hideOwnedPopups();
+		for(Popup* w: m_owned) if(w!=newPopup) w->hide();
 	}
 }
 
