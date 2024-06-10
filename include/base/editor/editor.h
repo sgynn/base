@@ -17,7 +17,7 @@ class EditorComponent;
 class SceneEditor;
 
 // Matches resource manager types
-enum class ResourceType { None, Model, Texture, Material, Shader, ShaderVars, Compositor, Graph, Particle };
+enum class ResourceType { None, Model, Texture, Material, Shader, ShaderVars, Compositor, Graph, Particle, Custom };
 struct Asset {
 	ResourceType type = ResourceType::None;
 	base::String resource; // Resource name

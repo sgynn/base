@@ -58,6 +58,7 @@ const char* AssetBrowser::getAssetName(const Asset& asset) {
 AssetBrowser::~AssetBrowser() {
 	delete m_contextMenu;
 	delete m_newItemMenu;
+	delete m_typeFilterList;
 }
 
 void AssetBrowser::initialise() {
@@ -69,7 +70,7 @@ void AssetBrowser::initialise() {
 	addToggleButton(m_panel, "editors", "browser");
 
 	m_breadcrumbs = m_panel->getWidget("breadcrumbs");
-	m_filter = m_panel->getWidget<Combobox>("filters");
+	m_filter = m_panel->getWidget<Textbox>("filter");
 	m_items = m_panel->getWidget("items");
 
 	// Default icons for matched file types
@@ -85,6 +86,15 @@ void AssetBrowser::initialise() {
 	m_fileTypes[".mat"] = "sphere";
 	m_fileTypes[".wav"] = "sound";
 	m_fileTypes[".ogg"] = "sound";
+
+	m_typeFilterList = new Popup(Rect(0,0,100,100), getEditor()->getGUI()->getSkin("button"));
+	addTypeFilter("Files",     ResourceType::None);
+	addTypeFilter("Models",    ResourceType::Model);
+	addTypeFilter("Textures",  ResourceType::Texture);
+	addTypeFilter("Materials", ResourceType::Material);
+	addTypeFilter("Shaders",   ResourceType::Shader);
+	addTypeFilter("Particle",  ResourceType::Particle);
+	m_panel->getWidget<Button>("types")->eventPressed.bind([this](Button* b) { m_typeFilterList->popup(b); });
 
 
 	getEditor()->addTransientComponent(new ImageViewer());
@@ -113,12 +123,27 @@ void AssetBrowser::initialise() {
 	});
 
 
-	m_filter->eventTextChanged.bind([this](Combobox*, const char*) { refreshItems(); });
-	m_filter->eventSelected.bind([this](Combobox*, ListItem&) { refreshItems(); });
+	m_filter->eventChanged.bind([this](Textbox*, const char*) { refreshItems(); });
+	m_panel->getWidget<Button>("clearfilter")->eventPressed.bind([this](Button*) {
+		m_filter->setText("");
+		refreshItems();
+	});
 
 	if(Button* add = m_panel->getWidget<Button>("new")) add->eventPressed.bind([this](Button* b) {
 		if(!m_newItemMenu) populateCreateMenu();
 		m_newItemMenu->popup(b);
+	});
+}
+
+void AssetBrowser::addTypeFilter(const char* text, ResourceType type) {
+	m_typeFilterList->addItem(getEditor()->getGUI(), "checkbox", "", text);
+	Checkbox* c = cast<Checkbox>(m_typeFilterList->getWidget(m_typeFilterList->getWidgetCount()-1));
+	c->setDragSelect(true);
+	c->setSelected(m_typeFilter & 1ull << (int)type);
+	c->eventChanged.bind([this, type](Button* b) {
+		if(b->isSelected()) m_typeFilter |= 1ull<<(int)type;
+		else m_typeFilter &= ~1ull<<(int)type;
+		refreshItems();
 	});
 }
 
@@ -256,16 +281,19 @@ void AssetBrowser::refreshItems() {
 
 	// Scan the folder for files
 	String fullPath = m_rootPath + m_localPath;
-	for(auto& file: Directory(fullPath)) {
-		if(file.name[0]=='.') continue;
-		if(filter && !matchWildcard(file.name, filter)) continue;
-		bool isFolder = file.type == Directory::DIRECTORY;
-		addAssetTile(Asset{ResourceType::None, "", fullPath + file.name}, isFolder);
+	if(m_typeFilter & 1) {
+		for(auto& file: Directory(fullPath)) {
+			if(file.name[0]=='.') continue;
+			if(filter && !matchWildcard(file.name, filter)) continue;
+			bool isFolder = file.type == Directory::DIRECTORY;
+			addAssetTile(Asset{ResourceType::None, "", fullPath + file.name}, isFolder);
+		}
 	}
 	
 	// Then get the resource assets
 	int pathLength = m_localPath.length();
 	for(const Asset& asset: m_resources) {
+		if(~m_typeFilter & 1ull<<(int)asset.type) continue;
 		if(asset.resource && asset.resource.startsWith(m_localPath) && !strchr(asset.resource+pathLength, '/')) {
 			// Make sure it is not already added by the file search
 			for(Widget* w: m_items) {
@@ -282,6 +310,15 @@ void AssetBrowser::refreshItems() {
 		next:;
 	}
 
+	// Also custom items
+	for(const Asset& asset : m_custom) {
+		if(~m_typeFilter & 1ull<<(int)asset.type) continue;
+		if(asset.resource.startsWith(m_localPath) && !strchr(asset.resource+pathLength, '/')) {
+			if(filter && !matchWildcard(asset.resource + pathLength, filter)) continue;
+			addAssetTile(asset);
+		}
+	}
+
 	// Tooltips
 	for(Widget* w: m_items) {
 		AssetTile* tile = cast<AssetTile>(w);
@@ -293,10 +330,40 @@ void AssetBrowser::refreshItems() {
 		case ResourceType::Texture: tip += "\nTexture: " + tile->asset.resource; break;
 		case ResourceType::Material: tip += "\nMaterial: " + tile->asset.resource; break;
 		case ResourceType::Particle: tip += "\nparticle: " + tile->asset.resource; break;
-		default: break;
+		default:
+			if(tile->asset.type > ResourceType::Custom) 
+				tip += "\n" + m_customTypes[(int)tile->asset.type-(int)ResourceType::Custom] + ": " + tile->asset.resource;
+			break;
 		}
 		if(tile->asset.file) tip += "\nPath: " + tile->asset.file;
 		w->setToolTip(tip);
+	}
+}
+
+void AssetBrowser::clearCustomItems() {
+	m_custom.clear();
+}
+
+void AssetBrowser::addCustomItem(const char* type, const char* name, const char* file) {
+	unsigned typeIndex = 0;
+	for(const String& s: m_customTypes) { if(type == s) break; ++typeIndex; }
+	ResourceType customType = (ResourceType) ((int)ResourceType::Custom + typeIndex);
+	if(m_customTypes.size() == typeIndex) {
+		m_customTypes.push_back(type);
+		addTypeFilter(type, customType);
+	}
+	m_custom.push_back(Asset{customType, name, file});
+}
+
+void AssetBrowser::removeCustomItem(const char* type, const char* name) {
+	unsigned typeIndex = 0;
+	for(const String& s: m_customTypes) { if(type == s) break; ++typeIndex; }
+	ResourceType customType = (ResourceType) ((int)ResourceType::Custom + typeIndex);
+	for(size_t i=0; i<m_custom.size(); ++i) {
+		if(m_custom[i].type == customType && m_custom[i].resource == name) {
+			m_custom[i] = std::move(m_custom.back());
+			m_custom.pop_back();
+		}
 	}
 }
 

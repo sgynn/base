@@ -19,6 +19,10 @@ class AssetBrowser : public EditorComponent {
 
 	gui::String getUniqueFileName(const char* baseName, const char* localPath) const;
 
+	void clearCustomItems();
+	void addCustomItem(const char* type, const char* name, const char* file=nullptr);
+	void removeCustomItem(const char* type, const char* name);
+
 	protected:
 	void populateCreateMenu();
 	int createTextureIcon(const char* name);
@@ -33,6 +37,7 @@ class AssetBrowser : public EditorComponent {
 	void pressedCrumb(gui::Button*);
 	void dragItem(gui::Widget*, const Point&, int);
 	void dropItem(gui::Widget*, const Point&, int);
+	void addTypeFilter(const char* text, ResourceType type);
 
 	void buildResourceTree();
 	gui::Widget* addAssetTile(const Asset& asset, bool isFolder=false);
@@ -41,7 +46,7 @@ class AssetBrowser : public EditorComponent {
 	gui::String m_rootPath;
 	gui::String m_localPath;
 	gui::String m_search;
-	int m_typeFilter;
+	unsigned long long m_typeFilter = -1;
 
 	// Icons are a grid
 	struct IconData { int index; bool used; bool visible; };
@@ -51,6 +56,8 @@ class AssetBrowser : public EditorComponent {
 
 	base::HashMap<const char*> m_fileTypes; // Icon names for file extensions
 	std::vector<Asset> m_resources;
+	std::vector<Asset> m_custom;
+	std::vector<gui::String> m_customTypes;
 
 	struct Editor { Asset asset; gui::Widget* widget; };
 	std::vector<Editor> m_activeEditors;
@@ -59,12 +66,13 @@ class AssetBrowser : public EditorComponent {
 
 	gui::Widget* m_panel = nullptr;
 	gui::Widget* m_breadcrumbs;
-	gui::Combobox* m_filter;
+	gui::Textbox* m_filter;
 	gui::Widget* m_items;
 	gui::Widget* m_selectedItem = nullptr;
 	gui::Widget* m_dragWidget = nullptr;
 	gui::Popup*  m_newItemMenu = nullptr;
 	gui::Popup*  m_contextMenu = nullptr;
+	gui::Popup*  m_typeFilterList = nullptr;
 	Point m_lastClick;
 };
 

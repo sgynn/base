@@ -22,12 +22,12 @@
 				<widget anchor="lrt" class="Widget" template="frame" rect="0 0 308 148">
 					<widget anchor="lrtb" template="listbox" name="graphlist" rect="0 0 308 123"/>
 					<widget anchor="lb" template="button" name="newgraph" caption="New Graph" rect="12 126 96 20"/>
-					<widget anchor="lrb" class="DragHandle" rect="126 127 126 17" skin="panel"/>
+					<widget anchor="lrb" class="DragHandle" mode="size" rect="126 127 126 17" skin="panel"/>
 				</widget>
 				<widget anchor="lrt" class="Widget" template="frame" rect="0 148 308 176">
 					<widget anchor="lrtb" template="listbox" name="nodelist" rect="0 0 308 150"/>
 					<widget anchor="lb" template="button" name="newnode" caption="New Node" rect="11 153 96 20"/>
-					<widget anchor="lrb" class="DragHandle" template="frame" mode="scale" rect="132 156 126 17"/>
+					<widget anchor="lrb" class="DragHandle" template="frame" mode="size" rect="132 156 126 17"/>
 				</widget>
 				<widget anchor="lrtb" layout="VerticalLayout" template="scrollpane" name="details" rect="0 324 308 416" showscrollbars="0">
 					<widget anchor="lrt" margin="4" layout="VerticalLayout" autosize="1" template="category" rect="0 0 308 72" name="connectors" caption="Connectors" spacing="4">

@@ -14,27 +14,24 @@
 	<!--Templates-->
 	<template anchor="m" autosize="1" template="button" name="breadcrumb" skin="listitem" rect="357 473 22 19"/>
 	<template anchor="lt" class="Button" tangible="3" rect="561 457 64 85" name="asset" skin="panel">
-		<widget anchor="lrtb" class="Image" image="3" rect="0 0 64 64" group="assets" skin="panel" name="_icon" tangible="0"/>
+		<widget anchor="lrtb" class="Image" group="assets" rect="0 0 64 64" skin="panel" image="3" name="_icon" tangible="0"/>
 		<widget anchor="lrb" class="Label" rect="0 48 64 36" skin="panel" align="11" name="_text" caption="name" fontsize="12"/>
-		<widget anchor="lt" colour="#ffc55a" template="icon" name="_modified" image="4" rect="2 2 12 12"/>
-	</template>
-	<template class="Combobox" rect="0 0 100 20" name="combobox" skin="panel" category="Lists">
-		<widget anchor="blr" template="listbox" name="_list" rect="0 20 100 200" skin="panel"/>
-		<widget anchor="trlb" class="Textbox" rect="0 0 80 20" name="_text" skin="panel"/>
-		<widget anchor="trb" class="Button" rect="80 0 20 20" name="_button" skin="panel"/>
+		<widget anchor="lt" colour="#ffc55a" image="4" template="icon" name="_modified" rect="2 2 12 12"/>
 	</template>
 	<!--Widget Layout-->
 	<widget anchor="lb" layout="VerticalLayout" template="window" name="assetbrowser" caption="Assets Browser" rect="36 792 960 212">
-		<widget anchor="lrt" class="Widget" template="frame" name="menu" skin="none" rect="0 0 950 32">
-			<widget anchor="lt" template="combobox" name="filters" rect="0 0 144 27"/>
-			<widget anchor="lrt" class="Widget" layout="HorizontalLayout" margin="2" template="frame" rect="144 0 756 28" name="breadcrumbs" spacing="5">
+		<widget anchor="lrt" class="Widget" template="frame" name="menu" skin="none" rect="0 0 950 28">
+			<widget anchor="lt" template="editbox" name="filter" rect="24 0 155 27"/>
+			<widget anchor="lrt" class="Widget" layout="HorizontalLayout" margin="2" template="frame" rect="180 0 720 28" name="breadcrumbs" spacing="5">
 				<widget anchor="lm" template="breadcrumb" caption="data" rect="2 3 30 19"/>
 				<widget anchor="lm" template="breadcrumb" caption=">" rect="37 3 10 19"/>
 				<widget anchor="lm" template="breadcrumb" caption="materials" rect="52 3 64 19"/>
 			</widget>
 			<widget anchor="rt" template="button" name="new" caption="NEW" rect="901 1 48 27"/>
+			<widget anchor="lt" image="down" template="iconbutton" name="types" group="glyphs" rect="0 0 24 27"/>
+			<widget anchor="lt" group="glyphs" rect="168 5 11 18" template="iconbutton" skin="listitem" image="cross" name="clearfilter"/>
 		</widget>
-		<widget anchor="lrtb" layout="FlowLayout" template="scrollpane" name="items" rect="0 32 950 153" showscrollbars="0"/>
+		<widget anchor="lrtb" layout="FlowLayout" template="scrollpane" name="items" rect="0 28 950 157" showscrollbars="0"/>
 	</widget>
 	<widget anchor="lt" visible="0" layout="VerticalLayout" template="window" rect="84 156 464 464" name="filepreview" caption="Preview">
 		<widget anchor="lrt" template="droplist" name="previewoption" rect="0 0 454 20"/>
