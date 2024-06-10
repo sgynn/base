@@ -4,6 +4,7 @@
 #include <base/hashmap.h>
 
 namespace gui { class Widget; class Listbox; class TreeView; class TreeNode; class ItemList; class ListItem; class Popup; class Button; }
+namespace base { class XMLElement; }
 
 namespace editor {
 class AudioEditor : public EditorComponent {
@@ -42,6 +43,7 @@ class AudioEditor : public EditorComponent {
 	void setupSoundCaster(Object);
 	void playSound(gui::Button*);
 	void save(const char* file);
+	static bool isRootLevelSound(unsigned);
 
 	protected:
 	gui::Widget* m_panel;

@@ -111,7 +111,7 @@ void AudioEditor::initialise() {
 			if(over) over->select();
 			else m_data->clearSelection();
 			bool sel = getSelectedObject().id != INVALID;
-			m_menu->getWidget("Add")->setEnabled(audio::Data::instance);
+			m_menu->getWidget("Add")->setEnabled(audio::Data::instance && !audio::Data::instance->m_banks.empty());
 			m_menu->getWidget("Delete")->setEnabled(sel);
 			m_menu->popup(w->getRoot(), w->getDerivedTransform().transform(p));
 		}
@@ -172,6 +172,10 @@ Widget* AudioEditor::openAsset(const Asset& asset) {
 
 bool AudioEditor::assetActions(MenuBuilder& menu, const Asset& asset) {
 	if(isSoundbankFile(asset)) {
+		bool loaded = false;
+		for(SoundBank* bank: audio::Data::instance->m_banks) {
+			if(bank->file == asset.file) loaded = true;
+		}
 		menu.addAction("Load", [this, &asset]() {
 			audio::load(asset.file);
 			m_loadMessage = 2;
@@ -179,11 +183,11 @@ bool AudioEditor::assetActions(MenuBuilder& menu, const Asset& asset) {
 		menu.addAction("Unload", [this, &asset]() {
 			audio::unload(asset.file);
 			m_loadMessage = 2;
-		});
+		})->setEnabled(loaded);
 		menu.addAction("Save", [this, &asset]() {
 			save(asset.file);
 			getEditor()->assetChanged(asset, false);
-		});
+		})->setEnabled(loaded);
 		return true;
 	}
 	return false;
@@ -704,21 +708,126 @@ void AudioEditor::update() {
 
 // ======================================================================================== //
 
+// These are sounds with no . in their name, and not in an unnamed root level group
+bool AudioEditor::isRootLevelSound(unsigned id) {
+	Data& data = *audio::Data::instance;
+	const char* name = getNameFromID(data.m_soundMap, id);
+	if(strchr(name, '.')) return false;
+	const SoundBank* bank = data.getBank(id);
+	for(unsigned i=0; i<bank->data.size(); ++i) {
+		SoundBase* sound = bank->data[i];
+		if(sound && sound->type != SOUND) {
+			for(objectID s: static_cast<Group*>(sound)->sounds) {
+				if(s == id) {
+					objectID groupID = Data::getSoundID(i, bank);
+					if(getNameFromID(data.m_soundMap, groupID)[0]) break;
+
+					// Unnamed group - get parent
+					while(true) {
+						unsigned parent = -1;
+						for(unsigned k=0; k<bank->data.size(); ++k) {
+							SoundBase* soundk = bank->data[k];
+							if(soundk->type != SOUND) {
+								for(objectID l: static_cast<Group*>(soundk)->sounds) {
+									if(l == groupID) {
+										parent = k;
+										break;
+									}
+								}
+							}
+						}
+						if(parent == -1u) return false;
+						groupID = Data::getSoundID(parent, bank);
+						if(getNameFromID(data.m_soundMap, groupID)[0]) break;
+					}
+					break;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+void writeVariable(base::XMLElement& e, const char* name, const Value& var) {
+	Data& data = *audio::Data::instance;
+	if(var.value == 0 && var.variance==0 && var.variable == INVALID) return;
+
+	base::XMLElement& v = e.add(name);
+	v.setAttribute("value", var.value);
+	if(var.variance!=0) v.setAttribute("variance", var.variance);
+	if(var.variable != INVALID) v.setAttribute("variable", getNameFromID(data.m_variableMap, var.variable));
+}
+
+base::XMLElement& writeSound(base::XMLElement& node, audio::objectID id, const char* prefix, objectID sharedTarget, objectID sharedAttenuation) {
+	using base::XMLElement;
+	Data& data = *audio::Data::instance;
+	const SoundBase* sound = data.lookupSound(id);
+	XMLElement& m = node.add(sound->type == SOUND? "sound": "group");
+	const char* fullName = getNameFromID(data.m_soundMap, id);
+	if(prefix && strncmp(fullName, prefix, strlen(prefix))) {
+		m.setAttribute("ref", fullName);
+		return m;
+	}
+	const char* name = strrchr(fullName, '.');
+	if(name) ++name;
+	else if(fullName[0]) name = fullName;
+	if(name) m.setAttribute("name", name);
+	
+	objectID attenuation = INVALID;
+	objectID target = INVALID;
+
+
+	if(sound->type == SOUND) {
+		const Sound* s = static_cast<const Sound*>(sound);
+		m.add("source").setAttribute("file", s->file);
+		if(s->fadeIn!=0 || s->fadeOut!=0) {
+			XMLElement& fade = m.add("transition");
+			fade.setAttribute("fadein", s->fadeIn);
+			fade.setAttribute("fadeout", s->fadeOut);
+		}
+		writeVariable(m, "pitch", s->pitch);
+		writeVariable(m, "gain", s->gain);
+		attenuation = s->attenuationID;
+		target = s->targetID;
+	}
+	else {
+		constexpr const char* soundType[] = { "none", "sound", "folder", "random", "sequence", "switch" };
+		const Group* group = static_cast<const Group*>(sound);
+		m.setAttribute("type", soundType[group->type]);
+		if(group->type == SWITCH) m.setAttribute("variable", getNameFromID(data.m_enumMap, group->switchID));
+		String newPrefix;
+		if(name && prefix) newPrefix = String::format("%s%s.", prefix, name);
+		else if(name) newPrefix = String::cat(name, ".");
+		if(newPrefix) prefix = newPrefix;
+		
+		// Do we share any mixer data ?
+
+
+		for(unsigned s: group->sounds) writeSound(m, s, prefix, sharedTarget, sharedAttenuation);
+	}
+
+	if(target != sharedTarget) {
+		m.add("target").setAttribute("mixer", getNameFromID(data.m_mixerMap, target));
+	}
+
+	if(attenuation != INVALID && attenuation != sharedAttenuation) {
+		m.add("attenuation").setAttribute("ref", getNameFromID(data.m_attenuationMap, attenuation));
+	}
+
+	if(sound->loop>=0) {
+		XMLElement& loop = m.add("loop");
+		if(sound->loop>0) loop.setAttribute("count", sound->loop);
+	}
+	return m;
+}
 
 void AudioEditor::save(const char* file) {
 	if(!audio::Data::instance) return;
 
 	using base::XMLElement;
-	base::XML xml;
+	base::XML xml("soundbank");
 	XMLElement& root = xml.getRoot();
 	Data& data = *audio::Data::instance;
-
-	auto writeVariable = [&data, this](XMLElement& e, const char* name, const Value& var) {
-		XMLElement& v = e.add(name);
-		v.setAttribute("value", var.value);
-		if(var.variance!=0) v.setAttribute("variance", var.variance);
-		if(var.variable != INVALID) v.setAttribute("variable", getNameFromID(data.m_variableMap, var.variable));
-	};
 
 
 	for(const auto& i: data.m_mixerMap) {
@@ -746,60 +855,13 @@ void AudioEditor::save(const char* file) {
 		m.setAttribute("distance", data.m_attenuations[i.value].distance);
 	}
 
-	const char* soundType[] = { "none", "sound", "folder", "random", "sequence", "switch" };
-	std::vector<LookupMap::Pair> queue;
-	for(const auto& i: data.m_soundMap) queue.push_back(i);
-	for(size_t i=0; i<queue.size(); ++i) {
-		XMLElement* node = &root;
-		const char* name = queue[i].key;
-		const char* split = strchr(name, '.');
-		while(split && node) {
-			int len = split - name;
-			XMLElement* next = nullptr;
-			for(XMLElement& n: *node) {
-				const char* nodeName = n.attribute("name");
-				if(strncmp(name, nodeName, len)==0 && nodeName[len]==0) {
-					for(int t=1; t<6; ++t) if(n == soundType[t]) { next=&n; break; }
-					if(next) break;
-				}
-			}
-			node = next;
-			name = split+1;
-			split = strchr(name, '.');
-		}
-
-		if(!node) { queue.push_back(queue[i]); continue; } // Come back later
-		
-		const SoundBase* sound = data.lookupSound(queue[i].value);
-		XMLElement& m = node->add(sound->type == SOUND? "sound": "group");
-		m.setAttribute("name", name);
-		if(sound->type == SOUND) {
-			const Sound* s = static_cast<const Sound*>(sound);
-			m.add("source").setAttribute("file", s->file);
-			m.add("target").setAttribute("mixer", getNameFromID(data.m_mixerMap, s->targetID));
-			if(s->attenuationID != INVALID) {
-				m.add("attenuation").setAttribute("ref", getNameFromID(data.m_attenuationMap, s->attenuationID));
-			}
-			if(s->fadeIn!=0 || s->fadeOut!=0) {
-				XMLElement& fade = m.add("transition");
-				fade.setAttribute("fadein", s->fadeIn);
-				fade.setAttribute("fadeout", s->fadeOut);
-			}
-			writeVariable(m, "pitch", s->pitch);
-			writeVariable(m, "gain", s->gain);
-		}
-		else {
-			const Group* g = static_cast<const Group*>(sound);
-			m.setAttribute("type", soundType[g->type]);
-			if(g->type == SWITCH) m.setAttribute("variable", getNameFromID(data.m_enumMap, g->switchID));
-		}
-
-		if(sound->loop>=0) {
-			XMLElement& loop = m.add("loop");
-			if(sound->loop>0) loop.setAttribute("count", sound->loop);
+	// save all banks for now
+	for(SoundBank* bank: data.m_banks) {
+		for(size_t i=0; i<bank->data.size(); ++i) {
+			objectID id = Data::getSoundID(i, bank);
+			if(isRootLevelSound(id)) writeSound(root, id, nullptr, INVALID, INVALID);
 		}
 	}
-
 
 	xml.save(file);
 }
