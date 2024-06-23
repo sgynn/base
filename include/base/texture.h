@@ -40,6 +40,8 @@ namespace base {
 		int setPixels(int xOffset, int yOffset, int zOffset, int width, int height, int depth, Format format, const void* data, int mipLevel=0);
 		int setPixels(int xOffset, int yOffset, int zOffset, int width, int height, int depth, Format format, const void** data, int mipmaps);
 
+		char* getPixelData() const;
+
 		/** Destroy texture */
 		void destroy();
 		/** Bind texture */

@@ -117,6 +117,9 @@ unsigned Texture::getDataType(Format f) {
 bool Texture::isCompressedFormat(Format f) {
 	return f >= BC1 && f <= BC5;
 }
+bool Texture::isCompressed() const {
+	return isCompressedFormat(m_format);
+}
 
 
 
@@ -355,6 +358,17 @@ int Texture::setPixels(int x, int y, int w, int h, Format format, const void* sr
 	GL_CHECK_ERROR;
 	return 1;
 }
+
+// ----------------------------------------------------------------------------------------------------- //
+
+char* Texture::getPixelData() const {
+	if(m_format == NONE || m_type != TEX2D || isCompressed()) return nullptr; // Unsupported for now
+	char* buffer = new char[getMemorySize(m_format, m_width, m_height, m_depth)];
+	bind();
+	glGetTexImage(GL_TEXTURE_2D, 0, getDataFormat(m_format), getDataType(m_format), buffer);
+	return buffer;
+}
+
 
 // ----------------------------------------------------------------------------------------------------- //
 
