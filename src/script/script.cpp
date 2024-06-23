@@ -668,9 +668,9 @@ Variable* parseConstant(const char*& s) {
 			char* scan = &value[0];
 			char* end = scan + (e-str);
 			while(char* c=strchr(scan, '\\')) {
-				if(c[1] == 'n') { c[0] = '\n'; memmove(c+1, c+2, end-c); }
-				else if(c[1] == 't') { c[0] = '\t'; memmove(c+1, c+2, end-c); }
-				else if(c[1] == '\\') { memmove(c+1, c+2, end-c); }
+				if(c[1] == 'n') { c[0] = '\n'; memmove(c+1, c+2, end-c-1); }
+				else if(c[1] == 't') { c[0] = '\t'; memmove(c+1, c+2, end-c-1); }
+				else if(c[1] == '\\') { memmove(c+1, c+2, end-c-1); }
 				scan = c + 1;
 			}
 			return createConstant(value);
