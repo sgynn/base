@@ -10,7 +10,7 @@
 
 using namespace base;
 
-SceneComponent::SceneComponent(Scene* scene, Camera* camera, CompositorGraph* graph) : GameStateComponent(80), m_scene(scene), m_workspace(0) {
+SceneComponent::SceneComponent(Scene* scene, Camera* camera, CompositorGraph* graph) : GameStateComponent(80), m_scene(scene), m_workspace(0), m_camera(camera) {
 	m_renderer = new Renderer;
 	DebugGeometryManager::getInstance()->initialise(scene, 10, false);
 	setCompositor(graph);
@@ -24,6 +24,14 @@ SceneComponent::~SceneComponent() {
 }
 
 void SceneComponent::update() {
+	if(m_updateCamera) {
+		int cameraUpdateFlags = 0;
+		if(!hasComponentFlags(BLOCK_KEYS)) cameraUpdateFlags |= CU_KEYS;
+		if(!hasComponentFlags(BLOCK_MOUSE)) cameraUpdateFlags |= CU_MOUSE;
+		if(!hasComponentFlags(BLOCK_WHEEL)) cameraUpdateFlags |= CU_WHEEL;
+		static_cast<CameraBase*>(m_camera)->update(cameraUpdateFlags);
+	}
+
 	if(!getState()->isPaused()) m_time += Game::frameTime();
 	m_scene->updateSceneGraph();
 	m_renderer->getState().getVariableSource()->setTime(m_time, Game::frameTime());
@@ -41,6 +49,12 @@ void SceneComponent::resized(const Point& s) {
 		printf("Window resized to %dx%d - rebuilding compositor targets\n", s.x, s.y);
 		m_workspace->compile(s.x, s.y);
 	}
+}
+
+void SceneComponent::setCamera(Camera* cam, bool update) {
+	m_camera = cam;
+	m_updateCamera = update && dynamic_cast<CameraBase*>(cam);
+	m_workspace->setCamera(cam);
 }
 
 bool SceneComponent::setCompositor(CompositorGraph* graph) {
