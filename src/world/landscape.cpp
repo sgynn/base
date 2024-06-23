@@ -38,7 +38,7 @@ void Landscape::setHeightFunction( HeightFunc func) {
 }
 
 void Landscape::setPatchCallbacks(PatchFunc create, PatchFunc destroy, PatchFunc updated) {
-	if(m_root) printf("Warning: Callbacks set after terrain geometry initialised.");
+	if(m_root) printf("Warning: Callbacks set after terrain geometry initialised\n");
 	m_createCallback = create;
 	m_destroyCallback = destroy;
 	m_updateCallback = updated;
