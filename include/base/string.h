@@ -13,7 +13,7 @@ namespace base {
 		public:
 		String(const char* s = nullptr) : m_data(0) { set(s); }
 		String(const char* s, size_t len):m_data(0) { if(s&&s[0]&&len) { size_t l=strlen(s); if(len<l)l=len; m_data=(char*)malloc(l+1); memcpy(m_data,s,l); m_data[l]=0; } }
-		String(String&& s) : m_data(s.m_data)       { s.m_data = nullptr; }
+		String(String&& s)noexcept:m_data(s.m_data) { s.m_data = nullptr; }
 		String(const String& s)	: m_data(0)			{ set(s); }
 		const String& operator=(const char* s)		{ set(s); return *this;}
 		const String& operator=(const String& s)	{ set(s); return *this; }
