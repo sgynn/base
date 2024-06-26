@@ -102,15 +102,19 @@ Material* DebugGeometryManager::getDefaultMaterial() {
 }
 
 void DebugGeometryManager::add(DebugGeometry* g) {
+	MutexLock lock(m_mutex);
 	m_addList.push_back(g);
 }
 void DebugGeometryManager::remove(DebugGeometry* g) {
+	MutexLock lock(m_mutex);
 	m_deleteList.push_back(g);
 }
 void DebugGeometryManager::update() {
 	std::map<DebugGeometry*, Drawable*>::iterator it;
 
 	// Add items
+	{
+	MutexLock lock(m_mutex);
 	for(DebugGeometry* item: m_addList) {
 		bool valid = true;
 		for(DebugGeometry* removed: m_deleteList) if(item == removed) { valid=false; break; }
@@ -136,6 +140,7 @@ void DebugGeometryManager::update() {
 
 	m_addList.clear();
 	m_deleteList.clear();
+	}
 
 	// auto-flush
 	for(it=m_drawables.begin(); it!=m_drawables.end(); ++it) {
