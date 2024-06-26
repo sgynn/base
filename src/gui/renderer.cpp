@@ -60,11 +60,11 @@ int Renderer::createTexture(int w, int h, int channels, void* data, bool clamp) 
 }
 
 int Renderer::addImage(const char* file) {
-	base::PNG png;
-	if(m_imagePath.empty()) png = base::PNG::load(file);
-	else png = png.load(m_imagePath + file);
-	if(!png.data) return -1;
-	return addImage(file, png.width, png.height, png.bpp/8, png.data);
+	base::Image image;
+	if(m_imagePath.empty()) image = base::PNG::load(file);
+	else image = base::PNG::load(m_imagePath + file);
+	if(!image) return -1;
+	return addImage(file, image.getWidth(), image.getHeight(), image.getBytesPerPixel(), image.getData());
 }
 int Renderer::addImage(const char* name, int w, int h, int channels, void* data, bool clamp) {
 	if(m_atlases.empty()) createAtlas(256, 256);

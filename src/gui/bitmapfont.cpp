@@ -9,15 +9,15 @@ gui::BitmapFont::BitmapFont(const char* file, const char* characters) {
 }
 
 bool gui::BitmapFont::build(int size) {
-	base::PNG png = base::PNG::load(m_file);
-	if(!png.data) {
+	base::Image image = base::PNG::load(m_file);
+	if(!image) {
 		printf("Failed to load bitmap font '%s'\n", m_file);
 		return false;
 	}
 	
-	char* data = png.data;
-	size_t stride = png.bpp/8;	// Pixel stride
-	size_t row = png.width*stride;
+	unsigned char* data = image.getData();
+	size_t stride = image.getBytesPerPixel();	// Pixel stride
+	size_t row = image.getWidth() * stride;
 	unsigned guide, clear=0;	// Colours
 	memcpy(&guide, data, stride); // First pixel is the guide colour
 
@@ -34,8 +34,8 @@ bool gui::BitmapFont::build(int size) {
 	int index = 0; // index of character being read
 	Rect rect(0,0,0,0);
 	unsigned glyph = 0;
-	for(int y=0; y<png.height; ++y) {
-		for(int x=0; x<png.width; ++x) {
+	for(int y=0; y<image.getHeight(); ++y) {
+		for(int x=0; x<image.getWidth(); ++x) {
 
 			if(!isGuide(x,y) && isGuide(x-1, y) && isGuide(x, y-1)) {
 				if(index==0) memcpy(&clear, data+x*stride+y*row, stride); // Get clear colour
@@ -43,7 +43,7 @@ bool gui::BitmapFont::build(int size) {
 				// Which glyph is this - TODO: UTF-8
 				if(m_characters && m_characters[index]) glyph = m_characters[index];
 				else if(!m_characters) glyph = index + 32;
-				else { y=png.height; break; }
+				else { y=image.getHeight(); break; }
 			
 				// Find end of glyph
 				rect.set(x, y, 1, 1);
@@ -59,11 +59,11 @@ bool gui::BitmapFont::build(int size) {
 	}
 
 	// Remove all guides
-	unsigned end = png.height * row;
+	unsigned end = image.getHeight() * row;
 	for(unsigned i=0; i<end; i+=stride) {
 		if(memcmp(&guide, data+i, stride)==0) memcpy(data+i, &guide, stride);
 	}
-	addImage(png.width, png.height, (unsigned char*)data);
+	addImage(image.getWidth(), image.getHeight(), (unsigned char*)data);
 	return true;
 }
 

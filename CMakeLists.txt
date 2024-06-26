@@ -11,6 +11,7 @@ set(src
 	src/gamestate.cpp
 	src/glhprojection.cpp
 	src/hardwarebuffer.cpp
+	src/image.cpp
 	src/inifile.cpp
 	src/input.cpp
 	src/joystick.cpp

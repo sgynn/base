@@ -47,9 +47,9 @@ void SceneEditor::setToggleKey(int key) {
 }
 
 bool SceneEditor::addEmbeddedPNGImage(const char* name, const char& bin, unsigned length) {
-	PNG png = PNG::loadEmbedded(length, &bin);
-	if(!png.data) return false;
-	m_gui->getRenderer()->addImage(name, png.width, png.height, png.bpp/8, png.data);
+	base::Image image = PNG::parse(&bin, length);
+	if(!image) return false;
+	m_gui->getRenderer()->addImage(name, image.getWidth(), image.getHeight(), image.getBytesPerPixel(), image.getData());
 	return true;
 }
 

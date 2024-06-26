@@ -122,11 +122,28 @@ class TextureLoader : public ResourceLoader<Texture> {
 	void destroy(Texture*) override;
 	ResourceLoadProgress update() override;
 	void updateT() override;
+	static Texture createTexture(const Image&);
 	protected:
-	struct LoadMessage { Texture* target; char* file; PNG png; };
+	struct LoadMessage { Texture* target; String file; Image image; };
 	std::list<LoadMessage> requests;
 	std::list<LoadMessage> completed;
 };
+
+Texture TextureLoader::createTexture(const Image& image) {
+	assert(image);
+	static constexpr const Texture::Format formats[] = { Texture::NONE, Texture::R8, Texture::RG8, Texture::RGB8, Texture::RGBA8, Texture::BC1, Texture::BC2, Texture::BC3, Texture::BC4, Texture::BC5 };
+	static constexpr const Texture::Type types[] = { Texture::TEX2D, Texture::CUBE, Texture::TEX3D, Texture::ARRAY2D };
+	bool generateMipMaps = image.getMips()==1 && image.getWidth() == image.getHeight() && image.getMode() == Image::FLAT;
+	Texture tex;
+	if(generateMipMaps) {
+		tex = Texture::create(types[image.getMode()], image.getWidth(), image.getHeight(), 1, formats[image.getFormat()], image.getData(), generateMipMaps);
+	}
+	else {
+		tex = Texture::create(types[image.getMode()], image.getWidth(), image.getHeight(), 1, formats[image.getFormat()], (void**)image.getDataPtr(), image.getMips());
+	}
+	if(image.getMips() > 1 || generateMipMaps) tex.setFilter( Texture::TRILINEAR );
+	return tex;
+}
 
 Texture* TextureLoader::create(const char* name, Manager* manager) {
 	// Static colour
@@ -145,54 +162,38 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 	char filename[1024];
 	if(!manager->findFile(name, filename, 1024)) return 0;
 
+
 	// Check extension
-	const char* ext = strrchr(filename, '.');
-	if(strcmp(ext, ".dds")==0) {
-		DDS dds = DDS::load(filename);
-		if(dds.format) {
-			static const Texture::Format formats[] = { Texture::NONE, Texture::R8, Texture::RG8, Texture::RGB8, Texture::RGBA8, Texture::BC1, Texture::BC2, Texture::BC3, Texture::BC4, Texture::BC5 };
-			static const Texture::Type types[] = { Texture::TEX2D, Texture::CUBE, Texture::TEX3D, Texture::ARRAY2D };
-			Texture tex = Texture::create(types[dds.mode], dds.width, dds.height, 1, formats[dds.format], (void**)dds.data, dds.mipmaps+1);
-			if(dds.mipmaps) tex.setFilter( Texture::TRILINEAR );
-			return new Texture(tex);
-		} else {
-			printf("Resource Error: Invalid png file '%s'\n", filename);
-		}
-	}
-	else if(strcmp(ext, ".png")==0) {
-		// Lets try hacking in a quick threaded image loader
-		if(resourceThread.running()) {
-			auto suffix = [filename, ext](const char* s, int n) { // /.*[\._- ]n(:?orm(?:al)).png/
-				if(ext - n - 1 <= filename) return false;
-				char separator = ext[-n-1];
+	StringView ext = strrchr(filename, '.');
+
+	if(resourceThread.running()) {
+		if(ext==".png" || ext==".dds") {
+			// Analyse filename to see if we want a normal map placeholder while the image loads
+			const char* end = filename + strlen(filename) - ext.length();
+			auto suffix = [filename, end](const char* s, int n) { // /.*[\._- ]n(:?orm(?:al)).png/
+				if(end - n - 1 <= filename) return false;
+				char separator = end[-n-1];
 				if(separator != '.' && separator != '-' && separator != '_' && separator != ' ') return false;
-				return strncmp(ext - n, s, n)==0;
+				return strncmp(end - n, s, n)==0;
 			};
 			uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0xff8080: 0xffffff;
 			Texture* tex = new Texture(Texture::create(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex));
 			MutexLock lock(resourceMutex);
-			requests.push_back({tex, strdup(filename)});
+			requests.push_back({tex, filename});
 			return tex;
 		}
-		else {
-			PNG png = PNG::load(filename);
-			if(png.data && png.bpp<=32) {
-				bool mipmaps = png.width == png.height;
-				Texture::Format format = (Texture::Format) (png.bpp / 8);
-				Texture tex = Texture::create(png.width, png.height, format, png.data, mipmaps);
-				if(mipmaps) tex.setFilter( Texture::TRILINEAR );
-				return new Texture(tex);
-			}
-			else {
-				printf("Resource Error: Invalid png file '%s'\n", filename);
-			}
-		}
+		else printf("Resource Error: Invalid image file '%s'\n", filename);
 	}
 	else {
-		printf("Resource Error: Invalid image format '%s'\n", filename);
+		Image image;
+		if(ext == ".png") image = PNG::load(filename);
+		else if(ext == ".dds") image = DDS::load(filename);
+		if(image) return new Texture(createTexture(image));
+		else printf("Resource Error: Invalid image file '%s'\n", filename);
 	}
-	return 0;
+	return nullptr;
 }
+
 bool TextureLoader::reload(const char* name, Texture* object, Manager* manager) {
 	Texture* tex = create(name, manager);
 	if(tex) {
@@ -203,6 +204,7 @@ bool TextureLoader::reload(const char* name, Texture* object, Manager* manager) 
 	}
 	return false;
 }
+
 void TextureLoader::destroy(Texture* tex) {
 	tex->destroy();
 	delete tex;
@@ -213,12 +215,13 @@ void TextureLoader::updateT() {
 	{
 	MutexLock lock(resourceMutex);
 	if(requests.empty()) return;
-	msg = requests.front();
+	msg = std::move(requests.front());
 	requests.pop_front();
 	}
 
-	printf("Loading %s\n", msg.file);
-	msg.png = PNG::load(msg.file);
+	printf("Loading %s\n", msg.file.str());
+	if(msg.file.endsWith(".png")) msg.image = PNG::load(msg.file);
+	else if(msg.file.endsWith(".dds")) msg.image = DDS::load(msg.file);
 
 	MutexLock lock(resourceMutex);
 	completed.push_back(std::move(msg));
@@ -227,19 +230,9 @@ void TextureLoader::updateT() {
 ResourceLoadProgress TextureLoader::update() {
 	MutexLock lock(resourceMutex);
 	for(LoadMessage& msg: completed) {
-		printf("Finished loading %s\n", msg.file);
-		PNG& png = msg.png;
-		if(png.data && png.bpp<=32) {
-			bool mipmaps = png.width == png.height;
-			Texture::Format format = (Texture::Format) (png.bpp / 8);
-			Texture tex = Texture::create(png.width, png.height, format, png.data, mipmaps);
-			if(mipmaps) tex.setFilter( Texture::TRILINEAR );
-			*msg.target = tex;
-		}
-		else {
-			printf("Resource Error: Invalid png file '%s'\n", msg.file);
-		}
-		free(msg.file);
+		printf("Finished loading %s\n", msg.file.str());
+		if(msg.image) *msg.target = createTexture(msg.image);
+		else printf("Resource Error: Invalid png file '%s'\n", msg.file.str());
 	}
 	ResourceLoadProgress r { (uint)completed.size(), (uint)requests.size() };
 	completed.clear();

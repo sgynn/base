@@ -139,7 +139,7 @@ TiffStream* TiffStream::openStream( const char* file, Mode mode) {
 
 }
 
-TiffStream* TiffStream::createStream(const char* file, int w, int h, int ch, int bpc, Mode mode, void* data, size_t len) {
+TiffStream* TiffStream::createStream(const char* file, int w, int h, int ch, int bpc, Mode mode, const void* data, size_t len) {
 	// Create a tiff file
 	const char* modes[] = { 0, "rb", "wb", "w+b" };
 	FILE* fp = fopen(file, modes[mode]);
@@ -265,7 +265,7 @@ size_t TiffStream::readBlock(int x, int y, int width, int height, void* data) co
 	}
 	return count;
 }
-size_t TiffStream::writeBlock(int x, int y, int width, int height, void* data) {
+size_t TiffStream::writeBlock(int x, int y, int width, int height, const void* data) {
 	if(x<=-width || y<=-height || x>=(int)m_width || y>=(int)m_height) return 0;	// fully outside image
 	uint bytes = m_bitsPerSample/8 * m_samplesPerPixel;
 	size_t offset = x<0? -x: 0;
@@ -276,7 +276,7 @@ size_t TiffStream::writeBlock(int x, int y, int width, int height, void* data) {
 	for(int i=y0; i<y1; ++i) {
 		size_t addr = getAddress(x+offset, y+i);
 		fseek(m_stream, addr, SEEK_SET);
-		count += fwrite((char*)data + i * bytes * width + offset * bytes, bytes, len, m_stream);
+		count += fwrite((const char*)data + i * bytes * width + offset * bytes, bytes, len, m_stream);
 	}
 	return count;
 }
@@ -286,4 +286,31 @@ TiffStream::~TiffStream() {
 	if(m_stream) fclose(m_stream);
 }
 
+// =================================================================================== //
+
+Image Tiff::load(const char* file) {
+	TiffStream* stream = TiffStream::openStream(file);
+	if(stream) {
+		int width = stream->width();
+		int height = stream->height();
+		Image::Format format = Image::INVALID;
+		if(stream->channels() == 1 && stream->bpp() == 16) format = Image::R16;
+		else if(stream->bpp() / stream->channels() == 8) format = (Image::Format)stream->channels();
+		int s = width * height * stream->bpp() / 8;
+		Image::byte* data = new Image::byte[s];
+		stream->readBlock(0, 0, width, height, data);
+		delete stream;
+		return Image(format, width, height, data);
+	}
+	return Image();
+}
+
+bool Tiff::save(const Image& image, const char* file) {
+	if(!image) return false;
+	TiffStream* stream = TiffStream::createStream(file, image.getWidth(), image.getHeight(),
+					image.getChannels(), image.getBytesPerPixel() / image.getChannels(),
+					TiffStream::WRITE, image.getData(), image.getWidth()*image.getHeight()*image.getBytesPerPixel());
+	delete stream;
+	return stream;
+}
 

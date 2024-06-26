@@ -67,54 +67,28 @@ struct DDSHeader {
 	DWORD caps2;
 	DWORD reserved2[3];
 };
-inline DWORD calculateSize(DDS::DDSFormat f, int w, int h, int d) {
+
+inline DWORD calculateSize(Image::Format f, int w, int h, int d) {
 	switch(f) {
-	case DDS::BC1:
-	case DDS::BC4: return ((w+3)/4) * ((h+3)/4) * 8 * d;
-	case DDS::BC2:
-	case DDS::BC3:
-	case DDS::BC5: return ((w+3)/4) * ((h+3)/4) * 16 * d;
+	case Image::BC1:
+	case Image::BC4: return ((w+3)/4) * ((h+3)/4) * 8 * d;
+	case Image::BC2:
+	case Image::BC3:
+	case Image::BC5: return ((w+3)/4) * ((h+3)/4) * 16 * d;
 	default:  return f * w * h * d;
 	}
 }
 
-
-DDS::DDS(DDS&& o) : format(o.format), mode(o.mode), mipmaps(o.mipmaps), width(o.width), height(o.width), depth(o.depth), data(o.data) {
-	o.data = 0;
-	o.format = INVALID;
-}
-DDS& DDS::operator=(DDS&& o) {
-	memcpy(this, &o, sizeof(DDS));
-	o.data = 0;
-	o.format = INVALID;
-	return *this;
-}
-void DDS::clear() {
-	if(!data) return;
-	
-	int surfaces = mode==CUBE? 6: 1;
-	int total = surfaces * (mipmaps+1);
-	for(int i=0; i<total; ++i) {
-		delete [] data[i];
-	}
-	//delete [] data;
-	format = INVALID;
-	data = 0;
-}
-
-
-
-DDS DDS::load(const char* filename) {
-	DDS dds;
+Image DDS::load(const char* filename) {
 	FILE* fp = fopen(filename, "rb");
-	if(!fp) return dds;
+	if(!fp) return Image();
 
 	// Chech type header
 	char magic[4];
 	fread(magic, 1, 4, fp);
 	if(strncmp(magic, "DDS ", 4)!=0) {
 		fclose(fp);
-		return dds;
+		return Image();
 	}
 
 	// Read DDS header
@@ -124,58 +98,53 @@ DDS DDS::load(const char* filename) {
 	// ToDo: Swap DWORD endian if MACOS
 	
 	// Get format info from header
-	if(header.caps2 & DDS_CUBEMAP) dds.mode = CUBE;
-	if(header.caps2 & DDS_VOLUME && header.depth>0) dds.mode = VOLUME;
+	Image::Mode mode = Image::FLAT;
+	if(header.caps2 & DDS_CUBEMAP) mode = Image::CUBE;
+	if(header.caps2 & DDS_VOLUME && header.depth>0) mode = Image::VOLUME;
 
 	// Get compression
+	Image::Format format = Image::INVALID;
 	if(header.format.flags == DDS_FOURCC) {
 		switch(header.format.fourCC) {
-		case FOURCC_DXT1: dds.format = BC1; break;
-		case FOURCC_DXT3: dds.format = BC2; break;
-		case FOURCC_DXT5: dds.format = BC3; break;
-		case FOURCC_ATI1: dds.format = BC4; break;
-		case FOURCC_ATI2: dds.format = BC5; break;
+		case FOURCC_DXT1: format = Image::BC1; break;
+		case FOURCC_DXT3: format = Image::BC2; break;
+		case FOURCC_DXT5: format = Image::BC3; break;
+		case FOURCC_ATI1: format = Image::BC4; break;
+		case FOURCC_ATI2: format = Image::BC5; break;
 		default:
 			// Note: FOURC_DX10 adds an additional header that allows texture arrays and floating point formats
 			fclose(fp);
-			return dds;
+			return Image();
 		}
 	}
 	// Non-compressed formats
-	else if(header.format.flags == DDS_RGBA && header.format.bitCount == 32) dds.format = RGBA;
-	else if(header.format.flags == DDS_RGB && header.format.bitCount == 32) dds.format = RGBA;
-	else if(header.format.flags == DDS_RGB && header.format.bitCount == 24) dds.format = RGB;
-	else if(header.format.bitCount == 8) dds.format = LUMINANCE;
+	else if(header.format.flags == DDS_RGBA && header.format.bitCount == 32) format = Image::RGBA8;
+	else if(header.format.flags == DDS_RGB && header.format.bitCount == 32) format = Image::RGBA8;
+	else if(header.format.flags == DDS_RGB && header.format.bitCount == 24) format = Image::RGB8;
+	else if(header.format.bitCount == 8) format = Image::R8;
 	else {
 		fclose(fp);
-		return dds;
+		return Image();
 	}
-
-	// Set image dimensions
-	dds.width   = header.width;
-	dds.height  = header.height;
-	dds.depth   = header.depth;
-	dds.mipmaps = header.mipmaps - 1;
-	if(dds.depth<=0) dds.depth = 1;
 
 
 	// Load all surfaces
-	int surfaces = dds.mode==CUBE? 6: 1;
-	dds.data = new BYTE*[surfaces * header.mipmaps];
-	printf("DDS: %d surfaces, %d mipmaps\n", surfaces, dds.mipmaps);
+	int surfaces = mode==Image::CUBE? 6: 1;
+	Image::byte** data = new BYTE*[surfaces * header.mipmaps];
+	printf("DDS: %d surfaces, %d mipmaps\n", surfaces, header.mipmaps);
 	for(int n=0; n<surfaces; ++n) {
-		int w = dds.width, h = dds.height, d = dds.depth;
-		for(int i=0; i<=dds.mipmaps; ++i) {
+		int w = header.width, h = header.height, d = header.depth;
+		for(unsigned i=0; i<header.mipmaps; ++i) {
 			// Clamp size
 			if(w<=0) w=1;
 			if(h<=0) h=1;
 			if(d<=0) d=1;
 
 			// Read pixels
-			DWORD size = calculateSize(dds.format, w, h, d);
+			DWORD size = calculateSize(format, w, h, d);
 			BYTE* pixels = new BYTE[size];
 			fread(pixels, 1, size, fp);
-			dds.data[ n + i * surfaces ] = pixels;
+			data[ n + i * surfaces ] = pixels;
 
 			// Next mipmap
 			w = w>>1;
@@ -184,90 +153,94 @@ DDS DDS::load(const char* filename) {
 		}
 	}
 	fclose(fp);
-	return dds;
+
+	return Image(mode, format, header.width, header.height, header.depth, header.mipmaps, data);
 }
 
-int DDS::save(const char* filename) {
-	if(format==INVALID) return false;
+bool DDS::save(const Image& image, const char* filename) {
+	if(!image) return false;
 	DDSHeader header;
 	memset(&header, 0, sizeof(DDSHeader));
 	header.size = sizeof(DDSHeader);
 	header.flags = DDS_CAPS | DDS_WIDTH | DDS_HEIGHT | DDS_PIXELFORMAT;
-	header.width = width;
-	header.height = height;
+	header.width = image.getWidth();
+	header.height = image.getHeight();
 
-	if(isCompressed()) {
+	if(image.isCompressed()) {
 		header.flags |= DDS_LINEARSIZE;
-		header.pitch = calculateSize(format, width, height, depth);
-	} else {
+		header.pitch = calculateSize(image.getFormat(), header.width, header.height, image.getDepth());
+	}
+	else {
 		header.flags |= DDS_PITCH;
-		header.pitch = ((width * format * 8 + 31) & -32) >> 3; // 4 byte aligned width
+		header.pitch = ((header.width * image.getBytesPerPixel() * 8 + 31) & -32) >> 3; // 4 byte aligned width
 	}
 
-	if(mode == VOLUME) {
+	if(image.getMode() == Image::VOLUME) {
 		header.flags |= DDS_DEPTH;
-		header.depth = depth;
+		header.depth = image.getDepth();
 	}
-	if(mipmaps > 0) {
+	if(image.getMips() > 0) {
 		header.flags |= DDS_MIPMAPCOUNT;
-		header.mipmaps = mipmaps + 1;
+		header.mipmaps = image.getMips();
 	}
 
 	// Get pixel format
 	header.format.size = sizeof(DDSPixelFormat);
-	switch(format) {
-	case INVALID:
+	switch(image.getFormat()) {
+	case Image::INVALID:
 		return false;
-	case LUMINANCE:
+	case Image::R8:
 		header.format.flags = DDS_LUMINANCE;
 		header.format.bitMask[0] = 0xff;
 		break;
-	case LUMINANCE_ALPHA:
+	case Image::RG8:
 		header.format.flags = DDS_LUMINANCE | DDS_ALPHA;
 		header.format.bitMask[0] = 0x00ff;
 		header.format.bitMask[3] = 0xff00;
 		break;
-	case RGB:
+	case Image::RGB8:
 		header.format.flags = DDS_RGB;
 		header.format.bitMask[0] = 0xff0000;
 		header.format.bitMask[1] = 0x00ff00;
 		header.format.bitMask[2] = 0x0000ff;
 		break;
-	case RGBA:
+	case Image::RGBA8:
 		header.format.flags = DDS_RGBA;
 		header.format.bitMask[0] = 0x00ff0000;
 		header.format.bitMask[1] = 0x0000ff00;
 		header.format.bitMask[2] = 0x000000ff;
 		header.format.bitMask[3] = 0xff000000;
 		break;
-	case BC1:
+	case Image::BC1:
 		header.format.flags = DDS_FOURCC;
 		header.format.fourCC = FOURCC_DXT1;
 		break;
-	case BC2:
+	case Image::BC2:
 		header.format.flags = DDS_FOURCC;
 		header.format.fourCC = FOURCC_DXT3;
 		break;
-	case BC3:
+	case Image::BC3:
 		header.format.flags = DDS_FOURCC;
 		header.format.fourCC = FOURCC_DXT5;
 		break;
-	case BC4:
+	case Image::BC4:
 		header.format.flags = DDS_FOURCC;
 		header.format.fourCC = FOURCC_ATI1;
 		break;
-	case BC5:
+	case Image::BC5:
 		header.format.flags = DDS_FOURCC;
 		header.format.fourCC = FOURCC_ATI2;
 		break;
+	default:
+		return false;
 	}
 	
 	header.caps1 = DDS_TEXTURE;
-	if(mode == CUBE) {
+	if(image.getMode() == Image::CUBE) {
 		header.caps1 |= DDS_COMPLEX;
 		header.caps2 = DDS_VOLUME;
 	}
-	if(mipmaps > 0) {
+	if(image.getMips() > 1) {
 		header.caps1 |= DDS_COMPLEX | DDS_MIPMAP;
 	}
 
@@ -280,15 +253,15 @@ int DDS::save(const char* filename) {
 	fwrite(&header, 1, sizeof(DDSHeader), fp);
 
 	// Write surfaces
-	int surfaces = mode==CUBE? 6: 1;
+	int surfaces = image.getMode() == Image::CUBE? 6: 1;
 	for(int n=0; n<surfaces; ++n) {
-		int w = width, h = height, d = depth;
-		for(int i=0; i<=mipmaps; ++i) {
+		int w = header.width, h = header.height, d = header.depth;
+		for(unsigned i=0; i<header.mipmaps; ++i) {
 			if(w<=0) w=1;
 			if(h<=0) h=1;
 			if(d<=0) d=1;
-			int size = calculateSize(format, w,h,d);
-			fwrite( data[n + i*surfaces], 1, size, fp);
+			int size = calculateSize(image.getFormat(), w,h,d);
+			fwrite( image.getDataPtr()[n + i*surfaces], 1, size, fp);
 			w = w>>1;
 			h = h>>1;
 			d = d>>1;
@@ -298,6 +271,7 @@ int DDS::save(const char* filename) {
 	return true;
 }
 
+/*
 
 void DDS::flip() {
 	// Flip image
@@ -545,7 +519,7 @@ void DDS::decompressBC4Channel(const BYTE* data, int bx, int by, int stride, BYT
 		}
 	}
 }
-
+*/
 
 
 }
