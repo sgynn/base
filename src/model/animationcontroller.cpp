@@ -505,6 +505,19 @@ void AnimationController::clearOverrides(bool fade) {
 
 // -------------------------------- //
 
+bool AnimationController::currentActionAffectsBone(Bone* b) const {
+	assert(b->getSkeleton() == getSkeleton());
+	return currentActionAffectsBone(b->getIndex());
+}
+
+bool AnimationController::currentActionAffectsBone(unsigned index) const {
+	assert(index < (unsigned)getSkeleton()->getBoneCount());
+	if(m_actionTrack < 0) return false;
+	return m_state->getKeyMap(m_actionTrack)[index] >= 0;
+}
+
+// -------------------------------- //
+
 void AnimationController::update(float time, bool finalise) {
 	const float fade = time / m_fadeTime;
 	m_state->update(time, false);	// Advance animations
@@ -632,8 +645,8 @@ void AnimationController::updateRootOffset(bool output) {
 	}
 
 	for(int i=m_state->getNextTrack(); i>=0; i=m_state->getNextTrack(i)) {
-		int rootSet = m_state->getKeyMap(i)[m_rootBone];
-		if(rootSet>=0) {
+		unsigned char rootSet = m_state->getKeyMap(i)[m_rootBone];
+		if(rootSet != 0xff) {
 			Meta& meta = m_meta[i];
 
 			vec3 pos;

@@ -55,7 +55,7 @@ class AnimationState {
 
 	Skeleton* getSkeleton() const { return m_skeleton; }
 
-	const char* getKeyMap(int track=0) const;	// Get bone -> animationset map for an animation
+	const unsigned char* getKeyMap(int track=0) const;	// Get bone -> animationset map for an animation
 	int getNextTrack(int last=-1) const;	// Get next active track. ends with -1;
 
 	//protected:
@@ -72,7 +72,7 @@ class AnimationState {
 		bool             loop;		// is animation looped
 		bool             changed;	// Force update, even if data looks the same
 		int              looped;	// If animation looped in last frame
-		const char*      keyMap;	// animation keyset -> bone index map
+		const unsigned char* keyMap;// animation keyset -> bone index map
 	};
 	std::vector<AnimationInstance> m_animations;
 	Skeleton* m_skeleton;

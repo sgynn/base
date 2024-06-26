@@ -129,6 +129,9 @@ class AnimationController {
 	const vec3&       getOffset() const		{ return m_offset; }
 	const Quaternion& getRotation() const	{ return m_rotation; }
 
+	bool currentActionAffectsBone(base::Bone*) const;
+	bool currentActionAffectsBone(unsigned boneIndex) const;
+
 	float deriveMoveSpeed() const;
 
 	protected:

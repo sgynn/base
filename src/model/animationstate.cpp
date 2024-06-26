@@ -118,7 +118,7 @@ void AnimationState::setLoop(bool loop, int track) {
 int AnimationState::getLooped(int track) const {
 	return m_animations[track].looped;
 }
-const char* AnimationState::getKeyMap(int track) const {
+const unsigned char* AnimationState::getKeyMap(int track) const {
 	return m_animations[track].keyMap;
 }
 

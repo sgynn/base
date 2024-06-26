@@ -25,7 +25,7 @@ int Animation::addKeySet(const char* name) {
 
 // --------------------------------------------------------------------------------------------- //
 
-const char* Animation::getMap(const Skeleton* s) const {
+const unsigned char* Animation::getMap(const Skeleton* s) const {
 	// Find it in list
 	unsigned id = s->getMapID();
 	for(uint i=0; i<m_maps.size(); ++i) {
@@ -34,10 +34,10 @@ const char* Animation::getMap(const Skeleton* s) const {
 	// Create it	TODO move this into Skeleton class to fix threading issues and potential memory leak.
 	SkeletonMap map;
 	map.size = s->getBoneCount();
-	map.map = new char[ map.size ];
+	map.map = new unsigned char[ map.size ];
 	map.skeletonID = id;
 	for(int i=0; i<map.size; ++i) {
-		map.map[i] = getBoneID( s->getBone(i)->getName() );
+		map.map[i] = (unsigned char)getBoneID( s->getBone(i)->getName() );
 	}
 	static base::Mutex m;
 	MutexLock lock(m);

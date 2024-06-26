@@ -232,7 +232,7 @@ void Skeleton::resetPose(int boneIndex) {
 	}
 }
 
-int Skeleton::applyPose(const Animation* anim, float frame, int root, int blend, float weight, const char* map) {
+int Skeleton::applyPose(const Animation* anim, float frame, int root, int blend, float weight, const unsigned char* map) {
 	// Trivial null cases
 	if(weight==0 && blend > 0) return 0;
 
@@ -255,7 +255,7 @@ int Skeleton::applyPose(const Animation* anim, float frame, int root, int blend,
 		case Bone::FIXED:    break;	// user overridden
 		}
 		// Set bone values from animation
-		if(set && map[i]>=0 && applyBonePose(m_bones[i], anim, map[i], frame, blend, weight)) ++modified;
+		if(set && map[i]!=0xff && applyBonePose(m_bones[i], anim, map[i], frame, blend, weight)) ++modified;
 	}
 	return modified;
 }

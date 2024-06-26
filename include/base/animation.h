@@ -32,7 +32,7 @@ namespace base {
 		int  getBoneID(const char* name) const;				// Get the bone id of a named bone
 		int  addKeySet(const char* name);					// Add animation keyset
 
-		const char* getMap(const Skeleton* s) const;		// Get bone->keyset map
+		const unsigned char* getMap(const Skeleton* s) const;		// Get bone->keyset map
 
 		void addPositionKey(int set, int frame, const vec3& position);	/**< Add a position keyframe */
 		void addRotationKey(int set, int frame, const Quaternion& q);	/**< Add a rotation keyframe */
@@ -70,9 +70,9 @@ namespace base {
 
 		// Skeleton maps
 		struct SkeletonMap {
-			char*      map;
-			int        size;
-			unsigned   skeletonID;
+			unsigned char* map;
+			int            size;
+			unsigned       skeletonID;
 		};
 		mutable std::vector<SkeletonMap> m_maps;
 	};

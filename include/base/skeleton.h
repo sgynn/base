@@ -100,7 +100,7 @@ namespace base {
 
 		void resetPose();
 		void resetPose(int boneIndex);
-		int  applyPose(const Animation*, float frame=0, int fromBone=-1, int mode=1, float weight=1, const char* keyMap=0);
+		int  applyPose(const Animation*, float frame=0, int fromBone=-1, int mode=1, float weight=1, const unsigned char* keyMap=0);
 		bool applyBonePose(Bone* bone, const Animation* anim, int set, float frame, int blend=1, float weight=1);
 
 		const Matrix* getMatrixPtr() const;		/// Null if update not yet called
