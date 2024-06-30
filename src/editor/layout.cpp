@@ -338,6 +338,7 @@ void LayoutViewer::itemSelected(gui::TreeView*, gui::TreeNode* n) {
 	m_gizmo->setOrientation( m_active->getOrientation() );
 	m_gizmo->setScale( m_active->getScale() );
 	m_gizmo->setBasis( parent? parent->getDerivedTransform(): Matrix() );
+	setGizmoSpace(m_gizmoSpace);
 }
 
 void LayoutViewer::createGizmo() {
@@ -364,6 +365,7 @@ void LayoutViewer::setGizmoMode(GizmoMode mode) {
 	}
 }
 void LayoutViewer::setGizmoSpace(GizmoSpace space) {
+	m_gizmoSpace = space;
 	if(m_gizmo) {
 		switch(space) {
 		case GizmoSpace::Global: m_gizmo->setRelative(Quaternion()); break;

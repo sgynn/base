@@ -1,5 +1,4 @@
-#ifndef _LAYOUT_EDITOR_
-#define _LAYOUT_EDITOR_
+#pragma once
 
 #include "editor.h"
 #include <base/scene.h>
@@ -75,6 +74,7 @@ class LayoutViewer : public EditorComponent {
 	uint              m_lastNodeCount = 0;
 	Gizmo*            m_gizmo = 0;
 	int               m_gizmoQueue = 10;
+	GizmoSpace        m_gizmoSpace = GizmoSpace::Global;
 };
 
 class LayoutCategory {
@@ -175,6 +175,4 @@ class CustomDrawableType : public DrawableType {
 
 
 }
-
-#endif
 
