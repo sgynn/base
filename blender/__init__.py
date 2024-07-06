@@ -114,6 +114,11 @@ class ExportBaseLib(bpy.types.Operator):
         description="Apply object transforms to mesh data",
         default=False)
 
+    merge_meshes: BoolProperty(
+        name="Merge Meshes",
+        description="Merges all meshes into a single mesh",
+        default=False)
+
     export_skeletons: BoolProperty(
         name="Export Skeletons",
         description="Export armature bones",
@@ -142,6 +147,12 @@ class ExportBaseLib(bpy.types.Operator):
         description="Export object layout",
         default=False)
 
+    clear_layout_root: BoolProperty(
+        name="Clear layout root transform",
+        description="Clear the transform of the root object when saving the layout\nOnly works if there is only a single root object or all objects are in a collection with instance offset set",
+        default=True)
+
+
 
     def draw(self, context):
         layout = self.layout
@@ -162,6 +173,7 @@ class ExportBaseLib(bpy.types.Operator):
         mesh.prop(self, 'normalise_weights')
         mesh.prop(self, 'apply_modifiers')
         mesh.prop(self, 'apply_transform')
+        mesh.prop(self, 'merge_meshes')
 
         mat = layout.box()
         mat.enabled = self.export_meshes and self.hasMesh(context)
@@ -180,6 +192,9 @@ class ExportBaseLib(bpy.types.Operator):
 
         lay = layout.box()
         lay.prop(self, 'export_layout')
+        lopt = lay.column()
+        lopt.prop(self, 'clear_layout_root')
+        lopt.enabled = self.export_layout
 
     def getHeirachy(self, obj, out):
         out.add(obj)

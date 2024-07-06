@@ -2,6 +2,7 @@
 
 import os
 import bpy
+import bmesh
 import mathutils
 import bpy_extras.io_utils
 
@@ -119,6 +120,11 @@ def construct_mesh(obj, config):
     m.transform(trans)
     if trans.determinant() < 0.0:
         m.flip_normals()
+    meshes = construct_export_meshes(m, config)
+    obj.to_mesh_clear()
+    return meshes
+
+def construct_export_meshes(m, config):
 
     needTriangulating = False
     for f in m.polygons:
@@ -149,8 +155,8 @@ def construct_mesh(obj, config):
             if loop.bitangent_sign < 0:
                 signedtangents = True
                 break
-    elif config.export_normals:
-        m.calc_normals_split()
+    #elif config.export_normals: # removed in Blender 4.1
+    #    m.calc_normals_split()
 
 
     # sort faces by material index for separation into sub-meshes
@@ -213,7 +219,6 @@ def construct_mesh(obj, config):
             # Add vertex to face
             mesh.faces.append(vIndex)
 
-    obj.to_mesh_clear()
     return result
 
 def process_weights(v, limit, normalise):
@@ -228,11 +233,43 @@ def process_weights(v, limit, normalise):
 
 # -------------------------------------------------------------------------- #
 
+def export_merged_meshes(obj, exportList, config, xml):
+    bm = bmesh.new()
+    local = obj.matrix_world.inverted()
+    for object in exportList:
+        if object.type == 'MESH':
+            o = object
+            if config.apply_modifiers:
+                armatureModifiers = [m for m in o.modifiers if m.type == 'ARMATURE' and m.show_viewport]
+                for m in armatureModifiers: m.show_viewport = False
+                o = o.evaluated_get(bpy.context.evaluated_depsgraph_get())
+                for m in armatureModifiers: m.show_viewport = True
+
+            trans = Matrix.Rotation(radians(-90), 4, 'X') @ local @ o.matrix_world
+            m = o.to_mesh()
+            m.transform(trans)
+            if trans.determinant() < 0.0:
+                m.flip_normals()
+            bm.from_mesh(m)
+            o.to_mesh_clear()
+            # FIXME: Materials on merged mesh are missing
+        
+    mesh = bpy.data.meshes.new('TempCombinedMesh')
+    bm.to_mesh(mesh)
+    mesh.update()
+    bm.free()
+
+    meshes = construct_export_meshes(mesh, config)
+    write_meshes(obj, config, xml, meshes)
+    bpy.data.meshes.remove(mesh)
+
+
 def export_mesh(obj, config, xml):
     meshes = construct_mesh(obj, config)
-    name = obj.name if modified(obj,config) else obj.data.name
+    write_meshes(obj, config, xml, meshes)
 
-    # write meshes
+def write_meshes(obj, config, xml, meshes):
+    name = obj.name if modified(obj,config) else obj.data.name
     for m in meshes:
         mesh = append_element(xml.firstChild, "mesh")
         mesh.setAttribute("name", name)                 #NOTE: duplicate name if mesh is split by material
@@ -488,6 +525,11 @@ def export_scene(objects, config, xml):
 
     print(children);
 
+    skipRootTransform = config.clear_layout_root and len(children[None]) == 1
+
+    first = next(iter(objects)).users_collection
+    singleCollection = all(v.users_collection == first for v in objects)
+    offset = first[0].instance_offset if config.clear_layout_root and singleCollection else Vector((0,0,0))
 
     # Write xml
     scene = append_element(xml.firstChild, "layout")
@@ -497,7 +539,7 @@ def export_scene(objects, config, xml):
         a = stack[-1]
         items = children[a[0]]
         obj = items[a[1]]
-        node = write_object(a[2], obj, config)
+        node = write_object(a[2], obj, config, offset, skipRootTransform and a[0] == None)
         if a[1] + 1 >= len(items): stack.pop()
         else: stack[-1] = (a[0], a[1]+1, a[2])
 
@@ -506,13 +548,13 @@ def export_scene(objects, config, xml):
 
 
 
-def write_object(node, obj, config):
+def write_object(node, obj, config, offset, skipTransform):
     print("object", obj.name)
 
     if obj.rotation_mode == 'QUATERNION': r = obj.rotation_quaternion
     elif obj.rotation_mode == 'AXIS_ANGLE': r = Quaternion(obj.rotation_axis_angle[1:4], obj.rotation_axis_angle[0])
     else: r = obj.rotation_euler.to_quaternion()
-    pos = obj.location
+    pos = obj.location - offset
 
     # Parent bone stuff
     bone = None
@@ -545,9 +587,10 @@ def write_object(node, obj, config):
 
     node = append_element(node, "object")
     node.setAttribute("name", obj.name)
-    if pos != (0,0,0):   node.setAttribute("position", ' '.join( format_num(v) for v in pos ))
-    if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
-    if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
+    if not skipTransform:
+        if pos != (0,0,0):   node.setAttribute("position", ' '.join( format_num(v) for v in pos ))
+        if rot != (1,0,0,0): node.setAttribute("orientation", ' '.join( format_num(v) for v in rot ))
+        if scl != (1,1,1):   node.setAttribute("scale", ' '.join( format_num(v) for v in scl ))
     if obj.type == 'MESH': node.setAttribute( "mesh", obj.name if modified(obj,config) else obj.data.name)
     if obj.instance_type == 'COLLECTION' and obj.instance_collection: node.setAttribute("instance", obj.instance_collection.name)
     if bone: node.setAttribute("bone", bone)
@@ -631,9 +674,14 @@ def export(context, config):
     # Need to not duplicate shared meshes
     exportedMeshes = []
 
+    # Export as a single merged mesh
+    if config.merge_meshes and config.export_meshes:
+        export_merged_meshes(context.active_object, exportList, config, xml)
+        exportedMeshes.append(obj.data.name)
+
     # Export some stuff
     for obj in exportList:
-        if obj.type == 'MESH' and config.export_meshes:
+        if obj.type == 'MESH' and config.export_meshes and not config.merge_meshes:
             if modified(obj,config) or obj.data.name not in exportedMeshes:
                 export_mesh(obj, config, xml)
                 exportedMeshes.append( obj.data.name )
