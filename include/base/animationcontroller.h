@@ -7,6 +7,7 @@
 namespace base {
 
 class Model;
+class Bone;
 class Skeleton;
 class Animation;
 class AnimationState;
