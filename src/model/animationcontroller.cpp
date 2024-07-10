@@ -506,6 +506,7 @@ void AnimationController::clearOverrides(bool fade) {
 // -------------------------------- //
 
 bool AnimationController::currentActionAffectsBone(Bone* b) const {
+	if(!b) return false;
 	assert(b->getSkeleton() == getSkeleton());
 	return currentActionAffectsBone(b->getIndex());
 }
@@ -513,7 +514,7 @@ bool AnimationController::currentActionAffectsBone(Bone* b) const {
 bool AnimationController::currentActionAffectsBone(unsigned index) const {
 	assert(index < (unsigned)getSkeleton()->getBoneCount());
 	if(m_actionTrack < 0) return false;
-	return m_state->getKeyMap(m_actionTrack)[index] >= 0;
+	return m_state->getKeyMap(m_actionTrack)[index] != 0xff;
 }
 
 // -------------------------------- //
