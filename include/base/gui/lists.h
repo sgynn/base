@@ -96,11 +96,11 @@ class ItemList {
 		ItemList* list;
 		public:
 		SelectionIterable(ItemList* l) : list(l) {}
-		SelectionIterator begin() { return SelectionIterator(*list->m_items, list->m_selected->cbegin()); }
-		SelectionIterator end() { return SelectionIterator(*list->m_items, list->m_selected->cend()); }
-		size_t size() const { return list->m_selected->size(); }
-		bool empty() const { return list->m_selected->empty(); }
-		ListItem& operator[](size_t i) { return list->m_items->at(list->m_selected->at(i)); }
+		SelectionIterator begin() { return SelectionIterator(*list->m_items, list->m_selected.cbegin()); }
+		SelectionIterator end() { return SelectionIterator(*list->m_items, list->m_selected.cend()); }
+		size_t size() const { return list->m_selected.size(); }
+		bool empty() const { return list->m_selected.empty(); }
+		ListItem& operator[](size_t i) { return list->m_items->at(list->m_selected[i]); }
 	};
 	template<class List, class Item, class Iterator>
 	class IterableType {
@@ -121,9 +121,9 @@ class ItemList {
 	Iterable items() { return Iterable(*m_items); }
 	ConstIterable items() const { return ConstIterable(*m_items); }
 	SelectionIterable selectedItems() { return SelectionIterable(this); }
-	ListItem* getSelectedItem() { return getSelectionSize()? &m_items->at(m_selected->at(0)): 0; }
-	const ListItem* getSelectedItem() const { return getSelectionSize()? &m_items->at(m_selected->at(0)): 0; }
-	int getSelectedIndex() const { return getSelectionSize()? m_selected->at(0): -1; }
+	ListItem* getSelectedItem() { return getSelectionSize()? &m_items->at(m_selected[0]): 0; }
+	const ListItem* getSelectedItem() const { return getSelectionSize()? &m_items->at(m_selected[0]): 0; }
+	int getSelectedIndex() const { return getSelectionSize()? m_selected[0]: -1; }
 	const ListItem& getItem(uint index) const;
 	ListItem& getItem(uint index);
 	void addItem(const ListItem& item);
@@ -143,8 +143,8 @@ class ItemList {
 
 	private:
 	std::vector<ListItem>* m_items;
-	std::vector<uint>* m_selected;
 	std::vector<ItemList*>* m_shared;
+	std::vector<uint> m_selected;
 	void dropList();
 	void countChanged();
 	void selectionChanged();

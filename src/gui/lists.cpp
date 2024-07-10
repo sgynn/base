@@ -12,7 +12,6 @@ using namespace gui;
 
 ItemList::ItemList() {
 	m_items = new std::vector<ListItem>;
-	m_selected = new std::vector<uint>;
 	m_shared = 0;
 }
 ItemList::~ItemList() {
@@ -22,6 +21,7 @@ ItemList::~ItemList() {
 void ItemList::shareList(ItemList* src) {
 	if(src && src->m_items == m_items) return;	// Already sharing
 	if(!src && !m_shared) return;
+	m_selected.clear();
 
 	// Delete existing list
 	dropList();
@@ -29,7 +29,6 @@ void ItemList::shareList(ItemList* src) {
 	// Use list from src
 	if(src) {
 		m_items = src->m_items;
-		m_selected = src->m_selected;
 		
 		if(!src->m_shared) {
 			src->m_shared = new std::vector<ItemList*>({src});
@@ -41,7 +40,6 @@ void ItemList::shareList(ItemList* src) {
 	// Recreate own list
 	else {
 		m_items = new std::vector<ListItem>;
-		m_selected = new std::vector<uint>;
 	}
 	countChanged();
 	selectionChanged();
@@ -59,12 +57,10 @@ void ItemList::dropList() {
 	if(!m_shared || m_shared->empty()) {
 		clearItems();
 		delete m_items;
-		delete m_selected;
 		delete m_shared;
 	}
 
 	m_items = nullptr;
-	m_selected = nullptr;
 	m_shared = nullptr;
 }
 
@@ -83,7 +79,7 @@ void ItemList::selectionChanged() {
 
 void ItemList::clearItems() {
 	m_items->clear();
-	m_selected->clear();
+	m_selected.clear();
 	countChanged();
 }
 
@@ -104,11 +100,11 @@ void ItemList::removeItem(uint index) {
 		m_items->erase( m_items->begin() + index );
 		// Update selection list
 		uint erase = ~0u;
-		for(uint i=0; i<m_selected->size(); ++i) {
-			if(m_selected->at(i) > index) --m_selected->at(i);
-			else if(m_selected->at(i) == index) erase = i;
+		for(uint i=0; i<m_selected.size(); ++i) {
+			if(m_selected[i] > index) --m_selected[i];
+			else if(m_selected[i] == index) erase = i;
 		}
-		if(erase < m_selected->size()) m_selected->erase( m_selected->begin() + erase );
+		if(erase < m_selected.size()) m_selected.erase( m_selected.begin() + erase );
 		updateItemIndices(index);
 		countChanged();
 	}
@@ -162,19 +158,19 @@ void ItemList::sortItems(int flags) {
 
 
 void ItemList::clearSelection() {
-	m_selected->clear();
+	m_selected.clear();
 	selectionChanged();
 }
 void ItemList::selectItem(uint index) {
 	if(index < getItemCount() && !isItemSelected(index)) {
-		m_selected->push_back(index);
+		m_selected.push_back(index);
 		selectionChanged();
 	}
 }
 void ItemList::deselectItem(uint index) {
-	for(size_t i=0; i<m_selected->size(); ++i) {
-		if(m_selected->at(i) == index) {
-			m_selected->erase(m_selected->begin()+i);
+	for(size_t i=0; i<m_selected.size(); ++i) {
+		if(m_selected[i] == index) {
+			m_selected.erase(m_selected.begin()+i);
 			selectionChanged();
 			break;
 		}
@@ -182,13 +178,13 @@ void ItemList::deselectItem(uint index) {
 }
 
 bool ItemList::isItemSelected(uint index) const {
-	if(index >= m_items->size() || m_selected->empty()) return false;
-	for(uint i: *m_selected) if(i==index) return true;
+	if(index >= m_items->size() || m_selected.empty()) return false;
+	for(uint i: m_selected) if(i==index) return true;
 	return false;
 }
 
 uint ItemList::getSelectionSize() const {
-	return m_selected->size();
+	return m_selected.size();
 }
 
 void ItemList::initialise(const PropertyMap& p) {
