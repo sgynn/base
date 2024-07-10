@@ -157,6 +157,7 @@ class Ray {
 
 	Ray() {}
 	Ray(const vec3& p, const vec3& d);
+	Ray(const vec3& p, const vec3& d, float dirLen); // Use to skip square root as we may have already calculated it
 	Ray& set(const vec3& p, const vec3& d);
 	vec3 point(float t) const;
 };
@@ -307,6 +308,7 @@ inline vec3 vec4::xyz() const { return vec3(x,y,z); }
 
 
 inline Ray::Ray(const vec3& p, const vec3& d) : start(p), direction(d.normalised()) {}
+inline Ray::Ray(const vec3& p, const vec3& d, float len) : start(p), direction(d/len) {}
 inline Ray& Ray::set(const vec3& p, const vec3& d) { start = p, direction = d.normalised(); return *this; }
 inline vec3 Ray::point(float t) const { return start + direction * t; }
 
