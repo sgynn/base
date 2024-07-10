@@ -201,9 +201,10 @@ void Game::run() {
 		uint64 rate = frequency / m_targetFPS;
 		uint64 skip = rate * (maxFrameSkip+1);
 		uint64 time, last, delta=0;
+		uint64 lastUpdateTime;
 		uint64 gameTime, systemTime, updateTime, renderTime;
-		float frameTime = m_frameTime = 1.f / m_targetFPS;
-		last = systemTime = getTicks();
+		float targetFrameTime = m_frameTime = 1.f / m_targetFPS;
+		last = systemTime = lastUpdateTime = getTicks();
 		m_totalTime = 0;
 		while(m_state->running()) {
 			time = getTicks();
@@ -221,11 +222,16 @@ void Game::run() {
 				while(delta >= rate) {
 					//update timer
 					m_elapsedTime = rate; //This is the update time value
-					m_totalTime += frameTime;
-					updateTime = time;
+					m_totalTime += targetFrameTime;
 					delta -= rate;
 
+					// Accurate frame time
+					time = getTicks();
+					m_frameTime = (float)(time - lastUpdateTime) / frequency;
+					lastUpdateTime = time;
+
 					//update
+					updateTime = time;
 					s_input->update();
 					uint r = s_window->pumpEvents(s_input);
 					if(r==0x100) m_state->quit(); //Close button, catch SIGTERM?
@@ -242,7 +248,6 @@ void Game::run() {
 				time = systemTime = getTicks();
 				m_renderTime = time - renderTime;
 				m_gameTime = time - gameTime;
-				m_frameTime = fmax(frameTime, (float)m_gameTime/frequency);
 			} else {
 				Sleep(1);
 			}
