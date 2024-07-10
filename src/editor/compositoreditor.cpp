@@ -714,8 +714,8 @@ void CompositorEditor::exportGraph(CompositorGraph* graph) const {
 	for(const CompositorGraph::Link& link: graph->links()) {
 		Compositor* a = graph->getCompositor(link.a);
 		Compositor* b = graph->getCompositor(link.b);
-		const char* out = a->getOutputs()[link.out].name;
-		const char* in = b->getInputs()[link.in].name;
+		const char* out = link.out>=0? a->getOutputs()[link.out].name: nullptr;
+		const char* in = link.in>=0? b->getInputs()[link.in].name: nullptr;
 
 		XMLElement& l = g.add("link");
 		l.setAttribute("a", names[link.a].str());
