@@ -85,11 +85,11 @@ class Mesh:
         self.has_uv = False
 
 class KeySet:
-    def __init__(self, target):
+    def __init__(self, target, pos, rot, scl):
         self.target = target
-        self.rotation = []
-        self.position = []
-        self.scale    = []
+        self.rotation = [] if rot else None
+        self.position = [] if pos else None
+        self.scale    = [] if scl else None
 
 # -------------------------------------------------------------------------- #
 
@@ -451,7 +451,11 @@ def export_action(context, skeleton, action, name, xml):
     data = []
     for bone in skeleton.pose.bones:
         if bone.name in action.groups.keys():
-            data.append( (bone, KeySet(bone.name)) )
+            group = action.groups[bone.name]
+            hasLocation = any('location' in channel.data_path for channel in group.channels)
+            hasRotation = any('rotation' in channel.data_path for channel in group.channels)
+            hasScale    = any('scale' in channel.data_path for channel in group.channels)
+            data.append( (bone, KeySet(bone.name, hasLocation, hasRotation, hasScale)) )
 
     #  Get key data
     start, end = action.frame_range
@@ -461,14 +465,14 @@ def export_action(context, skeleton, action, name, xml):
         context.scene.frame_set(start + frame)
         advance_progress(context);
         for bone, keys in data:
-            rot = qrot.inverted() @ bone.rotation_quaternion @ qrot
-            pos = bone.location.copy();
-
-            #if bone.parent: 
-            pos = pos @ mrot # Hack ?
-            keys.rotation.append( (frame, rot.normalized()) )
-            keys.scale.append( (frame, bone.scale.xzy) )
-            keys.position.append( (frame, pos) )
+            if keys.position is not None:
+                pos = bone.location.copy() @ mrot
+                keys.position.append( (frame, pos) )
+            if keys.rotation is not None:
+                rot = qrot.inverted() @ bone.rotation_quaternion @ qrot
+                keys.rotation.append( (frame, rot.normalized()) )
+            if keys.scale is not None:
+                keys.scale.append( (frame, bone.scale.xzy) )
 
     # Optimise
     for _,keys in data:
@@ -491,6 +495,7 @@ def export_action(context, skeleton, action, name, xml):
             if keys.scale: write_keyframes(keyset, "scale", keys.scale)
 
 def optimise_keys(keys, identity, compare):
+    if not keys: return
     first = keys[0][1]
     for k in keys:
         if not compare(k[1], first):
