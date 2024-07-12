@@ -15,8 +15,8 @@ struct FixNullVar { FixNullVar() { nullVar.lock(); } } FixNullVarHack;
 
 
 // ------------------------------------------------ //
-static base::HashMap<uint> nameLookup;
-static std::vector<const char*> reverseLookup;
+static base::HashMap<uint> nameLookup = {{"x",0}, {"y",1}, {"z",2}, {"w",3}};
+static std::vector<const char*> reverseLookup = { "x", "y", "z", "w" };
 uint Variable::lookupName(const char* name) {
 	assert(name);
 	base::HashMap<uint>::iterator it = nameLookup.find(name);
@@ -243,10 +243,10 @@ bool Variable::setType(uint t) {
 	s = 0;
 	if(isObject() || isVector() || isArray()) { obj = new Object; obj->ref=1; }
 	if(isVector()) {
-		_set( lookupName("x"), nullVar );
-		_set( lookupName("y"), nullVar );
-		if(t>=VEC3) _set( lookupName("z"), nullVar);
-		if(t==VEC4) _set( lookupName("w"), nullVar);
+		_set( 0u, nullVar );
+		_set( 1u, nullVar );
+		if(t>=VEC3) _set( 2u, nullVar);
+		if(t==VEC4) _set( 3u, nullVar);
 	}
 	return true;
 }
