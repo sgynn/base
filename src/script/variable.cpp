@@ -197,6 +197,7 @@ template<typename T> T Variable::getValue() const {
 	case LINK|FLOAT:  return *fp;
 	case LINK|DOUBLE: return *dp;
 	case LINK|STRING: return *sp && (*sp)[0];
+	case VEC2: case VEC3: case VEC4: return get("x").getValue<T>();
 	default: return 0;
 	}
 }
