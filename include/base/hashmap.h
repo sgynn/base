@@ -3,6 +3,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <assert.h>
+#include <initializer_list>
+#include <utility>
 
 #define THRESHOLD 1.5f
 
@@ -14,8 +16,11 @@ namespace base {
 		public:
 		struct Pair { const char* const key; T value; };
 		HashMap(int cap=8);
+		HashMap(HashMap&& m) noexcept;
 		HashMap(const HashMap& m);
+		HashMap(std::initializer_list<Pair>&&);
 		HashMap& operator=(const HashMap&);
+		HashMap& operator=(HashMap&&) noexcept;
 		~HashMap();
 		bool empty() const { return m_size==0; }
 		unsigned int size() const { return m_size; }
@@ -88,6 +93,15 @@ template<typename T> base::HashMap<T>::HashMap(const HashMap& m) : m_capacity(m.
 		else m_data[i] = 0;
 	}
 }
+template<typename T> base::HashMap<T>::HashMap(HashMap&& m) noexcept : m_data(m.m_data), m_capacity(m.m_capacity), m_size(m.m_size) {
+	m.m_data = nullptr;
+	m.m_size = m.m_capacity = 0;
+}
+template<typename T> base::HashMap<T>::HashMap(std::initializer_list<Pair>&& init) : m_data(0), m_capacity(0), m_size(0) {
+	unsigned size = init.size() * THRESHOLD;
+	resize(size<8? 8: size);
+	for(const Pair& v: init) (*this)[v.key] = std::move(v.value);
+}
 template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(const HashMap& m) {
 	clear();
 	delete [] m_data;
@@ -99,6 +113,12 @@ template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(const HashMap
 		if(item) m_data[i] = new Pair{ strdup(item->key), item->value };
 		else m_data[i] = 0;
 	}
+	return *this;
+}
+template<typename T> base::HashMap<T>& base::HashMap<T>::operator=(HashMap&& m) noexcept {
+	std::swap(m_capacity, m.m_capacity);
+	std::swap(m_size, m.m_size);
+	std::swap(m_data, m.m_data);
 	return *this;
 }
 template<typename T> base::HashMap<T>::~HashMap() {
