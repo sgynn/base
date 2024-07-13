@@ -121,12 +121,14 @@ class TextureLoader : public ResourceLoader<Texture> {
 	bool reload(const char* name, Texture* object, Manager*) override;
 	void destroy(Texture*) override;
 	ResourceLoadProgress update() override;
+	bool isBeingLoaded(const Texture*) const override;
 	void updateT() override;
 	static Texture createTexture(const Image&);
 	protected:
 	struct LoadMessage { Texture* target; String file; Image image; };
-	std::list<LoadMessage> requests;
-	std::list<LoadMessage> completed;
+	std::list<LoadMessage> m_requests;
+	std::list<LoadMessage> m_completed;
+	Texture* m_currentlyLoading = nullptr;
 };
 
 Texture TextureLoader::createTexture(const Image& image) {
@@ -179,7 +181,7 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 			uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0xff8080: 0xffffff;
 			Texture* tex = new Texture(Texture::create(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex));
 			MutexLock lock(resourceMutex);
-			requests.push_back({tex, filename});
+			m_requests.push_back({tex, filename});
 			return tex;
 		}
 		else printf("Resource Error: Invalid image file '%s'\n", filename);
@@ -214,9 +216,10 @@ void TextureLoader::updateT() {
 	LoadMessage msg;
 	{
 	MutexLock lock(resourceMutex);
-	if(requests.empty()) return;
-	msg = std::move(requests.front());
-	requests.pop_front();
+	if(m_requests.empty()) return;
+	msg = std::move(m_requests.front());
+	m_requests.pop_front();
+	m_currentlyLoading = msg.target;
 	}
 
 	printf("Loading %s\n", msg.file.str());
@@ -224,21 +227,29 @@ void TextureLoader::updateT() {
 	else if(msg.file.endsWith(".dds")) msg.image = DDS::load(msg.file);
 
 	MutexLock lock(resourceMutex);
-	completed.push_back(std::move(msg));
+	m_completed.push_back(std::move(msg));
+	m_currentlyLoading = nullptr;
 }
 
 ResourceLoadProgress TextureLoader::update() {
 	MutexLock lock(resourceMutex);
-	for(LoadMessage& msg: completed) {
+	for(LoadMessage& msg: m_completed) {
 		printf("Finished loading %s\n", msg.file.str());
 		if(msg.image) *msg.target = createTexture(msg.image);
 		else printf("Resource Error: Invalid png file '%s'\n", msg.file.str());
 	}
-	ResourceLoadProgress r { (uint)completed.size(), (uint)requests.size() };
-	completed.clear();
+	ResourceLoadProgress r { (uint)m_completed.size(), (uint)m_requests.size() };
+	m_completed.clear();
 	return r;
 }
 
+bool TextureLoader::isBeingLoaded(const Texture* tex) const {
+	if(!tex) return false;
+	MutexLock lock(resourceMutex);
+	if(m_currentlyLoading == tex) return true;
+	for(const LoadMessage& m: m_requests) if(m.target == tex) return true;
+	return false;
+}
 
 // ----------------------------------------------------------------------------------- //
 

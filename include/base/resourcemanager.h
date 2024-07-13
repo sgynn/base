@@ -18,6 +18,7 @@ class ResourceManagerBase {
 };
 
 struct ResourceLoadProgress { unsigned completed; unsigned remaining; };
+enum class ResourceState { Invalid, Unloaded, Loaded, Loading, Failed };
 
 template<class T> class ResourceManager;
 template<class T>
@@ -28,6 +29,7 @@ class ResourceLoader {
 	virtual bool reload(const char* name, T* object, Manager* manager) { return false; }
 	virtual void destroy(T* item) = 0;
 	virtual ResourceLoadProgress update() { return {0,0}; }
+	virtual bool isBeingLoaded(const T* item) const { return false; }
 	virtual void updateT() {}
 };
 
@@ -44,6 +46,9 @@ class ResourceManager : public ResourceManagerBase {
 	T*    getIfExists(const char* name);  /// Get resource if it exists
 	int   exists(const char* name) const; /// Is a resource in the manager
 	bool  reload(const char* name);       /// Reload a resource if it exists and is possible.
+
+	ResourceState  getState(const T* item) const;    /// Get teh state of a resource
+	ResourceState  getState(const char* name) const; /// Get the state of a resource
 
 	void  alias(const char* existing, const char* name); /// Create an alias of a resource
 	void  add(const char* name, T* item, Loader* loader=0, int ref=1); /// Add resource to manager
@@ -63,6 +68,7 @@ class ResourceManager : public ResourceManagerBase {
 	static const int FAILED = -999;
 	Loader* m_defaultLoader;
 	bool drop(Resource*, bool force);
+	ResourceState getState(const Resource*) const;
 
 	public: // Iterators
 	struct IValue { const char* key; T* value; operator T*(){ return value; } };
@@ -91,6 +97,31 @@ template<class T>
 ResourceLoader<T>* ResourceManager<T>::getDefaultLoader() const { return m_defaultLoader; }
 template<class T>
 void ResourceManager<T>::setDefaultLoader(Loader* l) { m_defaultLoader = l; }
+
+template<class T>
+ResourceState ResourceManager<T>::getState(const char* name) const {
+	if(!name || !name[0]) return ResourceState::Invalid;
+	typename base::HashMap<Resource*>::iterator it = m_resources.find(name);
+	return it != m_resources.end()? getState(*it): ResourceState::Unloaded;
+}
+
+template<class T>
+ResourceState ResourceManager<T>::getState(const T* item) const {
+	if(!item) return ResourceState::Invalid;
+	for(auto i : m_resources) {
+		if(i.value->object == item) return getState(i.value);
+	}
+	return ResourceState::Unloaded;
+}
+
+template<class T>
+ResourceState ResourceManager<T>::getState(const Resource* resource) const {
+	if(!resource) return ResourceState::Unloaded;
+	if(resource->ref == FAILED) return ResourceState::Failed;
+	if(!resource->object) return ResourceState::Unloaded;
+	if(resource->loader && resource->loader->isBeingLoaded(resource->object)) return ResourceState::Loading;
+	return ResourceState::Loaded;
+}
 
 template<class T>
 T* ResourceManager<T>::get(const char* name) {
@@ -177,19 +208,19 @@ int ResourceManager<T>::drop(const char* name) {
 template<class T>
 int ResourceManager<T>::drop(const T* resource) {
 	if(!resource) return 0;
-	for(typename base::HashMap<Resource*>::iterator it = m_resources.begin(); it!=m_resources.end(); ++it) {
-		if(it->value->object == resource) {
-			if(it->value->ref == FAILED) return 0;
-			if(drop(it->value, false)) return 0;
-			else return it->value->ref;
+	for(auto i : m_resources) {
+		if(i.value->object == resource) {
+			if(i.value->ref == FAILED) return 0;
+			if(drop(i.value, false)) return 0;
+			else return i.value->ref;
 		}
 	}
 	return 0;
 }
 template<class T>
 void ResourceManager<T>::clear() {
-	for(typename base::HashMap<Resource*>::iterator it=m_resources.begin(); it!=m_resources.end(); ++it) {
-		drop(it->value, true);
+	for(auto i : m_resources) {
+		drop(i.value, true);
 	}
 }
 
