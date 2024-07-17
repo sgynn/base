@@ -161,37 +161,46 @@ namespace script {
 		VariableName findObject(const Variable& item, int depth=0) const;
 		
 		// Object iterator
+		template<class Var>
 		struct SubItem {
 			const char* const key;
 			const uint id;
-			Variable& value;
-			operator Variable&() { return value; }
+			Var& value;
+			operator Var&() { return value; }
 			template<typename T> operator T() { return value; }
 		};
-		class iterator {
+		template<class T>
+		class iterator_t {
 			friend class Variable;
 			public:
-			iterator(const iterator& i) : m_key(i.m_key), m_value(i.m_value) { }
-			iterator operator++() { iterator r=*this; ++m_key; ++m_value; return r; }
-			iterator& operator++(int) { ++m_key; ++m_value; return *this; }
-			iterator& operator=(const iterator& i) { m_key=i.m_key; m_value=i.m_value; return *this; }
-			bool operator==(const iterator& i) const { return i.m_value==m_value; }
-			bool operator!=(const iterator& i) const { return i.m_value!=m_value; }
-			SubItem operator*() const {
-				if(m_array) return SubItem{ 0, ((uint)(size_t)m_key)/4, *m_value };
-				return SubItem{ Variable::lookupName(*m_key), *m_key, *m_value };
+			iterator_t(const iterator_t& i) : m_key(i.m_key), m_value(i.m_value) { }
+			iterator_t operator++() { iterator_t r=*this; ++m_key; ++m_value; return r; }
+			iterator_t& operator++(int) { ++m_key; ++m_value; return *this; }
+			iterator_t& operator=(const iterator_t& i) { m_key=i.m_key; m_value=i.m_value; return *this; }
+			bool operator==(const iterator_t& i) const { return i.m_value==m_value; }
+			bool operator!=(const iterator_t& i) const { return i.m_value!=m_value; }
+			T operator*() const {
+				if(m_array) return { nullptr, ((uint)(size_t)m_key)/4, *m_value };
+				return { Variable::lookupName(*m_key), *m_key, *m_value };
 			}
+			struct TempRef { T value; T* operator->() { return &value; } };
+			TempRef operator->() const { return {operator*()}; }
+
 			private:
-			iterator(uint* key, Variable* var, bool array) : m_key(key), m_value(var), m_array(array) { }
+			iterator_t(uint* key, Variable* var, bool array) : m_key(key), m_value(var), m_array(array) { }
 			uint*     m_key;
 			Variable* m_value;
 			bool      m_array;
 		};
-		iterator begin() const;
-		iterator end() const;
+		using iterator = iterator_t<SubItem<Variable>>;
+		using const_iterator = iterator_t<SubItem<const Variable>>;
+		const_iterator begin() const;
+		const_iterator end() const;
+		iterator begin();
+		iterator end();
 	};
 	// Specialisation to allow ranged iterators to be on variables rather than subitems
-	template<> inline Variable::Variable(Variable::SubItem v): type(0) { *this=v.value; }
+	template<> inline Variable::Variable(const Variable::SubItem<Variable>& v): type(0) { *this=v.value; }
 
 
 	/// Variable name with pre-looked up strings
