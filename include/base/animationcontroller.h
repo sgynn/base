@@ -68,7 +68,8 @@ class AnimationBank {
 	~AnimationBank();
 	bool autoDetectMove(const Animation* anim) const;
 	void calculateMeta(AnimationInfo& anim, const char* root);
-	void add(const AnimationKey&, Animation*, uint groupMask=~0u, float weight=1, bool move=false);
+	void add(const AnimationKey&, Animation*, uint groupMask=-1, float weight=1, bool move=false);
+	void remove(const AnimationKey&, uint groupMask=-1);
 	const AnimationInfo* getAnimation(const AnimationKey&, int group) const;
 	const AnimationInfo* getAnimation(float speed, int group) const;
 	const char* getRootBone() const { return m_rootBone; }

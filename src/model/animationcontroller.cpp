@@ -115,7 +115,7 @@ float AnimationBank::getFastestMoveSpeed(int group) const {
 void AnimationBank::add(const AnimationKey& key, Animation* anim, uint groupMask, float weight, bool move) {
 	if(!anim) return;
 	uint k = key;
-	if(k >= m_animations.size()) m_animations.resize(k+1, 0);
+	if(k >= m_animations.size()) m_animations.resize(k+1, nullptr);
 	AnimationInfo** ptr = &m_animations[k];
 	while(*ptr) ptr = &((*ptr)->next);
 	AnimationInfo* a = new AnimationInfo;
@@ -132,6 +132,20 @@ void AnimationBank::add(const AnimationKey& key, Animation* anim, uint groupMask
 	if(move) {
 		m_movement.push_back(a);
 		std::sort(m_movement.begin(), m_movement.end(), [](AnimationInfo* a, AnimationInfo* b) { return a->speedKey<b->speedKey; });
+	}
+}
+
+void AnimationBank::remove(const AnimationKey& key, uint groupMask) {
+	if(key.getKey() >= m_animations.size()) return;
+	AnimationInfo** ptr = &m_animations[key.getKey()];
+	while(*ptr)
+	{
+		AnimationInfo* anim = *ptr;
+		if(groupMask & anim->groupMask) {
+			*ptr = anim->next;
+			delete anim;
+		}
+		else ptr = &(*ptr)->next;
 	}
 }
 
