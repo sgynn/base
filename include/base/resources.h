@@ -21,7 +21,7 @@ namespace base {
 		static Resources* getInstance() { return s_instance; }
 		Resources();
 		Resources(const Resources&) = delete;
-		~Resources() { if(s_instance==this) s_instance=0; }
+		~Resources();
 
 		ResourceManager<Model>            models;
 		ResourceManager<Texture>          textures;

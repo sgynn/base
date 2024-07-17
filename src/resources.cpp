@@ -1192,9 +1192,14 @@ Resources::Resources() {
 	particles.setDefaultLoader( new ParticleLoader() );
 }
 
+Resources::~Resources() {
+	if(s_instance==this) s_instance = nullptr;
+	resourceThread.join();
+}
+
 int Resources::update() {
 	if(!resourceThread.running()) resourceThread.begin([this](int){
-		while(true) {
+		while(s_instance) {
 			textures.getDefaultLoader()->updateT();
 			Thread::sleep(1);
 		}

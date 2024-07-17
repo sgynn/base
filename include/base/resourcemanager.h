@@ -31,6 +31,7 @@ class ResourceLoader {
 	virtual ResourceLoadProgress update() { return {0,0}; }
 	virtual bool isBeingLoaded(const T* item) const { return false; }
 	virtual void updateT() {}
+	virtual ~ResourceLoader() {}
 };
 
 template<class T>
@@ -38,7 +39,7 @@ class ResourceManager : public ResourceManagerBase {
 	public:
 	typedef ResourceLoader<T> Loader;
 	ResourceManager(Loader* defaultloader=0) : m_defaultLoader(defaultloader) {}
-	~ResourceManager()	{ clear(); }
+	~ResourceManager()	{ clear(); delete m_defaultLoader; }
 	void    setDefaultLoader(Loader*);
 	Loader* getDefaultLoader() const;
 
