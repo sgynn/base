@@ -1,5 +1,4 @@
-#ifndef _GUI_ANY_
-#define _GUI_ANY_
+#pragma once
 
 #include <typeinfo>
 
@@ -13,7 +12,7 @@ class Any {
 	public:
 	Any();
 	Any(const Any& o);
-	Any(Any&& move);
+	Any(Any&& move) noexcept;
 	~Any();
 
 	template<typename T>
@@ -28,7 +27,7 @@ class Any {
 		m_value = value.m_value? value.m_value->clone(): 0;
 		return *this;
 	}
-	Any& operator=(Any&& value) {
+	Any& operator=(Any&& value) noexcept {
 		AnyValue* tmp = m_value;
 		m_value = value.m_value;
 		value.m_value = tmp;
@@ -72,7 +71,7 @@ class Any {
 // Implementations
 inline Any::Any() : m_value(0) {}
 inline Any::Any(const Any& a) { m_value = a.m_value? a.m_value->clone(): 0; }
-inline Any::Any(Any&& a) { m_value = a.m_value; a.m_value = 0; }
+inline Any::Any(Any&& a) noexcept{ m_value = a.m_value; a.m_value = 0; }
 inline Any::~Any() { if(m_value) delete m_value; }
 
 template<typename T> Any::Any(const T& v) { m_value = new Any::AnyValueT<T>(v); }
@@ -128,6 +127,4 @@ inline bool operator==(const Any& v, const Any& a) { return a.operator==(v); }
 inline bool operator!=(const Any& v, const Any& a) { return a.operator!=(v); }
 
 }
-
-#endif
 

@@ -6,6 +6,7 @@
 #include <base/rtti.h>
 #include "delegate.h"
 #include "transform.h"
+#include "any.h"
 #include <vector>
 
 #include <cstdio>
@@ -179,6 +180,8 @@ class Widget {
 	// Get system root
 	Root* getRoot() const { return m_root; }
 
+	Any data; // Generic data
+
 	public:	// Events
 	Delegate<void(Widget*, const Point&, int)>     eventMouseDown;	// point relative to widget
 	Delegate<void(Widget*, const Point&, int)>     eventMouseUp;
@@ -205,7 +208,7 @@ class Widget {
 	Root*    m_root;			// Gui manager class
 	String   m_name;			// Widget name for lookups.
 	String   m_tip;				// Tool tip data
-	Transform m_derivedTransform; // Full transform to draw childrem
+	Transform m_derivedTransform; // Full transform to draw children
 
 	std::vector<Widget*>  m_children;
 
