@@ -171,31 +171,21 @@ namespace script {
 		class iterator {
 			friend class Variable;
 			public:
-			~iterator() { delete m_current; }
-			iterator(const iterator& i) : m_key(i.m_key), m_value(i.m_value), m_current(0) { }
+			iterator(const iterator& i) : m_key(i.m_key), m_value(i.m_value) { }
 			iterator operator++() { iterator r=*this; ++m_key; ++m_value; return r; }
 			iterator& operator++(int) { ++m_key; ++m_value; return *this; }
 			iterator& operator=(const iterator& i) { m_key=i.m_key; m_value=i.m_value; return *this; }
 			bool operator==(const iterator& i) const { return i.m_value==m_value; }
 			bool operator!=(const iterator& i) const { return i.m_value!=m_value; }
-			SubItem& operator*() const { updateCurrent(); return *m_current; }
-			SubItem* operator->() const { updateCurrent(); return m_current; }
-			private:
-			iterator(uint* key, Variable* var, bool array) : m_key(key), m_value(var), m_array(array), m_current(0) { }
-			void updateCurrent() const {
-				if(m_current && ((m_array&&m_current->id==((size_t)m_key)/sizeof(uint)) || (!m_array&&m_current->id!=*m_key))) {
-					delete m_current;
-					m_current = 0;
-				}
-				if(m_value) {
-					if(m_array) m_current = new SubItem{ 0, ((uint)(size_t)m_key)/4, *m_value };
-					else m_current = new SubItem{ Variable::lookupName(*m_key), *m_key, *m_value };
-				}
+			SubItem operator*() const {
+				if(m_array) return SubItem{ 0, ((uint)(size_t)m_key)/4, *m_value };
+				return SubItem{ Variable::lookupName(*m_key), *m_key, *m_value };
 			}
+			private:
+			iterator(uint* key, Variable* var, bool array) : m_key(key), m_value(var), m_array(array) { }
 			uint*     m_key;
 			Variable* m_value;
 			bool      m_array;
-			mutable SubItem* m_current;
 		};
 		iterator begin() const;
 		iterator end() const;

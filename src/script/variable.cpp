@@ -121,8 +121,8 @@ const Variable& Variable::operator=(const Variable& v) {
 			++obj->ref;
 		}
 		else if(isVector()) {
-			for(iterator i=v.begin(); i!=v.end(); ++i) {
-				_set(i->id, i->value);
+			for(auto i: v) {
+				_set(i.id, i.value);
 			}
 		}
 		else if(type==STRING)		  s  = strdup(v.type&LINK?*v.sp:v.s);
@@ -170,13 +170,13 @@ Variable Variable::copy(uint depth) const {
 	if(isObject()) {
 		Variable out;
 		out.makeObject();
-		for(auto& i: *this) out.set(i.id, i.value.copy(depth-1));
+		for(auto i: *this) out.set(i.id, i.value.copy(depth-1));
 		return out;
 	}
 	if(isArray()) {
 		Variable out;
 		out.makeArray();
-		for(auto& i: *this) out.set(i.id, i.value.copy(depth-1));
+		for(auto i: *this) out.set(i.id, i.value.copy(depth-1));
 		return out;
 	}
 	return *this;
@@ -613,7 +613,7 @@ void Variable::setExplicit(bool e) {
 
 VariableName Variable::findObject(const Variable& item, int depth) const {
 	if(!item.isObject() && !item.isArray() && !item.isFunction()) return VariableName(); // Not an object type
-	for(const auto& i: *this) {
+	for(const auto i: *this) {
 		if(i.value == item) return VariableName() + i.id;
 		else if(depth > 0 && (i.value.isObject() || i.value.isArray())) {
 			if(VariableName r = i.value.findObject(item, depth-1)) return i.id + r;
@@ -632,7 +632,7 @@ String Variable::toString(int depth, bool quotes, bool multiLine, int indent) co
 		else if(depth) {
 			// Sort output
 			std::vector<const char*> tmp;
-			for(auto& i: *this) tmp.push_back(i.key);
+			for(auto i: *this) tmp.push_back(i.key);
 			std::sort(tmp.begin(), tmp.end(), [](const char* a, const char* b) { return strcmp(a,b) < 0; });
 
 			String s("{");

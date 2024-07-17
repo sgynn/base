@@ -23,7 +23,7 @@ class ParticleSystemLoader {
 	template<class T>
 	static void loadProperties(T* object, const Definition<T>* def, const Variable& data) {
 		while(def) {
-			for(auto& i: def->properties) {
+			for(auto i: def->properties) {
 				const Variable& value = data.get(i.key);
 				if(!value.isNull()) i.set(object, value);
 			}
@@ -120,7 +120,7 @@ Value particle::loadValue(const Variable& var) {
 	else if(var.isArray()) {
 		// ToDo: Load graph
 		Graph g;
-		for(auto& i: var) {
+		for(auto i: var) {
 			vec2 v = i.value;
 			g.add(v.x, v.y);
 		}
@@ -158,7 +158,7 @@ Gradient particle::loadGradient(const Variable& var) {
 	else if(var.isArray()) {
 		int index = 0;
 		float end = var.size() - 1;
-		for(auto& i: var) {
+		for(auto i: var) {
 			if(i.value.isVector()) gradient.add(i.value.get("x"), i.value.get("y"));
 			else if(i.value.isArray()) gradient.add(i.value.get(0u), i.value.get(1u));
 			else if(i.value.isNumber()) gradient.add(index/end, i.value);

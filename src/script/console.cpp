@@ -307,7 +307,7 @@ int Console::autoComplete(char* buffer, bool print) const {
 	if(hasBrackets) {
 		if(Expression* e = Script::parseExpression(c)) {
 			Variable var = e->evaluate(m_root);
-			for(auto& i: var) {
+			for(auto i: var) {
 				AutoCompleteState r = autoComplete(tmp, i.key, fix, first);
 				if(print && r) printf("%s ", i.key);
 				if(r==FULL && (i.value.isObject() || i.value.isArray())) r = PARTIAL;
@@ -320,7 +320,7 @@ int Console::autoComplete(char* buffer, bool print) const {
 		if(!source && t) source = c;
 		const Variable& var = source? m_root.get_const(source): m_root;
 		if(t) c = e+1;
-		for(auto& i: var) {
+		for(auto i: var) {
 			AutoCompleteState r = autoComplete(tmp, i.key, fix, first);
 			if(print && r) printf("%s ", i.key);
 			if(r==FULL && (i.value.isObject() || i.value.isArray())) r = PARTIAL;
