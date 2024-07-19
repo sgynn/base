@@ -8,13 +8,12 @@
 
 using namespace gui;
 
-Textbox::Textbox(const Rect& r, Skin* s) : Widget(r,s)
-	, m_buffer(0), m_length(0), m_cursor(0), m_selectLength(0)
+Textbox::Textbox()
+	: m_buffer(0), m_length(0), m_cursor(0), m_selectLength(0)
 	, m_multiline(false), m_readOnly(false), m_password(0)
 	, m_held(0), m_offset(0), m_selection(0)
 {
-	int h = s&&s->getFont()? s->getFont()->getSize('x', s->getFontSize()).y: 16;
-	m_selectRect.set(0,0,1,h);
+	m_selectRect.set(0,0,1,16);
 	m_buffer = 16;
 	m_text = new char[m_buffer];
 	m_selectColour = 0x80ffff00;

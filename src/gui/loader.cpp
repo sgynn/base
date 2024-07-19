@@ -107,7 +107,8 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 	baseSize.y = xmlRoot.attribute("height", baseSize.y);
 	if(baseSize != root->getSize()) {
 		rescale = root;
-		root = new Widget( Rect(0,0,baseSize.x,baseSize.y), 0);
+		root = new Widget();
+		root->setSize(baseSize);
 	}
 
 	for(XML::iterator i = xmlRoot.begin(); i!=xmlRoot.end(); ++i) {
@@ -385,9 +386,11 @@ Widget* Root::loadWidget(const base::XMLElement& e, bool isTemplate) const {
 		Skin* s = getSkin(skin);
 		if(!s) printf("Error: Skin %s undefined for %s '%s'\n", skin, type, e.attribute("name"));
 		if(invalidType) printf("Error: Widget type %s not registered. Using %s as fallback\n", type, "Widget");
-		if(invalidType) w = new Widget(r,s);
-		else w = s_constuct[type](r, s);
+		if(invalidType) w = new Widget();
+		else w = s_constuct[type]();
 		if(isTemplate) w->m_states |= 0x20;
+		w->m_rect = r;
+		w->m_skin = s;
 	}
 
 	// Set name

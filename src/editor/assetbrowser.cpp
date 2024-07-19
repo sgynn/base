@@ -36,7 +36,6 @@ bool matchWildcard(const char* s, const char* pattern) {
 
 class AssetTile : public Button {
 	WIDGET_TYPE(AssetTile);
-	AssetTile(const Rect& r, Skin* s) : Super(r,s) {}
 	Asset asset;
 	// Skip the Button::onMouseButton() one as it crashes since the callback can delete this widget
 	void onMouseButton(const Point& p, int d, int u) override { Widget::onMouseButton(p,d,u); }
@@ -87,7 +86,10 @@ void AssetBrowser::initialise() {
 	m_fileTypes[".wav"] = "sound";
 	m_fileTypes[".ogg"] = "sound";
 
-	m_typeFilterList = new Popup(Rect(0,0,100,100), getEditor()->getGUI()->getSkin("button"));
+	m_typeFilterList = new Popup();
+	m_typeFilterList->setSkin(getEditor()->getGUI()->getSkin("button"));
+	m_typeFilterList->setSize(100,100);
+
 	addTypeFilter("Files",     ResourceType::None);
 	addTypeFilter("Models",    ResourceType::Model);
 	addTypeFilter("Textures",  ResourceType::Texture);
@@ -149,7 +151,8 @@ void AssetBrowser::addTypeFilter(const char* text, ResourceType type) {
 
 void AssetBrowser::populateCreateMenu() {
 	Root* root = m_panel->getRoot();
-	m_newItemMenu = new Popup(Rect(0,0,100,100), nullptr);
+	m_newItemMenu = new Popup();
+	m_newItemMenu->setSize(100, 0);
 	for(EditorComponent* handler: getEditor()) {
 		const char* name = nullptr;
 		const char* file = nullptr;
@@ -241,7 +244,9 @@ void AssetBrowser::pressedCrumb(gui::Button* b) {
 			e += sprintf(buffer, "%s/", m_breadcrumbs->getWidget(i)->as<Button>()->getCaption());
 		}
 
-		Popup* popup = new Popup(Rect(0,0,100,10), m_panel->getRoot()->getSkin("panel"));
+		Popup* popup = new Popup();
+		popup->setSize(100, 0);
+		popup->setSkin(m_panel->getRoot()->getSkin("panel"));
 		for(auto& file: Directory(buffer)) {
 			if(file.type == Directory::DIRECTORY) {
 				if(file.name[0]=='.') continue;

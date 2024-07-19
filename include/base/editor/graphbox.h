@@ -6,7 +6,6 @@
 namespace editor {
 class GraphBox : public gui::Widget {
 	WIDGET_TYPE(GraphBox)
-	GraphBox(const Rect& r, gui::Skin* s) : Widget(r,s) {}
 	void draw() const override {
 		// Axis
 		gui::Renderer& renderer = *getRoot()->getRenderer();

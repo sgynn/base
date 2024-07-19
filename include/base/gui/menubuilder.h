@@ -7,7 +7,8 @@ namespace gui {
 		public:
 		MenuBuilder(Root* root, const char* menuSkin, const char* itemSkin, const char* menuItemSkin=0, const char* iconSet=0) : m_root(root), m_button(itemSkin), m_menu(menuItemSkin) {
 			if(!menuItemSkin) m_menu = itemSkin;
-			m_popup = new Popup(Rect(0,0,100,100), menuSkin? root->getSkin(menuSkin): nullptr);
+			m_popup = new Popup();
+			if(menuSkin) m_popup->setSkin(root->getSkin(menuSkin));
 			m_iconList = iconSet? root->getIconList(iconSet): nullptr;
 		}
 		~MenuBuilder() { for(MenuBuilder* m: m_subMenus) delete m; }
@@ -21,6 +22,9 @@ namespace gui {
 			});
 			Button* b = cast<Button>(w);
 			if(icon && b) b->setIcon(m_iconList, icon);
+			b->setAutosize(true);
+			Point size = b->getPreferredSize();
+			if(size.x > m_popup->getSize().x) m_popup->setSize(size.x, m_popup->getSize().y);
 			return b;
 		}
 		template<class F>

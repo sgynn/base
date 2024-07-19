@@ -154,7 +154,7 @@ class ItemList {
 /** Listbox - setup from template. Needs _scroll, _client, itemSkin */
 class Listbox : public Widget, public ItemList {
 	WIDGET_TYPE(Listbox);
-	Listbox(const Rect& r, Skin*);
+	Listbox();
 	~Listbox();
 	void copyData(const Widget*) override;
 	void setMultiSelect(bool);
@@ -206,7 +206,7 @@ class Listbox : public Widget, public ItemList {
 /** Dropdown list */
 class Combobox : public Widget, public ItemList {
 	WIDGET_TYPE(Combobox);
-	Combobox(const Rect&, Skin*);
+	Combobox();
 	~Combobox();
 
 	void copyData(const Widget*) override;
@@ -248,7 +248,7 @@ class Combobox : public Widget, public ItemList {
  * */
 class Table : public Widget {
 	WIDGET_TYPE(Table);
-	Table(const Rect&, Skin*);
+	Table();
 	~Table();
 	void initialise(const Root*, const PropertyMap&) override;
 	void draw() const override;

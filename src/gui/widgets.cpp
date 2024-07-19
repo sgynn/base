@@ -20,10 +20,15 @@ inline unsigned parseColour(const PropertyMap& p, const char* key, unsigned d=0x
 // ===================================================================================== //
 
 
-Label::Label(const Rect& r, Skin* s, const char* c) : Widget(r,s), m_caption(c), m_fontSize(0), m_fontAlign(0), m_wordWrap(0) {
+Label::Label(const char* c) : m_caption(c), m_fontSize(0), m_fontAlign(0), m_wordWrap(0) {
 	m_states = 0x3; // intangible
+	m_rect.set(0,0,32, 16);
 }
-void Label::initialise(const Root*, const PropertyMap& map) {
+Label::Label(const char* c, Font* font, int size) : Label(c) {
+	setFont(font, size);
+}
+void Label::initialise(const Root* r, const PropertyMap& map) {
+	if(map.contains("font")) m_font = r->getFont(map["font"]);
 	if(map.contains("align")) m_fontAlign = atoi(map["align"]);
 	if(map.contains("wrap")) setWordWrap( atoi(map["wrap"] ) );
 	if(map.contains("fontsize")) m_fontSize = atoi(map["fontsize"]);
@@ -35,6 +40,7 @@ void Label::copyData(const Widget* from) {
 		m_wordWrap = label->m_wordWrap;
 		m_fontSize = label->m_fontSize;
 		m_caption = label->m_caption;
+		m_font = label->m_font;
 	}
 }
 void Label::setCaption( const char* c) {
@@ -47,19 +53,23 @@ void Label::setSize(int w, int h) {
 	if(m_wordWrap) updateWrap();
 }
 Point Label::getPreferredSize(const Point& hint) const {
-	if(!isAutosize() || !m_skin || !m_skin->getFont()) return getSize();
+	if(!isAutosize()) return getSize();
+	Font* font = m_font? m_font: m_skin->getFont();
+	if(!font) return getSize();
 	const char* t = m_caption? m_caption.str(): "XX";
-	int fontSize = m_fontSize? m_fontSize: m_skin->getFontSize();
+	int fontSize = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
 	Point size;
-	if(m_wrapValues.empty()) size = m_skin->getFont()->getSize(t, fontSize);
+	if(m_wrapValues.empty()) size = font->getSize(t, fontSize);
 	else {
 		char* cap = const_cast<char*>((const char*)m_caption); // nasty
 		for(int w: m_wrapValues) cap[w] = '\n';
-		size = m_skin->getFont()->getSize(t, fontSize);
+		size = font->getSize(t, fontSize);
 		for(int w: m_wrapValues) cap[w] = ' ';
 	}
-	Point& offset = m_skin->getState(0).textPos; // Approximate - could have weird effects
-	size += offset + offset;
+	if(m_skin) {
+		Point& offset = m_skin->getState(0).textPos; // Approximate - could have weird effects
+		size += offset + offset;
+	}
 	assert(size.x<5000 && size.y<5000);
 	return size;
 }
@@ -90,16 +100,17 @@ void Label::setWordWrap(bool w) {
 }
 void Label::updateWrap() {
 	m_wrapValues.clear();
-	if(!m_caption || !m_skin->getFont()) return;
-	int size = m_fontSize? m_fontSize: m_skin->getFontSize();
+	Font* font = m_font? m_font: m_skin->getFont();
+	if(!m_caption || font) return;
+	int size = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
 	int length = m_caption.length();
-	Point full = m_skin->getFont()->getSize(m_caption, size, length);
+	Point full = font->getSize(m_caption, size, length);
 	if(full.x > m_rect.width) {
 		int start=0, end=0;
 		const char* e = m_caption;
 		while(end<length) {
 			while(*e && *e!=' ') ++e;
-			Point s = m_skin->getFont()->getSize(m_caption+start, size, e-m_caption-start);
+			Point s = font->getSize(m_caption+start, size, e-m_caption-start);
 			if(s.x>m_rect.width && e>m_caption+start && (m_wrapValues.empty()||end>m_wrapValues.back())) {
 				m_wrapValues.push_back(end);
 				start = end + 1;
@@ -107,6 +118,10 @@ void Label::updateWrap() {
 			else end = e-m_caption, ++e;
 		}
 	}
+}
+void Label::setFont(Font* font, int size) {
+	m_font = font;
+	setFontSize(size);
 }
 void Label::setFontSize(int s) {
 	m_fontSize = s;
@@ -121,12 +136,14 @@ const char* Label::getCaption() const {
 }
 void Label::draw() const {
 	if(!isVisible()) return;
-	if(m_caption && m_skin->getFont()) {
-		Skin::State& s = m_skin->getState( getState() );
+	Font* font = m_font? m_font: m_skin->getFont();
+	if(font && m_caption) {
+		static const Skin::State fallback;
+		const Skin::State& s = m_skin? m_skin->getState(getState()): fallback;
 		static Skin tempSkin(1);
-		int align = m_fontAlign? m_fontAlign: m_skin->getFontAlign();
-		int size = m_fontSize? m_fontSize: m_skin->getFontSize();
-		tempSkin.setFont(m_skin->getFont(), size, align);
+		int align = m_fontAlign? m_fontAlign: m_skin? m_skin->getFontAlign(): 0;
+		int size = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
+		tempSkin.setFont(font, size, align);
 		tempSkin.getState(0).foreColour = deriveColour(s.foreColour, m_colour, m_states);
 		tempSkin.getState(0).textPos = s.textPos;
 		if(m_wrapValues.empty()) {
@@ -146,8 +163,22 @@ void Label::draw() const {
 
 // ===================================================================================== //
 
-Image::Image(const Rect& r, Skin* s) : Widget(r, s), m_group(nullptr), m_image(0), m_angle(0) {
-	m_states |= 0x40; // add inherit state
+Image::Image() : m_group(nullptr), m_image(0), m_angle(0) {
+	setInheritState(true);
+}
+Image::Image(int w, int h) : Image() {
+	setSize(w, h);
+}
+Image::Image(Root* root, const char* image) {
+	setRoot(root);
+	setImage(image);
+	setAutosize(true);
+	setAutosize(false);
+}
+Image::Image(IconList* group, const char* image) {
+	setImage(group, image);
+	setAutosize(true);
+	setAutosize(false);
 }
 
 int Image::findImage(const Root* root, IconList* list, const char* name) {
@@ -286,12 +317,13 @@ void IconInterface::setIconColour(unsigned rgb, float a) {
 // --------------------------------------------------------------------------------------- //
 
 
-Button::Button(const Rect& r, Skin* s, const char* c) : Label(r,s,c) {
-	m_states = 0x7; // No child tangible
+Button::Button(const char* c) : Label(c) {
+	setTangible(Tangible::SELF);
 }
 void Button::initialise(const Root* root, const PropertyMap& p) {
 	Label::initialise(root, p);
 	initialiseIcon(this, root, p);
+	m_textWidget = getTemplateWidget<Label>("_text");
 }
 void Button::draw() const {
 	if(!isVisible()) return;
@@ -303,21 +335,15 @@ void Button::onMouseButton(const Point& p, int d, int u) {
 	if(hasFocus() && u==1 && eventPressed && contains(p)) eventPressed(this);
 }
 Point Button::getPreferredSize(const Point& hint) const {
-	if(m_caption) return Label::getPreferredSize(hint);
+	if(m_caption && getTemplateCount()==0) return Label::getPreferredSize(hint);
 	else return Widget::getPreferredSize(hint);
 }
-void Button::updateAutosize() {
-	if(m_caption) Label::updateAutosize();
-	else Widget::updateAutosize();
-}
 void Button::setCaption(const char* s) {
-	Label* txt = getTemplateWidget<Label>("_text");
-	if(txt) txt->setCaption(s);
+	if(m_textWidget) m_textWidget->setCaption(s);
 	else Label::setCaption(s);
 }
 const char* Button::getCaption() const {
-	Label* txt = getTemplateWidget<Label>("_text");
-	return txt? txt->getCaption(): Label::getCaption();
+	return m_textWidget? m_textWidget->getCaption(): Label::getCaption();
 }
 
 
@@ -494,7 +520,7 @@ void DragHandle::onMouseMove(const Point& last, const Point& pos, int b) {
 
 // ===================================================================================== //
 
-ProgressBar::ProgressBar(const Rect& r, Skin* s, Orientation o) : Widget(r,s), m_min(0), m_max(1), m_value(1), m_borderLow(0), m_borderHigh(0), m_mode(o), m_progress(0) {}
+ProgressBar::ProgressBar(Orientation o) : m_min(0), m_max(1), m_value(1), m_borderLow(0), m_borderHigh(0), m_mode(o), m_progress(0) {}
 void ProgressBar::setRange(float min, float max) { m_min=min; m_max=max; setValue(m_value); }
 float ProgressBar::getRange() const { return m_max; }
 float ProgressBar::getValue() const { return m_value; }
@@ -563,8 +589,8 @@ void ProgressBar::copyData(const Widget* from) {
 
 // ===================================================================================== //
 
-template<typename T> SpinboxT<T>::SpinboxT(const Rect& r, Skin* s, const char* format) 
-	: Widget(r,s), m_text(0), m_value(0), m_min(0), m_max(100), m_buttonStep(1), m_wheelStep(1), m_textChanged(false), m_format(format) {
+template<typename T> SpinboxT<T>::SpinboxT(const char* format) 
+	: m_text(0), m_value(0), m_min(0), m_max(100), m_buttonStep(1), m_wheelStep(1), m_textChanged(false), m_format(format) {
 }
 template<typename T> void SpinboxT<T>::initialise(const Root*, const PropertyMap& p) {
 	p.readValue("value", m_value);
@@ -659,8 +685,8 @@ namespace gui {
 template class SpinboxT<int>;
 template class SpinboxT<float>;
 }
-Spinbox::Spinbox(const Rect& r, Skin* s) : SpinboxT(r,s, "%d%n") { }
-SpinboxFloat::SpinboxFloat(const Rect& r, Skin* s) : SpinboxT(r,s, "%g%n") { }
+Spinbox::Spinbox() : SpinboxT("%d%n") { }
+SpinboxFloat::SpinboxFloat() : SpinboxT("%g%n") { }
 void Spinbox::fireChanged() { if(eventChanged) eventChanged(this, m_value); }
 void SpinboxFloat::fireChanged() { if(eventChanged) eventChanged(this, m_value); }
 
@@ -668,8 +694,11 @@ void SpinboxFloat::fireChanged() { if(eventChanged) eventChanged(this, m_value);
 // ===================================================================================== //
 
 
-Scrollbar::Scrollbar(const Rect& r, Skin* s, int min, int max) : Widget(r,s),
-	m_mode(VERTICAL), m_range(min, max), m_value(min), m_step(1), m_block(0) {
+Scrollbar::Scrollbar(Orientation orientation, int min, int max) 
+	: m_mode(orientation), m_range(min, max), m_value(min), m_step(1), m_block(0)
+{
+	if(orientation==VERTICAL) m_rect.set(0,0,16,64);
+	else m_rect.set(0,0,64,16);
 }
 void Scrollbar::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("min")) m_range.min = atoi(p["min"]);
@@ -784,7 +813,7 @@ void Scrollbar::moveBlock(Widget* c, const Point& p, int b) {
 
 // ===================================================================================== //
 
-Scrollpane::Scrollpane(const Rect& r, Skin* s) : Widget(r,s), m_alwaysShowScrollbars(true), m_useFullSize(true), m_vScroll(0), m_hScroll(0) {
+Scrollpane::Scrollpane() : m_alwaysShowScrollbars(true), m_useFullSize(true), m_vScroll(0), m_hScroll(0) {
 	m_states |= 0x80; // turn on autosize by default
 }
 void Scrollpane::initialise(const Root*, const PropertyMap& p) {
@@ -798,7 +827,8 @@ void Scrollpane::initialise(const Root*, const PropertyMap& p) {
 	
 	// Create invisible client for offsetting - need to set as template.
 	if(m_client->getTemplateCount()==0) {
-		Widget* w = new Widget( Rect(0,0,m_rect.width,m_rect.height), 0);
+		Widget* w = new Widget();
+		w->setSize(m_rect.size());
 		w->setAsTemplate();
 		w->setTangible(getTangible());
 		while(getWidgetCount()) w->add(getWidget(0)); // move any children
@@ -981,7 +1011,7 @@ void Scrollpane::scrollChanged(Scrollbar*, int) {
 
 // ===================================================================================== //
 
-Slider::Slider(const Rect& r, Skin* s) : Widget(r, s) {
+Slider::Slider() {
 }
 
 void Slider::initialise(const Root*, const PropertyMap& p) {
@@ -1091,7 +1121,7 @@ void Slider::updateBlock() {
 // ===================================================================================== //
 
 
-TabbedPane::TabbedPane(const Rect& r, Skin* s) : Widget(r, s), m_buttonTemplate(0), m_tabStrip(0), m_tabFrame(0), m_currentTab(-1), m_autoSizeTabs(true) {}
+TabbedPane::TabbedPane() : m_buttonTemplate(0), m_tabStrip(0), m_tabFrame(0), m_currentTab(-1), m_autoSizeTabs(true) {}
 void TabbedPane::initialise(const Root* r, const PropertyMap& p) {
 	m_tabStrip = getTemplateWidget("_tabstrip");
 	m_tabFrame = getTemplateWidget("_client");
@@ -1125,8 +1155,8 @@ void TabbedPane::add(Widget* w, unsigned index) {
 Widget* TabbedPane::addTab(const char* name, Widget* frame, int index) {
 	// Add frame
 	if(index<0) index = getTabCount();
-	if(!frame) frame = new Widget(Rect(0,0,100,100), m_tabFrame->getSkin());
-	if(m_tabFrame!=this) m_tabFrame->add(frame, index);
+	if(!frame) frame = new Widget();
+	if(m_tabFrame != this) m_tabFrame->add(frame, index);
 	else Widget::add(frame, index);
 	frame->setPosition(0,0);
 	frame->setSize(m_tabFrame->getSize().x, m_tabFrame->getSize().y);
@@ -1234,7 +1264,7 @@ int TabbedPane::getTabIndex(const char* name) const {
 
 // ===================================================================================== //
 
-CollapsePane::CollapsePane(const Rect& r, Skin* s) : Widget(r,s), m_collapsed(false), m_expandAnchor(0) {}
+CollapsePane::CollapsePane() : m_collapsed(false), m_expandAnchor(0) {}
 void CollapsePane::initialise(const Root* root, const PropertyMap& p) {
 	m_client = getTemplateWidget("_client");
 	m_header = getTemplateWidget<Button>("_header");
@@ -1321,7 +1351,7 @@ bool CollapsePane::isChecked() const {
 
 // ===================================================================================== //
 
-SplitPane::SplitPane(const Rect& r, Skin* s, Orientation o) : Widget(r,s), m_mode(o), m_held(-100), m_minSize(0), m_resizeMode(ALL), m_sash(0) {
+SplitPane::SplitPane(Orientation o) : m_mode(o), m_held(-100), m_minSize(0), m_resizeMode(ALL), m_sash(0) {
 }
 void SplitPane::initialise(const Root* r, const PropertyMap& p) {
 	if(p.contains("min")) m_minSize = atoi(p["min"]);
@@ -1340,7 +1370,7 @@ void SplitPane::initialise(const Root* r, const PropertyMap& p) {
 	// Setup sash
 	m_sash = getTemplateWidget("_sash");
 	if(!m_sash) {
-		m_sash = new Widget(Rect(0,0,1,1), m_skin);
+		m_sash = new Widget();
 		Widget::add(m_sash, 0);
 	}
 	setupSash(m_sash);
@@ -1550,7 +1580,7 @@ Widget* SplitPane::getWidget(const Point& p, int typeMask, bool intangible, bool
 
 
 
-Window::Window(const Rect& r, Skin* s) : Widget(r,s), m_minSize(80,40) {
+Window::Window() : m_minSize(80,40) {
 }
 void Window::initialise(const Root* root, const PropertyMap& p) {
 	m_client = this;
@@ -1646,9 +1676,10 @@ void Window::sizeHandle(Widget* c, const Point& p, int b) {
 // ===================================================================================== //
 
 
-Popup::Popup(const Rect& r, Skin* s) : Widget(r,s) {
+Popup::Popup() {
 }
-Popup::Popup(Widget* child, bool destroyOnClose) : Widget(child->getRect(), nullptr), m_destroyOnClose(destroyOnClose) {
+Popup::Popup(Widget* child, bool destroyOnClose) : m_destroyOnClose(destroyOnClose) {
+	setSize(child->getSize());
 	add(child);
 }
 Popup::~Popup() {
@@ -1741,8 +1772,8 @@ Widget* Popup::addItem(Root* root, const char* tname, const char* name, const ch
 
 // ===================================================================================== //
 
-ScaleBox::ScaleBox(const Rect& r, Skin* s) : Widget(r, s) {
-	Widget* client = new Widget(r, nullptr);
+ScaleBox::ScaleBox() {
+	Widget* client = new Widget();
 	client->setAsTemplate();
 	client->setTangible(Tangible::CHILDREN);
 	add(client, 0, 0);

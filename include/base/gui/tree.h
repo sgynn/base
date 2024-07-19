@@ -88,7 +88,7 @@ class TreeNode {
 class TreeView : public Widget {
 	friend class TreeNode;
 	WIDGET_TYPE(TreeView);
-	TreeView(const Rect& r, Skin* s);
+	TreeView();
 	~TreeView();
 
 	void scrollToItem(TreeNode*);

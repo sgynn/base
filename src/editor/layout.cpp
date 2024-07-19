@@ -451,7 +451,8 @@ bool LayoutViewer::mouseEvent(const MouseEventData& event) {
 // ======================================================================== //
 
 LayoutCategory LayoutCategory::addRow() {
-	Widget* row = new Widget(Rect(0,0,100,20), 0);
+	Widget* row = new Widget();
+	row->setSize(100, 20);
 	row->setLayout( new HorizontalLayout(0, 2) );
 	row->setAnchor("lr");
 	row->setAutosize(true);
@@ -498,7 +499,8 @@ void LayoutProperties::addTransform(SceneNode* node) {
 		cat.addLabel(captions[i], 12);
 		name[0] = names[i];
 
-		Widget* container = new Widget(Rect(0,0,100,20), 0);
+		Widget* container = new Widget();
+		container->setSize(100, 20);
 		for(int j=0; j<elements[i]; ++j) {
 			name[1] = names[j+3];
 			SpinboxFloat* box = cat.createWidget<SpinboxFloat>("spinboxf");

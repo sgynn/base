@@ -36,7 +36,6 @@ using script::Variable;
 namespace editor {
 class ParticleNode : public nodegraph::Node {
 	WIDGET_TYPE(ParticleNode)
-	ParticleNode(const Rect& r, Skin* s): Node(r,s) {}
 	void destroyData() {
 		switch(m_type) {
 		case ParticleEditor::EmitterNode:    delete (particle::Emitter*)m_data; break;
@@ -179,10 +178,11 @@ bool ParticleEditorComponent::drop(Widget* w, const Point& p, const Asset& asset
 inline script::String toString(const Variable& v) { return v.toString(); } 
 template<class T> void replaceWidget(Widget* base, const char* name) {
 	if(Widget* placeholder = base->getWidget(name)) {
-		Widget* w = new T(placeholder->getRect(), placeholder->getSkin());
+		Widget* w = new T();
+		w->setRect(placeholder->getRect());
 		w->setName(name);
 		w->setAnchor(placeholder->getAnchor());
-		placeholder->getParent()->add(w);
+		placeholder->getParent()->add(w, placeholder->getIndex());
 		placeholder->removeFromParent();
 		delete placeholder;
 	}
@@ -219,7 +219,8 @@ ParticleEditor::ParticleEditor(ParticleEditorComponent* parent, particle::System
 
 	// Set up node graph
 	Widget* graphContainer = m_panel->getWidget("graph");
-	m_graph = new nodegraph::NodeEditor(graphContainer->getClientRect(), graphContainer->getSkin());
+	m_graph = new nodegraph::NodeEditor();
+	m_graph->setSize(graphContainer->getSize());
 	graphContainer->add(m_graph);
 	m_graph->setAnchor("tlrb");
 	graphContainer->eventMouseWheel.bind([](Widget* w, int delta) {
@@ -242,7 +243,8 @@ ParticleEditor::ParticleEditor(ParticleEditorComponent* parent, particle::System
 
 	Popup::ButtonDelegate func;
 	func.bind(this, &ParticleEditor::propertyModeChanged);
-	m_modePopup = new Popup(Rect(0,0,80,10), 0);
+	m_modePopup = new Popup();
+	m_modePopup->setSize(80,10);
 	m_modePopup->addItem(m_panel->getRoot(), "button", "value",  "Value",  func);
 	m_modePopup->addItem(m_panel->getRoot(), "button", "random", "Random", func);
 	m_modePopup->addItem(m_panel->getRoot(), "button", "map",    "Mapped", func);
@@ -302,7 +304,8 @@ ParticleEditor::ParticleEditor(ParticleEditorComponent* parent, particle::System
 	CONNECT_I(Widget, "swatch", eventMouseDown, [this](Widget* w, const Point& p, int b) {
 		Popup* popup = w->getRoot()->getWidget<Popup>("colourpopup");
 		if(!popup) { // Should be created elsewhere
-			ColourPicker* picker = new ColourPicker(Rect(0,0,140,100), nullptr);
+			ColourPicker* picker = new ColourPicker();
+			picker->setSize(140, 100);
 			picker->initialise(w->getRoot(), PropertyMap());
 			picker->eventChanged.bind([this](const Colour& c) {
 				GradientBox* g = m_gradientEditor->getWidget<GradientBox>("gradient");
@@ -310,7 +313,7 @@ ParticleEditor::ParticleEditor(ParticleEditorComponent* parent, particle::System
 				g->eventSelected(g, g->selected);
 				applyGradient();
 			});
-			popup = new Popup(Rect(0,0,100,64), nullptr);
+			popup = new Popup();
 			popup->setName("colourpopup");
 			popup->setAutosize(true);
 			popup->add(picker);
@@ -852,7 +855,7 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 			printf("%s %s : %s\n", types[(int)i.type], i.key.toString().str(), var.toString(2).str());
 
 			if(!rowLayout) rowLayout = new HorizontalLayout();
-			Widget* row = new Widget(Rect(0,0,10,10), 0);
+			Widget* row = new Widget();
 			row->setAnchor("lr");
 			row->setAutosize(true);
 			row->setLayout(rowLayout);
@@ -1021,7 +1024,7 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 			}
 			case particle::PropertyType::Gradient:
 			{
-				GradientBox* w = new GradientBox(Rect(0,0,10,10), 0);
+				GradientBox* w = new GradientBox();
 				w->setAnchor("lr");
 				row->add(w);
 				w->gradient = particle::loadGradient(var);

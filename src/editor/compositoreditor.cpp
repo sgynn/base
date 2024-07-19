@@ -21,7 +21,6 @@ using base::Texture;
 namespace editor {
 class CompositorNode : public nodegraph::Node {
 	WIDGET_TYPE(CompositorNode)
-	CompositorNode(const Rect& r, Skin* s): Node(r,s) {}
 	void setCompositor(Compositor* c, int alias) { m_compositor = c; m_alias = alias; }
 	Compositor* getCompositor() const { return m_compositor; }
 	int getAlias() const { return m_alias; }
@@ -59,7 +58,8 @@ void CompositorEditor::initialise() {
 	Widget* graphContainer = m_panel->getWidget("graph");
 	for(Widget* w: *graphContainer) w->setVisible(false); // Hide templates
 
-	m_graphEditor = new nodegraph::NodeEditor(graphContainer->getClientRect(), graphContainer->getSkin());
+	m_graphEditor = new nodegraph::NodeEditor();
+	m_graphEditor->setSize(graphContainer->getSize());
 	graphContainer->add(m_graphEditor);
 	m_graphEditor->setAnchor("tlrb");
 	m_graphEditor->eventChanged.bind(this, &CompositorEditor::graphChanged);
@@ -305,7 +305,8 @@ void CompositorEditor::setCompositor(Compositor* c) {
 
 			colour->eventMouseDown.bind([clear, colour](Widget* w, const Point&, int) {
 				const float* c = clear->getColour();
-				ColourPicker* picker = new ColourPicker(Rect(0,0,100,80), 0);
+				ColourPicker* picker = new ColourPicker();
+				picker->setSize(100, 80);
 				picker->initialise(w->getRoot(), PropertyMap());
 				picker->setHasAlpha(true);
 				picker->setColour(Colour(c[0], c[1], c[2], c[3]));

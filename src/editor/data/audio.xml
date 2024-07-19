@@ -23,7 +23,7 @@
 	<!--Templates-->
 	<template class="Button" rect="550 636 118 20" name="menuitem" skin="none">
 		<widget anchor="lm" image="0" rect="2 2 16 16" template="icon" group="audioicons" skin="listitem" name="_icon" autosize="1"/>
-		<widget inheritstate="1" anchor="lrtb" rect="21 0 97 20" template="label" skin="listitem" align="13" name="_text"/>
+		<widget inheritstate="1" anchor="tl" rect="21 0 97 20" template="label" skin="listitem" align="13" name="_text"/>
 	</template>
 	<template class="VariableWidget" rect="488 625 300 21" name="variablevalue" skin="none">
 		<widget anchor="l" template="spinboxf" name="value" rect="0 0 48 20"/>

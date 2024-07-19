@@ -30,7 +30,7 @@ class NodeEditor : public gui::Widget {
 	WIDGET_TYPE(NodeEditor)
 	friend class Node;
 	public:
-	NodeEditor(const Rect&, gui::Skin*);
+	NodeEditor();
 	~NodeEditor();
 	virtual void draw() const override;
 	public:
@@ -76,7 +76,7 @@ class Node : public gui::Button {
 	friend class LinkIterable;
 	friend class NodeEditor;
 	public:
-	Node(const Rect&, gui::Skin*);
+	Node();
 	void initialise(const gui::Root*, const gui::PropertyMap&) override;
 	void onMouseButton(const Point& p, int,int) override;
 	void onMouseMove(const Point&, const Point&, int) override;

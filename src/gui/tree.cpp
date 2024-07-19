@@ -152,7 +152,7 @@ std::vector<TreeNode*>::iterator TreeNode::end() { return m_children.end(); }
 
 // --------------------------------------------------------------------------------------------------- //
 
-TreeView::TreeView(const Rect& r, Skin* s) : Widget(r, s), m_hideRootNode(false), m_lineColour(0xff808080), m_rootNode(0), m_selectedNode(0), m_needsUpdating(true) {
+TreeView::TreeView() : m_hideRootNode(false), m_lineColour(0xff808080), m_rootNode(0), m_selectedNode(0), m_needsUpdating(true) {
 	setRootNode( new TreeNode("root") );
 }
 TreeView::~TreeView() {

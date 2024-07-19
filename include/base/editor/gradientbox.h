@@ -5,7 +5,6 @@
 namespace editor {
 class GradientBox : public gui::Widget {
 	WIDGET_TYPE(GradientBox)
-	GradientBox(const Rect& r, gui::Skin* s) : Widget(r,s) {}
 	void draw() const override {
 		gui::Renderer& renderer = *getRoot()->getRenderer();
 		if(gradient.data.size() <= 1) renderer.drawRect(m_rect, gradient.getValue(0));
@@ -90,18 +89,20 @@ class GradientBox : public gui::Widget {
 			selected = 0;
 			pauseLayout();
 			deleteChildWidgets();
-			gui::Image* sel = new gui::Image(Rect(0,0,10,10), 0);
+			gui::Image* sel = new gui::Image();
 			sel->setTangible(gui::Tangible::NONE);
 			sel->setAngle(PI/4);
 			sel->setImage(0);
+			sel->setSize(10,10);
 			add(sel);
 
 			for(auto& i: gradient.data) {
-				gui::Image* m = new gui::Image(Rect(0,0,1,1),0);
+				gui::Image* m = new gui::Image();
 				int k = (i.value&0xff) + ((i.value>>8)&0xff)*2 + ((i.value>>16)&0xff);
 				m->setColour(k < 512? 0xffffffff: 0xff000000);
 				m->setTangible(gui::Tangible::NONE);
 				m->setImage(0);
+				m->setSize(1,1);
 				add(m);
 			}
 			resumeLayout();

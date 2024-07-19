@@ -4,11 +4,13 @@
 #include <base/math.h>
 #include <base/colour.h>
 
-namespace gui { class Image; }
+namespace gui {
+class Image;
 
 class ColourPicker : public gui::Widget {
 	WIDGET_TYPE(ColourPicker);
-	ColourPicker(const Rect&, gui::Skin*);
+	ColourPicker();
+	ColourPicker(Root*, int width, int height);
 	~ColourPicker();
 	void initialise(const gui::Root*, const gui::PropertyMap&) override;
 	Point getPreferredSize(const Point& hint) const override;
@@ -30,11 +32,12 @@ class ColourPicker : public gui::Widget {
 	static gui::IconList* createImages(gui::Root*, int size);
 
 	private:
-	gui::Image* m_wheel = 0;
-	gui::Image* m_value = 0;
-	gui::Image* m_alpha = 0;
-	gui::Image* m_wheelMark = 0;
-	gui::Image* m_valueMark = 0;
-	gui::Image* m_alphaMark = 0;
+	Image* m_wheel = 0;
+	Image* m_value = 0;
+	Image* m_alpha = 0;
+	Image* m_wheelMark = 0;
+	Image* m_valueMark = 0;
+	Image* m_alphaMark = 0;
 };
+}
 

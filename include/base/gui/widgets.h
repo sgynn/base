@@ -13,7 +13,8 @@ struct Range {
 /** Labels are intangible */
 class Label : public Widget {
 	WIDGET_TYPE(Label);
-	Label(const Rect&, Skin*, const char* c="");
+	Label(const char* c="");
+	Label(const char* caption, Font* font, int size=0);
 	virtual void draw() const override;
 	virtual void setSize(int w, int h) override;
 	virtual Point getPreferredSize(const Point& hint=Point()=Point()) const override;
@@ -22,12 +23,14 @@ class Label : public Widget {
 	virtual void setWordWrap(bool w);
 	virtual void setFontSize(int s);	// set to 0 to use default size
 	virtual void setFontAlign(int a);	// use 0 for skin default
+	virtual void setFont(Font*, int size=0);
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
 	void updateAutosize() override;
 	void updateWrap();
 	String m_caption;
+	Font* m_font = nullptr; // Override font
 	int   m_fontSize;	// Override font sise
 	int   m_fontAlign;	// Override font align
 	bool  m_wordWrap;	// Word wrap option
@@ -38,7 +41,10 @@ class Label : public Widget {
 /** Image */
 class Image : public Widget {
 	WIDGET_TYPE(Image);
-	Image(const Rect&, Skin*);
+	Image();
+	Image(int width, int height);
+	Image(Root*, const char*);
+	Image(IconList*, const char*);
 	void  setImage(int key);
 	void  setImage(const char* name);
 	void  setImage(IconList* group, int index);
@@ -85,7 +91,7 @@ class IconInterface {
 class Button : public Label, public IconInterface {
 	WIDGET_TYPE(Button);
 	public:
-	Button(const Rect&, Skin*, const char* c="");
+	Button(const char* caption="");
 	void setCaption(const char*) override;
 	const char* getCaption() const override;
 	void draw() const override;
@@ -95,13 +101,14 @@ class Button : public Label, public IconInterface {
 	protected:
 	virtual void initialise(const Root*, const PropertyMap&) override;
 	void onMouseButton(const Point&, int, int) override;
-	void updateAutosize() override;
+	protected:
+	Label* m_textWidget = nullptr;
 };
 
 /** Checkbox */
 class Checkbox : public Button {
 	WIDGET_TYPE(Checkbox);
-	Checkbox(const Rect& r, Skin* s, const char* t="") : Button(r, s, t) {}
+	Checkbox(const char* text="") : Button(text) {}
 	void setSelected(bool) override;
 	bool isChecked() const { return isSelected(); }
 	void setChecked(bool c) { setSelected(c); }
@@ -128,7 +135,7 @@ class Checkbox : public Button {
 class DragHandle : public Widget {
 	WIDGET_TYPE(DragHandle);
 	enum Mode { MOVE, SIZE, ORDER };
-	DragHandle(const Rect& r, Skin* s, Mode mode=MOVE) : Widget(r,s), m_mode(mode) {}
+	DragHandle(Mode mode=MOVE) : m_mode(mode) {}
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
 	Mode getMode() const { return m_mode; }
@@ -146,7 +153,7 @@ class DragHandle : public Widget {
 /** Progress bar */
 class ProgressBar : public Widget {
 	WIDGET_TYPE(ProgressBar);
-	ProgressBar(const Rect&, Skin*, Orientation o=HORIZONTAL);
+	ProgressBar(Orientation o=HORIZONTAL);
 	void setSize(int w, int h) override;
 	void copyData(const Widget*) override;
 	void  setRange(float min, float max);
@@ -167,7 +174,7 @@ class ProgressBar : public Widget {
 class Textbox : public Widget {
 	WIDGET_TYPE(Textbox);
 	enum SubmitOption { KeepFocus, ClearFocus, SubmitOnLoseFocus };
-	Textbox(const Rect& r, Skin*);
+	Textbox();
 	~Textbox();
 	void draw() const override;
 	void setPosition(int x, int y) override;
@@ -224,7 +231,7 @@ class Textbox : public Widget {
 template<typename T>
 class SpinboxT : public Widget {
 	public:
-	SpinboxT(const Rect&, Skin*, const char* format);
+	SpinboxT(const char* format);
 	void initialise(const Root*, const PropertyMap&) override;
 	T  getValue() const;
 	void setValue(T value, bool fireChangeEvent=false);
@@ -254,13 +261,13 @@ class SpinboxT : public Widget {
 };
 class Spinbox : public SpinboxT<int> {
 	WIDGET_TYPE(Spinbox);
-	Spinbox(const Rect&, Skin*);
+	Spinbox();
 	Delegate<void(Spinbox*,int)> eventChanged;
 	void fireChanged() override;
 };
 class SpinboxFloat : public SpinboxT<float> {
 	WIDGET_TYPE(SpinboxFloat);
-	SpinboxFloat(const Rect&, Skin*);
+	SpinboxFloat();
 	Delegate<void(SpinboxFloat*,float)> eventChanged;
 	void fireChanged() override;
 };
@@ -269,7 +276,7 @@ class SpinboxFloat : public SpinboxT<float> {
 /** Scrollbar - Can also be used for sliders */
 class Scrollbar : public Widget {
 	WIDGET_TYPE(Scrollbar);
-	Scrollbar(const Rect& r, Skin*, int min=0, int max=100);
+	Scrollbar(Orientation orientation=VERTICAL, int min=0, int max=100);
 	int   getValue() const;
 	void  setValue(int value);
 	void  setRange(int min, int max, int step=1);
@@ -305,7 +312,7 @@ class Scrollbar : public Widget {
 /** Scrollpane - sets up events from template. Needs _client, _vscroll, _hscroll */
 class Scrollpane : public Widget {
 	WIDGET_TYPE(Scrollpane);
-	Scrollpane(const Rect& r, Skin*);
+	Scrollpane();
 	void initialise(const Root*, const PropertyMap&) override;
 	Point getOffset() const;					// Get scroll offset
 	void setOffset(int x, int y, bool force=false);			// Set scroll offset
@@ -337,7 +344,7 @@ class Scrollpane : public Widget {
 class Slider : public Widget {
 	WIDGET_TYPE(Slider);
 	struct Range { float min, max; operator float() const { return min; } operator float*() { return &min; } };
-	Slider(const Rect& r, gui::Skin* s);
+	Slider();
 	void setValue(float value, bool triggerEvent=false);
 	void setValue(float min, float max, bool triggerEvent=false);
 	void setRange(float min, float max);
@@ -372,7 +379,7 @@ class Slider : public Widget {
 /** TabbedPane */
 class TabbedPane : public Widget {
 	WIDGET_TYPE(TabbedPane);
-	TabbedPane(const Rect& r, Skin*);
+	TabbedPane();
 	void        initialise(const Root*, const PropertyMap&) override;
 	void        add(Widget* w, unsigned index) override;
 	Widget*     addTab(const char* name, Widget* frame=0, int index=-1);
@@ -404,7 +411,7 @@ class TabbedPane : public Widget {
 /** Collapseable pane */
 class CollapsePane : public Widget {
 	WIDGET_TYPE(CollapsePane);
-	CollapsePane(const Rect&, Skin*);
+	CollapsePane();
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
 	bool isExpanded() const;
@@ -434,7 +441,7 @@ class CollapsePane : public Widget {
 class SplitPane : public Widget {
 	WIDGET_TYPE(SplitPane);
 	enum ResizeMode { ALL, FIRST, LAST };
-	SplitPane(const Rect& r, Skin*, Orientation orientation=VERTICAL);
+	SplitPane(Orientation orientation=VERTICAL);
 	void initialise(const Root*, const PropertyMap&) override;
 	void copyData(const Widget*) override;
 	void add(Widget* w, unsigned index) override;
@@ -468,7 +475,7 @@ class SplitPane : public Widget {
 /** Window - dragable, resizable, X */
 class Window : public Widget, public IconInterface {
 	WIDGET_TYPE(Window);
-	Window(const Rect& r, Skin*);
+	Window();
 	void setCaption(const char*);
 	const char* getCaption() const;
 	void setMinimumSize(int w, int h);
@@ -496,7 +503,7 @@ class Popup : public Widget {
 	enum Side { LEFT, RIGHT, ABOVE, BELOW };
 	typedef Delegate<void(Button*)> ButtonDelegate;
 	public:
-	Popup(const Rect& r, Skin*);
+	Popup();
 	Popup(Widget* contents, bool destroyOnClose);
 	~Popup();
 	void popup(Widget* owner, Side side=BELOW);
@@ -525,7 +532,7 @@ class Popup : public Widget {
 class ScaleBox : public Widget {
 	WIDGET_TYPE(ScaleBox);
 	public:
-	ScaleBox(const Rect& r, Skin*);
+	ScaleBox();
 	void initialise(const Root*, const PropertyMap&) override;
 	Point getPreferredSize(const Point& hint=Point()) const override { return getSize(); }
 	void setPosition(int x, int y) override;

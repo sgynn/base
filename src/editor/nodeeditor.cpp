@@ -7,7 +7,7 @@
 using namespace gui;
 using namespace nodegraph;
 
-NodeEditor::NodeEditor(const Rect& r, Skin* s) : Widget(r,s) {
+NodeEditor::NodeEditor() {
 }
 
 NodeEditor::~NodeEditor() {
@@ -282,7 +282,7 @@ int NodeEditor::areNodesConnected(const Node* a, const Node* b, unsigned mask, u
 
 // ================================================================================== //
 
-Node::Node(const Rect& r, Skin* s): Button(r,s), m_connectorTemplate{0,0} {
+Node::Node() : m_connectorTemplate{0,0} {
 	setTangible(Tangible::ALL);
 	m_connectorClient[0] = m_connectorClient[1] = this;
 }

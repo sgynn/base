@@ -5,8 +5,8 @@
 
 using namespace gui;
 
-Table::Table(const Rect& r, Skin* s)
-	: Widget(r,s), m_headerTemplate(0), m_header(0), m_dataPanel(0)
+Table::Table()
+	: m_headerTemplate(0), m_header(0), m_dataPanel(0)
 	, m_sortable(false), m_sorted(0), m_rowHeight(20), m_cacheOffset(0)
 {}
 
@@ -348,7 +348,11 @@ void Table::cacheItem(uint row, uint column) {
 			else if(Textbox* t=cast<Textbox>(w)) t->eventSubmit.bind([this](Textbox* t){fireCustomEvent(t); });
 			else if(Combobox* l=cast<Combobox>(w)) l->eventSelected.bind([this](Combobox* c, ListItem&){fireCustomEvent(c); });
 		}
-		if(!w) w = new Label(Rect(col.pos, ypos, col.width, m_rowHeight), m_skin);
+		if(!w) {
+			w = new Label();
+			w->setSkin(m_skin);
+			w->setRect(col.pos, ypos, col.width, m_rowHeight);
+		}
 		m_dataPanel->add(w);
 	}
 

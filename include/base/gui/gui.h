@@ -70,7 +70,8 @@ class Widget {
 	RTTI_BASE(Widget);
 
 	public:
-	Widget(const Rect&, Skin*);
+	Widget();
+	Widget(int width, int height);
 	virtual ~Widget();
 	virtual void draw() const;
 	virtual void setPosition(int x, int y);
@@ -157,7 +158,7 @@ class Widget {
 	const Widget*    getClientWidget() const { return m_client; }
 	const String&    getName() const { return m_name; }
 	Skin*            getSkin() const;
-	void             setSkin(Skin*);
+	virtual void     setSkin(Skin*);
 	void             setName(const char* name);
 
 	// Child widgets
@@ -357,9 +358,9 @@ class Root {
 
 
 	// Widget factory
-	static base::HashMap<Widget*(*)(const Rect&, Skin*)> s_constuct;
+	static base::HashMap<Widget*(*)()> s_constuct;
 	static base::HashMap<Layout*(*)(int,int)> s_layouts;
-	template<class T> static Widget* constructFunc(const Rect& r, Skin* s) { return new T(r,s); }
+	template<class T> static Widget* constructFunc() { return new T(); }
 	template<class T> static Layout* layoutFunc(int m, int s) { return new T(m,s); }
 	public:
 	/// Register a widget class

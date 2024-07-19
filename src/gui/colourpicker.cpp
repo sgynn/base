@@ -6,7 +6,11 @@
 
 using namespace gui;
 
-ColourPicker::ColourPicker(const Rect& r, Skin* s) : Widget(r, s) {
+ColourPicker::ColourPicker() {
+}
+
+ColourPicker::ColourPicker(Root* root, int w, int h) : Widget(w, h) {
+	initialise(root, {});
 }
 
 ColourPicker::~ColourPicker() {
@@ -18,46 +22,31 @@ void ColourPicker::initialise(const Root* root, const PropertyMap& p) {
 		IconList* images = root->getIconList("colourpicker");
 		if(!images || images->getImageIndex()<=0) images = createImages(const_cast<Root*>(root), 128);
 
+		auto addImage = [this, images](Widget* parent, int x, int y, int w, int h, int image, const char* anchor = 0) {
+			Image* img = new Image();
+			img->setRect(x,y,w,h);
+			img->setImage(images, image);
+			img->setTangible(Tangible::SELF);
+			img->setAsTemplate();
+			if(anchor) img->setAnchor(anchor);
+			parent->add(img);
+			return img;
+		};
+
+
 		int size = getSize().y;
 		int bar = size / 8 + 4;
-		m_wheel = new Image(Rect(0,0,size,size), m_skin);
-		m_value = new Image(Rect(size+4,0,bar,size), m_skin);
-		m_alpha = new Image(Rect(size+bar+8,0,bar,size), m_skin);
-		Image* alphaGradient = new Image(Rect(0,0,bar,size), m_skin);
+		
 
-		m_wheelMark = new Image(Rect(0,0,3,3), m_skin);
-		m_valueMark = new Image(Rect(0,0,bar,1), m_skin);
-		m_alphaMark = new Image(Rect(0,0,bar,1), m_skin);
-
-		m_wheel->setImage(images, 0);
-		m_wheel->setTangible(Tangible::SELF);
-		m_wheel->setAsTemplate();
-		m_value->setImage(images, 1);
-		m_value->setTangible(Tangible::SELF);
-		m_value->setAsTemplate();
-		m_alpha->setImage(images, 3);
-		m_alpha->setTangible(Tangible::SELF);
-		m_alpha->setAsTemplate();
-		alphaGradient->setImage(images, 2);
-		alphaGradient->setAsTemplate();
-		alphaGradient->setAnchor("tlrb");
-		m_wheelMark->setImage(images, 4);
-		m_valueMark->setImage(images, 4);
-		m_alphaMark->setImage(images, 4);
-		m_valueMark->setAnchor("tlr");
-		m_alphaMark->setAnchor("tlr");
-
-		m_alphaMark->setAsTemplate();
-		m_valueMark->setAsTemplate();
-		m_wheelMark->setAsTemplate();
-
-		add(m_wheel);
-		add(m_value);
-		add(m_alpha);
-		m_wheel->add(m_wheelMark);
-		m_value->add(m_valueMark);
-		m_alpha->add(alphaGradient);
-		m_alpha->add(m_alphaMark);
+		pauseLayout();
+		m_wheel = addImage(this, 0,0,size,size, 0);
+		m_value = addImage(this, size+4, 0, bar, size, 1);
+		m_alpha = addImage(this, size+bar+8, 0, bar, size, 3);
+		addImage(m_alpha, 0, 0, bar, size, 2, "tlrb"); // Alpha Gradient
+		m_wheelMark = addImage(m_wheel, 0,0,3,3, 4);
+		m_valueMark = addImage(m_value, 0,0,bar,1, 4, "tlr");
+		m_alphaMark = addImage(m_alpha, 0,0,bar,1, 4, "tlr");
+		resumeLayout();
 
 		m_wheel->eventMouseDown.bind(this, &ColourPicker::changeWheel);
 		m_wheel->eventMouseMove.bind(this, &ColourPicker::changeWheel);

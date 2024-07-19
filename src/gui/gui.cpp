@@ -23,12 +23,13 @@ void dumpLeakedWidgets() {
 
 
 /** Static definitions */
-base::HashMap<Widget*(*)(const Rect&, Skin*)> Root::s_constuct;
+base::HashMap<Widget*(*)()> Root::s_constuct;
 base::HashMap<Layout*(*)(int,int)> Root::s_layouts;
 
 
 Root::Root(int w, int h, Renderer* renderer) : m_focus(0), m_mouseFocus(0), m_keyMask(KeyMask::None), m_mouseState(0), m_wheelUsed(false), m_changed(false), m_renderer(renderer) {
-	m_root = new Widget( Rect(0,0,w,h), 0 );
+	m_root = new Widget();
+	m_root->setSize(w, h);
 	m_root->setTangible(Tangible::CHILDREN);
 	m_root->m_root = this;
 	if(!m_renderer) setRenderer(new Renderer());
@@ -91,7 +92,7 @@ Widget* Root::createWidget(const char* skin, const char* type, const char* name,
 	Widget* w;
 	if(!skin || !skin[0]) {
 		if(!type || !type[0]) type = Widget::staticName();
-		if(s_constuct.contains(type)) w = s_constuct[type](Rect(0,0,100,100), nullptr);
+		if(s_constuct.contains(type)) w = s_constuct[type]();
 		else {
 			printf("Error: Widget type %s not found\n", type);
 			return nullptr;
@@ -106,7 +107,8 @@ Widget* Root::createWidget(const char* skin, const char* type, const char* name,
 		}
 	}
 	else if(m_skins.contains(skin) && s_constuct.contains(type)) {
-		w = s_constuct[ type ] (Rect(0,0,100,100), m_skins[skin]);
+		w = s_constuct[type]();
+		w->setSkin(m_skins[skin]);
 		w->initialise(this, PropertyMap());
 	}
 	else {
@@ -333,7 +335,9 @@ Widget* Widget::clone(const char* newType) const {
 		printf("Error: Widget type %s not registered\n", newType);
 		newType = getTypeName();
 	}
-	Widget* w = Root::s_constuct[ newType ](m_rect, m_skin);
+	Widget* w = Root::s_constuct[ newType ]();
+	w->m_rect = m_rect;
+	w->m_skin = m_skin;
 	w->m_anchor = m_anchor;
 	w->m_layout = m_layout;
 	if(m_layout) ++m_layout->ref;
@@ -364,12 +368,26 @@ Widget* Widget::clone(const char* newType) const {
 
 // ==================================================================================== //
 
-Widget::Widget(const Rect& r, Skin* s): m_rect(r), m_skin(s), m_colour(-1), m_anchor(0), m_layout(0), m_relative(0),
-		m_states(0xf), m_skipTemplate(0), m_parent(0), m_root(0) {
+Widget::Widget()
+	: m_rect(0,0,32,32)
+	, m_skin(nullptr)
+	, m_colour(-1)
+	, m_anchor(0)
+	, m_layout(nullptr)
+	, m_relative(0)
+	, m_states(0xf)
+	, m_skipTemplate(0)
+	, m_parent(nullptr)
+	, m_root(nullptr)
+{
 	m_client = this;
 	#ifdef WIDGET_LEAK_CHECK
 	s_widgetLeakList.insert(this);
 	#endif
+}
+
+Widget::Widget(int w, int h) : Widget() {
+	m_rect.set(0,0,w,h);
 }
 
 Widget::~Widget() {

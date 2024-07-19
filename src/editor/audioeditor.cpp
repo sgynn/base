@@ -21,7 +21,6 @@ using namespace audio;
 
 class VariableWidget : public Widget {
 	WIDGET_TYPE(VariableWidget)
-	VariableWidget(const Rect& r, Skin* s) : Widget(r,s) {}
 	void initialise(const Root*, const PropertyMap&) override {
 		getTemplateWidget<SpinboxFloat>("value")->eventChanged.bind([this](SpinboxFloat*, float v) {
 			if(m_variable->variable == INVALID) m_variable->value = v;
@@ -71,7 +70,6 @@ void AudioEditor::initialise() {
 	if(!audio::Data::instance) button->setEnabled(false);
 
 	MenuBuilder bankMenu(m_panel->getRoot(), "button", "button");
-	bankMenu.menu()->setSize(150, 0);
 	bankMenu.addAction("New Soundbank",    [this]() { });
 	bankMenu.addAction("Unload Soundbank", [this]() { audio::unload(m_bankList->getSelectedItem()->getText()); m_loadMessage=2; });
 	bankMenu.addAction("Save Soundbank",   [this]() { save(m_bankList->getSelectedItem()->getText()); });

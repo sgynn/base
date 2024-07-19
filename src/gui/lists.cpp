@@ -225,7 +225,7 @@ void ListItem::setValue(uint index, const char* value) {
 
 
 
-Listbox::Listbox(const Rect& r, Skin* s) : Widget(r, s), m_scrollbar(0), m_multiSelect(false), m_itemHeight(20) {
+Listbox::Listbox() : m_scrollbar(nullptr), m_multiSelect(false), m_itemHeight(20) {
 }
 Listbox::~Listbox() {
 	if(m_itemWidget && !m_itemWidget->getParent(true)) delete m_itemWidget;
@@ -569,7 +569,7 @@ int Listbox::getItemHeight() const {
 
 
 
-Combobox::Combobox(const Rect& r, Skin* s) : Widget(r, s) {
+Combobox::Combobox() {
 }
 Combobox::~Combobox() {
 	// Remove popup from root widget if it is linked from there
