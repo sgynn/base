@@ -78,7 +78,6 @@ TiffStream* TiffStream::openStream( const char* file, Mode mode) {
 	}
 
 	TiffStream* img = new TiffStream();
-	memset(img, 0, sizeof(TiffStream));
 	img->m_stream = fp;
 	dword stripOffsets = 0;
 	dword stripCount = 0;
@@ -156,7 +155,6 @@ TiffStream* TiffStream::createStream(const char* file, int w, int h, int ch, int
 
 	// Create strea1
 	TiffStream* img = new TiffStream();
-	memset(img, 0, sizeof(TiffStream));
 	img->m_stream = fp;
 	img->m_width = w;
 	img->m_height = h;
