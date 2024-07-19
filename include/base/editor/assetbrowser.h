@@ -42,6 +42,7 @@ class AssetBrowser : public EditorComponent {
 	void buildResourceTree();
 	gui::Widget* addAssetTile(const Asset& asset, bool isFolder=false);
 	static const char* getAssetName(const Asset&);
+	using EditorComponent::openAsset;
 	protected:
 	gui::String m_rootPath;
 	gui::String m_localPath;

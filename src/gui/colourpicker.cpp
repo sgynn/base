@@ -22,7 +22,7 @@ void ColourPicker::initialise(const Root* root, const PropertyMap& p) {
 		IconList* images = root->getIconList("colourpicker");
 		if(!images || images->getImageIndex()<=0) images = createImages(const_cast<Root*>(root), 128);
 
-		auto addImage = [this, images](Widget* parent, int x, int y, int w, int h, int image, const char* anchor = 0) {
+		auto addImage = [images](Widget* parent, int x, int y, int w, int h, int image, const char* anchor = 0) {
 			Image* img = new Image();
 			img->setRect(x,y,w,h);
 			img->setImage(images, image);

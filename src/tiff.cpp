@@ -147,7 +147,7 @@ TiffStream* TiffStream::createStream(const char* file, int w, int h, int ch, int
 	const char* software = "Heightmap Editor";
 	char dateTime[21] = "YYYY:MM:DD HH::MM:SS";
 	time_t t = time(0);
-	strftime(dateTime, 21, "%Y:%m:%d %T", localtime(&t));
+	strftime(dateTime, 21, "%Y:%m:%d %H:%M:%S", localtime(&t));
 
 
 	// Write header
