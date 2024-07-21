@@ -120,11 +120,11 @@ def construct_mesh(obj, config):
     m.transform(trans)
     if trans.determinant() < 0.0:
         m.flip_normals()
-    meshes = construct_export_meshes(m, config)
+    meshes = construct_export_meshes(obj, m, config)
     obj.to_mesh_clear()
     return meshes
 
-def construct_export_meshes(m, config):
+def construct_export_meshes(obj, m, config):
 
     needTriangulating = False
     for f in m.polygons:
@@ -259,7 +259,7 @@ def export_merged_meshes(obj, exportList, config, xml):
     mesh.update()
     bm.free()
 
-    meshes = construct_export_meshes(mesh, config)
+    meshes = construct_export_meshes(obj, mesh, config)
     write_meshes(obj, config, xml, meshes)
     bpy.data.meshes.remove(mesh)
 
@@ -532,9 +532,19 @@ def export_scene(objects, config, xml):
 
     skipRootTransform = config.clear_layout_root and len(children[None]) == 1
 
-    first = next(iter(objects)).users_collection
-    singleCollection = all(v.users_collection == first for v in objects)
-    offset = first[0].instance_offset if config.clear_layout_root and singleCollection else Vector((0,0,0))
+    zero = mathutils.Vector()
+    offset = mathutils.Vector()
+    if config.clear_layout_root:
+        if config.collection:
+            collection = bpy.data.collections.get((config.collection, None))
+            if collection:
+                offset = collection.instance_offset
+                if offset != zero: skipRootTransform = False
+        else:
+            first = next(iter(objects)).users_collection
+            singleCollection = all(v.users_collection == first for v in objects)
+            if singleCollection: offset = first[0].instance_offset
+
 
     # Write xml
     scene = append_element(xml.firstChild, "layout")
@@ -542,9 +552,10 @@ def export_scene(objects, config, xml):
     while len(stack)>0:
         print(stack)
         a = stack[-1]
+        root = a[0] == None
         items = children[a[0]]
         obj = items[a[1]]
-        node = write_object(a[2], obj, config, offset, skipRootTransform and a[0] == None)
+        node = write_object(a[2], obj, config, offset if root else zero, skipRootTransform and root)
         if a[1] + 1 >= len(items): stack.pop()
         else: stack[-1] = (a[0], a[1]+1, a[2])
 
@@ -635,7 +646,15 @@ def add_heirachy(obj, out):
 
 def export(context, config):
     # What to export
-    if config.export_group == "SELECTED":
+    if config.collection: # Called from collection exporter
+        local_collection = bpy.data.collections.get((config.collection, None))
+        if local_collection:
+            exportList = set(local_collection.all_objects)
+        else:
+            operator.report({'ERROR'}, "Collection '%s' was not found" % collection)
+            return {'CANCELLED'}
+
+    elif config.export_group == "SELECTED":
         exportList = list(context.selected_objects)
     elif config.export_group == "HEIRACHY":
         exportList = set()
@@ -649,7 +668,7 @@ def export(context, config):
         for obj in context.selected_objects:
             collections |= set(obj.users_collection)
         for collection in collections:
-            exportList |= set(collection.objects);
+            exportList |= set(collection.all_objects);
     elif config.export_group == "VISIBLE":
         exportList = list(filter(lambda o : not o.hide_viewport, context.view_layer.objects))
     elif config.export_group == "ALL":

@@ -64,38 +64,43 @@ class ExportBaseLib(bpy.types.Operator):
                  ("COLLECTION", "Collection", "Export all objects in collections of which objects are selected")],
         default="SELECTED")
 
+    collection: StringProperty(
+        name="Active collection",
+        description="Export only objects from this collection (and its children)",
+        default="") # Used for collection exporters
+
     export_meshes: BoolProperty(
-        name="Export Meshes",
+        name="Meshes",
         description="Export mesh objects",
         default=True)
 
     export_normals: BoolProperty(
-        name="Export Normals",
+        name="Normals",
         description="Export mesh normals",
         default=True)
 
     export_tangents: BoolProperty(
-        name="Export Tangents",
+        name="Tangents",
         description="Export mesh tangents",
         default=True)
 
     export_uv: BoolProperty(
-        name="Export UV Coordinates",
+        name="UV Coordinates",
         description="Export mesh UV coordinates, if any",
         default=True)
 
     export_materials: BoolProperty(
-        name="Export Materials",
+        name="Materials",
         description="Export material properties and reference image textures",
         default=True)
 
     export_colour: BoolProperty(
-        name="Export Vertex Colors",
+        name="Vertex Colors",
         description="Export mesh vertex colors, if any.\nAlpha channel comes a colour layer names 'alpha'",
         default=False)
 
     export_skins: BoolProperty(
-        name="Export Skin Weights",
+        name="Skin Weights",
         description="Bind mesh vertices to armature bones",
         default=True)
 
@@ -143,58 +148,65 @@ class ExportBaseLib(bpy.types.Operator):
         default="ACTION")
 
     export_layout: BoolProperty(
-        name="Export Layout",
+        name="Layout",
         description="Export object layout",
         default=False)
 
     clear_layout_root: BoolProperty(
-        name="Clear layout root transform",
+        name="Clear root transform",
         description="Clear the transform of the root object when saving the layout\nOnly works if there is only a single root object or all objects are in a collection with instance offset set",
         default=True)
 
 
 
     def draw(self, context):
+        is_file_browser = context.space_data.type == 'FILE_BROWSER'
         layout = self.layout
-        sel = layout.box()
-        sel.prop(self, 'export_group')
+        if is_file_browser:
+            sel = layout.box()
+            sel.prop(self, 'export_group')
 
-        mesh = layout.box()
-        mesh.enabled = self.hasMesh(context)
-        mesh.prop(self, 'export_meshes')
-        mesh = mesh.column()
-        mesh.enabled = self.export_meshes
-        mesh.prop(self, 'export_normals')
-        mesh.prop(self, 'export_tangents')
-        mesh.prop(self, 'export_uv')
-        mesh.prop(self, 'export_colour')
-        mesh.prop(self, 'export_skins')
-        mesh.separator()
-        mesh.prop(self, 'normalise_weights')
-        mesh.prop(self, 'apply_modifiers')
-        mesh.prop(self, 'apply_transform')
-        mesh.prop(self, 'merge_meshes')
 
-        mat = layout.box()
-        mat.enabled = self.export_meshes and self.hasMesh(context)
-        mat.prop(self, 'export_materials')
+        mesh_header, mesh_panel = layout.panel("base_export_mesh", default_closed=False)
+        mesh_header.prop(self, "export_meshes")
+        if mesh_panel:
+            mesh_header.enabled = self.hasMesh(context) or not is_file_browser
+            mesh_panel.enabled = self.export_meshes and mesh_header.enabled
+            mesh_panel.use_property_split = True
+            mesh_panel.prop(self, 'export_normals')
+            mesh_panel.prop(self, 'export_tangents')
+            mesh_panel.prop(self, 'export_uv')
+            mesh_panel.prop(self, 'export_colour')
+            mesh_panel.prop(self, 'export_skins')
 
-        skel = layout.box()
-        skel.enabled = self.getSkeleton(context) is not None
-        skel.prop(self, 'export_skeletons')
+            mesh_panel.separator()
+            mesh_panel.prop(self, 'normalise_weights')
+            mesh_panel.prop(self, 'apply_modifiers')
+            mesh_panel.prop(self, 'apply_transform')
+            mesh_panel.prop(self, 'merge_meshes')
 
-        skel = skel.column()
-        skel.enabled = self.hasAnimation(context)
-        skel.prop(self, 'export_animations')
-        names = skel.column()
-        names.enabled = self.export_animations in ("LINKED", "UNLOCKED")
-        names.prop(self, 'animation_names')
 
-        lay = layout.box()
-        lay.prop(self, 'export_layout')
-        lopt = lay.column()
-        lopt.prop(self, 'clear_layout_root')
-        lopt.enabled = self.export_layout
+        anim_header, anim_panel = layout.panel("base_export_animation", default_closed=False)
+        anim_header.label(text = "Animation")
+        if anim_panel:
+            anim_panel.use_property_split = True
+            skel = anim_panel.column()
+            skel.prop(self, 'export_skeletons')
+            skel.enabled = self.getSkeleton(context) is not None or not is_file_browser
+            skel = anim_panel.column()
+            skel.enabled = self.hasAnimation(context) or not is_file_browser
+            skel.prop(self, 'export_animations')
+            names = anim_panel.column()
+            names.enabled = self.export_animations in ("LINKED", "UNLOCKED")
+            names.prop(self, 'animation_names')
+
+
+        layout_header, layout_panel = layout.panel("base_export_layout1", default_closed=False)
+        layout_header.prop(self, "export_layout")
+        if layout_panel:
+            layout_panel.use_property_split = True
+            layout_panel.prop(self, 'clear_layout_root')
+            layout_panel.enabled = self.export_layout
 
     def getHeirachy(self, obj, out):
         out.add(obj)
@@ -256,18 +268,32 @@ class ExportBaseLib(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
+class IO_FH_baselib(bpy.types.FileHandler):
+    bl_idname = "IO_FH_baselib"
+    bl_label = "Baselib"
+    bl_import_operator = ""
+    bl_export_operator = "export.bm"
+    bl_file_extensions = ".bm"
+
+    #@classmethod
+    #def poll_drop(cls, context):
+    #    return poll_file_object_drop(context)
+
+
 def menu_func(self, context):
     self.layout.operator(ExportBaseLib.bl_idname, text="Base (.bm)")
 
 
 def register():
     bpy.utils.register_class(ExportBaseLib)
+    bpy.utils.register_class(IO_FH_baselib)
     bpy.types.TOPBAR_MT_file_export.append(menu_func)
 
 
 def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func)
     bpy.utils.unregister_class(ExportBaseLib)
+    bpy.utils.unregister_class(IO_FH_baselib)
 
 
 if __name__ == "__main__":
