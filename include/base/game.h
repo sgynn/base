@@ -82,13 +82,13 @@ class Game {
 
 	//Timing data
 	uint m_targetFPS;	// Target framerate when fixed
-	uint m_gameTime;	// Time taken for a complete game loop (in system ticks)
-	uint m_systemTime;	// Time taken between game loops (~0 for variable rate)
-	uint m_renderTime;	// Time to send render commands *NOT ACTUAL REMDER TIME*
-	uint m_elapsedTime;	// Time since last frame
-	uint m_updateTime;	// Time spent in update loop
-	float m_totalTime;	// Total time since game started (seconds)
-	float m_frameTime;	// Time since last frame (seconds);
+	uint m_gameTime=0;	// Time taken for a complete game loop (in system ticks)
+	uint m_systemTime=0;	// Time taken between game loops (~0 for variable rate)
+	uint m_renderTime=0;	// Time to send render commands *NOT ACTUAL REMDER TIME*
+	uint m_elapsedTime=0;	// Time since last frame
+	uint m_updateTime=0;	// Time spent in update loop
+	float m_totalTime=0;	// Total time since game started (seconds)
+	float m_frameTime=0;	// Time since last frame (seconds);
 };
 };
 
