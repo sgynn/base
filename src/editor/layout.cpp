@@ -504,6 +504,8 @@ void LayoutProperties::addTransform(SceneNode* node) {
 		for(int j=0; j<elements[i]; ++j) {
 			name[1] = names[j+3];
 			SpinboxFloat* box = cat.createWidget<SpinboxFloat>("spinboxf");
+			box->setStep(1, 0.1);
+			box->setRange(-1e6f, 1e6f);
 			box->setValue( values[i][j] );
 			box->setAnchor("lr");
 			box->setName(name);
