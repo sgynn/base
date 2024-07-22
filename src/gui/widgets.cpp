@@ -1678,6 +1678,8 @@ void Window::sizeHandle(Widget* c, const Point& p, int b) {
 
 Popup::Popup() {
 }
+Popup::Popup(int width, int height, bool destroyOnClose) : Widget(width, height), m_destroyOnClose(destroyOnClose) {
+}
 Popup::Popup(Widget* child, bool destroyOnClose) : m_destroyOnClose(destroyOnClose) {
 	setSize(child->getSize());
 	add(child);
