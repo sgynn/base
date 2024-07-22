@@ -221,6 +221,7 @@ class Combobox : public Widget, public ItemList {
 	Delegate<void(Combobox*, const char*)>   eventTextChanged;
 	Delegate<void(Combobox*)>                eventSubmit;
 	Delegate<void(const ListItem&, Widget*)> eventCacheItem;
+	Delegate<void(Combobox*, Widget*)>       eventDropDown;
 
 	protected:
 	void initialise(const Root*, const PropertyMap&) override;

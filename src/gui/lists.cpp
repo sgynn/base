@@ -676,6 +676,7 @@ void Combobox::showList() {
 	if(height > limit) height = limit;
 	m_list->setSize( m_list->getSize().x, height);
 	m_list->setVisible(true);
+	if(eventDropDown) eventDropDown(this, m_list);
 }
 void Combobox::hideList() {
 	if(!m_list) return;
