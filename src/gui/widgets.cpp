@@ -1016,7 +1016,7 @@ Slider::Slider() {
 
 void Slider::initialise(const Root*, const PropertyMap& p) {
 	p.readValue("min", m_range.min);
-	p.readValue("min", m_range.max);
+	p.readValue("max", m_range.max);
 	m_block[0] = getTemplateWidget("_block");
 	m_block[1] = getTemplateWidget("_block2");
 	m_orientation = p.getEnum("orientaton", {"horizontal", "vertical"}, HORIZONTAL);
@@ -1025,6 +1025,10 @@ void Slider::initialise(const Root*, const PropertyMap& p) {
 			w->eventMouseDown.bind(this, &Slider::pressBlock);
 			w->eventMouseMove.bind(this, &Slider::moveBlock);
 		}
+	}
+	if(p.contains("value")) {
+		float v = p.getValue("value", m_value.min);
+		setValue(v, p.getValue("value2", v));
 	}
 }
 void Slider::copyData(const Widget* from) {
