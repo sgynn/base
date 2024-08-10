@@ -504,7 +504,8 @@ class Popup : public Widget {
 	typedef Delegate<void(Button*)> ButtonDelegate;
 	public:
 	Popup();
-	Popup(Widget* contents, bool destroyOnClose);
+	Popup(Widget* contents, bool destroyOnClose=false);
+	Popup(int width, int height, bool destroyOnClose=false);
 	~Popup();
 	void popup(Widget* owner, Side side=BELOW);
 	void popup(Root* root, const Point& absolutePosition, Widget* owner=0);
