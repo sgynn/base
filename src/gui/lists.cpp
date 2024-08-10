@@ -69,17 +69,18 @@ void ItemList::updateItemIndices(uint from) {
 }
 
 void ItemList::countChanged() {
-	if(m_shared) for(size_t i=0; i<m_shared->size(); ++i) m_shared->at(i)->itemCountChanged();
+	if(m_shared) for(ItemList* list : *m_shared) list->itemCountChanged();
 	else itemCountChanged();
 }
 void ItemList::selectionChanged() {
-	if(m_shared) for(size_t i=0; i<m_shared->size(); ++i) m_shared->at(i)->itemSelectionChanged();
+	if(m_shared) for(ItemList* list : *m_shared) list->itemSelectionChanged();
 	else itemSelectionChanged();
 }
 
 void ItemList::clearItems() {
 	m_items->clear();
-	m_selected.clear();
+	if(m_shared) for(ItemList* i: *m_shared) i->m_selected.clear();
+	else m_selected.clear();
 	countChanged();
 }
 
@@ -92,20 +93,33 @@ void ItemList::insertItem(uint index, const ListItem& item) {
 	if(index>=m_items->size()) m_items->push_back(item);
 	else m_items->insert(m_items->begin() + index, item);
 	updateItemIndices(index);
+	// Update selection
+	if(m_shared) {
+		for(ItemList* list: *m_shared) {
+			for(uint& i: list->m_selected) if(i>=index) ++i;
+		}
+	}
+	else for(uint& i: m_selected) if(i>=index) ++i;
 	countChanged();
 }
 
 void ItemList::removeItem(uint index) {
 	if(index < m_items->size()) {
 		m_items->erase( m_items->begin() + index );
-		// Update selection list
-		uint erase = ~0u;
-		for(uint i=0; i<m_selected.size(); ++i) {
-			if(m_selected[i] > index) --m_selected[i];
-			else if(m_selected[i] == index) erase = i;
-		}
-		if(erase < m_selected.size()) m_selected.erase( m_selected.begin() + erase );
 		updateItemIndices(index);
+		// Update selection list
+		auto updateSelection = [index](ItemList* list) {
+			uint erase = ~0u;
+			for(uint i=0; i<list->m_selected.size(); ++i) {
+				if(list->m_selected[i] > index) --list->m_selected[i];
+				else if(list->m_selected[i] == index) erase = i;
+			}
+			if(erase < list->m_selected.size()) list->m_selected.erase( list->m_selected.begin() + erase );
+		};
+		if(m_shared) {
+			for(ItemList* list: *m_shared) updateSelection(list);
+		}
+		else updateSelection(this);
 		countChanged();
 	}
 }
