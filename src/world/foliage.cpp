@@ -20,17 +20,26 @@ class RNG {
 
 // ===================================================================================================== //
 
-FoliageMap::FoliageMap(int w, int h, unsigned char* data, int stride) : m_data(0), m_ref(0) {
-	setData(w,h,data,stride);
+FoliageMap::FoliageMap(int w, int h, const unsigned char* data, int stride, bool copy) : m_data(0), m_ref(0) {
+	setData(w,h,data,stride,copy);
 }
 FoliageMap::~FoliageMap() {
-	delete [] m_data;
+	if(m_owned) delete [] m_data;
 }
-void FoliageMap::setData(int w, int h, unsigned char* data, int stride) {
-	delete [] m_data;
-	int length = w * h;
-	m_data = new unsigned char[length];
-	for(int i=0; i<length; ++i) m_data[i] = data[i*stride];
+void FoliageMap::setData(int w, int h, const unsigned char* data, int stride, bool copy) {
+	if(m_owned) delete [] m_data;
+	if(copy) {
+		int length = w * h;
+		unsigned char* owned = new unsigned char[length];
+		for(int i=0; i<length; ++i) owned[i] = data[i*stride];
+		m_data = owned;
+		m_stride = 1;
+	}
+	else {
+		m_data = data;
+		m_stride = stride;
+		m_owned = false;
+	}
 	m_width = w;
 	m_height = h;
 }
@@ -42,9 +51,9 @@ float FoliageMap::getValue(float x, float y) const {
 	// Values
 	int ix = floor(x);
 	int iy = floor(y);
-	unsigned char* k = m_data + ix + iy * m_width;
-	float a = k[0] * (ix-x+1) + k[m_width] * (x-ix);
-	float b = k[1] * (ix-x+1) + k[m_width+1] * (x-ix);
+	const unsigned char* k = m_data + (ix + iy * m_width) * m_stride;
+	float a = k[0] * (ix-x+1) + k[m_width*m_stride] * (x-ix);
+	float b = k[m_stride] * (ix-x+1) + k[m_width*m_stride+m_stride] * (x-ix);
 	return (a * (iy-y+1) + b * (y-iy)) / 255.f;
 }
 

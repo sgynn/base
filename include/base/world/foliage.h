@@ -23,14 +23,16 @@ class FoliageSystem;
 
 class FoliageMap {
 	public:
-	FoliageMap(int w, int h, unsigned char* data=0, int stride=1);
+	FoliageMap(int w, int h, const unsigned char* data=0, int stride=1, bool copy=true);
 	~FoliageMap();
-	void  setData(int w, int h, unsigned char* data, int stride=1);
+	void  setData(int w, int h, const unsigned char* data, int stride=1, bool copy=true);
 	float getValue(float x, float y) const; // Works on normalised 0-1 values
 	protected:
 	int m_width;
 	int m_height;
-	unsigned char* m_data;
+	int m_stride;
+	const unsigned char* m_data;
+	bool m_owned;
 	private:
 	friend class FoliageLayer;
 	int m_ref;
