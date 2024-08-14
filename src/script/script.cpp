@@ -779,8 +779,8 @@ void Script::compoundExpression(Expression** stack, int& front, Expression* expr
 		stack[front] = expr;
 	}
 	else {
-		// FIXME precidence rules for 'a = b = c' are wrong
-		while(front>=0 && stack[front]->op >= precidence) --front;
+		// Precidence rules for 'a = b = c' need to be inverted, as we need a=(b=c)
+		while(front>=0 && stack[front]->op >= precidence && !(stack[front]->op==Expression::SET && precidence==Expression::SET)) --front;
 		if(front<0) {
 			expr->lhs.expr = stack[0];
 			expr->lhs.type = Expression::EXPRESSION;
@@ -883,12 +883,13 @@ Expression* Script::parseExpression(const char* src, const char*& s, bool allowS
 				if(*s==',') ++s;
 				++count;
 			}
+			if(*s==')') ++s;
 			Expression* e = new Expression;
 			e->op = Expression::CALL;
 			e->rhs.type = Expression::FUNCTIONCALL;
 			e->rhs.call = new FunctionCall(count, params);
 			compoundExpression(stack, front, e, e->op);
-			Valid(0,SET);
+			Valid(OP|SUBTEXT, INV|VAL|BLK|FUNC);
 		}
 		// Block
 		else if((valid&BLK) && (blk = parseBlock(src, s, true, false, true))) {
