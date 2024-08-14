@@ -64,6 +64,7 @@
 		<font name="helvetica" size="16"/>
 		<image file="default"/>
 		<state border="4 4 4 4" coord="0 0 8 8" name="normal"/>
+		<state backcolour="#535353" forecolour="#a3a3a3" name="disabled"/>
 	</skin>
 	<skin name="button">
 		<font align="middlecentre" name="helvetica" size="16"/>
