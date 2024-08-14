@@ -124,7 +124,7 @@ Skeleton* Model::getSkeleton() const {
 	return m_skeleton;
 }
 
-int* Model::createSkinMap(Skeleton* s, Mesh* m) {
+int* Model::createSkinMap(const Skeleton* s, const Mesh* m) {
 	int count = m->getSkinCount();
 	if(count == 0 || !s) return 0;
 

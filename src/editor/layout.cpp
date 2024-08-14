@@ -622,7 +622,7 @@ void DrawableMeshType::getValues(Drawable* d, const char*& name, int& icon, bool
 void DrawableMeshType::showProperties(LayoutProperties& panel, SceneNode*, Drawable* d) {
 	LayoutCategory cat = panel.getCategory("Mesh");
 	base::Mesh* mesh = static_cast<DrawableMesh*>(d)->getMesh();
-	base::Skeleton* skeleton = static_cast<DrawableMesh*>(d)->getSkeleton();
+	const base::Skeleton* skeleton = static_cast<DrawableMesh*>(d)->getSkeleton();
 	const char* modelName = "Unknown";
 	const char* meshName = 0;
 

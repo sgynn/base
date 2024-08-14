@@ -72,7 +72,7 @@ class Model {
 
 	static Mesh* createSkinTarget(Mesh* src);									// Create a new mesh to use as software skin target
 	static void skinMesh(Mesh* in, const Skeleton*, int* map, Mesh* out);		// Software skinning - deform a mesh
-	static int* createSkinMap(Skeleton*, Mesh*);								// Create Bone->Skin map
+	static int* createSkinMap(const Skeleton*, const Mesh*);								// Create Bone->Skin map
 
 	const ModelLayout* getLayout() const { return m_layout; }
 	void setLayout(ModelLayout* l) { delete m_layout; m_layout = l; }

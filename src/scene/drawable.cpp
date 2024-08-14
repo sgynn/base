@@ -130,7 +130,7 @@ void DrawableMesh::setMesh(Mesh* m) {
 	addBuffer(m_instanceBuffer);
 }
 
-void DrawableMesh::setupSkinData( Skeleton* s ) {
+void DrawableMesh::setupSkinData( const Skeleton* s ) {
 	m_skeleton = s;
 	delete [] m_skinMap;
 	if(s && m_mesh->getSkinCount()) m_skinMap = Model::createSkinMap( s, m_mesh );
@@ -160,7 +160,7 @@ Mesh* DrawableMesh::getMesh() const {
 	return m_mesh;
 }
 
-Skeleton* DrawableMesh::getSkeleton() const {
+const Skeleton* DrawableMesh::getSkeleton() const {
 	return m_skeleton;
 }
 
