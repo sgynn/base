@@ -331,6 +331,7 @@ bool Skeleton::update() {
 			m_matrices[i] = bone->m_local;
 			m_matrices[i].scale(bone->m_scale);
 			m_matrices[i] *= m_rest->skin[i];
+			bone->m_combinedScale = bone->m_scale;
 		}
 		bone->m_state |= 8;
 	}
