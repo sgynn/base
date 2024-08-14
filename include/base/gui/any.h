@@ -38,6 +38,7 @@ class Any {
 	template<typename T> T* cast() const;			// Return value pointer. Returns null if incorrect type
 	template<typename T> bool read(T& value) const;	// Sets value parameter. Returns false if incorrect type
 	template<typename T> const T& getValue(const T& defaultValue) const;	// Returns the value, or default if incorrect type
+	template<typename T> T getValue() const;  // getValue that uses default constructed item as default ?
 	template<typename T, typename E> bool convert(E& value) const;
 	template<typename T> bool isType() const;
 	template<typename T> bool isType(const T&) const;
@@ -91,6 +92,10 @@ template<typename T> bool Any::read(T& value) const {
 }
 template<typename T> const T& Any::getValue(const T& defaultValue) const {
 	if(!m_value || m_value->getType() != typeid(T)) return defaultValue;
+	return static_cast<const Any::AnyValueT<T>*>(m_value)->m_value;
+}
+template<typename T> T Any::getValue() const {
+	if(!m_value || m_value->getType() != typeid(T)) return {};
 	return static_cast<const Any::AnyValueT<T>*>(m_value)->m_value;
 }
 
