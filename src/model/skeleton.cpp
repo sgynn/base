@@ -16,41 +16,42 @@ Bone::~Bone() {
 
 void Bone::setPosition(const vec3& p) {
 	m_position = p;
-	m_state = 1;
+	m_state = TF_PARTS;
 }
 void Bone::setScale(float s) {
 	m_scale.x = m_scale.y = m_scale.z = s;
-	m_state = 1;
+	m_state = TF_PARTS;
 }
 void Bone::setScale(const vec3& s) {
 	m_scale = s;
-	m_state = 1;
+	m_state = TF_PARTS;
 }
 void Bone::setEuler(const vec3& pyr) {
 	m_angle.fromEuler(pyr.y, pyr.x, pyr.z);
-	m_state = 1;
+	m_state = TF_PARTS;
 }
 void Bone::setAngle(const Quaternion& q) {
 	m_angle = q;
-	m_state = 1;
+	m_state = TF_PARTS;
 }
 
 void Bone::setTransformation(const Matrix& m) {
 	m_local = m;
-	m_state = 2;
+	m_state = TF_MATRIX;
 }
-void Bone::setAbsoluteTransformation(const Matrix& m) {
+void Bone::setAbsoluteTransformation(const Matrix& m, const vec3& scale) {
+	m_combinedScale = scale;
 	m_combined = m;
-	m_state = 4;
+	m_state = TF_ABSOLUTE;
 }
 
 void Bone::move(const vec3& m) {
 	m_position += m;
-	m_state = 1;
+	m_state = TF_PARTS;
 }
 void Bone::rotate(const Quaternion& q) {
 	m_angle *= q;
-	m_state = 1;
+	m_state = TF_PARTS;
 }
 
 const EulerAngles Bone::getEuler() const {
@@ -60,7 +61,7 @@ const EulerAngles Bone::getEuler() const {
 void Bone::updateLocal() {
 	// Note: when absoluteMatrix is being set, local values mean nothing.
 	switch(m_state&7) {
-	case 1: // parts to matrix
+	case TF_PARTS: // parts to matrix
 		{
 		const Matrix& rest = m_skeleton->getRestPose(m_index);
 		Quaternion rot( rest );
@@ -69,7 +70,7 @@ void Bone::updateLocal() {
 		// Translation relative to rest pose of this bone
 		m_local.setTranslation(rest * m_position);
 		}
-		m_state=3;
+		m_state = TF_PARTS | TF_MATRIX;
 		break;
 	case 2: // Matrix to parts
 		m_angle.fromMatrix(m_local);
@@ -83,7 +84,7 @@ void Bone::updateLocal() {
 		m_position.y -= rest[13];
 		m_position.z -= rest[14];
 		}
-		m_state=3;
+		m_state = TF_PARTS | TF_MATRIX;
 		break;
 	}
 }
@@ -307,9 +308,9 @@ bool Skeleton::update() {
 	for(int i=0; i<m_count; ++i) {
 		Bone* bone = m_bones[i];
 		if(bone->getMode() != Bone::FIXED) { // Use local transformation
-			if(bone->m_state<8 || (bone->m_parent>=0 && m_flags[bone->m_parent])) {
+			if(bone->m_state<Bone::TF_FINAL || (bone->m_parent>=0 && m_flags[bone->m_parent])) {
 				m_flags[i] = 1;
-				if(bone->m_state==1) bone->updateLocal();
+				if(bone->m_state == Bone::TF_PARTS) bone->updateLocal();
 				Bone* parent = bone->getParent();
 				vec3 parentScale = parent? parent->m_combinedScale: vec3(1,1,1);
 				Matrix local = bone->m_local;
@@ -325,15 +326,15 @@ bool Skeleton::update() {
 
 				changed = true;
 			}
-		} else if(bone->m_state==4) {	  // FIXED uses absolute transformation
+		}
+		else if(bone->m_state==Bone::TF_ABSOLUTE) {	  // Absolute transformation manually set
 			changed = true;
 			m_flags[i] = 1;
-			m_matrices[i] = bone->m_local;
-			m_matrices[i].scale(bone->m_scale);
+			m_matrices[i] = bone->m_combined;
+			m_matrices[i].scale(bone->m_combinedScale);
 			m_matrices[i] *= m_rest->skin[i];
-			bone->m_combinedScale = bone->m_scale;
 		}
-		bone->m_state |= 8;
+		bone->m_state |= Bone::TF_FINAL;
 	}
 	return changed;
 }

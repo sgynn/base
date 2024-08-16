@@ -44,13 +44,14 @@ namespace base {
 		void setEuler(const vec3& pyr);			/**< Set the relative angle from pitch,yaw,roll */
 		void setAngle(const Quaternion& q);		/**< Set the relative angle quaternion */
 		void setTransformation(const Matrix&);	/**< Set the local transformation */
-		void setAbsoluteTransformation(const Matrix&);	/**< Set the absolute transformation */
+		void setAbsoluteTransformation(const Matrix&, const vec3& scale=vec3(1,1,1));	/**< Set the absolute transformation */
 		void move(const vec3&);					/**< Move bone relative to its parent */
 		void rotate(const Quaternion&);			/**< roatte bone relative to its parent */
 		void updateLocal();						/**< Calculate outdated local variables */
 
 		private:
 		friend class Skeleton;
+		enum TransformState { TF_PARTS=1, TF_MATRIX=2, TF_ABSOLUTE=4, TF_FINAL=8 };
 
 		Skeleton*   m_skeleton;	// Skeleton object this bone belongs to
 		int         m_index;	// Skeleton index
