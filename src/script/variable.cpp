@@ -113,6 +113,10 @@ Variable::Variable(const Variable& v) : type(0) { *this = v; }
 const Variable& Variable::operator=(const Variable& v) {
 	if(this==&v) return v;
 	if(isConst()) return *this;
+	// Take a reference to the object to avoid deleting what we are setting it to
+	Object* tmp = isObject() || isArray() || isVector()? obj: nullptr;
+	if(tmp) ++tmp->ref;
+
 	if(setType(v.type&0xf)) {
 		// Objects set by reference
 		if(isObject() || isArray()) {
@@ -145,7 +149,8 @@ const Variable& Variable::operator=(const Variable& v) {
 			func = v.func;
 			++func->ref;
 		}
-	} else if(~type&CONST) {
+	}
+	else if(~type&CONST) {
 		bool k = v.type&LINK;
 		switch(v.type&0xf) {
 		case BOOL: setValue(k?*v.bp:v.i); break;
@@ -162,6 +167,7 @@ const Variable& Variable::operator=(const Variable& v) {
 	// Keep some flags
 	if(v.type & EXPLICIT) type |= EXPLICIT;
 
+	if(tmp && --tmp->ref==0) delete tmp;
 	return *this;
 }
 
