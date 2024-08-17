@@ -626,7 +626,7 @@ VariableName Variable::findObject(const Variable& item, int depth) const {
 	return VariableName();
 }
 
-String Variable::toString(int depth, bool quotes, bool multiLine, int indent) const {
+String Variable::toString(int depth, bool quotes, int multiLine, int indent) const {
 	char buffer[512];
 	const char* b = buffer;
 	switch(type & ~(FIXED|CONST|EXPLICIT)) {
@@ -641,12 +641,12 @@ String Variable::toString(int depth, bool quotes, bool multiLine, int indent) co
 
 			String s("{");
 			for(unsigned i=0; i<tmp.size(); ++i) {
-				if(multiLine) sprintf(buffer, "\n%*s%s = ", 2*indent+2, "", tmp[i]);
+				if(multiLine>0) sprintf(buffer, "\n%*s%s = ", 2*indent+2, "", tmp[i]);
 				else snprintf(buffer, 512, " %s = ", tmp[i]);
-				s = s + buffer + get_const(tmp[i]).toString(depth-1, true, multiLine, indent+1);
+				s = s + buffer + get_const(tmp[i]).toString(depth-1, true, multiLine-1, indent+1);
 			}
 			if(tmp.empty()) s = s + "}";
-			else if(!multiLine) s = s + " }";
+			else if(multiLine<=0) s = s + " }";
 			else snprintf(buffer, 512, "\n%*s}", 2*indent, ""), s = s + buffer;
 			return s;
 		} else b = "{...}";
@@ -655,7 +655,7 @@ String Variable::toString(int depth, bool quotes, bool multiLine, int indent) co
 		if(obj->items.empty()) b = "[]";
 		else if(depth) {
 			String s("[");
-			for(const Variable& v: obj->items) s = s + v.toString(depth-1, true, false) + ", ";
+			for(const Variable& v: obj->items) s = s + v.toString(depth-1, true, 0) + ", ";
 			int len = s.length();
 			s[len-2]=']', s[len-1]=0;
 			return s;

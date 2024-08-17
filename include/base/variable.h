@@ -153,7 +153,12 @@ namespace script {
 		Variable& find(const char* name) const;
 		Variable& find(const char* name);
 
-		String toString(int d=1, bool quotes=false, bool multiLine=true, int indent=0) const;	// Get string representation
+		// Get string representation
+		// @param d  recurion depth limit
+		// @param quotes display quotes around string (only if this is string)
+		// @param multiLine recursion depth to display objects as multi-line data
+		// @param indent current indent value for multi-line display
+		String toString(int d=1, bool quotes=false, int multiLine=1000, int indent=0) const;
 		bool isValid() const;					// Is this a valid variable. Use to check result of get().
 		bool makeObject();						// Turn this variable into an object if not already
 		bool makeArray(int size=0);				// Turn this variable into an array type
