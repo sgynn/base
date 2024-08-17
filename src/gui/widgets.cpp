@@ -213,15 +213,17 @@ void Image::copyData(const Widget* from) {
 		m_angle = img->m_angle;
 	}
 }
-void Image::setImage(const char* name) {
+void Image::setImage(const char* name) { setImage(m_root, name); }
+void Image::setImage(Root* root, const char* name) {
 	if(m_group) {
 		setImage(m_group->getIconIndex(name));
 	}
-	else if(m_root) {
-		int index = m_root->getRenderer()->getImage(name);
-		if(index<0) index = m_root->getRenderer()->addImage(name);
+	else if(root) {
+		int index = root->getRenderer()->getImage(name);
+		if(index<0) index = root->getRenderer()->addImage(name);
 		setImage(index);
 	}
+	else printf("Error: Trying to set image with no root set\n");
 }
 void Image::setImage(int image) {
 	m_image = image;

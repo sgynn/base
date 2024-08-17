@@ -47,6 +47,7 @@ class Image : public Widget {
 	Image(IconList*, const char*);
 	void  setImage(int key);
 	void  setImage(const char* name);
+	void  setImage(Root*, const char* name);
 	void  setImage(IconList* group, int index);
 	void  setImage(IconList* group, const char* name);
 	int   getImageIndex() const;
