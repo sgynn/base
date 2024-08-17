@@ -68,7 +68,7 @@ namespace base {
 			int len = vsnprintf(buffer, 128, format, v);
 			va_end(v);
 			if(len<128) return String(buffer);
-			char* big = (char*)malloc(len);
+			char* big = (char*)malloc(len+1);
 			va_start(v, format);
 			vsprintf(big, format, v);
 			va_end(v);
