@@ -315,7 +315,7 @@ Variable Expression::evaluate(Context&& context) const {
 		}
 		break;
 	case SET:
-		r = opVariableRef(lhs, fwd(context)) = b;
+		r = opVariableRef(lhs, fwd(context)) = std::move(b);
 		break;
 	case APPEND:
 		{
@@ -337,8 +337,9 @@ Variable Expression::evaluate(Context&& context) const {
 		else {
 			assert(false); // Can't append to objects
 		}
-		r = b;
+		r = std::move(b);
 		}
+		break;
 
 	case GET: // rhs is subtext of lhs - string, or integer if array : lhs[rhs]
 		if(a.isArray() && b.isNumber()) r = a.get_const((int)b);

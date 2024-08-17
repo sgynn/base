@@ -104,9 +104,13 @@ namespace script {
 		void setExplicit(bool=true);			// Object child variables must be explicitly created.
 		bool isExplicit() const;
 
-		template<typename T> void set(const char* n, const T& v) { find(n) = v; } // Alternative syntax
-		template<typename T> void set(uint n, const T& v) { get(n) = v; }
+		template<typename T> void set(const char* n, const T& v)	{ find(n) = v; } // Alternative syntax
+		template<typename T> void set(const char* n, T&& v)			{ find(n) = std::forward<T>(v); }
+		template<typename T> void set(uint n, const T& v) 			{ get(n) = v; }
+		template<typename T> void set(uint n, T&& v) 				{ get(n) = std::forward<T>(v); }
 		template<typename T> void set(const VariableName& n, const T& v) { get(n) = v; }
+		template<typename T> void set(const VariableName& n, T&& v) 	 { get(n) = std::forward<T>(v); }
+
 		template<typename T> bool link(const char* n, T& v, int f=0) { return find(n).link(v,f); } // Alternative syntax
 		template<typename T> bool link(uint n, T& v, int f) { return get(n).link(v,f); }
 		template<typename T> bool link(const VariableName& n, T& v, int f) { return get(n).link(v,f); }

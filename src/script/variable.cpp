@@ -101,10 +101,8 @@ Variable::Variable(Variable&& v) noexcept : type(v.type) {
 	v.type = 0;
 }
 Variable& Variable::operator=(Variable&& v) noexcept {
-	obj = v.obj;
-	type = v.type;
-	v.obj = 0;
-	v.type = 0;
+	std::swap(obj, v.obj);
+	std::swap(type, v.type);
 	return *this;
 }
 
