@@ -24,6 +24,8 @@ set(src
 	src/window.cpp
 	src/xml.cpp
 
+	src/miniz.c
+
 	src/scene/autovariables.cpp
 	src/scene/compositor.cpp
 	src/scene/debuggeometry.cpp
@@ -115,37 +117,6 @@ set(editor
 	src/editor/nodeeditor.cpp
 	src/editor/particleeditor.cpp
 	src/editor/renderdoc.cpp
-)
-
-set( png
-	src/png/png.c
-	src/png/pngerror.c
-	src/png/pngget.c
-	src/png/pngmem.c
-	src/png/pngread.c
-	src/png/pngrio.c
-	src/png/pngrtran.c
-	src/png/pngrutil.c
-	src/png/pngset.c
-	src/png/pngtrans.c
-	src/png/pngwio.c
-	src/png/pngwrite.c
-	src/png/pngwtran.c
-	src/png/pngwutil.c
-)
-
-set( zlib
-	src/zlib/adler32.cpp
-	src/zlib/compress.cpp
-	src/zlib/crc32.cpp
-	src/zlib/deflate.cpp
-	src/zlib/infback.cpp
-	src/zlib/inffast.cpp
-	src/zlib/inflate.cpp
-	src/zlib/inftrees.cpp
-	src/zlib/trees.cpp
-	src/zlib/uncompr.cpp
-	src/zlib/zutil.cpp
 )
 
 set(headers
@@ -284,7 +255,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
-add_library(base STATIC ${src} ${png} ${zlib} ${gui} ${script} ${audio} ${particles} ${headers} ${guiheaders} ${worldheaders} ${editor} ${editorheaders} )
+add_library(base STATIC ${src} ${gui} ${script} ${audio} ${particles} ${headers} ${guiheaders} ${worldheaders} ${editor} ${editorheaders} )
 include_directories( include )
 install(FILES ${headers} DESTINATION include/base)
 install(FILES ${guiheaders} DESTINATION include/base/gui)
@@ -304,6 +275,7 @@ elseif(MINGW)
 	install(TARGETS base DESTINATION lib)
 elseif(UNIX)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DLINUX ${EditorPath}")
+	set(CMAKE_C_FLAGS "-g -Wall")
 	message(STATUS ${CMAKE_CXX_FLAGS})
 	install(TARGETS base DESTINATION lib64)
 else()
