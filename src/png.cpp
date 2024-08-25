@@ -49,7 +49,7 @@ static void readAvgFilter(byte* data, unsigned length, int depth, const byte* pr
 		*data = ((int)*data + (int)*prev++ / 2) & 0xff;
 		++data;
 	}
-	for(unsigned i=1; i<length; ++i) {
+	for(unsigned i=bpp; i<length; ++i) {
 		*data = ((int)*data + ((int)*prev++ + *(data-bpp)) / 2) & 0xff;
 		++data;
 	}
@@ -281,6 +281,7 @@ Image PNG::load(const char* file) {
 }
 
 Image PNG::parse(const char* data, unsigned size) {
+	if(size<4) return Image();
 	const byte* stream = (const byte*)data;
 	const byte* end = stream + size;
 	return readPNGFile([&stream, end](unsigned len) {
