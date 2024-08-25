@@ -77,15 +77,15 @@ namespace base {
 			return result;
 		}
 
-		static String cat(const char* a, const char* b) { return cat(a, strlen(a), b, strlen(b)); }
-		static String cat(const char* a, int alen, const char* b, int blen) {
-			if(alen==0) return String(b, blen);
-			if(blen==0) return String(a, alen);
+		static String cat(const char* a, const char* b) { return cat(a, a?strlen(a):0, b, b?strlen(b):0); }
+		static String cat(const char* a, const char* b, const char* c) { return cat(a, a?strlen(a):0, b, b?strlen(b):0, c, c?strlen(c):0); }
+		static String cat(const char* a, int alen, const char* b, int blen, const char* c=0, int clen=0) {
 			String r;
-			r.m_data = (char*)malloc(alen + blen + 1);
+			r.m_data = (char*)malloc(alen + blen + clen + 1);
 			memcpy(r.m_data, a, alen);
 			memcpy(r.m_data+alen, b, blen);
-			r.m_data[alen+blen] = 0;
+			memcpy(r.m_data+alen+blen, c, clen);
+			r.m_data[alen+blen+clen] = 0;
 			return r;
 		}
 
@@ -151,12 +151,17 @@ namespace base {
 		StringView(const StringView& s) : m_data(s.m_data), m_length(s.m_length) {}
 		const StringView& operator=(const char* s)  { m_data=s; m_length=s? strlen(s): 0; return *this; }
 
-		bool operator==(const char* s) const        { return  m_data==s || (!m_data&&!*s) || (m_data && strcmp(m_data, s)==0); }
-		bool operator==(const StringView& s) const  { return m_data==s.m_data || (m_data && strcmp(m_data, s.m_data)==0); }
+		operator String() const { return String(m_data, m_length); }
+		bool operator==(const char* s) const        { return (empty() && (!s||!s[0])) || (m_data && s && strncmp(m_data, s, m_length)==0); }
+		bool operator==(const StringView& s) const  { return m_length==s.m_length && (m_length==0 || m_data==s.m_data || strncmp(m_data, s.m_data, m_length)==0); }
+		bool operator==(const String& s) const      { return *this == s.str(); }
 		bool operator!=(const char* s) const        { return !operator==(s); }
 		bool operator!=(const StringView& s) const  { return !operator==(s); }
+		bool operator!=(const String& s) const      { return !operator==(s.str()); }
 		friend bool operator==(const char* a, const StringView& s) { return s == a; }
 		friend bool operator!=(const char* a, const StringView& s) { return s != a; }
+		friend bool operator==(const String& a, const StringView& s) { return s.operator==(a.str()); }
+		friend bool operator!=(const String& a, const StringView& s) { return !s.operator==(a.str()); }
 
 		size_t length() const                       { return m_length; }
 		bool empty() const                          { return m_length==0; }
@@ -175,6 +180,7 @@ namespace base {
 		String operator+(const char* s) const       { return String::cat(m_data, m_length, s, s?strlen(s):0); }
 		String operator+(const StringView& s) const { return String::cat(m_data, m_length, s.m_data, s.m_length); }
 		friend String operator+(const char* a, const StringView& s) { return String::cat(a, a? strlen(a): 0, s.m_data, s.m_length); }
+		friend String operator+(const String& a, const StringView& s) { return String::cat(a.str(), a.length(), s.m_data, s.m_length); }
 		private:
 		const char* m_data;
 		size_t m_length;
