@@ -2,6 +2,7 @@
 #include <base/resources.h>
 #include <base/directory.h>
 #include <base/gui/menubuilder.h>
+#include <base/virtualfilesystem.h>
 
 #include "imageviewer.h"
 #include "modelviewer.h"
@@ -375,14 +376,11 @@ void AssetBrowser::removeCustomItem(const char* type, const char* name) {
 void AssetBrowser::buildResourceTree() {
 	m_resources.clear();
 	Resources& res = *Resources::getInstance();
-	static char buffer[512];
-	strcpy(buffer, "./");
-	auto addAsset = [this](ResourceType type, const char* name, ResourceManagerBase& rc) {
+	auto addAsset = [this, &res](ResourceType type, const char* name, ResourceManagerBase& rc) {
 		Asset a { type, name };
-		if(rc.findFile(name, buffer+2, 512)) {
-			if(buffer[2] == '.') a.file = buffer + 2;
-			else a.file = buffer;
-		}
+		// We need the full path within the virtual file system, starting with ./
+		VirtualFileSystem::File file = res.getFileSystem().getFile(name);
+		if(file) a.file = file.getFullPath();
 		m_resources.push_back(a);
 	};
 

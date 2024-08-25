@@ -2,6 +2,7 @@
 #include <base/shader.h>
 #include <base/material.h>
 #include <base/resources.h>
+#include <base/virtualfilesystem.h>
 #include <base/autovariables.h>
 #include <base/hardwarebuffer.h>
 #include <base/compositor.h>
@@ -30,73 +31,13 @@ Mutex resourceMutex;
 //// ResourceManagerBase functions ////
 
 ResourceManagerBase::~ResourceManagerBase() {
-	for(size_t i=0; i<m_paths.size(); ++i) free(m_paths[i]);
-}
-void ResourceManagerBase::addPath(const char* path) {
-	if(path && path[0]) m_paths.insert(m_paths.begin(), strdup(path) );
-}
-
-bool ResourceManagerBase::findFile(const char* name, char* out, size_t s) const {
-	if(m_paths.empty()) {
-		FILE* fp = fopen(name, "rb");
-		if(fp) {
-			fclose(fp);
-			strncpy(out, name, s-1);
-			return true;
-		}
-	}
-	else for(const char* path: m_paths) {
-		snprintf(out, s-1, "%s/%s", path, name);
-		out[s-1] = 0;
-		FILE* fp = fopen(out, "rb");
-		if(fp) {
-			fclose(fp);
-			return true;
-		}
-	}
-	return false;
 }
 
 void ResourceManagerBase::error(const char* msg, const char* name) const {
 	printf("%s %s\n", msg, name);
 }
 
-void Resources::addPath(const char* path) {
-	models.addPath(path);
-	textures.addPath(path);
-	materials.addPath(path);
-	shaders.addPath(path);
-	particles.addPath(path);
-}
-
 // ----------------------------------------------------------------------------------- //
-
-// Helper for loading a raw file
-class ResourceFile {
-	char* m_data;
-	public:
-	ResourceFile(const char* name, ResourceManagerBase* manager) : m_data(0) {
-		char filename[1024];
-		if(manager->findFile(name, filename, 1024)) {
-			FILE* fp = fopen(filename, "r");
-			if(fp) {
-				fseek(fp, 0, SEEK_END);
-				size_t length = ftell(fp);
-				rewind(fp);
-				m_data = new char[length+1];
-				fread(m_data, 1, length, fp);
-				m_data[length] = 0;
-				fclose(fp);
-			}
-		}
-	}
-	~ResourceFile() { delete [] m_data; }
-	operator const char*() const { return m_data; }
-	operator bool() const { return m_data; }
-};
-
-// ----------------------------------------------------------------------------------- //
-
 
 // Interface for loading resourced defines in xml files.
 class XMLResourceLoader {
@@ -117,6 +58,7 @@ class XMLResourceLoader {
 
 class TextureLoader : public ResourceLoader<Texture> {
 	public:
+	TextureLoader(VirtualFileSystem* fs) : m_fileSystem(fs) {}
 	Texture* create(const char*, Manager*) override;
 	bool reload(const char* name, Texture* object, Manager*) override;
 	void destroy(Texture*) override;
@@ -125,10 +67,11 @@ class TextureLoader : public ResourceLoader<Texture> {
 	void updateT() override;
 	static Texture createTexture(const Image&);
 	protected:
-	struct LoadMessage { Texture* target; String file; Image image; };
+	struct LoadMessage { Texture* target; VirtualFileSystem::File file; Image image; };
 	std::list<LoadMessage> m_requests;
 	std::list<LoadMessage> m_completed;
 	Texture* m_currentlyLoading = nullptr;
+	VirtualFileSystem* m_fileSystem = nullptr;
 };
 
 Texture TextureLoader::createTexture(const Image& image) {
@@ -161,19 +104,17 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 	}
 
 	// Resolve filename
-	char filename[1024];
-	if(!manager->findFile(name, filename, 1024)) return 0;
-
+	const VirtualFileSystem::File& file = m_fileSystem->getFile(name);
+	if(!file) return nullptr;
 
 	// Check extension
-	StringView ext = strrchr(filename, '.');
-
+	StringView ext = strrchr(name, '.');
 	if(resourceThread.running()) {
 		if(ext==".png" || ext==".dds") {
 			// Analyse filename to see if we want a normal map placeholder while the image loads
-			const char* end = filename + strlen(filename) - ext.length();
-			auto suffix = [filename, end](const char* s, int n) { // /.*[\._- ]n(:?orm(?:al)).png/
-				if(end - n - 1 <= filename) return false;
+			const char* end = name + strlen(name) - ext.length();
+			auto suffix = [name, end](const char* s, int n) { // /.*[\._- ]n(:?orm(?:al)).png/
+				if(end - n - 1 <= name) return false;
 				char separator = end[-n-1];
 				if(separator != '.' && separator != '-' && separator != '_' && separator != ' ') return false;
 				return strncmp(end - n, s, n)==0;
@@ -181,17 +122,23 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 			uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0xff8080: 0xffffff;
 			Texture* tex = new Texture(Texture::create(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex));
 			MutexLock lock(resourceMutex);
-			m_requests.push_back({tex, filename});
+			m_requests.push_back({tex, file});
 			return tex;
 		}
-		else printf("Resource Error: Invalid image file '%s'\n", filename);
+		else printf("Resource Error: Invalid image file '%s'\n", name);
 	}
 	else {
 		Image image;
-		if(ext == ".png") image = PNG::load(filename);
-		else if(ext == ".dds") image = DDS::load(filename);
+		if(ext == ".png") {
+			File data = file.read();
+			image = PNG::parse(data, data.size());
+		}
+		else if(ext == ".dds") {
+			File data = file.read();
+			image = DDS::parse(data, data.size());
+		}
 		if(image) return new Texture(createTexture(image));
-		else printf("Resource Error: Invalid image file '%s'\n", filename);
+		else printf("Resource Error: Invalid image file '%s'\n", name);
 	}
 	return nullptr;
 }
@@ -222,9 +169,15 @@ void TextureLoader::updateT() {
 	m_currentlyLoading = msg.target;
 	}
 
-	printf("Loading %s\n", msg.file.str());
-	if(msg.file.endsWith(".png")) msg.image = PNG::load(msg.file);
-	else if(msg.file.endsWith(".dds")) msg.image = DDS::load(msg.file);
+	printf("Loading %s\n", msg.file.name.str());
+	if(msg.file.name.endsWith(".png")) {
+		File data = msg.file.read();
+		msg.image = PNG::parse(data, data.size());
+	}
+	else if(msg.file.name.endsWith(".dds")) {
+		File data = msg.file.read();
+		msg.image = DDS::parse(data, data.size());
+	}
 
 	MutexLock lock(resourceMutex);
 	m_completed.push_back(std::move(msg));
@@ -234,9 +187,9 @@ void TextureLoader::updateT() {
 ResourceLoadProgress TextureLoader::update() {
 	MutexLock lock(resourceMutex);
 	for(LoadMessage& msg: m_completed) {
-		printf("Finished loading %s\n", msg.file.str());
+		printf("Finished loading %s\n", msg.file.name.str());
 		if(msg.image) *msg.target = createTexture(msg.image);
-		else printf("Resource Error: Invalid png file '%s'\n", msg.file.str());
+		else printf("Resource Error: Invalid png file '%s'\n", msg.file.name.str());
 	}
 	ResourceLoadProgress r { (uint)m_completed.size(), (uint)m_requests.size() };
 	m_completed.clear();
@@ -263,12 +216,13 @@ class ShaderVarsLoader : public ResourceLoader<ShaderVars> {
 // ----------------------------------------------------------------------------------- //
 class ShaderPartLoader : public ResourceLoader<ShaderPart> {
 	public:
-	ShaderPartLoader(ResourceManager<Shader>& usePathsFrom): m_shaders(usePathsFrom) {}
+	ShaderPartLoader(ResourceManager<Shader>& usePathsFrom, VirtualFileSystem* fs): m_shaders(usePathsFrom), m_fileSystem(fs) {}
 	ShaderPart* create(const char*, Manager*) override;
 	bool reload(const char* name, ShaderPart*, Manager*) override;
 	void destroy(ShaderPart* s) override { delete s; }
 	protected:
 	ResourceManager<Shader>& m_shaders;
+	VirtualFileSystem* m_fileSystem;
 };
 
 ShaderPart* ShaderPartLoader::create(const char* name, Manager* manager) {
@@ -307,7 +261,7 @@ ShaderPart* ShaderPartLoader::create(const char* name, Manager* manager) {
 		return part;
 	}
 
-	ResourceFile file(name, &m_shaders);
+	File file = m_fileSystem->getFile(name).read();
 	if(!file) {
 		printf("Error: Missing shader file: '%s'\n", name);
 		return 0;
@@ -335,8 +289,9 @@ bool ShaderPartLoader::reload(const char* name, ShaderPart* data, Manager* manag
 
 class ShaderLoader : public ResourceLoader<Shader> {
 	ResourceManager<ShaderPart>& m_partManager;
+	VirtualFileSystem* m_fileSystem;
 	public:
-	ShaderLoader(ResourceManager<ShaderPart>& parts) : m_partManager(parts) {}
+	ShaderLoader(ResourceManager<ShaderPart>& parts, VirtualFileSystem* fs) : m_partManager(parts), m_fileSystem(fs) {}
 	Shader* create(const char*, Manager*) override;
 	bool reload(const char*, Shader*, Manager*) override;
 	void destroy(Shader* s) override { delete s; }
@@ -369,7 +324,7 @@ Shader* ShaderLoader::create(const char* name, Manager* mgr) {
 					defines = e + 1;
 				}
 
-				ResourceFile file(name, mgr);
+				File file = m_fileSystem->getFile(name).read();
 				if(file) {
 					vs = new ShaderPart(VERTEX_SHADER, file, defines);
 					fs = new ShaderPart(FRAGMENT_SHADER, file, defines);
@@ -463,12 +418,12 @@ Material* MaterialLoader::create(const char* name, Manager* manager) {
 	// Materials are complicated
 	
 	// Resolve filename
-	char filename[1024];
-	if(!manager->findFile(name, filename, 1024)) {
+	File file = resources->getFileSystem().getFile(name).read();
+	if(!file) {
 		printf("MaterialLoader: File not found %s\n", name);
 		return 0;
 	}
-	XML xml = XML::load(filename);
+	XML xml = XML::parse(file);
 	XMLResourceLoader loader(resources);
 
 	// load materials
@@ -498,12 +453,12 @@ class ModelLoader : public ResourceLoader<Model> {
 };
 Model* ModelLoader::create(const char* name, Manager* manager) {
 	// Resolve filename
-	char filename[1024];
-	if(!manager->findFile(name, filename, 1024)) {
+	File file = resources->getFileSystem().getFile(name).read();
+	if(!file) {
 		printf("ModelLoader: File not found %s\n", name);
 		return 0;
 	}
-	XML xml = XML::load(filename);
+	XML xml = XML::parse(file);
 	XMLResourceLoader loader(resources);
 
 	// Materials defined here need to be loaded into the material manager somehow.
@@ -519,8 +474,8 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 	// Load model
 	Model* m = BMLoader::loadModel(xml.getRoot());
 
-	if(m) printf("Loaded %s\n", filename);
-	else printf("Failed to load %s\n", filename);
+	if(m) printf("Loaded %s\n", name);
+	else printf("Failed to load %s\n", name);
 
 	// Create vbo's
 	if(m) {
@@ -538,14 +493,16 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 // ----------------------------------------------------------------------------------- //
 
 class ParticleLoader : public ResourceLoader<particle::System> {
+	Resources* resources;
 	public:
+	ParticleLoader(Resources* r) : resources(r) {}
 	particle::System* create(const char*, Manager*) override;
 	void destroy(particle::System* m) override { delete m; }
 };
 particle::System* ParticleLoader::create(const char* name, Manager* manager) {
 	// Resolve filename
-	char filename[1024];
-	if(!manager->findFile(name, filename, 1024)) {
+	File file = resources->getFileSystem().getFile(name).read();
+	if(!file) {
 		printf("ParticleLoader: File not found %s\n", name);
 		return 0;
 	}
@@ -554,7 +511,7 @@ particle::System* ParticleLoader::create(const char* name, Manager* manager) {
 
 	script::Variable data;
 	script::Script script;
-	script.parse(File(filename).data());
+	script.parse(file);
 	script.run(data);
 	particle::System* system = particle::loadSystem(data.get("system"));
 	return system;
@@ -684,7 +641,7 @@ Shader* XMLResourceLoader::loadShader(const XMLElement& e) {
 	const char* defines = e.attribute("defines");
 	if(filename[0]) {
 		if(!name[0]) name = filename;
-		ResourceFile file(filename, &resources.shaders);
+		File file = resources.getFileSystem().getFile(filename).read();
 		if(file) {
 			ShaderPart* vs = new ShaderPart(VERTEX_SHADER, file, defines);
 			ShaderPart* fs = new ShaderPart(FRAGMENT_SHADER, file, defines);
@@ -700,7 +657,7 @@ Shader* XMLResourceLoader::loadShader(const XMLElement& e) {
 			filename = i.attribute("file");
 			const char* shaderTypes[] = { "vertex", "fragment", "geometry" };
 			int type = enumValue(i.attribute("type"), shaderTypes);
-			ResourceFile file(filename, &resources.shaders);
+			File file = resources.getFileSystem().getFile(filename).read();
 			if(type<0) printf("Invalid shader attachment type %s\n", i.attribute("type"));
 			else if(!file) printf("Error: Shader file not found: %s\n", filename);
 			else {
@@ -1182,19 +1139,33 @@ bool Resources::loadFile(const char* file) {
 
 Resources::Resources() {
 	s_instance = this;
+	m_fileSystem = new VirtualFileSystem();
 	Shader::getSupportedVersion();
 	// Setup default loaders
-	textures.setDefaultLoader( new TextureLoader() );
-	shaders.setDefaultLoader( new ShaderLoader(shaderParts) );
-	shaderParts.setDefaultLoader( new ShaderPartLoader(shaders) );
+	textures.setDefaultLoader( new TextureLoader(m_fileSystem) );
+	shaders.setDefaultLoader( new ShaderLoader(shaderParts, m_fileSystem) );
+	shaderParts.setDefaultLoader( new ShaderPartLoader(shaders, m_fileSystem) );
 	materials.setDefaultLoader( new MaterialLoader(this) );
 	models.setDefaultLoader( new ModelLoader(this));
-	particles.setDefaultLoader( new ParticleLoader() );
+	particles.setDefaultLoader( new ParticleLoader(this) );
 }
 
 Resources::~Resources() {
 	if(s_instance==this) s_instance = nullptr;
 	resourceThread.join();
+	delete m_fileSystem;
+}
+
+void Resources::addPath(const char* path) {
+	m_fileSystem->addPath(path);
+}
+
+void Resources::addArchive(const char* archive) {
+	m_fileSystem->addArchive(archive);
+}
+
+File Resources::openFile(const char* name) const {
+	return m_fileSystem->getFile(name).read();
 }
 
 int Resources::update() {

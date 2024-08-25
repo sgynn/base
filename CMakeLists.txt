@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 project(basecode)
 
 set(src
+	src/archive.cpp
 	src/camera.cpp
 	src/cameras.cpp
 	src/collision.cpp
@@ -21,6 +22,7 @@ set(src
 	src/scenecomponent.cpp
 	src/tiff.cpp
 	src/dds.cpp
+	src/virtualfilesystem.cpp
 	src/window.cpp
 	src/xml.cpp
 
@@ -120,7 +122,7 @@ set(editor
 )
 
 set(headers
-
+	include/base/archive.h
 	include/base/animationcontroller.h
 	include/base/animation.h
 	include/base/animationstate.h
@@ -178,6 +180,7 @@ set(headers
 	include/base/thread.h
 	include/base/tiff.h
 	include/base/vec.h
+	include/base/virtualfilesystem.h
 	include/base/wavefront.h
 	include/base/window.h
 	include/base/xml.h

@@ -9,6 +9,7 @@
 #include <base/resources.h>
 #include <base/script.h>
 #include <base/file.h>
+#include <base/virtualfilesystem.h>
 #include <base/editor/editor.h>
 #include <base/editor/nodeeditor.h>
 #include <base/editor/gradientbox.h>
@@ -142,13 +143,12 @@ ParticleEditor* ParticleEditorComponent::showParticleSystem(particle::System* sy
 }
 
 void ParticleEditorComponent::saveAll() {
-	char file[256];
 	base::Resources& res = *base::Resources::getInstance();
 	for(ParticleEditor* e: m_editors) {
 		if(e->isModified()) {
 			const char* name = res.particles.getName(e->getParticleSystem());
 			if(name) {
-				res.particles.findFile(name, file, 256);
+				const char* file = res.getFileSystem().getFile(name).getFullPath();
 				e->save(e->getParticleSystem(), file);
 				printf("Saved %s\n", file);
 				e->m_modified = false;
@@ -585,9 +585,9 @@ ParticleNode* ParticleEditor::createGraphNode(NodeType type, const char* classNa
 void ParticleEditor::notifyChange() {
 	if(m_modified) return;
 	m_modified = true;
-	char file[256];
 	const char* resource = base::Resources::getInstance()->particles.getName(m_system);
-	if(resource && base::Resources::getInstance()->particles.findFile(resource, file, 256)) {
+	if(resource) {
+		const char* file = base::Resources::getInstance()->getFileSystem().getFile(resource).getFullPath();
 		m_parent->getEditor()->assetChanged({ ResourceType::Particle, resource, file }, true);
 	}
 }

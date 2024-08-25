@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <cstdio>
 
 /** File loader class. This can be extended to use pak files etc */
@@ -11,9 +10,13 @@ namespace base {
 		enum Mode { READ=1, WRITE=2, READWRITE=3, BUFFER=8 };
 		File();
 		File(const char* name, Mode mode=BUFFER);
+		File(const char* name, char* data, size_t length);
 		File(const File&) = delete;
-		File(File&&);
+		File(File&&) noexcept;
 		~File();
+		File& operator=(File&&) noexcept;
+		operator const char*() const { return m_data; }
+		operator bool() const { return m_data || m_file; }
 		const char* data() const { return m_data; }
 		bool isOpen() const { return m_file != 0; }
 		size_t size() const { return m_size; }
@@ -30,23 +33,12 @@ namespace base {
 		template<class T=char> T get(T&& init)                      { T value=init; read(value); return value; }
 		protected:
 		int open();
-		int find();
 
 		char* m_name;	// File name
-		char* m_path;	// Full path
-
 		char* m_data;	// Buffered file data (read only)
 		FILE* m_file;		
 		size_t m_size;
 		Mode m_mode;
-
-		// Mechanism to add search paths
-		public:
-		static void addPath(const char* path);
-		static void clearPaths();
-		static int find(const char* name, char* path); //lightweigt version
-		private:
-		static std::vector<const char*> s_paths;
 	};
 };
 

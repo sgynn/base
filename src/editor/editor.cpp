@@ -134,6 +134,7 @@ const char* EditorComponent::getResourceNameFromFile(base::ResourceManagerBase& 
 	if(!filename || !filename[0]) return nullptr;
 	if(filename[0]=='.' && filename[1]=='/') filename += 2;
 
+	/*
 	StringView file(filename);
 	for(const char* path: rc.getSearchPaths()) {
 		if(path[0]=='.' && path[1]=='/') path += 2;
@@ -143,6 +144,7 @@ const char* EditorComponent::getResourceNameFromFile(base::ResourceManagerBase& 
 			return filename;
 		}
 	}
+	*/
 	return nullptr;
 }
 

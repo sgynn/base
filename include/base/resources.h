@@ -1,6 +1,7 @@
 #pragma once
 
 #include <base/resourcemanager.h>
+#include <base/file.h>
 
 namespace particle { class System; }
 namespace base { 
@@ -17,6 +18,7 @@ namespace base {
 	class Resources {
 		static Resources* s_instance;
 		float m_progress = 1.f;
+		VirtualFileSystem* m_fileSystem;
 		public:
 		static Resources* getInstance() { return s_instance; }
 		Resources();
@@ -36,8 +38,11 @@ namespace base {
 		// Load xml file defining multiple resources ?
 		bool loadFile(const char* file);
 
-		// Add serach path to all managers
+		// Add search path to filesystem
 		void addPath(const char* path);
+		void addArchive(const char* archive);
+		const VirtualFileSystem& getFileSystem() const { return *m_fileSystem; }
+		File openFile(const char* name) const;
 		
 		// Threaded or deferred loading. returns number of items finished this call
 		int update();

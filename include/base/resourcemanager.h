@@ -5,16 +5,12 @@
 #include <assert.h>
 
 namespace base {
+class VirtualFileSystem;
 
 class ResourceManagerBase {
 	public:
 	virtual ~ResourceManagerBase();
-	void  addPath(const char* path);                         /// Add search path
-	bool  findFile(const char* name, char* out, size_t s) const; /// Find a resource file
 	void  error(const char* message, const char* name) const; /// error message
-	const std::vector<char*>& getSearchPaths() const { return m_paths; }
-	private:
-	std::vector<char*> m_paths;
 };
 
 struct ResourceLoadProgress { unsigned completed; unsigned remaining; };
@@ -222,7 +218,9 @@ template<class T>
 void ResourceManager<T>::clear() {
 	for(auto i : m_resources) {
 		drop(i.value, true);
+		delete i.value;
 	}
+	m_resources.clear();
 }
 
 template<class T>
