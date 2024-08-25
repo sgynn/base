@@ -157,6 +157,78 @@ Image DDS::load(const char* filename) {
 	return Image(mode, format, header.width, header.height, header.depth, header.mipmaps, data);
 }
 
+Image DDS::parse(const char* stream, unsigned length) {
+	if(!stream || length < sizeof(DDSHeader)+4) return Image();
+
+	// Chech type header
+	if(strncmp(stream, "DDS ", 4)!=0) return Image();
+	stream += 4;
+	length -= 4;
+
+	// Read DDS header
+	const DDSHeader& header = *reinterpret_cast<const DDSHeader*>(stream);
+	stream += sizeof(DDSHeader);
+	length -= sizeof(DDSHeader);
+	// ToDo: Swap DWORD endian if MACOS
+	
+	// Get format info from header
+	Image::Mode mode = Image::FLAT;
+	if(header.caps2 & DDS_CUBEMAP) mode = Image::CUBE;
+	if(header.caps2 & DDS_VOLUME && header.depth>0) mode = Image::VOLUME;
+
+	// Get compression
+	Image::Format format = Image::INVALID;
+	if(header.format.flags == DDS_FOURCC) {
+		switch(header.format.fourCC) {
+		case FOURCC_DXT1: format = Image::BC1; break;
+		case FOURCC_DXT3: format = Image::BC2; break;
+		case FOURCC_DXT5: format = Image::BC3; break;
+		case FOURCC_ATI1: format = Image::BC4; break;
+		case FOURCC_ATI2: format = Image::BC5; break;
+		default:
+			// Note: FOURC_DX10 adds an additional header that allows texture arrays and floating point formats
+			return Image();
+		}
+	}
+	// Non-compressed formats
+	else if(header.format.flags == DDS_RGBA && header.format.bitCount == 32) format = Image::RGBA8;
+	else if(header.format.flags == DDS_RGB && header.format.bitCount == 32) format = Image::RGBA8;
+	else if(header.format.flags == DDS_RGB && header.format.bitCount == 24) format = Image::RGB8;
+	else if(header.format.bitCount == 8) format = Image::R8;
+	else return Image();
+
+
+	// Load all surfaces
+	int surfaces = mode==Image::CUBE? 6: 1;
+	Image::byte** data = new BYTE*[surfaces * header.mipmaps];
+	printf("DDS: %d surfaces, %d mipmaps\n", surfaces, header.mipmaps);
+	for(int n=0; n<surfaces; ++n) {
+		int w = header.width, h = header.height, d = header.depth;
+		for(unsigned i=0; i<header.mipmaps; ++i) {
+			// Clamp size
+			if(w<=0) w=1;
+			if(h<=0) h=1;
+			if(d<=0) d=1;
+
+			// Read pixels
+			DWORD size = calculateSize(format, w, h, d);
+			if(length < size) break; // Error: end of file
+			BYTE* pixels = new BYTE[size];
+			memcpy(pixels, stream, size);
+			stream += size;
+			length -= size;
+			data[ n + i * surfaces ] = pixels;
+
+			// Next mipmap
+			w = w>>1;
+			h = h>>1;
+			d = d>>1;
+		}
+	}
+
+	return Image(mode, format, header.width, header.height, header.depth, header.mipmaps, data);
+}
+
 bool DDS::save(const Image& image, const char* filename) {
 	if(!image) return false;
 	DDSHeader header;
