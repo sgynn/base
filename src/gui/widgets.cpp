@@ -101,7 +101,7 @@ void Label::setWordWrap(bool w) {
 void Label::updateWrap() {
 	m_wrapValues.clear();
 	Font* font = m_font? m_font: m_skin->getFont();
-	if(!m_caption || font) return;
+	if(!m_caption || !font) return;
 	int size = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
 	int length = m_caption.length();
 	Point full = font->getSize(m_caption, size, length);
