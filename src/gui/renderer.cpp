@@ -61,7 +61,8 @@ int Renderer::createTexture(int w, int h, int channels, void* data, bool clamp) 
 
 int Renderer::addImage(const char* file) {
 	base::Image image;
-	if(m_imagePath.empty()) image = base::PNG::load(file);
+	if(customImageLoader) image = customImageLoader(m_imagePath + file);
+	else if(m_imagePath.empty()) image = base::PNG::load(file);
 	else image = base::PNG::load(m_imagePath + file);
 	if(!image) return -1;
 	return addImage(file, image.getWidth(), image.getHeight(), image.getBytesPerPixel(), image.getData());

@@ -3,6 +3,8 @@
 #include "gui.h"
 #include "skin.h"
 
+namespace base { class Image; }
+
 namespace gui {
 
 struct ImageGenerator {
@@ -68,6 +70,8 @@ class Renderer {
 	void          dropImageReference(unsigned);
 
 	void          setImagePath(const char* path);
+
+	Delegate<base::Image(const char*)> customImageLoader;
 
 	public:
 	virtual void  begin(const Point& root, const Point& viewport);
