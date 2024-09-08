@@ -669,7 +669,7 @@ CompositorGraph* CompositorEditor::buildGraph() const {
 bool CompositorEditor::applyGraph(CompositorGraph* graph) {
 	Point size(256, 256);
 	Workspace* current = getEditor()->getWorkspace();
-	if(current) size.set(current->getWidth(), current->getHeight());
+	if(current && current->getWidth() > 0) size.set(current->getWidth(), current->getHeight());
 	Workspace* workspace = new Workspace(graph);
 	printf("[Compiling compositor graph: %s]\n", m_graphList->getSelectedItem()->getText());
 	if(workspace->compile(size.x, size.y)) {

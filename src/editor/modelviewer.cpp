@@ -94,7 +94,7 @@ Widget* ModelViewer::openAsset(const Asset& asset) {
 			}
 		}
 
-		Image* viewport = cast<Image>(preview->getWidget(1));
+		gui::Image* viewport = cast<gui::Image>(preview->getWidget(1));
 		viewport->setImage(img);
 		viewport->eventMouseMove.bind([&view](Widget* w, const Point& p, int b) {
 			if(b==4) { // Rotate
