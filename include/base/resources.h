@@ -38,9 +38,9 @@ namespace base {
 		// Load xml file defining multiple resources ?
 		bool loadFile(const char* file);
 
-		// Add search path to filesystem
-		void addPath(const char* path);
-		void addArchive(const char* archive);
+		// Add search paths to filesystem
+		void addFolder(const char* path, bool recursive=true, const char* mount="");
+		void addArchive(const char* archive, const char* mount="");
 		const VirtualFileSystem& getFileSystem() const { return *m_fileSystem; }
 		File openFile(const char* name) const;
 		

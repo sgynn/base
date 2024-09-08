@@ -1122,10 +1122,12 @@ void XMLResourceLoader::load(const XML& xml, const char* path) {
 		}
 	}
 }
-bool Resources::loadFile(const char* file) {
-	XML xml = XML::load(file);
+bool Resources::loadFile(const char* filename) {
+	File file = openFile(filename);
+	if(!file) file = File(filename); // Allow absolute path if not found in virtual file system
+	XML xml = XML::parse(file);
 	if(xml.getRoot().size()==0) {
-		printf("Error: Failed to load resource file: %s\n", file);
+		printf("Error: Failed to load resource file: %s\n", filename);
 		return false;
 	}
 	XMLResourceLoader loader(this);
@@ -1156,12 +1158,12 @@ Resources::~Resources() {
 	delete m_fileSystem;
 }
 
-void Resources::addPath(const char* path) {
-	m_fileSystem->addPath(path);
+void Resources::addFolder(const char* path, bool recursive, const char* mount) {
+	m_fileSystem->addPath(path, recursive, mount);
 }
 
-void Resources::addArchive(const char* archive) {
-	m_fileSystem->addArchive(archive);
+void Resources::addArchive(const char* archive, const char* mount) {
+	m_fileSystem->addArchive(archive, mount);
 }
 
 File Resources::openFile(const char* name) const {
