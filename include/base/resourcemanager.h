@@ -218,7 +218,12 @@ template<class T>
 void ResourceManager<T>::clear() {
 	for(auto i : m_resources) {
 		drop(i.value, true);
-		delete i.value;
+		// Detect aliases - resource may be in the map multiple times
+		bool alias = false; 
+		for(auto j=++m_resources.find(i.key); j!=m_resources.end(); ++j) {
+			if(i.value == j->value) { alias = true; break; }
+		}
+		if(!alias) delete i.value;
 	}
 	m_resources.clear();
 }

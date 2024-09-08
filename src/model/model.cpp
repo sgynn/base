@@ -9,9 +9,17 @@ Model::Model() : m_skeleton(0), m_animationState(0) {
 }
 
 Model::~Model() {
-	// memory leak
-	// need to delete meshes, skeletons, animations, morphs.
-	// everything should be reference counted
+	delete m_skeleton;
+	delete m_layout;
+	delete m_animationState;
+	for(Animation* a: m_animations) delete a;
+	for(ModelExtension* e: m_extensions) delete e;
+	for(MeshInfo& m: m_meshes) {
+		delete m.mesh;
+		free(m.name);
+		free(m.materialName);
+		delete [] m.skinMap;
+	}
 }
 
 // --------------------------------------------------------------------------------------- //
