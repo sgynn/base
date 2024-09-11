@@ -205,7 +205,7 @@ void ItemList::initialise(const PropertyMap& p) {
 	// Read items from propertymap
 	if(p.contains("count")) {
 		int count = atoi( p["count"] );
-		char index[6];
+		char index[11];
 		for(int i=0; i<=count; ++i) {
 			sprintf(index, "%d", i);
 			addItem( p[index] );
