@@ -216,9 +216,11 @@ XML XML::load(const char* file) {
 }
 XML XML::parse(const char* string) {
 	XML xml;
-	char* s = strdup(string);
-	xml.parseInternal(s);
-	free(s);
+	if(string && string[0]) {
+		char* s = strdup(string);
+		xml.parseInternal(s);
+		free(s);
+	}
 	return xml;
 }
 
