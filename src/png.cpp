@@ -294,7 +294,10 @@ Image PNG::parse(const char* data, unsigned size) {
 
 bool PNG::save(const base::Image& image, const char* file) {
 	if(!image) return false;
-	if(image.getFormat() > Image::RGBA8) return false;
+	if(image.getFormat() > Image::RGBA8) {
+		printf("Unsupported png format for %s\n", file);
+		return false;
+	}
 	FILE* fp = fopen(file,"wb");
 	if(!fp) return false;
 
