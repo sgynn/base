@@ -61,8 +61,7 @@ int Directory::clean(const char* in, char* out, int lim) {
 	int k=0;
 	for(const char* c=in; *c; c++) {
 		if(strncmp(c, "//", 2)==0) continue ; // repeated slashes
-		else if(k==0 && strncmp(c, "./", 2)==0) c+=2; // Ignore initial ./
-		else if(c>in && *(c-1)=='/' && strncmp(c, "./", 2)==0) c++; // no change
+		else if((c==in||*(c-1)=='/') && strncmp(c, "./", 2)==0) c++; // no change
 		else if(strncmp(c, "/.", 3)==0) c++; // ending in /.
 		else if(strncmp(c, "/../", 4)==0 || strncmp(c, "/..", 4)==0) { //up
 			if((k==2 && strncmp(out, "..", 2)) || (k>2 && strncmp(&out[k-3], "/..", 3))) {
@@ -72,7 +71,9 @@ int Directory::clean(const char* in, char* out, int lim) {
 				out[k] = 0;
 				c+=2;
 			} else out[k++] = *c;
-		} else out[k++] = *c;
+		}
+		else if(k==0 && *c=='/' && *in!='/') continue; // resolves extraneous slashes in .//blah 
+		else out[k++] = *c;
 	}
 	out[k]=0;
 	if(k==0) strcpy(out, ".");
