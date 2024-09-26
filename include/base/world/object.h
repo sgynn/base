@@ -22,7 +22,7 @@ class Object : public SceneNode {
 	RTTI_BASE(Object)
 	public:
 	using Variable = script::Variable;
-	Object(const script::Variable& data, const char* name=0);
+	Object(const script::Variable& data=Variable(), const char* name=0);
 	virtual ~Object();
 	virtual void onAdded() {} // Called whan added to zone
 	virtual void onRemoved() {}
@@ -36,6 +36,7 @@ class Object : public SceneNode {
 	void setTraceGroup(int group) { m_traceGroup = group; }
 
 	static Material* loadMaterial(const char* name, int weights=0, const char* base=0);
+	static Material* loadMaterial(const char* name, const char* base) { return loadMaterial(name, 0, base); }
 	static AnimationBank* getAnimationBank(const char* filename);
 	static AnimationBank* getAnimationBank(base::Model*);
 	static int addAnimationsFromModel(base::AnimationBank* bank, base::Model* model);
