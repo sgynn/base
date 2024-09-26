@@ -1131,7 +1131,7 @@ bool Resources::loadFile(const char* filename) {
 		return false;
 	}
 	XMLResourceLoader loader(this);
-	loader.load(xml, file);
+	loader.load(xml, filename);
 	return true;
 }
 
