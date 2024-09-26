@@ -294,7 +294,7 @@ Image PNG::parse(const char* data, unsigned size) {
 
 bool PNG::save(const base::Image& image, const char* file) {
 	if(!image) return false;
-	if(image.getFormat() > Image::RGBA8) {
+	if(image.getFormat() > Image::RGBA8 || image.getFormat() == Image::INVALID) {
 		printf("Unsupported png format for %s\n", file);
 		return false;
 	}
