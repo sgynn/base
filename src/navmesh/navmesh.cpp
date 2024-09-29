@@ -105,20 +105,23 @@ NavPoly* NavMesh::getClosestPolygon(const vec3& p, float max, vec3* out) const {
 			if(d < max) {
 				point = p;
 				r = poly;
+				max = d;
 			}
 		}
-		// get minimum distance from all edges
-		for(int j=poly->size-1, i=0; i<poly->size; j=i, ++i) {
-			if(!poly->links[j]) {
-				vec3 ij = poly->points[j] - poly->points[i];
-				float t = ij.dot(p - poly->points[i]) / ij.dot(ij);
-				t = t<0? 0: t>1? 1: t;
-				vec3 closestPoint = poly->points[i] + ij * t;
-				float d = p.distance2(closestPoint);
-				if(d < max) {
-					max = d;
-					r = poly;
-					point = closestPoint;
+		else {
+			// get minimum distance from all edges
+			for(int j=poly->size-1, i=0; i<poly->size; j=i, ++i) {
+				if(!poly->links[j]) {
+					vec3 ij = poly->points[j] - poly->points[i];
+					float t = ij.dot(p - poly->points[i]) / ij.dot(ij);
+					t = t<0? 0: t>1? 1: t;
+					vec3 closestPoint = poly->points[i] + ij * t;
+					float d = p.distance2(closestPoint);
+					if(d < max) {
+						max = d;
+						r = poly;
+						point = closestPoint;
+					}
 				}
 			}
 		}
