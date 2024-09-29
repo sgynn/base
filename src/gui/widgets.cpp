@@ -353,8 +353,10 @@ const char* Button::getCaption() const {
 
 void Checkbox::initialise(const Root* root, const PropertyMap& p) {
 	Button::initialise(root, p);
-	if(p.contains("icon")) m_checkedIcon = findImage(root, getIconGroup(), p["icon"]);
-	if(p.contains("nicon")) m_uncheckedIcon = findImage(root, getIconGroup(), p["nicon"]);
+	if(getIcon()) {
+		if(p.contains("icon")) m_checkedIcon = findImage(root, getIconGroup(), p["icon"]);
+		if(p.contains("nicon")) m_uncheckedIcon = findImage(root, getIconGroup(), p["nicon"]);
+	}
 	p.readValue("drag", m_dragMode);
 	setChecked(p.getValue("checked", isChecked()));
 }

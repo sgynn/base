@@ -78,7 +78,8 @@ class IconInterface {
 	void  setIcon(IconList* group, const char* name);
 	void  setIconColour(unsigned rgb, float a=1);
 	int   getIconIndex() const;
-	IconList* getIconGroup() const;
+	Image*      getIcon() const { return m_icon; }
+	IconList*   getIconGroup() const;
 	const char* getIconName() const;
 	protected:
 	IconInterface() {}
