@@ -179,7 +179,7 @@ Model* Object::loadModel(const char* file, AnimationController** animated, bool 
 
 	Model* model = Resources::getInstance()->models.get(file);
 	if(model) {
-		if(!model->getSkeleton()) animated = nullptr;
+		if(!model->getSkeleton() && animated && !*animated) animated = nullptr;
 		for(int i=0; i<model->getMeshCount(); ++i) {
 			Mesh* mesh = model->getMesh(i);
 			if(filter && strcmp(model->getMeshName(i), filter)!=0) continue;
