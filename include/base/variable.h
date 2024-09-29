@@ -17,6 +17,10 @@ namespace script {
 	/// Console Variables. Can be stured internally, or a pointer to external data
 	class Variable {
 		friend class Expression;
+		// FIXED    : Type cannot be changed
+		// CONST    : Value cannot be changed
+		// LINK     : Data stored externally (Always FIXED)
+		// EXPLICIT : Object has fixed structure
 		enum Types { OBJECT=1, BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, ARRAY, STRING, FUNCTION, FIXED=0x20, CONST=0x40, LINK=0x80, EXPLICIT=0x100 };
 		struct Object {
 			std::vector<uint8> lookup;		// map of nameID -> item index
@@ -54,7 +58,7 @@ namespace script {
 		Variable(const Variable&);				// Copy constructor
 		Variable(Variable&&) noexcept;					// Move constructor
 		const Variable& operator=(const Variable&);
-		Variable& operator=(Variable&&) noexcept;		// Move operator
+		//Variable& operator=(Variable&&) noexcept;		// Move operator disabled as it breaks LINKs
 		Variable copy(uint depth) const;		// Make a deep copy
 
 		template<typename T>Variable(T v): type(0) { *this=v; }

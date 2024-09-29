@@ -100,11 +100,12 @@ Variable::Variable(Variable&& v) noexcept : type(v.type) {
 	v.obj = 0;
 	v.type = 0;
 }
+/*
 Variable& Variable::operator=(Variable&& v) noexcept {
 	std::swap(obj, v.obj);
 	std::swap(type, v.type);
 	return *this;
-}
+}*/
 
 //// Duplication ////
 Variable::Variable(const Variable& v) : type(0) { *this = v; }
