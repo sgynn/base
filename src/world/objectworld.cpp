@@ -45,7 +45,8 @@ void ObjectWorld::update(float time) {
 
 void ObjectWorld::processMessages() {
 	if(!m_sceneNode) return;
-	for(MessageData& msg : m_messages) {
+	for(size_t i=0; i<m_messages.size(); ++i) {
+		MessageData msg = m_messages[i];
 		Object* o = msg.object;
 		switch(msg.type) {
 		case Message::Add:
