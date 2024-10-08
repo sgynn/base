@@ -45,7 +45,7 @@ void main() {
 	// Get direction and atmosphere intersection
 	float outer = radius+thickness;
 	vec3  ray = normalize(vertex.xyz);
-	ray.y = max(0, ray.y);
+	ray.y = max(0.0, ray.y);
 	float b = radius * ray.y;
 	float c = radius*radius - outer*outer;
 	float far = -b + sqrt(b*b-c);
@@ -97,8 +97,8 @@ out vec4 fragment;
 
 float dither(int x, int y, float value) {
 	float key[16] = float[]( 0.0,8.0,2.0,10.0, 12.0,4.0,14.0,6.0, 3.0,11.0,1.0,9.0, 15.0,7.0,13.0,5.0 );
-	float limit = (key[x+y*4]+1)/16;
-	return value<limit? 1: 0;
+	float limit = (key[x+y*4] + 1.0) / 16.0;
+	return value<limit? 1.0: 0.0;
 }
 
 void main() {
@@ -108,8 +108,8 @@ void main() {
 	fragment.rgb = colour1 + miePhase * colour2;
 	
 	// Try dithering to reduce banding
-	int x = int(mod(gl_FragCoord.x,4));
-	int y = int(mod(gl_FragCoord.y,4));
+	int x = int(mod(gl_FragCoord.x,4.0));
+	int y = int(mod(gl_FragCoord.y,4.0));
 	fragment.r += dither(x,y,fragment.r) * 0.004 - 0.002;
 	fragment.g += dither(x,y,fragment.g) * 0.004 - 0.002;
 	fragment.b += dither(x,y,fragment.b) * 0.004 - 0.002;
