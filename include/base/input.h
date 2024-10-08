@@ -156,6 +156,10 @@ namespace base {
 		MOUSE_SIDE2  = 16
 	};
 
+	inline KeyCode operator|(KeyCode c, KeyModifiers m) { return (KeyCode)((int)c | (int)m); }
+	inline MouseButton operator|(MouseButton c, KeyModifiers m) { return (MouseButton)((int)c | (int)m); }
+
+
 	/// Mouse class -----------------------------------------------------------------
 	struct Mouse {
 		int x, y;		// Position - origin top-left
@@ -227,7 +231,7 @@ namespace base {
 		/** The ascii character of the last key pressed. */
 		char lastChar() const { return m_lastChar; }
 		/** Get key shift mask */
-		int getKeyModifier() const { return m_keyMask; }
+		KeyModifiers getKeyModifier() const { return m_keyMask; }
 		
 		/** Warp the mouse pointer to a location. Origin botom left of the window */
 		void warpMouse(int x, int y);
@@ -248,13 +252,13 @@ namespace base {
 		uint getAction(const char* name);	// Will create it if it does not exist
 		uint setAction(const char* name, uint action); // Use to force actions to an enum or something
 		const char* getActionName(uint action) const;
-		void bind(uint action, uint keycode);
-		void bindMouse(uint action, uint button);
+		void bind(uint action, KeyCode keycode);
+		void bind(uint action, MouseButton button);
 		void bindJoystick(uint action, uint joystick, uint button);
 		void bindJoystick(uint action, uint joystick, uint axis, float threshold);
 		void bindJoystickValue(uint action, uint joystick, uint axis, float multiplier=1);
 		void bindButtonValue(uint action, uint joystick, uint button, float value);
-		void bindButtonValue(uint action, uint keycode, float value);
+		void bindButtonValue(uint action, KeyCode keycode, float value);
 		void bindMouseValue(uint action, uint axis, float multiplier=1);
 		void unbind(uint action);
 		void unbindAll();
@@ -266,7 +270,9 @@ namespace base {
 		void saveActions(class INIFile&) const;
 
 		template<typename...A>
-		void bind(uint action, uint keycode, A...keycodes) { bind(action, keycode); bind(action, keycodes...); }
+		void bind(uint action, KeyCode keycode, A...keycodes) { bind(action, keycode); bind(action, keycodes...); }
+		template<typename...A>
+		void bind(uint action, MouseButton mouse, A...keycodes) { bind(action, mouse); bind(action, keycodes...); }
 		
 		/** Update must be called once per frame BEFORE window events are processed */
 		void update();
@@ -275,7 +281,7 @@ namespace base {
 		
 		bool m_key[128];		// state, pressed, released
 		char m_keyChange[128];	// keys that were pressed or released during the last frame
-		int  m_keyMask;			// current key mask state
+		KeyModifiers m_keyMask;	// current key mask state
 		int  m_lastKey;			//the last key that was pressed
 		char m_lastChar;		//Ascii character of last key
 		
@@ -298,7 +304,8 @@ namespace base {
 
 		// Input binding
 		HashMap<uint> m_names;
-		struct Binding { uint button:8; uint type:2; uint mask:6; }; // 16 bits
+		enum class BindingType : uint8 { Key, MouseButton, ControllerButton, ControllerAxis };
+		struct Binding { BindingType type; uint8 button; uint8 mask; };
 		struct ValueBinding { uint8 type; uint8 js; uint16 index; float multiplier; };
 		std::vector< std::vector<Binding> > m_binding;
 		std::vector< std::vector<ValueBinding> > m_valueBinding;

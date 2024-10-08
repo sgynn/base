@@ -84,11 +84,11 @@ void Input::setKey(int code, bool down) {
 	else if(key == KEY_LMETA || key == KEY_RMETA) maskKey = MODIFIER_META;
 
 	if(down) {
-		m_keyMask |= maskKey;
+		m_keyMask = (KeyModifiers)(m_keyMask | maskKey);
 		m_lastKey = key;
 		m_lastChar = s_ascii[ m_keyMask & MODIFIER_SHIFT? 1: 0 ][ m_lastKey ];
 	}
-	else m_keyMask &= ~maskKey;
+	else m_keyMask = (KeyModifiers)(m_keyMask & ~maskKey);
 }
 
 
@@ -232,7 +232,7 @@ void Input::clear() {
 	m_mouseState.delta.set(0,0);
 	m_lastKey = 0;
 	m_lastChar = 0;
-	m_keyMask = 0;
+	m_keyMask = MODIFIER_ANY;
 }
 
 
@@ -250,24 +250,24 @@ uint Input::setAction(const char* name, uint key) {
 	return key;
 }
 
-void Input::bind(uint action, uint keycode) {
+void Input::bind(uint action, KeyCode keycode) {
 	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
-	m_binding[action].push_back(Binding{keycode&0xff, 0, keycode>>8});
+	m_binding[action].push_back(Binding{BindingType::Key, (uint8)(keycode&0xff), (uint8)(keycode>>8)});
 }
 
-void Input::bindMouse(uint action, uint button) {
+void Input::bind(uint action, MouseButton button) {
 	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
-	m_binding[action].push_back(Binding{button, 1, 0});
+	m_binding[action].push_back(Binding{BindingType::MouseButton, (uint8)(button&0xff), (uint8)(button>>8)});
 }
 
 void Input::bindJoystick(uint action, uint js, uint button) {
 	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
-	m_binding[action].push_back(Binding{button, 2, js});
+	m_binding[action].push_back(Binding{BindingType::ControllerButton, (uint8)button, (uint8)js});
 }
 
 void Input::bindJoystick(uint action, uint js, uint axis, float threshold) {
 	while(m_binding.size() <= action) m_binding.push_back(std::vector<Binding>());
-	m_binding[action].push_back(Binding{(uint)m_axisBinding.size(), 3, js});
+	m_binding[action].push_back(Binding{BindingType::ControllerAxis, (uint8)m_axisBinding.size(), (uint8)js});
 	m_axisBinding.push_back({(uint8)js, (uint8)axis, (char)(threshold*127), 0});
 }
 
@@ -284,7 +284,7 @@ void Input::bindJoystickValue(uint action, uint joystick, uint axis, float multi
 void Input::bindMouseValue(uint action, uint axis, float multiplier) {
 	bindAxisInternal(action, axis<2? 2: 3, 0, axis, multiplier);
 }
-void Input::bindButtonValue(uint action, uint key, float value) {
+void Input::bindButtonValue(uint action, KeyCode key, float value) {
 	bindAxisInternal(action, 4, 0, key, value);
 }
 void Input::bindButtonValue(uint action, uint joystick, uint button, float value) {
@@ -310,14 +310,18 @@ inline bool Input::checkJoystickThreshold(const AxisBinding& binding) const {
 	return false;
 }
 
+inline bool checkKeyModifier(uint8 bindingMask, int keyMask) {
+	return bindingMask==MODIFIER_ANY || (keyMask&bindingMask<<8) || (!keyMask && bindingMask==MODIFIER_NONE>>8);
+}
+
 bool Input::check(uint action) const {
 	if(action >= m_binding.size()) return false;
 	for(Binding b: m_binding[action]) {
 		switch(b.type) {
-		case 0: if(key(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask>>8) || (!m_keyMask&&b.mask==MODIFIER_NONE>>8))) return true; break;
-		case 1: if(mouse.button & 1<<b.button) return true; break;
-		case 2: if(joystick(b.mask).button(b.button)) return true; break;
-		case 3: if(checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
+		case BindingType::Key:              if(key(b.button) && checkKeyModifier(b.mask, m_keyMask)) return true; break;
+		case BindingType::MouseButton:      if((mouse.button&b.button) && checkKeyModifier(b.mask, m_keyMask)) return true; break;
+		case BindingType::ControllerButton: if(joystick(b.mask).button(b.button)) return true; break;
+		case BindingType::ControllerAxis:   if(checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
 		}
 	}
 	return false;
@@ -327,10 +331,10 @@ bool Input::pressed(uint action) const {
 	if(action >= m_binding.size()) return false;
 	for(Binding b: m_binding[action]) {
 		switch(b.type) {
-		case 0: if(keyPressed(b.button) && (b.mask==MODIFIER_ANY || (m_keyMask&b.mask>>8) || (!m_keyMask&&b.mask==MODIFIER_NONE>>8))) return true; break;
-		case 1: if(mouse.pressed & 1<<b.button) return true; break;
-		case 2: if(joystick(b.mask).pressed(b.button)) return true; break;
-		case 3: if(!m_axisBinding[b.button].last && checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
+		case BindingType::Key:              if(keyPressed(b.button) && checkKeyModifier(b.mask, m_keyMask)) return true; break;
+		case BindingType::MouseButton:      if((mouse.pressed&b.button) && checkKeyModifier(b.mask, m_keyMask)) return true; break;
+		case BindingType::ControllerButton: if(joystick(b.mask).pressed(b.button)) return true; break;
+		case BindingType::ControllerAxis:   if(!m_axisBinding[b.button].last && checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
 		}
 	}
 	return false;
@@ -340,10 +344,10 @@ bool Input::released(uint action) const {
 	if(action >= m_binding.size()) return false;
 	for(Binding b: m_binding[action]) {
 		switch(b.type) {
-		case 0: if(keyReleased(b.button)) return true; break;
-		case 1: if(mouse.released & 1<<b.button) return true; break;
-		case 2: if(joystick(b.mask).pressed(b.button)) return true; break;
-		case 3: if(m_axisBinding[b.button].last && !checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
+		case BindingType::Key:              if(keyReleased(b.button)) return true; break;
+		case BindingType::MouseButton:      if(mouse.released & b.button) return true; break;
+		case BindingType::ControllerButton: if(joystick(b.mask).pressed(b.button)) return true; break;
+		case BindingType::ControllerAxis:   if(m_axisBinding[b.button].last && !checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
 		}
 	}
 	return false;
