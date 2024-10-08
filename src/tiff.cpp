@@ -123,7 +123,7 @@ TiffStream* TiffStream::openStream( const char* file, Mode mode) {
 		fseek(fp, img->m_bitsPerSample[0], SEEK_SET);
 		word b[4] = {0,0,0,0};
 		fread(b, img->m_samplesPerPixel, 2, fp);
-		for(uint i=0; i<img->m_samplesPerPixel; ++i) img->m_bitsPerSample[i] = b[i];
+		for(unsigned i=0; i<img->m_samplesPerPixel; ++i) img->m_bitsPerSample[i] = b[i];
 
 		// Sample Format (1=uint, 2=int, 3=float, 4=void) may or may not be per sample
 		// Technically tiff allows this to be different per sample
@@ -135,19 +135,19 @@ TiffStream* TiffStream::openStream( const char* file, Mode mode) {
 	}
 
 	img->m_bitsPerPixel = 0;
-	for(uint i=0; i<img->m_samplesPerPixel; ++i) img->m_bitsPerPixel += img->m_bitsPerSample[i];
+	for(unsigned i=0; i<img->m_samplesPerPixel; ++i) img->m_bitsPerPixel += img->m_bitsPerSample[i];
 
 
 	// Update strip offsets
 	if(stripCount>1) {
 		img->m_stripCount = stripCount;
-		img->m_stripOffsets = new uint[ stripCount ];
+		img->m_stripOffsets = new unsigned[ stripCount ];
 		fseek(fp, stripOffsets, SEEK_SET);
 		fread(img->m_stripOffsets, 4, stripCount, fp);
 	}
 	else if(stripCount==1) {
 		img->m_stripCount = 1;
-		img->m_stripOffsets = new uint[1];
+		img->m_stripOffsets = new unsigned[1];
 		img->m_stripOffsets[0] = stripOffsets;
 	}
 
@@ -186,7 +186,7 @@ TiffStream* TiffStream::createStream(const char* file, int w, int h, Image::Form
 	img->m_sampleFormat = Image::getPixelType(format) > Image::WORD? 3: 1; // float or uint
 	img->m_rowsPerStrip = h;
 	img->m_stripCount = 1;
-	img->m_stripOffsets = new uint[1];
+	img->m_stripOffsets = new unsigned[1];
 	for(int i=0; i<channels; ++i) img->m_bitsPerSample[i] = bytesPerChannel * 8;
 
 
@@ -259,9 +259,9 @@ TiffStream* TiffStream::createStream(const char* file, int w, int h, Image::Form
 }
 
 inline size_t TiffStream::getAddress(int x, int y) const {
-	uint strip = y / m_rowsPerStrip;
-	uint index = x + (y-strip*m_rowsPerStrip) * m_width;
-	uint bpp = m_bitsPerPixel / 8;
+	unsigned strip = y / m_rowsPerStrip;
+	unsigned index = x + (y-strip*m_rowsPerStrip) * m_width;
+	unsigned bpp = m_bitsPerPixel / 8;
 	return m_stripOffsets[strip] + bpp*index;
 }
 
@@ -285,7 +285,7 @@ size_t TiffStream::setPixel(int x, int y, void* data) {
 size_t TiffStream::readBlock(int x, int y, int width, int height, void* data) const {
 	if(x<=-width || y<=-height || x>=(int)m_width || y>=(int)m_height) return 0;	// fully outside image
 	// assume data is correctly allocated
-	uint bytes = m_bitsPerPixel / 8;
+	unsigned bytes = m_bitsPerPixel / 8;
 	size_t offset = x<0? -x: 0;
 	size_t len = x+width > (int)m_width? m_width-x-offset: width-offset;
 	size_t count = 0;
@@ -300,7 +300,7 @@ size_t TiffStream::readBlock(int x, int y, int width, int height, void* data) co
 }
 size_t TiffStream::writeBlock(int x, int y, int width, int height, const void* data) {
 	if(x<=-width || y<=-height || x>=(int)m_width || y>=(int)m_height) return 0;	// fully outside image
-	uint bytes = m_bitsPerPixel / 8;
+	unsigned bytes = m_bitsPerPixel / 8;
 	size_t offset = x<0? -x: 0;
 	size_t len = x+width > (int)m_width? m_width-x-offset: width-offset;
 	size_t count = 0;
@@ -328,8 +328,8 @@ Image Tiff::load(const char* file) {
 		int height = stream->height();
 		Image::Format format = Image::INVALID;
 
-		uint ch = stream->channels();
-		uint bpp = stream->bpp();
+		unsigned ch = stream->channels();
+		unsigned bpp = stream->bpp();
 		if(stream->sampleFormat() == 1) { // UINT
 			if(bpp==16 && ch==1) format = Image::R16;
 			else if(bpp==8*ch) format = (Image::Format)ch;
@@ -342,7 +342,7 @@ Image Tiff::load(const char* file) {
 		if(format == Image::INVALID) {
 			const char* types[] = { "Invalid", "uint", "int", "float", "void", "complex int", "complex float" };
 			printf("Unhandled Tiff image format [%d bits, %d channels ", bpp, ch);
-			if(ch>1) for(uint i=0;i<ch;++i) printf("%d ", stream->m_bitsPerSample[i]);
+			if(ch>1) for(unsigned i=0;i<ch;++i) printf("%d ", stream->m_bitsPerSample[i]);
 			printf("%s]\n", types[stream->sampleFormat()]);
 			return Image();
 		}
