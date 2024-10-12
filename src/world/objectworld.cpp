@@ -5,12 +5,13 @@
 using namespace base;
 using script::Variable;
 
-ObjectWorld::ObjectWorld(base::SceneNode* scene, const Variable& data) : m_sceneNode(scene), m_data(data) {
+ObjectWorld::ObjectWorld(SceneNode* scene, Camera* camera, const Variable& data) : m_sceneNode(scene), m_camera(camera), m_data(data) {
 }
 
-void ObjectWorld::initialise(base::SceneNode* scene, const Variable& data) {
+void ObjectWorld::initialise(base::SceneNode* scene, Camera* camera, const Variable& data) {
 	assert(!m_sceneNode);
 	m_sceneNode = scene;
+	m_camera = camera;
 	m_data = data;
 }
 
