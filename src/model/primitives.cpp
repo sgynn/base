@@ -15,13 +15,16 @@ static Mesh* createMesh(int vsize, float* vx, int isize, uint16* ix, PolygonMode
 	vbuf->setData(vx, vsize, 11*sizeof(float), true);
 	vbuf->createBuffer();
 
-	HardwareIndexBuffer* ibuf = new HardwareIndexBuffer();
-	ibuf->setData(ix, isize, true);
-	ibuf->createBuffer();
+	HardwareIndexBuffer* ibuf;
+	if(ix) {
+		ibuf = new HardwareIndexBuffer();
+		ibuf->setData(ix, isize, true);
+		ibuf->createBuffer();
+	}
 
 	Mesh* mesh = new Mesh();
 	mesh->setVertexBuffer(vbuf);
-	mesh->setIndexBuffer(ibuf);
+	if(ix) mesh->setIndexBuffer(ibuf);
 	mesh->calculateBounds();
 	mesh->setPolygonMode(mode);
 	return mesh;
@@ -182,6 +185,26 @@ Mesh* createCapsule(float radius, float length, int seg, int div) {
 	return createMesh(vcount, vx, size-1, ix, PolygonMode::TRIANGLE_STRIP);
 }
 // ----------------------------------------------------------------------------- //
+Mesh* createCircle(float radius, int seg) {
+	vec3* ring = createRing(seg);
+	float* vx = new float[seg * 11];
+	float* v = vx;
+	auto addVertex = [&v, ring, radius, seg](int i) {
+		set(v, ring[i] * radius);
+		set(v+3, vec3(0,1,0));
+		set(v+6, vec3(1,0,0));
+		v[9] = ring[i].x * 0.5 + 0.5;
+		v[10] = ring[i].z * 0.5 + 0.5;
+		v += 11;
+	};
+	for(int s=0, e=seg-1; s<e; --e) {
+		addVertex(s);
+		if(++s <= e) addVertex(e);
+	}
+	delete [] ring;
+	return createMesh(seg, vx, 0, nullptr, PolygonMode::TRIANGLE_STRIP);
+}
+// ----------------------------------------------------------------------------- //
 Mesh* createCylinder(float radius, float length, int seg) {
 	// Vertices
 	length /= 2;
@@ -210,7 +233,7 @@ Mesh* createCylinder(float radius, float length, int seg) {
 		set(v, ring[seg-i] * radius);
 		set(v+3, vec3(0,1,0));
 		set(v+6, vec3(1,0,0));
-		v[9] = ring[i].x * 0.5 + 0.5;
+		v[9] = -ring[i].x * 0.5 + 0.5;
 		v[10] = ring[i].z * 0.5 + 0.5;
 		v[1] += length;
 
@@ -218,7 +241,7 @@ Mesh* createCylinder(float radius, float length, int seg) {
 		set(v, ring[i] * radius); // opposite winding
 		set(v+3, vec3(0,1,0));
 		set(v+6, vec3(1,0,0));
-		v[9] = ring[i].x * 0.5 + 0.5;
+		v[9] = -ring[i].x * 0.5 + 0.5;
 		v[10] = ring[i].z * 0.5 + 0.5;
 		v[1] -= length;
 	}
