@@ -95,6 +95,11 @@ void SceneNode::detach(Drawable* d) {
 	}
 }
 
+void SceneNode::setRenderQueue(int queue, bool recursive) {
+	for(Drawable* d: m_drawables) d->setRenderQueue(queue);
+	if(recursive) for(SceneNode* n: m_children) n->setRenderQueue(queue, true);
+}
+
 bool SceneNode::isAttached(const Drawable* item) const {
 	for(Drawable* d: m_drawables) if(d==item) return true;
 	return false;

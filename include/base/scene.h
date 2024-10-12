@@ -67,6 +67,7 @@ namespace base {
 		size_t     getChildCount() const;
 		size_t     getAttachmentCount() const;
 		bool       isAttached(const Drawable*) const;
+		void       setRenderQueue(int, bool recursive=true);
 
 		void        deleteAttachments(bool recursive=false);
 		void        deleteChildren(bool deleteAttachments=false);
