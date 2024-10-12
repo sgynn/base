@@ -144,6 +144,7 @@ int NavMesh::getClosestBoundary(const vec3& p, uint id, float radius, vec3& out,
 		for(EdgeInfo& edge : poly) {
 			// Closest point
 			vec3 dir = edge.direction();
+			dir.y = 0;
 			float t = dir.dot(p - poly->points[edge.a]) / dir.dot(dir);
 			t = fclamp(t, 0, 1);
 			vec3 closestPoint = edge.point() + dir * t;
