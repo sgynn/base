@@ -143,4 +143,12 @@ bool FrameBuffer::bind() const {
 	return bind( Rect(0, 0, width(), height()) );
 }
 
+void FrameBuffer::clear(const Colour& c, float depth) {
+	const FrameBuffer* last = s_bound;
+	if(s_bound != this) bind();
+	glClearColor(c.r, c.g, c.b, c.a);
+	glClearDepth(depth);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if(last != this) last->bind();
+}
 

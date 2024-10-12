@@ -30,6 +30,7 @@ class FrameBuffer {
 	/** Bind the framebuffer as the current a render target */
 	bool bind() const;
 	bool bind(const Rect& r) const;
+	void clear(const Colour& colour = Colour(0,0,0,0), float depth=1.f);
 
 	/** is this framebuffer bound? */
 	bool isBound() const { return s_bound==this; }
