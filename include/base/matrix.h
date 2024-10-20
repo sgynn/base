@@ -28,6 +28,8 @@ class Matrix {
 	vec3     transform  (const vec3&) const;	// Transform a vector - same as matrix * vector
 	vec3     unrotate   (const vec3&) const; 	// Multiply vector by inverse rotation part
 	vec3     untransform(const vec3&) const;	// Multiply vector by inverse affine matrix
+	Ray      transform(const Ray&) const;
+	Ray      untransform(const Ray&) const;
 
 	Matrix&  setIdentity();			// Set this matrix to the identity matrix
 	Matrix&  transpose();			// Transpose this matrix
@@ -141,6 +143,18 @@ inline vec3 Matrix::untransform(const vec3& v) const {
 	result.x = m[0]*t.x + m[1]*t.y + m[2]*t.z;
 	result.y = m[4]*t.x + m[5]*t.y + m[6]*t.z;
 	result.z = m[8]*t.x + m[9]*t.y + m[10]*t.z;
+	return result;
+}
+inline Ray Matrix::transform(const Ray& ray) const {
+	Ray result;
+	result.start = transform(ray.start);
+	result.direction = rotate(ray.direction);
+	return result;
+}
+inline Ray Matrix::untransform(const Ray& ray) const {
+	Ray result;
+	result.start = untransform(ray.start);
+	result.direction = unrotate(ray.direction);
 	return result;
 }
 inline Matrix& Matrix::transpose() {
