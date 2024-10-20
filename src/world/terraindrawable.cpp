@@ -14,7 +14,7 @@ struct PatchTag {
 };
 
 
-TerrainDrawable::TerrainDrawable(Landscape* land, Material* mat) : m_land(land) {
+TerrainDrawable::TerrainDrawable(Landscape* land, Material* mat, bool update) : m_land(land), m_autoUpdate(update) {
 	setMaterial(mat);
 	m_land->setPatchCallbacks( ::bind(this, &TerrainDrawable::patchCreated),
 							   ::bind(this, &TerrainDrawable::patchDetroyed),
@@ -23,11 +23,13 @@ TerrainDrawable::TerrainDrawable(Landscape* land, Material* mat) : m_land(land) 
 
 void TerrainDrawable::draw(base::RenderState& r) {
 	// This block ideally should be elsewhere
-	Camera cam = *r.getCamera();
-	cam.setPosition( cam.getPosition() - vec3(&getTransform()[12]));
-	cam.updateFrustum();
-	m_land->update( &cam );
-	m_land->cull( &cam );
+	if(m_autoUpdate) {
+		Camera cam = *r.getCamera();
+		cam.setPosition( cam.getPosition() - vec3(&getTransform()[12]));
+		cam.updateFrustum();
+		m_land->update( &cam );
+		m_land->cull( &cam );
+	}
 
 	r.setMaterial( m_material );
 	for(const PatchGeometry* g: m_land->getGeometry()) {
