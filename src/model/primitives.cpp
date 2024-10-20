@@ -189,7 +189,7 @@ Mesh* createCircle(float radius, int seg) {
 	vec3* ring = createRing(seg);
 	float* vx = new float[seg * 11];
 	float* v = vx;
-	auto addVertex = [&v, ring, radius, seg](int i) {
+	auto addVertex = [&v, ring, radius](int i) {
 		set(v, ring[i] * radius);
 		set(v+3, vec3(0,1,0));
 		set(v+6, vec3(1,0,0));

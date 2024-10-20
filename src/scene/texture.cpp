@@ -89,7 +89,7 @@ unsigned Texture::getInternalFormat(Format f) {
 		GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F,
 		GL_R16F, GL_RG16F, GL_RGB16F, GL_RGBA16F,
 		GL_R11F_G11F_B10F, GL_RGB565,
-		GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8
+		GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8
 	};
 	return formats[f];
 }
@@ -100,7 +100,7 @@ unsigned Texture::getDataFormat(Format f) {
 		GL_RED, GL_RG, GL_RGB, GL_RGBA,
 		GL_RED, GL_RG, GL_RGB, GL_RGBA,
 		GL_RGB, GL_RGB,
-		GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_STENCIL
+		GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_DEPTH_STENCIL
 	};
 	return formats[f];
 }
@@ -111,6 +111,7 @@ unsigned Texture::getDataType(Format f) {
 	if(f <= RGBA32F) return GL_FLOAT;
 	if(f <= RGBA16F) return GL_HALF_FLOAT;
 	if(f <= D32)     return GL_UNSIGNED_BYTE;
+	if(f == D32F)    return GL_FLOAT;
 	if(f == D24S8)   return GL_UNSIGNED_INT_24_8;
 	return 0;
 }
@@ -150,6 +151,7 @@ unsigned Texture::getMemorySize(Format format, int w, int h, int d) {
 	case D16:      return w*h*d*2;
 	case D24:      return w*h*d*3;
 	case D32:      return w*h*d*4;
+	case D32F:     return w*h*d*4;
 	case D24S8:    return w*h*d*4;
 	}
 	return 0;

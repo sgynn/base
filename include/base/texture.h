@@ -17,7 +17,7 @@ namespace base {
 			R32F, RG32F, RGB32F, RGBA32F,	// Float formats
 			R16F, RG16F, RGB16F, RGBA16F,	// Half float formats
 			R11G11B10F, R5G6B5,				// Other formats
-			D16, D24, D32, D24S8 			// Depth formats
+			D16, D24, D32, D32F, D24S8 		// Depth formats
 		};
 		enum Filter { NEAREST, BILINEAR, TRILINEAR, ANISOTROPIC };
 		enum Type   { TEX1D, TEX2D, TEX3D, CUBE, ARRAY1D, ARRAY2D };
