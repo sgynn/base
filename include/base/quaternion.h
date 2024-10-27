@@ -29,7 +29,7 @@ class Quaternion {
 	Quaternion& fromMatrix(const Matrix& m);				/** Set values from matrix */
 	Quaternion& fromAxis(const vec3& axis, float angle);	/** Set values from angle-axis */
 	Quaternion& fromDirection(const vec3& dir, const vec3& up);
-	void        toMatrix(Matrix& m) const;					/** Convert quaternion to matrix in place */
+	Matrix&     toMatrix(Matrix& m) const;					/** Convert quaternion to matrix in place */
 	Matrix      getMatrix() const;							/** Return matrix representation of quaternion */
 	EulerAngles getEuler() const;							/** Return euler angled representation of quaternion */
 	vec3        getAxis() const;							/** Get the axis represented by this quaternion */
@@ -213,7 +213,7 @@ inline Quaternion& Quaternion::fromMatrix(const Matrix& m) {
 	}
 	return *this;
 }
-inline void Quaternion::toMatrix(Matrix& m) const {
+inline Matrix& Quaternion::toMatrix(Matrix& m) const {
 	float d = length2();
 	float s = 2.0f / d;
 	float xs=x*s,  ys=y*s,  zs=z*s;
@@ -231,6 +231,7 @@ inline void Quaternion::toMatrix(Matrix& m) const {
 	m[10] = 1-(xx+yy);
 	m[14] = 1;
 	m[3]=m[7]=m[11]=m[12]=m[13]=m[14]=0;
+	return m;
 }
 
 inline Quaternion& Quaternion::fromAxis(const vec3& axis, float angle) {
