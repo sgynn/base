@@ -250,6 +250,13 @@ void Root::draw(const Point& viewport) const {
 	getRenderer()->end();
 }
 
+void Root::draw(const Matrix& transform, Widget* widget, bool depth) const {
+	if(!widget) widget = m_root;
+	getRenderer()->begin(widget->m_rect.bottomRight(), Point());
+	widget->draw();
+	getRenderer()->end(transform, false, depth);
+}
+
 
 // ------------- //
 template<class T> Root::StringList getMapKeys( const base::HashMap<T>& map) {

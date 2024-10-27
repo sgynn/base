@@ -430,15 +430,9 @@ void Renderer::begin(const Point& root, const Point& viewport) {
 	m_viewport = viewport;
 }
 
+
 void Renderer::end() {
 	Point size = m_scissor[0].size();
-	m_scissor.clear();
-
-	// Create vertex buffers if changed
-	buildRenderBatches();
-
-	if(m_renderData.empty() || m_renderData[0].size==0) return;
-
 	Matrix transform;
 	transform[0] = 2.f/size.x;
 	transform[5] = -2.f/size.y;
@@ -447,14 +441,26 @@ void Renderer::end() {
 	transform[13] =  1;
 	transform[14] = 0;
 
+	end(transform, true, false);
+}
+
+void Renderer::end(const Matrix& transform, bool scissor, bool depth) {
+	Point size = m_scissor[0].size();
+	m_scissor.clear();
+
+	// Create vertex buffers if changed
+	buildRenderBatches();
+
+	if(m_renderData.empty() || m_renderData[0].size==0) return;
+
 	int sx = size.x, sy = size.y;
 	int wx = m_viewport.x, wy = m_viewport.y;
 
 	// Draw
 	GL_CHECK_ERROR;
 	glEnable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_SCISSOR_TEST);
+	if(!depth) glDisable(GL_DEPTH_TEST);
+	if(scissor) glEnable(GL_SCISSOR_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(0);
 	glUseProgram(m_shader);
@@ -463,7 +469,7 @@ void Renderer::end() {
 	float lineWidth = 1;
 	for(const RenderBatch& b: m_renderData) {
 		if(b.size==0) continue;
-		if(b.scissor.width) glScissor(b.scissor.x*wx/sx, wy - b.scissor.bottom()*wy/sy, b.scissor.width*wx/sx, b.scissor.height*wy/sy);
+		if(scissor && b.scissor.width) glScissor(b.scissor.x*wx/sx, wy - b.scissor.bottom()*wy/sy, b.scissor.width*wx/sx, b.scissor.height*wy/sy);
 		if(b.line && b.line!=lineWidth) lineWidth=b.line, glLineWidth(b.line);
 		glBindVertexArray(b.vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b.ix);
@@ -471,7 +477,7 @@ void Renderer::end() {
 		glDrawElements(b.line? GL_LINE_STRIP: GL_TRIANGLES, b.size, GL_UNSIGNED_SHORT, 0);
 	}
 	if(lineWidth!=1) glLineWidth(1);
-	glDisable(GL_SCISSOR_TEST);
+	if(scissor) glDisable(GL_SCISSOR_TEST);
 	glBindVertexArray(0);
 	glDepthMask(1);
 	glEnable(GL_CULL_FACE);

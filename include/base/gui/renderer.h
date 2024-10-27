@@ -75,6 +75,7 @@ class Renderer {
 
 	public:
 	virtual void  begin(const Point& root, const Point& viewport);
+	virtual void  end(const Matrix& transform, bool scissorTest, bool depthTest);
 	virtual void  end();
 
 	virtual void  drawSkin(const Skin*, const Rect& r, unsigned colour=-1, int state=0, const char* text=0);
