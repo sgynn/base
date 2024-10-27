@@ -64,6 +64,10 @@ class vec3 {
 	vec3(const float*);
 	vec3& set(float x, float y, float z);
 
+	vec3& setX(float v) { x=v; return *this; }
+	vec3& setY(float v) { y=v; return *this; }
+	vec3& setZ(float v) { z=v; return *this; }
+
 	vec2 xy() const { return vec2(x,y); }
 	vec2 xz() const { return vec2(x,z); }
 	
