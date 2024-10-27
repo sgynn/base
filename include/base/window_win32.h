@@ -34,6 +34,7 @@ namespace base {
 
 		HDC getHDC() { return m_hDC; };
 		HWND getHWND() { return m_hWnd; };
+		HGLRC getHGLRC() { return m_hRC; }
 
 		protected:
 		HWND  m_hWnd;
