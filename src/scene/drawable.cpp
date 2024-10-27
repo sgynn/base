@@ -88,13 +88,13 @@ void Drawable::bind() {
 
 
 
-
-DrawableMesh::DrawableMesh(Mesh* m, Material* mat, int queue)
+DrawableMesh::DrawableMesh(Mesh* m, const Skeleton* s, Material* mat, int queue)
 	: m_mesh(m), m_skeleton(0), m_skinMap(0), m_instances(1), m_instanceBuffer(0) 
 {
 	setRenderQueue(queue);
 	setMaterial(mat);
 	if(m) setMesh(m);
+	if(s) setupSkinData(s);
 }
 DrawableMesh::~DrawableMesh() {
 	if(m_instanceBuffer) m_instanceBuffer->dropReference();

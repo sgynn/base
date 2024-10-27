@@ -8,7 +8,8 @@ namespace base {
 
 	class DrawableMesh : public Drawable {
 		public:
-		DrawableMesh(base::Mesh* mesh=0, Material* mat=0, int queue=0);
+		DrawableMesh(base::Mesh* mesh=0, Material* mat=0, int queue=0) : DrawableMesh(mesh, nullptr, mat, queue) {}
+		DrawableMesh(base::Mesh* mesh, const base::Skeleton* skin, Material* mat=0, int queue=0);
 		~DrawableMesh();
 
 		void updateBounds();
