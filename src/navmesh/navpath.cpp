@@ -190,6 +190,32 @@ bool Pathfinder::ray(const vec3& start, const vec3& end, uint polyID, const NavF
 	}
 }
 
+float Pathfinder::ray(const Ray& ray, float limit, uint polyID, const NavFilter& f) const {
+	const NavPoly* p = polyID==NavPoly::Invalid? m_navmesh->getPolygon(ray.start): m_navmesh->getPolygon(polyID);
+	if(!NavMesh::isInsidePolygon(ray.start, p)) p = m_navmesh->getPolygon(ray.start); // Validate
+	if(!p) return 0;
+	vec3 n(-ray.direction.z, 0, ray.direction.x);
+	int last = -1;
+	float u, v;
+	const vec3 end = ray.point(limit).setY(ray.start.y);
+	while(true) {
+		for(int i=p->size-1, j=0; j<p->size; i=j, ++j) {
+			if(i!=last) {
+				if(n.dot(p->points[i]-ray.start)<=0 && n.dot(p->points[j]-ray.start)>=0) {
+					closestPointBetweenLines(ray.start, end, p->points[i], p->points[j], u, v);
+					if(u >= 1) return limit;
+					if(!p->links[i]) return u * limit;
+					last = NavMesh::getLinkedEdge( p, i );
+					p = NavMesh::getLinkedPolygon( p, i );
+					if(!f.hasType(p->typeIndex)) return u * limit;
+					break;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 // ============================================================================================= //
 
 bool Pathfinder::resolvePoint(vec3& pt, float r, float search, int iter) const {

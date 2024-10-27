@@ -39,6 +39,7 @@ namespace base {
 		void setFilter( const NavFilter& );
 
 		bool ray(const vec3& start, const vec3& end, uint poly=~0u, const NavFilter& f=NavFilter::ALL) const;
+		float ray(const Ray& ray, float limit=1e6f, uint poly=~0u, const NavFilter& f=NavFilter::ALL) const;
 
 		bool resolvePoint(vec3& point, float radius=0, float search=1, int iterations=4) const;
 
