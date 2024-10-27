@@ -6,6 +6,7 @@
 #include <base/autovariables.h>
 #include <base/hardwarebuffer.h>
 #include <base/compositor.h>
+#include <base/renderer.h>
 #include <base/bmloader.h>
 #include <base/texture.h>
 #include <base/particles.h>
@@ -570,12 +571,12 @@ static int floatArray(const char* s, float* array, int max) {
 	return count;
 }
 
-template<int N, typename T> T enumValue(const char* value, const char* (&strings)[N], T defaultValue) {
+template<int N, typename T> T enumValue(const char* value, const char* const (&strings)[N], T defaultValue) {
 	for(int i=0; i<N; ++i) if(strcmp(value, strings[i])==0) return (T)i;
 	if(value && value[0]) printf("Error: Invalid resource enum value '%s'\n", value);
 	return defaultValue;
 }
-template<int N, typename T=int> T enumValue(const char* value, const char* (&strings)[N]) {
+template<int N, typename T=int> T enumValue(const char* value, const char* const (&strings)[N]) {
 	return enumValue(value, strings, (T)-1);
 }
 
@@ -918,6 +919,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				// Additional material override properties
 				if(i.find("blend")) pass->setBlend(parseBlendState(i));
 				if(const XMLElement& e = i.find("state")) pass->setState(parseMacroState(e));
+				pass->setRenderQueueModeOverride(enumValue(i.attribute("sort"), { "off", "front-to-back", "back-to-front" }, RenderQueueMode::Disabled));
 			}
 			else if(strcmp(type, "quad")==0) {
 				const char* material = i.attribute("material");

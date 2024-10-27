@@ -66,7 +66,7 @@ namespace base {
 		void remove(Drawable*, unsigned char queue=0); /// @deprecated
 		void setQueueMode(unsigned char queue, RenderQueueMode mode);
 
-		void render(unsigned char first=0, unsigned char last=255);
+		void render(unsigned char first=0, unsigned char last=255, RenderQueueMode overrideMode = RenderQueueMode::Disabled);
 		static void clearScreen();
 
 		RenderState& getState() { return m_state; }

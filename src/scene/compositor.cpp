@@ -283,7 +283,7 @@ void CompositorPassScene::execute(const FrameBuffer* target, const Rect& view, R
 		renderer->clear();
 		scene->collect(renderer, state.getCamera(), mFirst, mLast);
 	}
-	renderer->render(mFirst, mLast);
+	renderer->render(mFirst, mLast, mOverrideQueueMode);
 	state.setMaterialOverride(nullptr);
 	state.setMaterialTechnique((int)0);
 }

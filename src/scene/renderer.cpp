@@ -40,15 +40,16 @@ void Renderer::remove(Drawable* d, unsigned char queue) {
 	}
 }
 
-void Renderer::render(unsigned char first, unsigned char last) {
-	vec3 cp = m_state.getCamera()->getPosition();
-	#define DIST(d) (cp.x*d->getTransform()[12] + cp.y*d->getTransform()[13] + cp.z*d->getTransform()[14])
+void Renderer::render(unsigned char first, unsigned char last, RenderQueueMode mode) {
+	auto dist = [cam=m_state.getCamera()](const Drawable* d) {
+		return cam->getDirection().dot(*reinterpret_cast<const vec3*>(&d->getTransform()[12]) - cam->getPosition());
+	};
 	for(size_t i=first; i<=last; ++i) {
 		std::vector<Drawable*>& queue = m_drawables[i];
-		switch(m_queueMode[i]) {
+		switch(mode==RenderQueueMode::Disabled? m_queueMode[i]: mode) {
 		case RenderQueueMode::Normal: break;
-		case RenderQueueMode::Sorted:        std::sort(queue.begin(), queue.end(), [cp](Drawable*a, Drawable*b) { return DIST(a) < DIST(b); }); break;
-		case RenderQueueMode::SortedInverse: std::sort(queue.begin(), queue.end(), [cp](Drawable*a, Drawable*b) { return DIST(a) > DIST(b); }); break;
+		case RenderQueueMode::Sorted:        std::sort(queue.begin(), queue.end(), [&dist](Drawable*a, Drawable*b) { return dist(a) < dist(b); }); break;
+		case RenderQueueMode::SortedInverse: std::sort(queue.begin(), queue.end(), [&dist](Drawable*a, Drawable*b) { return dist(a) > dist(b); }); break;
 		case RenderQueueMode::Disabled: continue;
 		}
 

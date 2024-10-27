@@ -15,6 +15,8 @@ namespace base {
 	class Camera;
 	class Scene;
 	class Pass;
+	enum class RenderQueueMode : char;
+
 
 	// Name indexer thing
 	class NameLookup {
@@ -115,6 +117,7 @@ namespace base {
 		void setStencil(const StencilState&);
 		void setState(const MacroState&);
 		void clearMaterialOverides();
+		void setRenderQueueModeOverride(RenderQueueMode m) { mOverrideQueueMode=m; } // Use RenderQueueMode::Disabled to clear override
 
 		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
 		const char* getCamera() const override { return mCameraName; }
@@ -131,7 +134,8 @@ namespace base {
 		Blend         mBlend;             // Set blend state override
 		MacroState    mState;             // Material state override
 		StencilState  mStencil;           // Stencil state override
-		int           mOverrideFlags = 0; // What to override
+		int           mOverrideFlags = 0; // What material element to override
+		RenderQueueMode mOverrideQueueMode = (RenderQueueMode)3; // Renderable Sorting
 	};
 	/// Copy a texture
 	class CompositorPassCopy final : public CompositorPass {
