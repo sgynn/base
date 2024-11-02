@@ -66,6 +66,7 @@ int audio::shutdown() {
 	m.type = SHUTDOWN;
 	m.string = 0;
 	pushMessage(m);
+	if(singleThreadedMode) processAudioMessages();
 	mainThread.join();
 	delete Data::instance;
 	Data::instance = 0;
@@ -394,6 +395,7 @@ bool audio::processAudioMessages() {
 			break;
 
 		case SHUTDOWN:
+			for(Object* o: Data::instance->m_objects) delete o;
 			for(SoundBank* bank: data->m_banks) data->unloadSoundBank(bank);
 			running = false;
 			break;
