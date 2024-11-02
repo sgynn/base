@@ -330,7 +330,7 @@ SceneEditor::TraceResult SceneEditor::trace(const Point& pos) {
 		else {
 			// Render drawables to selection buffer
 			for(auto& d: n->attachments()) {
-				if(!d->getMaterial()->getPass(0)->state.depthWrite) continue;
+				if(d->getMaterial() && !d->getMaterial()->getPass(0)->state.depthWrite) continue;
 
 				items.push_back({n, d});
 				glStencilFunc(GL_ALWAYS, items.size()&0xff, 0xff);
