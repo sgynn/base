@@ -58,7 +58,7 @@ Win32Window::Win32Window(int w, int h, bool fs, int bpp, int dep, int fsaa) : Wi
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = s_hInst;
-	wc.hIcon = LoadIcon(s_hInst, IDI_APPLICATION);
+	wc.hIcon = LoadIcon(s_hInst, "APPICON");
 	if(!wc.hIcon) wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH) GetStockObject(BLACK_BRUSH);
@@ -117,6 +117,14 @@ bool Win32Window::createWindow() {
 		printf("Failed to create window [%u]\n", (uint) GetLastError());
 		return false;
 	}
+
+//	HICON hIcon = LoadIcon(s_hInst, "ICON");
+//	if(hIcon) {
+//		SendMessage(m_hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+//		SendMessage(m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+//	}
+
+
 	m_hDC = GetDC(m_hWnd);
 	
 	//Set pixel format for the DC
