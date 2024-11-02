@@ -66,9 +66,9 @@ class SceneEditor : public base::GameStateComponent {
 	// Handlers for opening resources for edit/preview
 	MultiDelegate<void(const Asset&, bool)> assetChanged;
 
-	// Scene object construction - dropping files on the world
+	// Scene object construction - dropping files on the world - SceneNode* (const Asset&);
 	template<class F> void addConstructor(const F& lambda) { m_construct.push_back({}); m_construct.back().bind(lambda); }
-	template<class M> void addConstructor(M* inst, bool(M::*func)(const Asset&)) { m_construct.push_back(bind(inst, func)); }
+	template<class M> void addConstructor(M* inst, base::SceneNode*(M::*func)(const Asset&)) { m_construct.push_back(bind(inst, func)); }
 	base::SceneNode* constructObject(const Asset&);
 
 	bool addEmbeddedPNGImage(const char* name, const char& bin, unsigned length);
