@@ -153,7 +153,7 @@ Image readPNGFile(ReadFunc&& read) {
 				break;
 			}
 			if(format == Image::INVALID) break;
-			rowSize = header.width * bitsPerPixel/8;
+			rowSize = (header.width * bitsPerPixel + 7) >> 3;
 			rowBuffer = new byte[rowSize + 1];
 			pixels = new byte[rowSize * header.height];
 		}
@@ -230,7 +230,7 @@ Image readPNGFile(ReadFunc&& read) {
 				byte* out = pixels + y * orow;
 				byte* end = out + orow;
 				while(out < end) {
-					for(int s=8-header.bitDepth; s>=0; s-=header.bitDepth) {
+					for(int s=8-header.bitDepth; s>=0 && out<end; s-=header.bitDepth) {
 						int k = (*in >> s) & mask;
 						memcpy(out, palette+k*3, 3);
 						out += 3;
