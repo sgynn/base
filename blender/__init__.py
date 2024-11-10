@@ -104,6 +104,11 @@ class ExportBaseLib(bpy.types.Operator):
         description="Bind mesh vertices to armature bones",
         default=True)
 
+    export_shape_keys: BoolProperty(
+        name="Shape Keys",
+        description="Export shape keys",
+        default=True)
+
     normalise_weights: BoolProperty(
         name="Normalise Weights",
         description="Normalise weightmaps and limit to a maximum of 4 per vertex",
@@ -178,6 +183,7 @@ class ExportBaseLib(bpy.types.Operator):
             mesh_panel.prop(self, 'export_uv')
             mesh_panel.prop(self, 'export_colour')
             mesh_panel.prop(self, 'export_skins')
+            mesh_panel.prop(self, 'export_shape_keys')
 
             mesh_panel.separator()
             mesh_panel.prop(self, 'normalise_weights')

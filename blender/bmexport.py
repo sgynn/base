@@ -83,6 +83,7 @@ class Mesh:
         self.has_tangent = False
         self.has_colour = False
         self.has_uv = False
+        self.shape_keys = []
 
 class KeySet:
     def __init__(self, target, pos, rot, scl):
@@ -92,14 +93,6 @@ class KeySet:
         self.scale    = [] if scl else None
 
 # -------------------------------------------------------------------------- #
-
-def triangulate(mesh):
-    import bmesh
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-    bmesh.ops.triangulate(bm, faces=bm.faces)
-    bm.to_mesh(mesh)
-    bm.free()
 
 def make_colour(col, alpha):
     return (col[0], col[1], col[2], alpha[0])
@@ -126,16 +119,6 @@ def construct_mesh(obj, config):
 
 def construct_export_meshes(obj, m, config):
 
-    needTriangulating = False
-    for f in m.polygons:
-        if len(f.vertices) > 3:
-            needTriangulating = True
-            break
-
-    # Triangulate
-    if needTriangulating:
-        triangulate(m);
-
     # Additional per-vertex data
     uv  = m.uv_layers.active.data[:] if config.export_uv and len(m.uv_layers) > 0 else None
     col = m.vertex_colors.active.data[:] if config.export_colour and len(m.vertex_colors) > 0 else None
@@ -155,39 +138,34 @@ def construct_export_meshes(obj, m, config):
             if loop.bitangent_sign < 0:
                 signedtangents = True
                 break
-    #elif config.export_normals: # removed in Blender 4.1
-    #    m.calc_normals_split()
 
-
-    # sort faces by material index for separation into sub-meshes
-    meshFaces = m.polygons[:]
-    meshFaces.sort(key = lambda a: (a.material_index))
 
     # Output mesh
-    lastMaterial = -2
-    mesh = None
     result = []
+    vmapList = []
+    imapList = []
+    for index in range(max(1, len(m.materials))):
+        material = m.materials[index] if m.materials else None
+        mesh = Mesh( material, [], [] )
+        mesh.has_uv = uv;
+        mesh.has_normal = config.export_normals
+        mesh.has_colour = col
+        mesh.has_tangent = uv and config.export_tangents
+        mesh.weights = 0
+        result.append(mesh)
+        vmapList.append({})
+        imapList.append([])
 
-    for face in meshFaces:
-        if len(face.vertices) != 3: raise ValueError("Polygon not a triangle")
 
-        # Create mesh object
-        if face.material_index != lastMaterial:
-            material = m.materials[ face.material_index ] if m.materials else None
-            mesh = Mesh( material, [], [] )
-            mesh.has_uv = uv;
-            mesh.has_normal = config.export_normals
-            mesh.has_colour = col
-            mesh.has_tangent = uv and config.export_tangents
-            mesh.weights = 0
-            result.append(mesh)
-            vmap = {}
-            lastMaterial = face.material_index
+    for face in m.loop_triangles:
+        mesh = result[face.material_index]
+        vmap = vmapList[face.material_index]
+        imap = imapList[face.material_index]
 
 
         # get the three vertices
         for i in range(3):
-            loop = face.loop_indices[i]
+            loop = face.loops[i]
             index = face.vertices[i]
             v = Vertex( m.vertices[index].co.to_tuple() )
             if uv: v.tex = (uv[ loop ].uv.x, 1-uv[ loop ].uv.y)
@@ -215,11 +193,44 @@ def construct_export_meshes(obj, m, config):
                 vIndex = len(mesh.vertices)
                 mesh.vertices.append(v)
                 vmap[v] = vIndex
+                imap.append(loop)
 
             # Add vertex to face
             mesh.faces.append(vIndex)
 
-    return result
+    if config.export_shape_keys and m.shape_keys and len(m.shape_keys.key_blocks) > 1:
+        for mesh, imap in zip(result, imapList):
+            if mesh.vertices:
+                process_shape_keys(obj, m, mesh, imap)
+
+    return [r for r in result if r.vertices]
+
+
+def process_shape_keys(obj, m, mesh, imap):
+    def eq(a,b):
+        return same(a[0], b[0]) and same(a[1], b[1]) and same(a[2], b[2])
+    trans = Matrix.Rotation(radians(-90), 4, 'X') # TODO pass in as parameter
+    rotate = trans.to_3x3()
+
+    for key in m.shape_keys.key_blocks:
+        if key == m.shape_keys.key_blocks[0]: continue # Skip basis
+
+        # Loop indices _should_ match
+        shape = []
+        normals = key.normals_split_get()
+        for i,loop in enumerate(imap):
+            index = m.loops[loop].vertex_index
+            a = m.vertices[index].co
+            b = key.points[index].co
+            na = mesh.vertices[i].nrm
+            nb = rotate @ mathutils.Vector(normals[loop*3:loop*3+3])
+
+            if a != b and not eq(na, nb):
+                shape.append((i, trans @ b, nb)) # do we need the tangent too? probably
+
+        if shape:
+            mesh.shape_keys.append((key.name, shape))
+
 
 def process_weights(v, limit, normalise):
     if limit < len(v.wgt):
@@ -330,6 +341,15 @@ def write_meshes(obj, config, xml, meshes):
             weights = append_element(node, "weights")
             wgt = [' '.join( [format_num(g[1]) for g in v.wgt] + ['0.0']*(m.weights-len(v.wgt))) for v in m.vertices]
             set_text(weights, ' '.join(wgt))
+
+        # Shape keys: (index, position, normal)
+        for shape in m.shape_keys:
+            node = append_element(mesh, "morph")
+            node.setAttribute("size", str(len(shape[1])))
+            node.setAttribute("name", shape[0]);
+            set_text(append_element(node, "indices"),  ' '.join([str(i[0]) for i in shape[1]]))
+            set_text(append_element(node, "vertices"), ' '.join([str(i[1][0]) + ' ' + str(i[1][1]) + ' ' + str(i[1][2]) for i in shape[1]]))
+            set_text(append_element(node, "normals"),  ' '.join([str(i[2][0]) + ' ' + str(i[2][1]) + ' ' + str(i[2][2]) for i in shape[1]]))
 
 
 # -------------------------------------------------------------------------- #
