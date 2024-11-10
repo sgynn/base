@@ -41,6 +41,7 @@ class Object : public SceneNode {
 	static AnimationBank* getAnimationBank(base::Model*);
 	static int addAnimationsFromModel(base::AnimationBank* bank, base::Model* model);
 	static int addAnimationsFromModel(base::AnimationBank* bank, const char* modelFile);
+	static void addTextureSearchPattern(const char* variable, const char* pattern);
 	protected:
 	using Model = base::Model;
 	Model* loadModel(const char* name, base::AnimationController** anim, bool moves, const char* meshFilter=0, const char* material=0);

@@ -39,7 +39,6 @@ class AnimationPropertyExtension : public base::ModelExtension {
 };
 
 
-
 AnimationBank* Object::getAnimationBank(const char* filename) {
 	if(Model* m = Resources::getInstance()->models.get(filename))
 		return getAnimationBank(m);
@@ -100,6 +99,11 @@ Object::~Object() {
 	deleteAttachments();
 }
 
+static HashMap<std::vector<const char*>> textureSearchPatterns;
+void Object::addTextureSearchPattern(const char* var, const char* pattern) {
+	assert(strstr(pattern, "%*s")); // Texture search pattern must be of the form "%*s_suffix.png"
+	textureSearchPatterns[var].push_back(pattern);
+}
 Material* Object::loadMaterial(const char* name, int weights, const char* base) {
 	Resources& res = *Resources::getInstance();
 	if(name && name[0]) {
@@ -138,8 +142,15 @@ Material* Object::loadMaterial(const char* name, int weights, const char* base) 
 					return tex;
 				};
 
-				findTexture("%.*s.png", "diffuseMap") || findTexture("%.*s.dds", "diffuseMap");
-				findTexture("%.*s_n.png", "normalMap") || findTexture("%.*s_n.dds", "normalMap");
+				if(textureSearchPatterns.empty()) {
+					findTexture("%.*s.png", "diffuseMap") || findTexture("%.*s.dds", "diffuseMap");
+					findTexture("%.*s_n.png", "normalMap") || findTexture("%.*s_n.dds", "normalMap");
+				}
+				else for(const auto& p: textureSearchPatterns) {
+					for(const char* pattern: p.value) {
+						if(findTexture(pattern, p.key)) break;
+					}
+				}
 			}
 
 			mat->getPass(0)->compile();
