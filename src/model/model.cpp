@@ -187,7 +187,7 @@ void Model::update(float time) {
 //		m_animationState->update(time);
 //		if(m_skeleton->update()) {
 			// Software skinning
-			if(getMeshCount() == 1) addMesh("skinned", createSkinTarget(m_meshes[0].mesh));
+			if(getMeshCount() == 1) addMesh("skinned", createTargetMesh(m_meshes[0].mesh));
 			skinMesh(m_meshes[0].mesh, m_skeleton, m_meshes[0].skinMap, m_meshes[1].mesh);
 //		}
 	}
@@ -198,12 +198,12 @@ void Model::update(float time) {
 
 // --------------------------------------------------------------------------------------- //
 
-Mesh* Model::createSkinTarget(Mesh* src) {
+Mesh* Model::createTargetMesh(const Mesh* src) {
 	Mesh* m = new Mesh();
 	// Reference index buffer
-	m->setIndexBuffer(src->getIndexBuffer());
+	m->setIndexBuffer(src->m_indexBuffer);
 	// Duplicate vertex buffer
-	HardwareVertexBuffer* sbuf = src->getVertexBuffer();
+	const HardwareVertexBuffer* sbuf = src->m_vertexBuffer;
 	HardwareVertexBuffer* buf = new HardwareVertexBuffer();
 	buf->copyData(sbuf->getData<char>(), sbuf->getVertexCount(), sbuf->getStride());
 	buf->attributes = sbuf->attributes;
@@ -252,5 +252,35 @@ void Model::skinMesh(Mesh* in, const Skeleton* s, int* map, Mesh* out) {
 	}
 
 	delete [] m;
+}
+
+void Model::resetTargetMesh(Mesh* mesh, const Mesh* source) {
+	assert(mesh != source);
+	assert(mesh->getIndexBuffer() == source->m_indexBuffer);
+	const HardwareVertexBuffer* src = source->m_vertexBuffer;
+	char* data = mesh->getVertexBuffer()->getData<char>();
+	memcpy(data, src->getData<char>(), src->getSize<char>());
+}
+
+void Model::applyMorph(Mesh* mesh, const Mesh* source, int index, float amount) {
+	assert(mesh != source);
+	assert(mesh->getIndexBuffer() == source->m_indexBuffer);
+	if(index<0 || index >= source->m_morphCount) return;
+
+	int vertexOffset = getOffset(mesh->getVertexBuffer(), VA_VERTEX);
+	int normalOffset = getOffset(mesh->getVertexBuffer(), VA_NORMAL);
+	int stride = mesh->getVertexBuffer()->getStride();
+	char* data = mesh->getVertexBuffer()->getData<char>();
+	
+	const Mesh::Morph& morph = source->m_morphs[index];
+	for(int i=0; i<morph.size; ++i) {
+		char* dst = data + morph.indices[i] * stride;
+		vec3& vx = *reinterpret_cast<vec3*>(dst + vertexOffset);
+		vec3& nx = *reinterpret_cast<vec3*>(dst + normalOffset); 
+
+		// Absolute morphs for now
+		vx = lerp(vx, morph.vertices[i], amount);
+		nx = lerp(nx, morph.normals[i], amount);
+	}
 }
 

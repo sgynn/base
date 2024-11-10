@@ -110,6 +110,7 @@ Mesh* BMLoader::loadMesh(const XMLElement& e) {
 	// Get format
 	HardwareVertexBuffer* vdata = new HardwareVertexBuffer();
 	std::vector<const XMLElement*> parts;
+	std::vector<Mesh::Morph> morphs;
 	size_t offset = 0;
 	for(XML::iterator i=e.begin(); i!=e.end(); ++i) {
 		AttributeSemantic type;
@@ -128,6 +129,19 @@ Mesh* BMLoader::loadMesh(const XMLElement& e) {
 			if(strcmp(t, "rgb")==0) s = VA_FLOAT3;
 			else if(strcmp(t, "rgba")==0) s = VA_FLOAT4;
 			else printf("Error: invalid vertex colour format\n");
+		}
+
+		else if(*i == "morph") {
+			Mesh::Morph m;
+			m.name = strdup(i->attribute("name"));
+			m.size = i->attribute("size", 0);
+			m.indices = new IndexType[m.size];
+			m.vertices = new vec3[m.size];
+			m.normals = new vec3[m.size];
+			parseValues(m.indices, m.size, i->find("indices").text());
+			parseValues(&m.vertices[0].x, m.size*3, i->find("vertices").text());
+			parseValues(&m.normals[0].x, m.size*3, i->find("normals").text());
+			morphs.push_back(m);
 		}
 
 		// Add to list
@@ -220,6 +234,8 @@ Mesh* BMLoader::loadMesh(const XMLElement& e) {
 			delete [] wi;
 		}
 	}
+
+	mesh->setMorphs(morphs.size(), morphs.data());
 
 	delete [] tmp;
 	return mesh;

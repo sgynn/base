@@ -3,7 +3,7 @@
 
 using namespace base;
 
-Mesh::Mesh() : m_ref(0), m_polygonMode(PolygonMode::TRIANGLES), m_vertexBuffer(0), m_skinBuffer(0), m_indexBuffer(0), m_skinCount(0), m_weightsPerVertex(0), m_skinNames(0) {
+Mesh::Mesh() : m_ref(0), m_polygonMode(PolygonMode::TRIANGLES), m_vertexBuffer(0), m_skinBuffer(0), m_indexBuffer(0), m_skinCount(0), m_weightsPerVertex(0), m_skinNames(0), m_morphCount(0), m_morphs(0) {
 }
 
 Mesh::Mesh(const Mesh& m) : m_ref(0), m_polygonMode(m.m_polygonMode) {
@@ -36,6 +36,7 @@ Mesh::~Mesh() {
 	if(m_indexBuffer)  m_indexBuffer->dropReference();
 	for(int i=0; i<m_skinCount; ++i) if(m_skinNames[i]) free(m_skinNames[i]);
 	if(m_skinNames) delete [] m_skinNames;
+	delete [] m_morphs;
 }
 
 // ----------------------------------------------------------------------------------- //
@@ -89,6 +90,12 @@ void Mesh::setIndexBuffer(HardwareIndexBuffer* b) {
 	m_indexBuffer = b;
 }
 
+void Mesh::setMorphs(int count, Morph* data) {
+	delete [] m_morphs;
+	m_morphCount = count;
+	m_morphs = new Morph[count];
+	for(int i=0; i<count; ++i) m_morphs[i] = std::move(data[i]);
+}
 
 // ----------------------------------------------------------------------------------- //
 

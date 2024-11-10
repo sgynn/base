@@ -15,6 +15,15 @@ class Mesh {
 	friend class Model;
 
 	public:
+	struct Morph {
+		int size;
+		char* name;
+		IndexType* indices;
+		vec3* vertices;
+		vec3* normals;
+	};
+
+	public:
 	Mesh();
 	Mesh(const Mesh&);
 	Mesh(Mesh&&);
@@ -48,10 +57,13 @@ class Mesh {
 	void setVertexBuffer(HardwareVertexBuffer*);
 	void setIndexBuffer(HardwareIndexBuffer*);
 	void setSkinBuffer(HardwareVertexBuffer*);
+	void setMorphs(int count, Morph* morphs);
 
 	HardwareIndexBuffer* getIndexBuffer();
 	HardwareVertexBuffer* getVertexBuffer();
 	HardwareVertexBuffer* getSkinBuffer();
+
+	int getMorphIndex(const char* name) const;
 	
 	protected:
 	int calculateNormals();
@@ -75,6 +87,9 @@ class Mesh {
 	int m_skinCount;		// Number of skins
 	int m_weightsPerVertex;	// Weights per vertex
 	char** m_skinNames;		// Skin names to connect to bones
+
+	int m_morphCount;
+	Morph* m_morphs;
 };
 
 }

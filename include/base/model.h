@@ -70,9 +70,12 @@ class Model {
 	/// Update all automated things, and update any requited deformations
 	void update(float time=1/60.f);
 
-	static Mesh* createSkinTarget(Mesh* src);									// Create a new mesh to use as software skin target
+	static Mesh* createTargetMesh(const Mesh* src);									// Create a new mesh to use for software skinning or morphs
 	static void skinMesh(Mesh* in, const Skeleton*, int* map, Mesh* out);		// Software skinning - deform a mesh
-	static int* createSkinMap(const Skeleton*, const Mesh*);								// Create Bone->Skin map
+	static int* createSkinMap(const Skeleton*, const Mesh*);					// Create Bone->Skin map
+
+	static void resetTargetMesh(Mesh* target, const Mesh* source);
+	static void applyMorph(Mesh* target, const Mesh* source, int index, float amount);
 
 	const ModelLayout* getLayout() const { return m_layout; }
 	void setLayout(ModelLayout* l) { delete m_layout; m_layout = l; }
@@ -81,7 +84,6 @@ class Model {
 	void addExtension(ModelExtension* e);
 	const std::vector<ModelExtension*>& getExtensions() const { return m_extensions; }
 	template<class T> T* getExtension(int index=0) { for(ModelExtension* e: m_extensions) { if(e->getType()==T::staticType() && --index==-1) return e->as<T>(); } return 0; }
-	//template<class T> MaskedIterable getExtensions() { return MaskedIterator(m_extensions, [](ModelExtension* e){return e->getType()==T::staticType();}); }
 
 	struct MeshInfo {
 		Mesh* mesh;
