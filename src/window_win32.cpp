@@ -3,6 +3,8 @@
 
 typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats); 
 typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hdc, HGLRC hshareContext, const int *attribList);
+typedef BOOL (WINAPI * PFNWGLSWAPINTERVALEXTPROC) (int);
+static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
 
 #define WGL_DRAW_TO_WINDOW_ARB         0x2001
 #define WGL_ACCELERATION_ARB           0x2003
@@ -144,6 +146,7 @@ bool Win32Window::createWindow() {
 	wglMakeCurrent(m_hDC, m_hRC);
 	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
 	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+	wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
 	wglDeleteContext(m_hRC);
 
 	//set multisampling
@@ -194,6 +197,7 @@ bool Win32Window::createWindow() {
 		printf("Legacy context created\n");
 		m_hRC = wglCreateContext(m_hDC);
 	}
+
 
 	// Need context to be current before initialising extensions
 	makeCurrent();
@@ -267,6 +271,11 @@ void Win32Window::setSize(int w, int h) {
 		MoveWindow(m_hWnd, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top, false);
 	}
 }
+
+bool Win32Window::setVSync(bool on) {
+	return wglSwapIntervalEXT(on? 1: 0);
+}
+
 
 bool Win32Window::makeCurrent() {
 	if(!wglMakeCurrent(m_hDC, m_hRC)) {

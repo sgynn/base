@@ -11,26 +11,27 @@ namespace base {
 		Win32Window(int w, int h, bool fs=false, int bpp=32, int depth=24, int fsaa=0);
 		~Win32Window();
 
-		void setTitle(const char* title);
-		void setIcon();
-		void setPosition(int x, int y);
-		void setSize(int w, int h);
+		void setTitle(const char* title) override;
+		void setIcon() override;
+		void setPosition(int x, int y) override;
+		void setSize(int w, int h) override;
+		bool setVSync(bool) override;
 
 		bool created() const { return m_hWnd!=0; }
 		static const Point& getScreenResolution();
 		static const PointList& getValidResolutions();
 
-		bool makeCurrent();
-		void swapBuffers(); 
-		uint pumpEvents(Input* input);
-		bool warpMouse(int x, int y);
-		Point queryMouse();
+		bool makeCurrent() override;
+		void swapBuffers() override;
+		uint pumpEvents(Input* input) override;
+		bool warpMouse(int x, int y) override;
+		Point queryMouse() override;
 
-		virtual void setCursor(unsigned c);
-		virtual void createCursor(unsigned c, const char* image, int w, int h, int x=0, int y=0);
+		virtual void setCursor(unsigned c) override;
+		virtual void createCursor(unsigned c, const char* image, int w, int h, int x=0, int y=0) override;
 
-		bool createWindow();
-		void destroyWindow();
+		bool createWindow() override;
+		void destroyWindow() override;
 
 		HDC getHDC() { return m_hDC; };
 		HWND getHWND() { return m_hWnd; };

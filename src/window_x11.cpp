@@ -1,6 +1,8 @@
+#define GLX_GLXEXT_PROTOTYPES
 #include "base/window_x11.h"
 #include <cstring>
 #include <GL/gl.h>
+#include <GL/glxext.h>
 int attriblistAA[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, GLX_SAMPLE_BUFFERS_ARB, GL_TRUE, GLX_SAMPLES_ARB, 2 , None }; 
 int attriblist[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, None };
 
@@ -237,6 +239,11 @@ bool X11Window::setFullScreen(bool full) {
 	printf("Fullscreen message sent %d\n", full);
 
 
+	return true;
+}
+
+bool X11Window::setVSync(bool on) {
+	glXSwapIntervalEXT(m_display, glXGetCurrentDrawable(), on? 1: 0);
 	return true;
 }
 

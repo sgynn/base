@@ -24,6 +24,7 @@ namespace base {
 		virtual void setSize(int width, int height) = 0;/// Resize window
 		virtual bool setFullScreen(bool f);		 		/// switch between fullscreen and windowed modes
 		virtual bool setFSAA(int fsaa);
+		virtual bool setVSync(bool) { return false; }
 
 		virtual bool created() const = 0;
 		virtual bool createWindow() = 0;
