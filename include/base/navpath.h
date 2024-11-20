@@ -90,6 +90,7 @@ namespace base {
 		float moveCollide(const vec3& pos, const vec3& move, float radius, vec3& tangent) const;
 		bool  ray(const vec3& target, const NavFilter& f=NavFilter::ALL) const;
 		bool  resolvePoint(vec3& out, const vec3& target, float radius=0, float search=10) const;
+		bool  setPositionAndResolve(const vec3& pos, float search=10);
 
 		protected:
 		Pathfinder m_path;	// Path object

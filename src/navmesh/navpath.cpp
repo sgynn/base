@@ -558,3 +558,9 @@ bool PathFollower::resolvePoint(vec3& out, const vec3& target, float radius, flo
 	return m_path.resolvePoint(out, radius, search);
 }
 
+bool PathFollower::setPositionAndResolve(const vec3& pos, float search) {
+	bool r = m_path.resolvePoint(m_position, m_radius, search);
+	setPosition(m_position);
+	return r;
+}
+
