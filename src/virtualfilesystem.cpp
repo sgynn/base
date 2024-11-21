@@ -21,6 +21,11 @@ base::File VirtualFileSystem::File::read() const {
 	}
 }
 
+bool VirtualFileSystem::File::inArchive() const {
+	if(m_source<0 || !name) return false;
+	return m_fs->m_sources[m_source].archive;
+}
+
 String VirtualFileSystem::File::getFullPath() const {
 	if(m_source<0 || !name) return "";
 	Source& src = m_fs->m_sources[m_source];

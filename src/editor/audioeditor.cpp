@@ -145,12 +145,9 @@ bool AudioEditor::newAsset(const char*& name, const char*& file, const char*& bo
 }
 
 bool isSoundbankFile(const Asset& asset) {
-	if(!asset.file.endsWith(".xml")) return false;
-	FILE* fp = fopen(asset.file, "rb");
-	char buffer[64]; // <?xml version="1.0"/><soundbank>
-	fread(buffer, 63, 1, fp);
-	fclose(fp);
-	buffer[63] = 0;
+	if(!asset.file.name.endsWith(".xml")) return false;
+	base::File file = asset.file.read(); // <?xml version="1.0"/><soundbank>
+	const char* buffer = file;
 	const char* c = strchr(buffer, '<');
 	if(!c) return false;
 	if(c[1] == '?') c=strchr(c+1, '<');
@@ -162,7 +159,7 @@ Widget* AudioEditor::openAsset(const Asset& asset) {
 	if(!audio::Data::instance) return nullptr;
 	if(!isSoundbankFile(asset)) return nullptr;
 	// So, this is a soundbank - load it
-	audio::load(asset.file);
+	audio::load(asset.file.getFullPath());
 	if(!isActive()) activate();
 	m_loadMessage = 2;
 	return m_panel;
@@ -172,18 +169,18 @@ bool AudioEditor::assetActions(MenuBuilder& menu, const Asset& asset) {
 	if(isSoundbankFile(asset)) {
 		bool loaded = false;
 		for(SoundBank* bank: audio::Data::instance->m_banks) {
-			if(bank->file == asset.file) loaded = true;
+			if(bank->file == asset.file.name) loaded = true;
 		}
 		menu.addAction("Load", [this, &asset]() {
-			audio::load(asset.file);
+			audio::load(asset.file.getFullPath());
 			m_loadMessage = 2;
 		});
 		menu.addAction("Unload", [this, &asset]() {
-			audio::unload(asset.file);
+			audio::unload(asset.file.getFullPath());
 			m_loadMessage = 2;
 		})->setEnabled(loaded);
 		menu.addAction("Save", [this, &asset]() {
-			save(asset.file);
+			save(asset.file.getFullPath());
 			getEditor()->assetChanged(asset, false);
 		})->setEnabled(loaded);
 		return true;

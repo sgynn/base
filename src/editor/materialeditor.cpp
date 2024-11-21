@@ -44,13 +44,11 @@ bool MaterialEditor::assetActions(MenuBuilder& menu, const Asset& asset) {
 
 Widget* MaterialEditor::openAsset(const Asset& asset) {
 	if(asset.type == ResourceType::None) {
-		StringView ext = strrchr(asset.file, '.');
-		if(ext != ".mat") return nullptr;
+		if(!asset.file.name.endsWith(".mat")) return nullptr;
 	}
 	else if(asset.type != ResourceType::Material) return nullptr;
 
-	const char* name = asset.resource;
-	if(!name) name = getResourceNameFromFile(Resources::getInstance()->materials, asset.file);
+	const char* name = asset.resource? asset.resource: asset.file.name;
 	Material* mat = Resources::getInstance()->materials.get(name);
 	if(!mat) return nullptr;
 
@@ -207,15 +205,12 @@ void MaterialEditor::addShared(Widget* w, Pass* pass, const char* name) {
 
 bool MaterialEditor::drop(Widget* target, const Point& p, const Asset& asset, bool apply) {
 	if(!target) return false;
-	Resources& res = *Resources::getInstance();
-	StringView ext = asset.file? strrchr(asset.file, '.'): 0;
+	StringView ext = asset.file? strrchr(asset.file.name, '.'): 0;
 
 	if(Combobox* c = cast<Combobox>(target)) {
 		if(c->getName() == "shader") {
 			if(asset.type == ResourceType::Shader || (asset.type == ResourceType::None && ext==".glsl")) {
-				const char* name = asset.resource;
-				if(!name) name = getResourceNameFromFile(res.textures, asset.file);
-				if(name[0] == '/') ++name;
+				const char* name = asset.resource? asset.resource: asset.file.name;
 				c->setText(name);
 				if(c->eventSubmit) c->eventSubmit(c);
 				return true;
@@ -230,9 +225,7 @@ bool MaterialEditor::drop(Widget* target, const Point& p, const Asset& asset, bo
 
 	if(list->getName() == "textures") {
 		if(asset.type == ResourceType::Texture || (asset.type == ResourceType::None && (ext==".png" || ext==".dds"))) {
-			const char* name = asset.resource;
-			if(!name) name = getResourceNameFromFile(res.textures, asset.file);
-			if(name[0] == '/') ++name;
+			const char* name = asset.resource ? asset.resource: asset.file.name;
 			Textbox* tex = target->getTemplateWidget<Textbox>("tex");
 			tex->setText(name);
 			if(tex->eventSubmit) tex->eventSubmit(tex);

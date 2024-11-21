@@ -85,12 +85,12 @@ bool ParticleEditorComponent::newAsset(const char*& name, const char*& file, con
 }
 
 bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset) {
-	if(!base::StringView(asset.file).endsWith(".pt")) return false;
+	if(!asset.file.name.endsWith(".pt")) return false;
 
 	menu.addAction("Save", [this, &asset]() {
-		particle::System* system = base::Resources::getInstance()->particles.get(asset.resource? asset.resource: asset.file);
+		particle::System* system = base::Resources::getInstance()->particles.get(asset.resource? asset.resource: asset.file.name);
 		if(system) {
-			ParticleEditor::save(system, asset.file);
+			ParticleEditor::save(system, asset.file.getFullPath());
 			for(ParticleEditor* e: m_editors) if(e->m_system==system) e->m_modified = false;
 			getEditor()->assetChanged(asset, false);
 		}
@@ -100,10 +100,9 @@ bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset
 }
 
 Widget* ParticleEditorComponent::openAsset(const Asset& asset) {
-	if(!base::StringView(asset.file).endsWith(".pt")) return nullptr;
+	if(!asset.file.name.endsWith(".pt")) return nullptr;
 	auto& res = base::Resources::getInstance()->particles;
-	const char* name = asset.resource;
-	if(!name) name = getResourceNameFromFile(res, asset.file);
+	const char* name = asset.resource? asset.resource: asset.file.name;
 	particle::System* system = res.get(name);
 	ParticleEditor* editor = showParticleSystem(system, name);
 	return editor? editor->getPanel(): nullptr;
@@ -148,9 +147,9 @@ void ParticleEditorComponent::saveAll() {
 		if(e->isModified()) {
 			const char* name = res.particles.getName(e->getParticleSystem());
 			if(name) {
-				const char* file = res.getFileSystem().getFile(name).getFullPath();
-				e->save(e->getParticleSystem(), file);
-				printf("Saved %s\n", file);
+				const base::VirtualFileSystem::File& file = res.getFileSystem().getFile(name);
+				e->save(e->getParticleSystem(), file.getFullPath());
+				printf("Saved %s\n", file.getFullPath().str());
 				e->m_modified = false;
 				getEditor()->assetChanged(Asset{ResourceType::Particle, name, file}, false);
 			}
@@ -372,10 +371,10 @@ bool ParticleEditor::drop(Widget* w, const Point& p, const Asset& asset, bool ap
 	else if(asset.type == ResourceType::Model) name = asset.resource;
 	else if(asset.type == ResourceType::None) {
 		base::Resources& res = *base::Resources::getInstance();
-		base::StringView ext = strrchr(asset.file, '.');
-		if(ext==".png" || ext==".dds") name = m_parent->getResourceNameFromFile(res.textures, asset.file);
-		else if(ext==".bm" || ext==".obj") name = m_parent->getResourceNameFromFile(res.models, asset.file);
-		else if(ext==".mat") name = m_parent->getResourceNameFromFile(res.materials, asset.file);
+		base::StringView ext = strrchr(asset.file.name, '.');
+		if(ext==".png" || ext==".dds") name = m_parent->getResourceNameFromFile(res.textures, asset.file.name);
+		else if(ext==".bm" || ext==".obj") name = m_parent->getResourceNameFromFile(res.models, asset.file.name);
+		else if(ext==".mat") name = m_parent->getResourceNameFromFile(res.materials, asset.file.name);
 	}
 
 	if(name && apply) {
@@ -587,7 +586,7 @@ void ParticleEditor::notifyChange() {
 	m_modified = true;
 	const char* resource = base::Resources::getInstance()->particles.getName(m_system);
 	if(resource) {
-		const char* file = base::Resources::getInstance()->getFileSystem().getFile(resource).getFullPath();
+		const base::VirtualFileSystem::File& file = base::Resources::getInstance()->getFileSystem().getFile(resource);
 		m_parent->getEditor()->assetChanged({ ResourceType::Particle, resource, file }, true);
 	}
 }

@@ -6,6 +6,7 @@
 #include <base/string.h>
 #include <base/point.h>
 #include <base/vec.h>
+#include <base/virtualfilesystem.h>
 
 namespace gui { class Root; class Widget; class Button; class IconList; enum class KeyMask; class MenuBuilder; }
 namespace base { class Camera; class FrameBuffer; class Workspace; class Drawable; class Scene; class SceneNode; struct Mouse; class ResourceManagerBase; }
@@ -20,8 +21,8 @@ class SceneEditor;
 enum class ResourceType { None, Model, Texture, Material, Shader, ShaderVars, Compositor, Graph, Particle, Custom };
 struct Asset {
 	ResourceType type = ResourceType::None;
-	base::String resource; // Resource name
-	base::String file; // Full path
+	base::String resource; // Resource name. Empty if unloaded
+	base::VirtualFileSystem::File file;
 };
 
 // Global interface for editor

@@ -44,7 +44,6 @@ class AssetBrowser : public EditorComponent {
 	static const char* getAssetName(const Asset&);
 	using EditorComponent::openAsset;
 	protected:
-	gui::String m_rootPath;
 	gui::String m_localPath;
 	gui::String m_search;
 	unsigned long long m_typeFilter = -1;
@@ -62,7 +61,7 @@ class AssetBrowser : public EditorComponent {
 
 	struct Editor { Asset asset; gui::Widget* widget; };
 	std::vector<Editor> m_activeEditors;
-	std::vector<gui::String> m_modifiedFiles; // Files tagged as modified
+	std::vector<base::VirtualFileSystem::File> m_modifiedFiles; // Files tagged as modified
 	std::vector<gui::String> m_newFiles; // Files requested for new assets not yet saved
 
 	gui::Widget* m_panel = nullptr;

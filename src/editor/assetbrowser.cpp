@@ -43,13 +43,13 @@ class AssetTile : public Button {
 };
 
 inline bool operator==(const Asset& a, const Asset& b) {
-	if(a.file && a.file == b.file) return true;
+	if(a.file && (a.file == b.file)) return true;
 	return a.type==b.type && a.resource==b.resource && a.file==b.file;
 }
 
 const char* AssetBrowser::getAssetName(const Asset& asset) {
 	const char* name = asset.resource;
-	if(!name) name = asset.file;
+	if(!name) name = asset.file.name;
 	if(const char* f = strrchr(name, '/')) name = f+1;
 	return name;
 }
@@ -64,7 +64,6 @@ AssetBrowser::~AssetBrowser() {
 void AssetBrowser::initialise() {
 	Root::registerClass<AssetTile>();
 
-	m_rootPath = "./data/";
 	getEditor()->addEmbeddedPNGImage("data/editor/asseticons.png", editor_assets_image, editor_assets_image_len);
 	m_panel = loadUI("assets.xml", editor_assets_gui);
 	addToggleButton(m_panel, "editors", "browser");
@@ -107,11 +106,9 @@ void AssetBrowser::initialise() {
 
 	getEditor()->assetChanged.bind([this](const Asset& asset, bool changed) {
 		if(!asset.file) return;
-		String file = asset.file;
-		if(!asset.file.startsWith("./") && !asset.file.startsWith("../")) file = "./" + file;
-		if(!changed) printf("NotifySaved %s\n", file.str());
+		if(!changed) printf("NotifySaved %s\n", asset.file.name.str());
 		for(size_t i=0; i<m_modifiedFiles.size(); ++i) {
-			if(m_modifiedFiles[i] == file) {
+			if(m_modifiedFiles[i] == asset.file) {
 				if(changed) return;
 				m_modifiedFiles[i] = std::move(m_modifiedFiles.back());
 				m_modifiedFiles.pop_back();
@@ -120,7 +117,7 @@ void AssetBrowser::initialise() {
 			}
 		}
 		if(changed) {
-			m_modifiedFiles.push_back(std::move(file));
+			m_modifiedFiles.push_back(asset.file);
 			refreshItems();
 		}
 	});
@@ -186,13 +183,6 @@ bool AssetBrowser::isActive() const {
 	return m_panel->isVisible();
 }
 
-void AssetBrowser::setRootPath(const char* path) {
-	m_rootPath = path;
-	if(!m_rootPath) m_rootPath = "./";
-	else if(m_rootPath[m_rootPath.length()-1]!='/') m_rootPath += "/";
-	refreshItems();
-}
-
 void AssetBrowser::setPath(const char* path) {
 	if(!path) path="";
 	else if(path[0]=='.' && path[1]=='/') path += 2;
@@ -240,7 +230,7 @@ void AssetBrowser::pressedCrumb(gui::Button* b) {
 	else {
 		// Show dropdown menu of subfolders
 		static char buffer[1024];
-		char* e = buffer + sprintf(buffer, "%s", m_rootPath.str());
+		char* e = buffer;
 		for(int i=2; i<=index; i+=1) {
 			e += sprintf(buffer, "%s/", m_breadcrumbs->getWidget(i)->as<Button>()->getCaption());
 		}
@@ -251,7 +241,7 @@ void AssetBrowser::pressedCrumb(gui::Button* b) {
 		for(auto& file: Directory(buffer)) {
 			if(file.type == Directory::DIRECTORY) {
 				if(file.name[0]=='.') continue;
-				e = buffer + m_rootPath.length();
+				e = buffer;
 				Popup::ButtonDelegate func;
 				func.bind( [this, buffer=e](Button* b) { strcat(buffer, b->getCaption()); setPath(buffer); m_items->setFocus(); });
 				popup->addItem(m_panel->getRoot(), "breadcrumb", "", file.name, func);
@@ -270,11 +260,11 @@ String AssetBrowser::getUniqueFileName(const char* base, const char* localPath) 
 	if(baseLen > 2 && fin[-1]=='_' && fin[0]>='0' && fin[0]<='9') baseLen -= 2;
 
 	char buffer[1024];
-	sprintf(buffer, "%s%s%s", m_rootPath.str(), localPath, base);
+	sprintf(buffer, "%s%s", localPath, base);
 	auto exists = [](const char* s) { FILE* fp = fopen(s, "r"); if(fp) fclose(fp); return fp; };
 	int index = 1;
 	while(exists(buffer)) {
-		sprintf(buffer, "%s%s%.*s_%d%s", m_rootPath.str(), localPath, baseLen, base, index, ext);
+		sprintf(buffer, "%s%.*s_%d%s", localPath, baseLen, base, index, ext);
 		++index;
 	}
 	return buffer;
@@ -286,13 +276,11 @@ void AssetBrowser::refreshItems() {
 	String filter = m_filter->getText()[0]? String::format("*%s*", m_filter->getText()): nullptr;
 
 	// Scan the folder for files
-	String fullPath = m_rootPath + m_localPath;
 	if(m_typeFilter & 1) {
-		for(auto& file: Directory(fullPath)) {
-			if(file.name[0]=='.') continue;
+		const VirtualFileSystem::Folder& folder = Resources::getInstance()->getFileSystem().getFolder(m_localPath);
+		for(auto& file: folder) {
 			if(filter && !matchWildcard(file.name, filter)) continue;
-			bool isFolder = file.type == Directory::DIRECTORY;
-			addAssetTile(Asset{ResourceType::None, "", fullPath + file.name}, isFolder);
+			addAssetTile(Asset{ResourceType::None, "", file}, file.isFolder());
 		}
 	}
 	
@@ -341,7 +329,7 @@ void AssetBrowser::refreshItems() {
 				tip += "\n" + m_customTypes[(int)tile->asset.type-(int)ResourceType::Custom] + ": " + tile->asset.resource;
 			break;
 		}
-		if(tile->asset.file) tip += "\nPath: " + tile->asset.file;
+		if(tile->asset.file) tip += "\nPath: " + tile->asset.file.getFullPath();
 		w->setToolTip(tip);
 	}
 }
@@ -358,7 +346,8 @@ void AssetBrowser::addCustomItem(const char* type, const char* name, const char*
 		m_customTypes.push_back(type);
 		addTypeFilter(type, customType);
 	}
-	m_custom.push_back(Asset{customType, name, file});
+	// FIXME - this file is not in out VirtualFileSystem
+	m_custom.push_back(Asset{customType, name, {}});
 }
 
 void AssetBrowser::removeCustomItem(const char* type, const char* name) {
@@ -378,9 +367,7 @@ void AssetBrowser::buildResourceTree() {
 	Resources& res = *Resources::getInstance();
 	auto addAsset = [this, &res](ResourceType type, const char* name, ResourceManagerBase& rc) {
 		Asset a { type, name };
-		// We need the full path within the virtual file system, starting with ./
-		VirtualFileSystem::File file = res.getFileSystem().getFile(name);
-		if(file) a.file = file.getFullPath();
+		a.file = res.getFileSystem().getFile(name);
 		m_resources.push_back(a);
 	};
 
@@ -417,7 +404,7 @@ Widget* AssetBrowser::addAssetTile(const Asset& asset, bool folder) {
 
 	Widget* mod = tile->getTemplateWidget("_modified");
 	mod->setVisible(!asset.file);
-	if(!mod->isVisible()) for(const char* s: m_modifiedFiles) {
+	if(!mod->isVisible()) for(const auto& s: m_modifiedFiles) {
 		if(asset.file == s) {
 			mod->setVisible(true);
 			break;
@@ -489,16 +476,16 @@ bool AssetBrowser::openAsset(Widget* w) {
 
 void AssetBrowser::deleteAsset(Widget* item) {
 	const Asset& asset = cast<AssetTile>(item)->asset;
-	if(asset.file) remove(asset.file);
+	if(asset.file) remove(asset.file.getFullPath());
 	refreshItems();
 }
 
 void AssetBrowser::duplicateAsset(Widget* item) {
 	const Asset& asset = cast<AssetTile>(item)->asset;
 	const char* name = getAssetName(asset);
-	if(!name) name = asset.file;
-	String src = asset.file;
-	String dst = getUniqueFileName(name, m_localPath.str());
+	if(!name) name = asset.file.name;
+	String src = asset.file.getFullPath();
+	String dst = getUniqueFileName(name, m_localPath.str()); // FIXME: Which folder ?
 	if(!src) return;
 	printf("Copy %s -> %s\n", src.str(), dst.str());
 	FILE* sp = fopen(src, "rb");
@@ -531,20 +518,19 @@ void AssetBrowser::renameAsset(Widget* item) {
 
 	box->eventSubmit.bind([this, lbl](Textbox* t) {
 		lbl->setVisible(true);
-		String file = m_rootPath + m_localPath + t->getText();
+		String file = m_localPath + t->getText(); // FIXME: Which folder ?
 		FILE* fp = fopen(file, "r");
 		if(fp) fclose(fp);
 		else {
-			String src = m_rootPath + m_localPath + lbl->getCaption();
-			printf("Rename %s -> %s\n", src.str(), file.str());
-			rename(src, file);
+			const Asset& asset = cast<AssetTile>(t->getParent())->asset;
+			printf("Rename %s -> %s\n", asset.file.name.str(), file.str());
+			rename(asset.file.getFullPath(), file); // FIXME: What about archived files
 			t->removeFromParent();
 			refreshItems();
 			
-			// We may need to update the resource manager
-			String asset = m_localPath + t->getText();
+			// We may need to update the resource manager FIXME
 			Resources& res = *Resources::getInstance();
-			res.particles.reload(asset);
+			res.particles.reload(file);
 
 		}
 		delete t;

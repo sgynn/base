@@ -12,9 +12,11 @@ namespace base {
 			public:
 			String name;
 			operator bool() const { return name; }
+			bool operator==(const File& o) const { return m_source==o.m_source && name == o.name; }
 			base::File read() const;
 			const Folder* isFolder() const;
 			String getFullPath() const; // For error log
+			bool inArchive() const; // Is tthis file part of a pack, fullPath is not a valid file.
 			File() {}
 			private:
 			File(VirtualFileSystem* fs, const String& name, int src) : name(name), m_fs(fs), m_source(src) {}

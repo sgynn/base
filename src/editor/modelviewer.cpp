@@ -47,10 +47,9 @@ Material* ModelViewer::createPreviewMaterial() {
 
 Widget* ModelViewer::openAsset(const Asset& asset) {
 	if(!asset.file) return nullptr;
-	StringView ext = strrchr(asset.file, '.');
+	StringView ext = strrchr(asset.file.name, '.');
 	if(ext==".bm" || ext==".obj") {
-		const char* name = asset.resource;
-		if(!name) name = getResourceNameFromFile(Resources::getInstance()->models, asset.file);
+		const char* name = asset.resource? asset.resource: asset.file.name;
 		Model* model = Resources::getInstance()->models.get(name);
 		if(!model) return nullptr;
 

@@ -13,8 +13,7 @@ class ImageViewer : public EditorComponent {
 	void initialise() override {}
 	gui::Widget* openAsset(const Asset& asset) override {
 		if(asset.type == ResourceType::None) {
-			base::StringView ext = strrchr(asset.file, '.');
-			if(ext != ".png" && ext != ".dds") return nullptr;
+			if(!asset.file.name.endsWith(".png") && !asset.file.name.endsWith(".dds")) return nullptr;
 		}
 		else if(asset.type != ResourceType::Texture) return nullptr;
 
@@ -23,7 +22,7 @@ class ImageViewer : public EditorComponent {
 		gui::Renderer& r = *getEditor()->getGUI()->getRenderer();
 
 		const char* name = asset.resource;
-		if(!name) name = getResourceNameFromFile(base::Resources::getInstance()->textures, asset.file);
+		if(!name) name = asset.file.name;
 
 		int img = r.getImage(name);
 		if(img < 0) {
