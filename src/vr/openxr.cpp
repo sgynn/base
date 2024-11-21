@@ -256,7 +256,7 @@ bool xr::initialise(const char* appName) {
 	if(!xr::session) {
 		xrDestroyInstance(xr::instance);
 		xr::instance = 0;
-		printf("Error: OpenXR failed to create session %#x\n", r);
+		printf("Error: OpenXR failed to create session %d\n", r);
 		return false;
 	}
 
@@ -606,7 +606,9 @@ bool VRComponent::isActive() const {
 }
 
 BoundingBox2D VRComponent::getPlayArea() const {
-	return BoundingBox2D();
+	XrExtent2Df bounds;
+	xrGetReferenceSpaceBoundsRect(xr::session, XR_REFERENCE_SPACE_TYPE_STAGE, &bounds);
+	return BoundingBox2D(-bounds.width/2, -bounds.height/2, bounds.width, bounds.height);
 }
 
 void VRComponent::adjustDepth(float nearClip, float farClip) {
@@ -770,7 +772,7 @@ bool XRController::update() {
 void XRController::vibrate(uint duration, float amplitude, float frequency) {
 	XrHapticVibration vibration{XR_TYPE_HAPTIC_VIBRATION};
 	vibration.amplitude = amplitude;
-	vibration.duration = duration;
+	vibration.duration = duration<0? -1ll: (int64_t)(duration * 1e6f); // nanoseconds
 	vibration.frequency = frequency;
 	XrHapticActionInfo hapticActionInfo{XR_TYPE_HAPTIC_ACTION_INFO, nullptr, xr::actions.haptic, xr::hand[side].subaction};
 	xrApplyHapticFeedback(xr::session, &hapticActionInfo, (XrHapticBaseHeader*)&vibration);
@@ -932,7 +934,7 @@ void VRComponent::draw() {
 
 #endif
 
-// Stub - TODO: Investigate web xr
+// Stub - TODO: Investigate webxr
 #ifdef EMSCRIPTEN
 #include <base/game.h>
 #include <base/input.h>
