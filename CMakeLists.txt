@@ -50,6 +50,9 @@ set(src
 	src/model/skeleton.cpp
 	src/model/wavefront.cpp
 
+	src/vr/directx-interop.cpp
+	src/vr/fliptarget.cpp
+	src/vr/openxr.cpp
 
 	src/navmesh/navdrawable.cpp
 	src/navmesh/navedit.cpp
@@ -181,6 +184,7 @@ set(headers
 	include/base/tiff.h
 	include/base/vec.h
 	include/base/virtualfilesystem.h
+	include/base/vrcomponent.h
 	include/base/wavefront.h
 	include/base/window.h
 	include/base/xml.h
