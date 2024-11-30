@@ -43,6 +43,7 @@ struct FoliageItemRef {
 	Point cell;
 	uint index;
 	vec3 point;
+	float scale;
 };
 
 // -------------------------------------------------------------------------------------- //
@@ -71,11 +72,6 @@ class FoliageLayer : protected base::SceneNode {
 	void setClusterGap(const Rangef&);
 	void setClusterShape(int points, float scale);
 
-	// Allow removing individual items - chopping down trees etc
-	const std::vector<FoliageItemRef> getItems(const vec3& point, float radius) const;
-	void removeItems(const Point& cell, const std::vector<int>& indices);
-	void removeItem(const FoliageItemRef& item);
-	void restoreItem(const FoliageItemRef& item);
 
 	protected:
 	friend class FoliageSystem;
@@ -106,7 +102,6 @@ class FoliageLayer : protected base::SceneNode {
 	struct Geometry { base::Mesh* mesh; base::HardwareVertexBuffer* instances; size_t count; };
 	struct Chunk { base::DrawableMesh* drawable; Geometry geometry; ChunkState state; bool active; };
 	std::map<Index, Chunk*> m_chunks;
-	std::map<Index, std::vector<uint16>> m_removedItems;
 
 	protected:
 	struct GenPoint { vec3 position, normal; };
@@ -130,12 +125,20 @@ class FoliageInstanceLayer : public FoliageLayer {
 	FoliageInstanceLayer(float chunkSize, float range);
 	void setMesh(base::Mesh*);
 	void setAlignment(OrientaionMode mode, const Rangef& range=0);
+
+	// Allow removing individual items - chopping down trees etc
+	const std::vector<FoliageItemRef> getItems(const vec3& point, float radius, bool includeUnloaded) const;
+	void removeItems(const Point& cell, const std::vector<uint16>& indices);
+	void removeItem(const FoliageItemRef& item);
+	void restoreItem(const FoliageItemRef& item);
 	protected:
 	virtual Geometry generateGeometry(const Index& page) const override;
 	protected:
 	base::Mesh* m_mesh;
 	Rangef              m_alignRange; // RELATIVE: lerp range between normal and up vector, ABSOLUTE: lerp between sideways and up.
 	OrientaionMode      m_alignMode;
+
+	std::map<Index, std::vector<uint16>> m_removedItems; // vector should be sorted
 };
 
 // -------------------------------------------------------------------------------------- //
@@ -163,6 +166,7 @@ class GrassLayer : public FoliageLayer {
 class FoliageSystem : public base::SceneNode {
 public:
 	friend class FoliageLayer;
+	friend class FoliageInstanceLayer;
 	typedef FoliageLayer::Index Index;
 	typedef FoliageLayer::IndexList IndexList;
 

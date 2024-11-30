@@ -355,6 +355,63 @@ FoliageLayer::Geometry FoliageInstanceLayer::generateGeometry(const Index& index
 	return Geometry{m_mesh, buffer, points.size()};
 }
 
+// ----------------------------------------------------------------------------------------------------- //
+
+void FoliageInstanceLayer::removeItem(const FoliageItemRef& ref) {
+	m_removedItems[ref.cell].push_back(ref.index);
+	// flag changed
+}
+void FoliageInstanceLayer::removeItems(const Point& cell, const std::vector<uint16>& indices) {
+	std::vector<uint16>& rm = m_removedItems[cell];
+	rm.insert(rm.end(), indices.begin(), indices.end());
+	// flag changed
+}
+void FoliageInstanceLayer::restoreItem(const FoliageItemRef& ref) {
+	auto it = m_removedItems.find(ref.cell);
+	if(it == m_removedItems.end()) return;
+	for(size_t i=0; i<it->second.size(); ++i) {
+		if(it->second[i] == ref.index) {
+			it->second.erase(it->second.begin() + i);
+			// flag changed
+			break;
+		}
+	}
+}
+
+const std::vector<FoliageItemRef> FoliageInstanceLayer::getItems(const vec3& point, float radius, bool includeUnloaded) const {
+	std::vector<FoliageItemRef> result;
+	IndexList cells;
+	PointList points;
+	vec3 up;
+	m_parent->getActive(point, m_chunkSize, radius, cells);
+	for(const Index& cellIndex: cells) {
+		auto it = m_chunks.find(cellIndex);
+		if(it!=m_chunks.end() && it->second->state == COMPLETE) {
+			result.reserve(result.size() + it->second->geometry.count);
+			for(size_t i=0; i<it->second->geometry.count; ++i) {
+				const float* vx = it->second->geometry.instances->getVertex(i);
+				result.push_back({cellIndex, (uint16)i, vx, vx[3]});
+				// FIXME: adjust index for removed items
+			}
+		}
+		else if(includeUnloaded) {
+			points.clear();
+			generatePoints(cellIndex, points, up);
+			result.reserve(result.size() + points.size());
+			RNG rng(0); // Match generateGeometry to get scales
+			for(size_t i=0; i<points.size(); ++i) {
+				rng.rand();
+				if(m_alignMode >= ABSOLUTE) rng.randf();
+				float scale = rng.randf(m_scaleRange);
+				result.push_back({cellIndex, (uint16)i, points[i].position, scale});
+			}
+		}
+	}
+	return result;
+}
+
+
+
 
 // ===================================================================================================== //
 
