@@ -216,14 +216,14 @@ class DebugGeometryDrawable : public Drawable {
 
 // ---------------------------------------------- //
 
-DebugGeometry::DebugGeometry(DebugGeometryManager* mgr, DebugGeometryFlush f, bool xray, float w) : m_manager(mgr), m_mode(f) {
-	m_drawable = new DebugGeometryDrawable(w, xray?0.1:0);
+DebugGeometry::DebugGeometry(DebugGeometryManager* mgr, DebugGeometryFlush f, bool xray, float width) : m_manager(mgr), m_mode(f) {
+	m_drawable = new DebugGeometryDrawable(width, xray?0.2:0);
 	m_buffer = new GeometryList;
 	m_manager->add(this);
 }
 
-DebugGeometry::DebugGeometry(DebugGeometryFlush f, bool x, float w): m_mode(f) {
-	m_drawable = new DebugGeometryDrawable(w);
+DebugGeometry::DebugGeometry(DebugGeometryFlush f, bool xray, float width): m_mode(f) {
+	m_drawable = new DebugGeometryDrawable(width, xray?0.2:0);
 	m_buffer = new GeometryList;
 	// Manager
 	m_manager = DebugGeometryManager::getInstance();
