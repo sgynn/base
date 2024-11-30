@@ -26,6 +26,7 @@ class AnimationKey {
 	bool operator==(const AnimationKey& k) const { return m_key==k.m_key; }
 	bool operator==(const char* name) const { return *this==AnimationKey(name); }
 	bool operator!=(const AnimationKey& k) const { return m_key!=k.m_key; }
+	bool operator<(const AnimationKey& k) const { return m_key < k.m_key; }
 	operator uint() const { return m_key; }
 	operator const char*() const { return getName(); }
 	operator bool() const { return m_key<s_reverse.size(); }
