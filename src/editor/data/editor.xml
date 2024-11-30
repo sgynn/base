@@ -86,6 +86,7 @@
 	<skin name="none">
 		<font name="helvetica" size="16"/>
 		<state name="normal"/>
+		<state name="disabled" forecolour="#808080"/>
 	</skin>
 	<skin name="graphnode">
 		<font name="helvetica" size="16"/>

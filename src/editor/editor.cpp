@@ -241,9 +241,11 @@ void SceneEditor::update() {
 
 	// Tooltip
 	if(m_toolTip.tip) {
-		if(m_gui->getWidgetUnderMouse() != m_toolTip.target || mouse.button) m_toolTip.time = 0;
+		Widget* target = m_gui->getWidgetUnderMouse();
+		while(target && target->isTemplate()) target = target->getParent();
+		if(target != m_toolTip.target || mouse.button) m_toolTip.time = 0;
 		else if(!m_toolTip.tip->isVisible() && (mouse.delta.x || mouse.delta.y)) m_toolTip.time = 0;
-		m_toolTip.target = m_gui->getWidgetUnderMouse();
+		m_toolTip.target = target;
 		if(m_toolTip.time<1) m_toolTip.tip->setVisible(false);
 		else if(m_toolTip.target && m_toolTip.target->getToolTip() && !m_toolTip.tip->isVisible()) {
 			m_toolTip.tip->getWidget(0)->as<Label>()->setCaption(m_toolTip.target->getToolTip());
