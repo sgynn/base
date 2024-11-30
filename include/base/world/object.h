@@ -38,13 +38,13 @@ class Object : public SceneNode {
 	static Material* loadMaterial(const char* name, int weights=0, const char* base=0);
 	static Material* loadMaterial(const char* name, const char* base) { return loadMaterial(name, 0, base); }
 	static AnimationBank* getAnimationBank(const char* filename);
-	static AnimationBank* getAnimationBank(base::Model*);
-	static int addAnimationsFromModel(base::AnimationBank* bank, base::Model* model);
-	static int addAnimationsFromModel(base::AnimationBank* bank, const char* modelFile);
+	static AnimationBank* getAnimationBank(Model*);
+	static void storeAnimationBank(AnimationBank*, Model*);
+	static int addAnimationsFromModel(AnimationBank* bank, Model* model, bool replaceExisting=false);
+	static int addAnimationsFromModel(AnimationBank* bank, const char* modelFile, bool replaceExisting=false);
 	static void addTextureSearchPattern(const char* variable, const char* pattern);
 	protected:
-	using Model = base::Model;
-	Model* loadModel(const char* name, base::AnimationController** anim, bool moves, const char* meshFilter=0, const char* material=0);
+	Model* loadModel(const char* name, AnimationController** anim, bool moves, const char* meshFilter=0, const char* material=0);
 	Model* loadModel(const char* name, const char* meshFilter=0, const char* material=0) { return loadModel(name, nullptr, false, meshFilter, material); }
 
 	protected:

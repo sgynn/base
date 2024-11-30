@@ -10,6 +10,7 @@
 #include <base/resources.h>
 #include <base/bmloader.h>
 #include <base/xml.h>
+#include <set>
 
 using namespace base;
 using script::Variable;
@@ -39,6 +40,10 @@ class AnimationPropertyExtension : public base::ModelExtension {
 };
 
 
+void Object::storeAnimationBank(AnimationBank* bank, Model* model) {
+	if(model->getExtension<AnimationBankExtension>()) printf("Error: Model already contains an animation bank\n");
+	model->addExtension(new AnimationBankExtension(bank));
+}
 AnimationBank* Object::getAnimationBank(const char* filename) {
 	if(Model* m = Resources::getInstance()->models.get(filename))
 		return getAnimationBank(m);
@@ -55,7 +60,8 @@ AnimationBank* Object::getAnimationBank(Model* model) {
 	}
 	return data->animations;
 }
-int Object::addAnimationsFromModel(AnimationBank* bank, Model* model) {
+int Object::addAnimationsFromModel(AnimationBank* bank, Model* model, bool replace) {
+	std::set<AnimationKey> added;
 	for(size_t i=0; i<model->getAnimationCount(); ++i) {
 		Animation* a = model->getAnimation(i);
 		AnimationPropertyExtension::AnimationType type = AnimationPropertyExtension::Action;
@@ -67,15 +73,16 @@ int Object::addAnimationsFromModel(AnimationBank* bank, Model* model) {
 				}
 			}
 		}
-		const char* name = a->getName();
+		AnimationKey name = a->getName();
 		if(type == AnimationPropertyExtension::Idle) name = "Idle";
+		if(replace && added.insert(name).second) bank->remove(name);
 		bank->add(name, a, ~0u, 1, type == AnimationPropertyExtension::Move);
 	}
 	return model->getAnimationCount();
 }
-int Object::addAnimationsFromModel(AnimationBank* bank, const char* file) {
+int Object::addAnimationsFromModel(AnimationBank* bank, const char* file, bool replace) {
 	if(Model* model = Resources::getInstance()->models.get(file)) {
-		return addAnimationsFromModel(bank, model);
+		return addAnimationsFromModel(bank, model, replace);
 	}
 	return 0;
 }
