@@ -259,6 +259,7 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 	if(item) {
 		item->setVisible(false);
 		m_itemHeight = item->getSize().y;
+		m_tileWidth = (item->getAnchor()&3)==3? 0: item->getSize().x;
 		// Wrong place?
 		if(item->getParent(true) != m_client) {
 			item = item->clone();
@@ -266,7 +267,10 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 		}
 		bindEvents(item);
 	}
-	else m_itemHeight = getSkin()->getFont()->getLineHeight(getSkin()->getFontSize());
+	else {
+		m_itemHeight = getSkin()->getFont()->getLineHeight(getSkin()->getFontSize());
+		m_tileWidth = 0;
+	}
 	if(item && !m_itemWidget) m_itemWidget = item;
 
 	// Read items
@@ -404,9 +408,10 @@ void Listbox::cacheItem(ListItem& item, Widget* w) const {
 
 void Listbox::updateCache(bool full) {
 	if(!m_itemWidget) return;
+	int columns = m_tileWidth? getClientRect().width / m_tileWidth : 1;
 	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
-	uint first = offset / m_itemHeight;
-	uint last = std::min((offset + m_rect.height) / m_itemHeight+1, (int)getItemCount());
+	uint first = offset / m_itemHeight / columns;
+	uint last = std::min((offset + m_rect.height) / m_itemHeight * columns + columns, (int)getItemCount());
 	
 	uint requiredCount = last - first;
 	if(requiredCount != m_cacheSize || first != m_cacheFirst || full) {
@@ -460,7 +465,8 @@ void Listbox::updateCache(bool full) {
 	// Set positions and states
 	for(uint i=first, c=m_cacheOffset; i<last; ++i, ++c) {
 		Widget* itemWidget = m_cache[c%m_cache.size()];
-		itemWidget->setPosition(0, i * m_itemHeight - offset);
+		if(columns > 1) itemWidget->setPosition(i%columns * m_tileWidth, i/columns * m_itemHeight - offset);
+		else itemWidget->setPosition(0, i * m_itemHeight - offset);
 		itemWidget->setVisible(true);
 		itemWidget->setSelected(isItemSelected(i));
 	}
@@ -473,6 +479,11 @@ void Listbox::itemSelectionChanged() {
 ListItem* Listbox::getItemAt(const Point& p) {
 	int offset = m_scrollbar? m_scrollbar->getValue(): 0;
 	int index = (p.y + offset) / m_itemHeight;
+	if(m_tileWidth) {
+		float columns = getClientRect().width / m_tileWidth;
+		if(p.x < columns * m_tileWidth) index = index * columns + p.x / m_tileWidth;
+		else return nullptr;
+	}
 	if(index >=0 && index < (int)getItemCount()) return &getItem(index);
 	return nullptr;
 }
@@ -563,8 +574,9 @@ void Listbox::scrollToItem(uint index) {
 
 void Listbox::updateBounds() {
 	if(!m_scrollbar) return;
+	int columns = m_tileWidth? getClientRect().width / m_tileWidth : 1;
 	int h = m_client->getSize().y;
-	int t = m_itemHeight * getItemCount();
+	int t = m_itemHeight * ((getItemCount() + columns-1) / columns);
 	m_scrollbar->setRange(0, t>h? t-h: 0, 16);
 	m_scrollbar->setBlockSize(t>0? (float)h / t: 1);
 }

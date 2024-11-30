@@ -196,6 +196,7 @@ class Listbox : public Widget, public ItemList {
 	Scrollbar* m_scrollbar;
 	bool m_multiSelect;
 	int m_itemHeight;
+	int m_tileWidth = 0;
 	Widget* m_itemWidget = nullptr;
 	std::vector<Widget*> m_cache;
 	uint m_cacheOffset = 0;
