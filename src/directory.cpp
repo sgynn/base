@@ -229,4 +229,13 @@ bool Directory::contains(const char* file) {
 	return false;
 }
 
+bool Directory::create(const char* folder) {
+	#ifdef LINUX
+	return mkdir(folder, S_IRWXU) == 0;
+	#endif
+
+	#ifdef WIN32
+	return _mkdir(folder) == 0;
+	#endif
+}
 

@@ -31,6 +31,7 @@ namespace base {
 		static int getRelativePath(const char* path, const char* root, char* out, int lim=0);
 		static bool isRelative(const char*);
 		static const char* getWorkingPath();
+		static bool create(const char*);
 		protected:
 		int scan();
 		char m_path[1024];
