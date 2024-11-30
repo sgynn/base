@@ -27,6 +27,7 @@ float bresenhamLineT(const vec2& p, const vec2& d, float cellSize, float limit, 
 				c -= cellSize;
 				t = (cell.y*cellSize + side - p.y) / d.y;
 				if(!callback(cell, u, t)) return u;
+				if(t >= limit) return limit;
 				cell.y += cd.y;
 				u = t;
 			}
@@ -53,6 +54,7 @@ float bresenhamLineT(const vec2& p, const vec2& d, float cellSize, float limit, 
 				c -= cellSize;
 				t = (cell.x*cellSize + side - p.x) / d.x;
 				if(!callback(cell, u, t)) return u;
+				if(t >= limit) return limit;
 				cell.x += cd.x;
 				u = t;
 			}
