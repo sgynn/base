@@ -14,6 +14,8 @@ extern void addDebugLine(const vec3& a, const vec3& b, int colour);
 #define DebugLine(a,b,c)
 #endif
 
+namespace nav { extern void updateLink(NavLink*); }
+
 
 NavFilter::NavFilter(uint64 m) : m_mask(m) {}
 void NavFilter::addType(const char* name) {
@@ -74,7 +76,6 @@ PathState Pathfinder::search(uint a, uint b) {
 	return search(start, a, end, b);
 }
 
-
 PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 	clear();
 	if(pa==NavPoly::Invalid || pb==NavPoly::Invalid) return PathState::Invalid;
@@ -111,6 +112,10 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 					continue;
 				}
 
+				// Simple size test - not perfect
+				if(link->width == 0) nav::updateLink(link);
+				if(link->width < m_radius * 2) continue;
+
 
 				// Heuristic
 				vec3& u = link->poly[0]->points[ link->edge[0] ];
@@ -127,6 +132,7 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 				n->link = link;
 				n->k = link->poly[0]==poly? 1: 0;
 				n->value = h;
+				n->p = p;
 
 				// Add to open list
 				if(state==states.end()) {
@@ -263,6 +269,7 @@ void PathFollower::setNavMesh(const NavMesh* nav) {
 
 void PathFollower::setRadius(float r) {
 	m_radius = r;
+	m_path.m_radius = r;
 }
 
 void PathFollower::setPosition(const vec3& p) {
@@ -274,7 +281,7 @@ void PathFollower::setPosition(const vec3& p) {
 	if(poly && m_path.state() == PathState::Success && m_pathIndex<m_path.m_path.size()) {
 		uint edge = m_path.m_path[ m_pathIndex ].edge;
 		NavPoly* next = NavMesh::getLinkedPolygon( poly, edge );
-		for(uint i=m_pathIndex+1; next && i<m_pathIndex+4 && i<m_path.m_path.size(); ++i) {
+		for(uint i=m_pathIndex+1; next && i<m_pathIndex+6 && i<m_path.m_path.size(); ++i) {
 			if(next->id != m_path.m_path[i].poly) break; // invalid path
 			if(NavMesh::isInsidePolygon(p, next)) {
 				m_pathIndex = i;
@@ -410,7 +417,7 @@ VecPair PathFollower::nextPoint() {
 	for(size_t i=0; i<stack.size(); ++i) {
 		for(auto& edge: stack[i].poly) {
 			if(edge.a == stack[i].from) continue;
-			if(base::closestPointOnLine(m_position, edge.poly.points[edge.a], edge.poly.points[edge.b]).distance2(m_position) < m_radius*m_radius) {
+			if(base::closestPointOnLine(m_position, edge.poly.points[edge.a], edge.poly.points[edge.b]).setY(m_position.y).distance2(m_position) < m_radius*m_radius) {
 				vec3 m = edge.point() - m_position;
 				if(m.dot(normal[0]) > 0) processPoint(edge.point(), 0);
 				if(m.dot(normal[1]) > 0) processPoint(edge.point(), 1);
@@ -449,6 +456,8 @@ VecPair PathFollower::nextPoint() {
 		else return m_goal;
 	}
 	else {
+		target[0].setY(m_position.y);
+		target[1].setY(m_position.y);
 		if(target[0].distance2(m_position) < target[1].distance2(m_position)) return VecPair(target[0], target[1]);
 		else return VecPair(target[1], target[0]);
 	}
