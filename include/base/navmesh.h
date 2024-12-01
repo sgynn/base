@@ -52,6 +52,7 @@ class NavMesh {
 	NavMesh(const NavMesh& o);
 	NavMesh& operator=(NavMesh&&);
 	NavMesh& operator=(const NavMesh&);
+	bool empty() const { return m_mesh.empty(); }
 
 	static int  setType(const char* name, int precidence=0); 	/// Initialise type with precidence
 	static int  getTypeID(const char* type);					/// Get index of named type. Adds it if missing
