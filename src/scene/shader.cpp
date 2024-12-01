@@ -276,10 +276,11 @@ int Shader::getSupportedVersion() {
 
 // ----------------------------------------------------------------------------------------- //
 
-Shader* Shader::create(const char* vsrc, const char* fsrc) {
+Shader* Shader::create(const char* vsrc, const char* fsrc, const char* def) {
 	if(!vsrc || !fsrc) return 0;
 	ShaderPart* vs = new ShaderPart(VERTEX_SHADER, vsrc);
 	ShaderPart* fs = new ShaderPart(FRAGMENT_SHADER, fsrc);
+	if(def) { vs->setDefines(def); fs->setDefines(def); }
 	Shader* shader = new Shader();
 	shader->attach(vs);
 	shader->attach(fs);

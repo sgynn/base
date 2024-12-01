@@ -53,7 +53,7 @@ class Shader {
 	static const Shader Null;
 
 	// Quick shader creation
-	static Shader* create(const char* vertexShaderSrc, const char* fragmentShaderSrc);
+	static Shader* create(const char* vertexShaderSrc, const char* fragmentShaderSrc, const char* defines=nullptr);
 
 	public:
 	Shader();

@@ -14,6 +14,7 @@ using namespace base;
 
 static const char* SkyDomeShaderSrc = R"(#version 330
 #pragma vertex_shader
+#line 17
 
 uniform mat4 transform;		// ViewProjection matrix
 uniform vec3 camera;		// camera position
@@ -79,12 +80,13 @@ void main() {
 	colour2 = colour * mie * brightness;
 	colour1 = colour * (invWave * (rayleigh * brightness));
 	alpha = alpha * rayleigh * 100.0;
-	direction = -ray;
+	direction = -vertex.xyz;
 }
 
 
 #pragma fragment_shader
 
+#line 89
 uniform vec3 sun;			// Sun position
 uniform float asymmetry;	// asymmetry
 uniform float scaleDepth;	// Altitude of average atmosphere density [0-1]
@@ -101,9 +103,17 @@ float dither(int x, int y, float value) {
 	return value<limit? 1.0: 0.0;
 }
 
+vec3 hash3(vec3 p) {
+	p = vec3( dot(p,vec3(127.1,311.7, 74.7)),
+			  dot(p,vec3(269.5,183.3,246.1)),
+			  dot(p,vec3(113.5,271.9,124.6)));
+	return fract(sin(p)*43758.5453123);
+}
+
 void main() {
+	vec3 dir = normalize(direction);
 	float g2 = asymmetry * asymmetry;
-	float c = dot(sun, direction) / length(direction);
+	float c = dot(sun, vec3(dir.x, min(0.0, dir.y), dir.z));
 	float miePhase = 1.5 * ((1.0 - g2) / (2.0 + g2)) * (1.0 + c*c) / pow(1.0 + g2 - 2.0*asymmetry*c, 1.5);
 	fragment.rgb = colour1 + miePhase * colour2;
 	
@@ -115,11 +125,26 @@ void main() {
 	fragment.b += dither(x,y,fragment.b) * 0.004 - 0.002;
 
 	fragment.a = alpha + dot(fragment.rgb, vec3(1.0,2.0,1.0));
+
+	#ifdef STARS
+	//if(dir.y < 0.0)
+	{
+		vec3 dx = normalize(vec3(-sun.z, 0.0, sun.x));
+		vec3 dy = cross(sun, dx);
+		dir = vec3(dot(dir, dx), dot(dir, dy), dot(dir, sun));
+		for(int i=1; i<4; ++i) {
+			float res = 5.0 * i;
+			vec3 cell = floor(dir * res);
+			vec3 r = normalize(cell + hash3(cell) * 0.8 + 0.1);
+			fragment += max(0.0, 1.0 - length(r - dir) * 200.0 * i) * max(0.0, 1.0 - fragment.a * 1.2);
+		}
+	}
+	#endif
 }
 )";
 
 
-SkyDome::SkyDome(float radius, int res, int queue) {
+SkyDome::SkyDome(float radius, bool stars, int res, int queue) {
 	setRenderQueue(queue);
 
 	vec3 wave(0.65, 0.57, 0.475);
@@ -129,7 +154,9 @@ SkyDome::SkyDome(float radius, int res, int queue) {
 	float mie = 0.001;
 
 	m_latitude = 60;
+	m_axialTilt = 23;
 	m_time = 10;
+	m_season = 0;
 	m_data.link("latitude", m_latitude);
 	m_data.link("time", m_time);
 	
@@ -139,7 +166,7 @@ SkyDome::SkyDome(float radius, int res, int queue) {
 	if(!skyMat) {
 		skyMat = new Material;
 		Pass* pass = skyMat->addPass();
-		pass->setShader(Shader::create(SkyDomeShaderSrc, SkyDomeShaderSrc));
+		pass->setShader(Shader::create(SkyDomeShaderSrc, SkyDomeShaderSrc, stars? "STARS":nullptr));
 
 		ShaderVars& params = pass->getParameters();
 		params.setAuto("transform", AUTO_VIEW_PROJECTION_MATRIX);
@@ -182,11 +209,14 @@ void SkyDome::setSunDirection(const vec3& dir) {
 	params.set("sun", m_sunDirection);
 }
 
-void SkyDome::setLatitude(float degrees) {
+void SkyDome::setLatitude(float degrees, float tilt) {
 	m_latitude = degrees;
+	m_axialTilt = tilt;
 }
-void SkyDome::setTime(float hour) {
+void SkyDome::setTime(float hour, float season, bool update) {
+	m_season = season;
 	m_time = hour;
+	if(update) updateSunFromTime();
 }
 
 void SkyDome::updateSunFromTime() {
