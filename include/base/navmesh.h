@@ -22,6 +22,7 @@ struct NavLink {
 	float    distance;
 };
 
+struct NavTraversalThreshold { float threshold; vec2 normal; float d; };
 
 /** Polygon class */
 struct NavPoly {
@@ -38,6 +39,9 @@ struct NavPoly {
 	vec3        centre;			// polygon centroid point (cached)
 	vec3        extents;		// float extents from centre for AABB checks
 	uint        id;				// polygon unique id for referencing external data
+
+	mutable std::vector<NavTraversalThreshold> traversal;
+	mutable bool traversalCalculated = false;
 
 	static constexpr uint Invalid = ~0u; // Invalid polygon id
 };
@@ -108,9 +112,10 @@ class NavMesh {
 	struct EdgeInfo {
 		const NavPoly& poly;
 		int a, b;
-		const vec3& point() { return poly.points[a]; }
-		operator const vec3&() { return point(); }
+		const vec3& point() const { return poly.points[a]; }
+		operator const vec3&() const { return point(); }
 		NavLink* link() { return poly.links[a]; }
+		const NavLink* link() const { return poly.links[a]; }
 		bool isConnected() const { return poly.links[a]; }
 		NavPoly* connected() { if(NavLink* l=link()) return l->poly[l->poly[0]==&poly?1:0]; return nullptr;  }
 		int oppositeEdge() const { return NavMesh::getLinkedEdge(&poly, a); }

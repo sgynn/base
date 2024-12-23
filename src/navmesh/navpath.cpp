@@ -14,7 +14,11 @@ extern void addDebugLine(const vec3& a, const vec3& b, int colour);
 #define DebugLine(a,b,c)
 #endif
 
-namespace nav { extern void updateLink(NavLink*); }
+namespace nav {
+	extern void updateLink(NavLink*); 
+	extern void calculateTraversal(const NavPoly*, float);
+}
+float Pathfinder::s_maxRadius = 1.f;
 
 
 NavFilter::NavFilter(uint64 m) : m_mask(m) {}
@@ -53,8 +57,8 @@ void Pathfinder::clear() {
 }
 
 PathState Pathfinder::search(const vec3& a, const vec3& b) {
-	uint startPoly = m_navmesh->getPolygon(a)->id;
-	uint endPoly   = m_navmesh->getPolygon(b)->id;
+	uint startPoly = m_navmesh->getPolygonID(a);
+	uint endPoly   = m_navmesh->getPolygonID(b);
 	return search( a, startPoly, b, endPoly);
 }
 
@@ -79,7 +83,7 @@ PathState Pathfinder::search(uint a, uint b) {
 PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 	clear();
 	if(pa==NavPoly::Invalid || pb==NavPoly::Invalid) return PathState::Invalid;
-	if(pa==pb) return (m_state=PathState::Success);
+	//if(pa==pb) return (m_state=PathState::Success);
 
 	const NavPoly* poly = m_navmesh->getPolygon(a);
 	if(!poly) {
@@ -88,7 +92,16 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 	}
 
 	struct AStarNode { const NavLink* link; int k; vec3 p; float value; AStarNode* parent; };
-	auto cmp = [](const AStarNode* a, const AStarNode* b) { return a->value > b->value; };
+	static const auto cmp = [](const AStarNode* a, const AStarNode* b) { return a->value > b->value; };
+	static const auto checkTraversal = [](const NavPoly* poly, const vec3& a, const vec3& b, float radius) {
+		if(!poly->traversalCalculated) nav::calculateTraversal(poly, s_maxRadius);
+		for(const NavTraversalThreshold& t: poly->traversal) {
+			if(t.threshold < radius*2) {
+				if((t.normal.dot(a.xz()) < t.d) != (t.normal.dot(b.xz()) < t.d)) return false;
+			}
+		}
+		return true;
+	};
 
 
 	std::vector<AStarNode*> open, all;
@@ -98,9 +111,13 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 	std::map<const NavLink*, AStarNode*> states;
 	std::map<const NavLink*, AStarNode*>::iterator state;
 
-	do {
+	while(true) {
 		int added = 0;
-		for(int i=0; i<poly->size; ++i) {
+		if(poly->id == pb) {
+			if(checkTraversal(poly, node->p, b, m_radius)) break;
+			else if(open.empty()) return (m_state=PathState::Fail);
+		}
+		else for(int i=0; i<poly->size; ++i) {
 			NavLink* link = poly->links[i];
 			if(link && m_filter.hasType(poly->typeIndex)) {	// ToDo: Clearance
 				state = states.find(link);
@@ -116,11 +133,15 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 				if(link->width == 0) nav::updateLink(link);
 				if(link->width < m_radius * 2) continue;
 
-
-				// Heuristic
+				// Centre point - used for distance heuristic
 				vec3& u = link->poly[0]->points[ link->edge[0] ];
 				vec3& v = link->poly[1]->points[ link->edge[1] ];
 				vec3 p = (u + v) * 0.5;
+
+				// Traversal thresholds
+				if(!checkTraversal(poly, node->p, p, m_radius)) continue;
+
+				// Heuristic
 				float h = node->value + p.distance(node->p) + p.distance(b);
 
 				// Create / update node
@@ -148,11 +169,11 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 		open.pop_back();
 		states[ node->link ] = 0; // closed
 		poly = node->link->poly[ node->k ];
-	} while(poly->id != pb);
+	}
 	
 	// Build path
-	Node pathNode;;
-	if(poly->id == pb) {
+	Node pathNode;
+	if(poly->id == pb && checkTraversal(poly, node->p, b, m_radius)) {
 		while(node->link) {
 			pathNode.poly = node->link->poly[ node->k^1 ]->id;
 			pathNode.edge = node->link->edge[ node->k^1 ];

@@ -44,6 +44,7 @@ namespace base {
 		bool resolvePoint(vec3& point, float radius=0, float search=1, int iterations=4) const;
 
 		const NavMesh* getNavMesh() const { return m_navmesh; }
+		static void setMaxRadius(float m) { s_maxRadius = m; }
 
 
 		protected:
@@ -56,6 +57,7 @@ namespace base {
 		// The path is a list of edges to traverse
 		struct Node { uint poly, edge; };
 		std::vector<Node> m_path;
+		static float s_maxRadius;
 	};
 
 	struct VecPair {

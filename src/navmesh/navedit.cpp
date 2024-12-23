@@ -62,6 +62,7 @@ namespace nav {
 	NavLink* createLink (NavPoly* a, int u, NavPoly* b, int v);					// Link polygons
 	void     updateLink (NavLink* link);										// Calculate link additional values
 	bool     changeLink (NavLink* l, const NavPoly* from, int f, NavPoly* to, int e);// Change a link target
+	void     calculateTraversal(const NavPoly* poly, float limit);
 
 	void     getLinkPoints(NavLink*, vec3& a, vec3& b);
 	vec3     getLinkCentre(NavLink*);
@@ -312,25 +313,60 @@ void nav::updateLink(NavLink* l) {
 	if(!l) return;
 	if(!l->poly[0] || !l->poly[1]) return; // Hanging link
 	l->distance = l->poly[0]->centre.distance(l->poly[1]->centre);
-	vec3 a = l->poly[0]->points[ l->edge[0] ];
-	vec3 b = l->poly[0]->points[ (l->edge[0]+1)%l->poly[0]->size ];
+	vec2 a = l->poly[0]->points[ l->edge[0] ].xz();
+	vec2 b = l->poly[0]->points[ (l->edge[0]+1)%l->poly[0]->size ].xz();
 	l->width = a.distance(b);
-	// Reduce width if polygon is thin - get closest point on all edges to link centre
-	vec3 cp = (l->poly[0]->points[l->edge[0]] + l->poly[1]->points[l->edge[1]]) * 0.5;
-	for(int k=0; k<2; ++k) {
-		NavPoly* p = l->poly[k];
-		for(int i=p->size-1, j=0; j<p->size; i=j, ++j) {
-			if(!p->links[i]) {
-				vec3 ij = p->points[j] - p->points[i];
-				float t = ij.dot(cp-p->points[i]) / ij.dot(ij);
-				t = t<0?0: t>1?1: t;
-				float d = cp.distance(p->points[i]+ij*t) * 2;
-				if(d<l->width) l->width = d;
+}
+
+void nav::calculateTraversal(const NavPoly* poly, float maxRadius) {
+	if(!poly) return;
+	poly->traversal.clear();
+	maxRadius *= maxRadius;
+	for(NavMesh::EdgeInfo& edge: poly) {
+		if(!edge.link()) continue;
+		const vec2 a = edge.poly.points[edge.a].xz();
+		const vec2 b = edge.poly.points[edge.b].xz();
+		float width2 = fmin(a.distance2(b), maxRadius);
+		
+		// Closest edge to edge.a
+		for(NavMesh::EdgeInfo& e: poly) {
+			if(e.link()) continue;
+			if(e.a == edge.a || e.b == edge.a) continue;
+			vec2 ea = e.point().xz();
+			vec2 ed = e.poly.points[e.b].xz() - ea;
+			float t = ed.dot(a - ea) / ed.dot(ed);
+			if(t>0 && t<1) {
+				vec2 p = ea + ed * t;
+				float dist = p.distance2(a);
+				if(dist < width2) {
+					vec2 normal(p.y-a.y, a.x-p.x);
+					poly->traversal.push_back({sqrt(dist), normal, normal.dot(a)});
+				}
+			}
+		}
+		
+		// closest edge to edge.b
+		for(NavMesh::EdgeInfo& e: poly) {
+			if(e.link()) continue;
+			if(e.a == edge.b || e.b == edge.b) continue;
+			vec2 ea = e.point().xz();
+			vec2 ed = e.poly.points[e.b].xz() - ea;
+			float t = ed.dot(b - ea) / ed.dot(ed);
+			if(t>0 && t<1) {
+				vec2 p = ea + ed * t;
+				float dist = p.distance2(b);
+				if(dist < width2) {
+					vec2 normal(p.y-b.y, b.x-p.x);
+					poly->traversal.push_back({sqrt(dist), normal, normal.dot(b)});
+				}
 			}
 		}
 	}
+	// FIXME: This fails if the blocking edge is in an adjacent polygon
+	// Need to traverse links and add the entries to both polygons
 
 }
+
 /** Change a link target */
 bool nav::changeLink(NavLink* link, const NavPoly* from, int fe, NavPoly* to, int e) {
 	if(!link) return true;
