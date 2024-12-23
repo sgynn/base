@@ -92,14 +92,17 @@ void ObjectWorld::processMessages() {
 TraceResult ObjectWorld::trace(uint64 mask, const Ray& ray, float radius, float limit) const {
 	TraceResult result;
 	traceCustom(mask, ray, radius, limit, result);
+	if(result) limit = result.distance;
 
 	vec3 normal;
+	float distance = limit;
 	for(Object* o: m_objects) {
-		if(mask & 1<<o->m_traceGroup && o->trace(ray, radius, limit, normal)) {
+		if(mask & 1<<o->m_traceGroup && o->trace(ray, radius, distance, normal) && distance < limit) {
 			result.hit = true;
 			result.normal = normal;
 			result.object = o;
-			result.distance = limit;
+			result.distance = distance;
+			limit = distance;
 		}
 	}
 	if(result) result.position = ray.point(result.distance);
