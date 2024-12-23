@@ -169,13 +169,13 @@ Image::Image() : m_group(nullptr), m_image(0), m_angle(0) {
 Image::Image(int w, int h) : Image() {
 	setSize(w, h);
 }
-Image::Image(Root* root, const char* image) {
+Image::Image(Root* root, const char* image) : Image() {
 	setRoot(root);
 	setImage(image);
 	setAutosize(true);
 	setAutosize(false);
 }
-Image::Image(IconList* group, const char* image) {
+Image::Image(IconList* group, const char* image) : Image() {
 	setImage(group, image);
 	setAutosize(true);
 	setAutosize(false);
