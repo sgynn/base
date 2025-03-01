@@ -115,6 +115,7 @@ Image readPNGFile(ReadFunc&& read) {
 	chunk.data = nullptr;
 	byte* pixels = nullptr;
 	byte* palette = nullptr;
+	byte* paletteAlpha = nullptr;
 	Image::Format format = Image::INVALID;
 
 	readChunk(chunk);
@@ -205,6 +206,12 @@ Image readPNGFile(ReadFunc&& read) {
 				memcpy(palette, chunk.data, chunk.length);
 			}
 		}
+		else if(memcmp(chunk.type, "tRNS", 4)==0) { // Transparency data for indexed images
+			if(header.colourType == PNGColour::Indexed) {
+				paletteAlpha = new byte[chunk.length];
+				memcpy(paletteAlpha, chunk.data, chunk.length);
+			}
+		}
 		else if(memcmp(chunk.type, "IEND", 4)==0) {
 			break;
 		}
@@ -215,11 +222,16 @@ Image readPNGFile(ReadFunc&& read) {
 
 	// Convert Indexed to RGB8 image
 	if(palette) {
+		if(paletteAlpha) format = Image::RGBA8;
+		unsigned stride = paletteAlpha? 4: 3;
 		unsigned count = header.width * header.height;
 		byte* index = pixels;
-		pixels = new byte[count * 3];
+		pixels = new byte[count * stride];
 		if(header.bitDepth == 8) {
-			for(unsigned i=0; i<count; ++i) memcpy(pixels+i*3, palette+index[i]*3, 3);
+			for(unsigned i=0; i<count; ++i) memcpy(pixels+i*stride, palette+index[i]*3, 3);
+			if(paletteAlpha) {
+				for(unsigned i=0; i<count; ++i) pixels[i*stride+3] = paletteAlpha[index[i]];
+			}
 		}
 		else {
 			byte mask = (1<<header.bitDepth) - 1;
@@ -233,13 +245,15 @@ Image readPNGFile(ReadFunc&& read) {
 					for(int s=8-header.bitDepth; s>=0 && out<end; s-=header.bitDepth) {
 						int k = (*in >> s) & mask;
 						memcpy(out, palette+k*3, 3);
-						out += 3;
+						if(paletteAlpha) out[3] = paletteAlpha[k];
+						out += stride;
 					}
 					++in;
 				}
 			}
 		}
 		delete [] palette;
+		delete [] paletteAlpha;
 		delete [] index;
 	}
 
