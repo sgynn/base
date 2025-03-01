@@ -94,6 +94,14 @@ class KeySet:
 
 # -------------------------------------------------------------------------- #
 
+def triangulate(mesh):
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    bm.to_mesh(mesh)
+    bm.free()
+
 def make_colour(col, alpha):
     return (col[0], col[1], col[2], alpha[0])
 
@@ -118,6 +126,11 @@ def construct_mesh(obj, config):
     return meshes
 
 def construct_export_meshes(obj, m, config):
+
+    # Triangulate - only needed when calc_tangents() will fail. Breaks shape keys
+    if config.export_tangents and not (config.export_shape_keys and m.shape_keys and len(m.shape_keys.key_blocks) > 1):
+        if any(len(f.vertices) > 4 for f in m.polygons):
+            triangulate(m);
 
     # Additional per-vertex data
     uv  = m.uv_layers.active.data[:] if config.export_uv and len(m.uv_layers) > 0 else None
