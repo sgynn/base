@@ -6,48 +6,52 @@ namespace base {
 	class Skeleton;
 	class Animation;
 	
-	/** Bone class */
+	// Bone class
 	class Bone {
 		public:
 		
-		/** Bone update mode */
+		// Bone update mode
 		enum Mode {
-			DEFAULT,	/**< Bone will use animation unless descended from TRUNCATE type */
-			ANIMATED,	/**< Uses animation, overrides truncate */
-			TRUNCATE,	/**< Calls to animate() stops here unless this is the animation root */
-			USER,		/**< Bone will always use values set by the user. Ignored by animation */
-			FIXED,		/**< Bone absolute matrix set by user. Note: bone get() values will be wrong */
+			DEFAULT,	// Bone will use animation unless descended from TRUNCATE type
+			ANIMATED,	// Uses animation, overrides truncate
+			TRUNCATE,	// Calls to animate() stops here unless this is the animation root
+			USER,		// Bone will always use values set by the user. Ignored by animation
+			FIXED,		// Bone absolute matrix set by user. Note: bone get() values will be wrong
 		};
 
 		Skeleton* getSkeleton() { return m_skeleton; }
 		const Skeleton* getSkeleton() const { return m_skeleton; }
 
-		Mode        getMode() const;		/**< Get the update mode */
-		void        setMode(Mode m);		/**< Set the update mode */
-		int         getIndex() const;		/**< Get the bone index in the skeleton */
-		const char* getName() const;		/**< Get the bone name */
-		float       getLength() const;		/**< Get the rest length */
-		void        setLength(float len);	/**< Set the rest length */
-		Bone*       getParent();			/**< Get the parent bone */
+		Mode        getMode() const;		// Get the update mode
+		void        setMode(Mode m);		// Set the update mode
+		int         getIndex() const;		// Get the bone index in the skeleton
+		const char* getName() const;		// Get the bone name
+		float       getLength() const;		// Get the rest length
+		void        setLength(float len);	// Set the rest length
+		Bone*       getParent();			// Get the parent bone
 
-		const vec3&       getPosition() const;	/**< Get the relative position */
-		const vec3&       getScale() const;		/**< Get the relative scale */
-		const EulerAngles getEuler() const;		/**< Get the relative angle as Pitch,Yaw,Roll */
-		const Quaternion& getAngle() const;		/**< Get the relative rotation as a quaternion */
-		const Matrix&     getTransformation() const;			/**< Get the local transformation of the bone */
-		const Matrix&     getAbsoluteTransformation() const;	/**< Get absolute transformation - position and rotation */
-		const vec3&       getDerivedScale() const { return m_combinedScale; } ///< Get derived scale
+		const vec3&       getPosition() const;	// Get the relative position
+		const vec3&       getScale() const;		// Get the relative scale
+		const EulerAngles getEuler() const;		// Get the relative angle as Pitch,Yaw,Roll
+		const Quaternion& getAngle() const;		// *Deprecated, same as getOrientation
+		const Quaternion& getOrientation() const;				// Get the relative orientation as a quaternion
+		const Matrix&     getTransformation() const;			// Get the local transformation of the bone
+		const Matrix&     getAbsoluteTransformation() const;	// *Deprecated - derived position and rotation
+		const Matrix&     getDerivedTranform() const { return m_combined; }
+		const vec3&       getDerivedScale() const { return m_combinedScale; } // Get derived scale
+		vec3              getDerivedPosition() const { return vec3(&m_combined[12]); }
 
-		void setPosition(const vec3& pos);		/**< Set the relative position */
-		void setScale(float scale);				/**< Set the relative scale */
-		void setScale(const vec3& scale);		/**< Set the relative scale */
-		void setEuler(const vec3& pyr);			/**< Set the relative angle from pitch,yaw,roll */
-		void setAngle(const Quaternion& q);		/**< Set the relative angle quaternion */
-		void setTransformation(const Matrix&);	/**< Set the local transformation */
-		void setAbsoluteTransformation(const Matrix&, const vec3& scale=vec3(1,1,1));	/**< Set the absolute transformation */
-		void move(const vec3&);					/**< Move bone relative to its parent */
-		void rotate(const Quaternion&);			/**< roatte bone relative to its parent */
-		void updateLocal();						/**< Calculate outdated local variables */
+		void setPosition(const vec3& pos);		// Set the relative position
+		void setScale(float scale);				// Set the relative scale
+		void setScale(const vec3& scale);		// Set the relative scale
+		void setEuler(const vec3& pyr);			// Set the relative angle from pitch,yaw,roll
+		void setAngle(const Quaternion& q);		// Set the relative angle quaternion
+		void setOrientation(const Quaternion& q) { setAngle(q); }
+		void setTransformation(const Matrix&);	// Set the local transformation
+		void setAbsoluteTransformation(const Matrix&, const vec3& scale=vec3(1,1,1));	// Set the absolute transformation
+		void move(const vec3&);					// Move bone relative to its parent
+		void rotate(const Quaternion&);			// roatte bone relative to its parent
+		void updateLocal();						// Calculate outdated local variables
 
 		private:
 		friend class Skeleton;
@@ -68,7 +72,7 @@ namespace base {
 		vec3        m_combinedScale; // Derived scale vector
 		Quaternion  m_angle;	// Bone local orientation
 
-		Bone();						/**< Private constructor - create from Skeleton */
+		Bone();					// Private constructor - create from Skeleton
 		~Bone();
 	};
 
@@ -76,35 +80,35 @@ namespace base {
 	/** Skeleton class 
 	 * The skeleton will always contain a root bone at 0
 	 * A bone's parent will always have a smaller index
-	 * */
+	 */
 	class Skeleton {
 		public:
-		Skeleton();							/**< Default constructor */
-		Skeleton(const Skeleton&);			/**< Copy constructor */
-		~Skeleton();						/**< Destructor */
+		Skeleton();							// Default constructor
+		Skeleton(const Skeleton&);			// Copy constructor
+		~Skeleton();						// Destructor
 
-		Bone*       addBone(const Bone* parent, const char* name=0, const float* localMatrix=0, float length=1);	/**< Add a new bone to the skeleton */
-		Bone*       getBone(int index);						/// Get bone by index
-		const Bone* getBone(int index) const;				/// Get bone by index
-		Bone*       getBone(const char *name) const;		///  Get bone by name
-		int         getBoneIndex(const char* name) const;	/// Get index of named bone
-		int         getBoneCount() const;					/// Get number of bones in skeleton
-		void        setMode(Bone::Mode m);					/// Set all bone update modes
-		void		setRestPose();							/// Set the rest pose as the current pose
-		unsigned    getMapID() const;						/// Get skeleton ID for animation maps
+		Bone*       addBone(const Bone* parent, const char* name=0, const float* localMatrix=0, float length=1);	// Add a new bone to the skeleton
+		Bone*       getBone(int index);						// Get bone by index
+		const Bone* getBone(int index) const;				// Get bone by index
+		Bone*       getBone(const char *name) const;		//  Get bone by name
+		int         getBoneIndex(const char* name) const;	// Get index of named bone
+		int         getBoneCount() const;					// Get number of bones in skeleton
+		void        setMode(Bone::Mode m);					// Set all bone update modes
+		void		setRestPose();							// Set the rest pose as the current pose
+		unsigned    getMapID() const;						// Get skeleton ID for animation maps
 
 		const Matrix& getRestPose(int bone) const;
 		const Matrix& getSkinMatrix(int bone) const;
 		const Quaternion& getRestAngle(int bone) const;
 
-		bool update();								/**< Calculate bone matrices. Returns true if changed */
+		bool update();								// Calculate bone matrices. Returns true if changed
 
 		void resetPose();
 		void resetPose(int boneIndex);
 		int  applyPose(const Animation*, float frame=0, int fromBone=-1, int mode=1, float weight=1, const unsigned char* keyMap=0);
 		bool applyBonePose(Bone* bone, const Animation* anim, int set, float frame, int blend=1, float weight=1);
 
-		const Matrix* getMatrixPtr() const;		/// Null if update not yet called
+		const Matrix* getMatrixPtr() const;		// Null if update not yet called
 		Bone** begin() { return m_bones; }
 		Bone** end() { return m_bones + m_count; }
 
@@ -116,7 +120,7 @@ namespace base {
 		ubyte*           m_flags;	// Flag array to save reallocation
 		Matrix*          m_matrices;	// Final transform matrices for all bones (bone.combined * rest.skin)
 
-		/* Skeleton rest data - can be shared */
+		// Skeleton rest data - can be shared
 		struct RestPose {
 			int         ref;	// Reference count
 			int         size;	// Number of bones
@@ -140,6 +144,7 @@ namespace base {
 	inline Bone*       Bone::getParent()        { return m_parent<0? 0: m_skeleton->getBone(m_parent); }
 
 	inline const Quaternion& Bone::getAngle() const                  { return m_angle; }
+	inline const Quaternion& Bone::getOrientation() const                  { return m_angle; }
 	inline const vec3&       Bone::getPosition() const               { return m_position; }
 	inline const vec3&       Bone::getScale() const                  { return m_scale; }
 	inline const Matrix&     Bone::getTransformation() const         { return m_local; }
