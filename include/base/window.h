@@ -9,20 +9,22 @@ namespace base {
 	enum CursorType { CURSOR_NONE, CURSOR_DEFAULT, CURSOR_BUSY, CURSOR_HAND, CURSOR_CROSSHAIR, CURSOR_I, CURSOR_NO,
 	                  CURSOR_MOVE, CURSOR_SIZE_V, CURSOR_SIZE_H, CURSOR_SIZE_FD, CURSOR_SIZE_BD, CURSOR_CUSTOM };
 
+	enum class WindowMode { Window, Fullscreen, Borderless };
+
 	/// Window interface. Implementations in X11Window or Win32Window
 	class Window {
 		public:
 		static bool initialise();
 		static void finalise();
 
-		Window(int width, int height, bool fullscreen=false, int bpp=32, int depth=24, int fsaa=0);
+		Window(int width, int height, WindowMode mode=WindowMode::Window, int bpp=32, int depth=24, int fsaa=0);
 		virtual ~Window();
 		
 		virtual void setTitle(const char* title) = 0;	/// set the window title
 		virtual void setIcon() = 0;						/// Set window icon
 		virtual void setPosition(int x, int y) = 0;  	/// move the window to a new position
 		virtual void setSize(int width, int height) = 0;/// Resize window
-		virtual bool setFullScreen(bool f);		 		/// switch between fullscreen and windowed modes
+		virtual bool setMode(WindowMode mode);	 		/// switch between fullscreen and windowed modes
 		virtual bool setFSAA(int fsaa);
 		virtual bool setVSync(bool) { return false; }
 
@@ -34,7 +36,7 @@ namespace base {
 		void         centreScreen(); // Center the window on screen
 
 		/// Get window properties
-		bool isFullscreen() const { return m_fullScreen; }
+		WindowMode getMode() const { return m_windowMode; }
 		int  getFSAA() const      { return m_fsaa; }
 		const Point& getPosition() const { return m_position; }
 		const Point& getSize() const { return m_size; }
@@ -71,10 +73,11 @@ namespace base {
 		int m_fsaa;
 		Point m_position;
 		Point m_size;
+		Point m_windowSize;
 		int m_colourDepth;
 		int m_depthBuffer;
 		unsigned m_cursor = ~0u;
-		bool m_fullScreen;
+		WindowMode m_windowMode;
 		bool m_created = false;
 		bool m_focus = true;
 	};

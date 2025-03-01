@@ -8,7 +8,7 @@
 namespace base {
 	class Win32Window : public Window {
 		public:
-		Win32Window(int w, int h, bool fs=false, int bpp=32, int depth=24, int fsaa=0);
+		Win32Window(int w, int h, WindowMode mode=WindowMode::Window, int bpp=32, int depth=24, int fsaa=0);
 		~Win32Window();
 
 		void setTitle(const char* title) override;

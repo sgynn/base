@@ -43,11 +43,12 @@ Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_stat
 	s_inst = this;
 
 	//Create window
+	WindowMode mode = fullscreen? WindowMode::Fullscreen: WindowMode::Window;
 	#ifdef WIN32
-	s_window = new Win32Window(width, height, fullscreen, bpp, 24, fsaa);
+	s_window = new Win32Window(width, height, mode, bpp, 24, fsaa);
 	#endif
 	#ifdef LINUX
-	s_window = new X11Window(width, height, fullscreen, bpp, 24, fsaa);
+	s_window = new X11Window(width, height, mode, bpp, 24, fsaa);
 	#endif
 	#ifdef EMSCRIPTEN
 	s_window = new EMWindow(width, height);

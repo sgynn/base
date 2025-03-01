@@ -163,18 +163,19 @@ EM_BOOL EMWindow::focusCallback(int type, const EmscriptenFocusEvent* e, void* p
 	return 0;
 }
 
-bool EMWindow::setFullScreen(bool fullscreen) {
+bool EMWindow::setMode(WindowMode mode) {
+	bool fullscreen = mode != WindowMode::Window;
 	EmscriptenFullscreenChangeEvent state;
 	emscripten_get_fullscreen_status(&state);
 	if(!state.isFullscreen && fullscreen) {
 		int r = emscripten_request_fullscreen(m_canvas, 1);
 		printf("Fullscreen mode = %s  (%s)\n", emscripten_result_to_string(r), m_canvas);
-		m_fullScreen = true;
+		m_windowMode = WindowMode::Fullscreen;
 	}
 	else if (state.isFullscreen && !fullscreen) {
 		printf("Windowed mode\n");
 		emscripten_exit_fullscreen();
-		m_fullScreen = false;
+		m_windowMode = WindowMode::Window;
 	}
 	return true;
 }

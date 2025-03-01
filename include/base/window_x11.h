@@ -9,14 +9,14 @@
 namespace base {
 	class X11Window : public Window {
 		public:
-		X11Window(int w, int h, bool fs=false, int bpp=32, int depth=24, int fsaa=0);
+		X11Window(int w, int h, WindowMode m=WindowMode::Window, int bpp=32, int depth=24, int fsaa=0);
 		~X11Window();
 
 		void setTitle(const char* title) override;
 		void setIcon() override;
 		void setPosition(int x, int y) override;
 		void setSize(int w, int h) override;
-		bool setFullScreen(bool f) override;
+		bool setMode(WindowMode) override;
 		bool setVSync(bool) override;
 
 		bool created() const { return m_display; }

@@ -12,7 +12,7 @@ int attriblist[] = { GLX_DEPTH_SIZE, 32, GLX_DOUBLEBUFFER, GLX_RGBA, None };
 
 using namespace base;
 
-X11Window::X11Window(int w, int h, bool fs, int bpp, int dep, int fsaa) : base::Window(w,h,fs,bpp,dep,fsaa), m_display(0) {
+X11Window::X11Window(int w, int h, WindowMode mode, int bpp, int dep, int fsaa) : base::Window(w,h,mode,bpp,dep,fsaa), m_display(0) {
 	memset(m_cursors, 0, sizeof(m_cursors));
 }
 
@@ -38,7 +38,7 @@ bool X11Window::createWindow() {
 	int modeNum;
 	int bestMode=0;
 
-	if (m_fullScreen) {
+	if(m_windowMode == WindowMode::Fullscreen) {
 		XF86VidModeGetAllModeLines(m_display, m_screen, &modeNum, &modes);
 		//Save desktop mode
 		m_deskMode = *modes[0];
@@ -109,30 +109,31 @@ bool X11Window::createWindow() {
 				ButtonPressMask |
 				ButtonReleaseMask;
 
-	if(m_fullScreen) {
+	if(m_windowMode == WindowMode::Fullscreen) {
 		XF86VidModeSwitchToMode(m_display, m_screen, modes[bestMode]);
         	XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
 		m_swa.override_redirect = true;
 		XFree(modes);
 	}
 
+	bool fullscreen = m_windowMode != WindowMode::Window;
 	m_window = XCreateWindow(	m_display,
 					RootWindow(m_display,m_visual->screen),
-					(m_fullScreen) ? 0 : m_position.x,
-					(m_fullScreen) ? 0 : m_position.y,
+					fullscreen ? 0 : m_position.x,
+					fullscreen ? 0 : m_position.y,
 					m_size.x,
 					m_size.y,
 					0,
 					m_visual->depth,
 					InputOutput,
 					m_visual->visual,
-					CWBorderPixel|CWColormap|CWEventMask | (m_fullScreen? CWOverrideRedirect : 0),
+					CWBorderPixel|CWColormap|CWEventMask | (fullscreen? CWOverrideRedirect : 0),
 					&m_swa);
 
 	//Put window on the display.
 	XMapWindow(m_display, m_window);
 
-	if(m_fullScreen) {
+	if(m_windowMode == WindowMode::Fullscreen) {
 		XWarpPointer(m_display, None, m_window, 0, 0, 0, 0, 0, 0);
 		XGrabKeyboard(m_display, m_window, true, GrabModeAsync, GrabModeAsync, CurrentTime);
 		XGrabPointer(m_display, m_window, true, ButtonPressMask, GrabModeAsync, GrabModeAsync, m_window, None, CurrentTime);
@@ -148,7 +149,7 @@ bool X11Window::createWindow() {
 void X11Window::destroyWindow() {
 	if(!m_display) return;
 	XLockDisplay(m_display);
-	if(m_fullScreen) {
+	if(m_windowMode == WindowMode::Fullscreen) {
 		XF86VidModeSwitchToMode(m_display, m_screen, &m_deskMode);
 		XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
 	}
@@ -219,25 +220,65 @@ void X11Window::setSize(int w,int h) {
 	}
 }
 
-bool X11Window::setFullScreen(bool full) {
-	if(full==m_fullScreen) return true;
-	m_fullScreen = full;
+bool X11Window::setMode(WindowMode mode) {
+	if(m_windowMode == mode) return true;
+	m_windowMode = mode;
 	if(!created()) return false;
 
-	// Try sending window manager a message
-	XEvent e;
-	memset(&e, 0, sizeof(XEvent));
-	e.xany.type = ClientMessage;
-	e.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE", false);
-	e.xclient.format = 32;
-	e.xclient.window = m_window;
-	e.xclient.data.l[0] = XInternAtom(m_display, full? "_NET_WM_STATE_ADD": "_NET_WM_STATE_REMOVE", false);
-	e.xclient.data.l[1] = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", false);
-	e.xclient.data.l[3] = 0l;
-	XSendEvent(m_display, RootWindow(m_display, m_screen), 0, SubstructureNotifyMask | SubstructureRedirectMask, &e);
-	XFlush(m_display);
-	printf("Fullscreen message sent %d\n", full);
+	struct {
+		unsigned long flags;
+		unsigned long functions;
+		unsigned long decorations;
+		long          inputMode;
+		unsigned long status;
+	} hints;
+	
+	if(mode == WindowMode::Borderless) {
+		m_windowSize = m_size;
+		m_size = getScreenResolution();
 
+		hints.flags = 2; // changing decoration
+		hints.decorations = 0;
+		Atom property = XInternAtom(m_display,"_MOTIF_WM_HINTS", True);
+		XChangeProperty(m_display, m_window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
+		XMoveWindow(m_display, m_window, 0, 0);
+		XResizeWindow(m_display, m_window, m_size.x, m_size.y);
+
+		XMoveResizeWindow(m_display, m_window, 0, 0, m_size.x, m_size.y);
+		XMapRaised(m_display, m_window);
+		XGrabPointer(m_display, m_window, True, 0, GrabModeAsync, GrabModeAsync, m_window, 0L, CurrentTime);
+		XGrabKeyboard(m_display, m_window, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+	}
+	else if(mode == WindowMode::Window) {
+		m_size = m_windowSize;
+		hints.flags = 2; // changing decoration
+		hints.decorations = 1;
+		Atom property = XInternAtom(m_display,"_MOTIF_WM_HINTS", True);
+		XChangeProperty(m_display, m_window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
+		XResizeWindow(m_display, m_window, m_size.x, m_size.y);
+		XMoveWindow(m_display, m_window, m_position.x, m_position.y);
+		XUngrabPointer(m_display, CurrentTime);
+		XUngrabKeyboard(m_display, CurrentTime);
+	}
+
+
+
+	// Try sending window manager a message
+	if(mode == WindowMode::Fullscreen || m_windowMode == WindowMode::Fullscreen) {
+		bool full = mode == WindowMode::Fullscreen;
+		XEvent e;
+		memset(&e, 0, sizeof(XEvent));
+		e.xany.type = ClientMessage;
+		e.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE", false);
+		e.xclient.format = 32;
+		e.xclient.window = m_window;
+		e.xclient.data.l[0] = XInternAtom(m_display, full? "_NET_WM_STATE_ADD": "_NET_WM_STATE_REMOVE", false);
+		e.xclient.data.l[1] = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", false);
+		e.xclient.data.l[3] = 0l;
+		XSendEvent(m_display, RootWindow(m_display, m_screen), 0, SubstructureNotifyMask | SubstructureRedirectMask, &e);
+		XFlush(m_display);
+		printf("Fullscreen message sent %d\n", full);
+	}
 
 	return true;
 }

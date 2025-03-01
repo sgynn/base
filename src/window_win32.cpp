@@ -51,7 +51,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
-Win32Window::Win32Window(int w, int h, bool fs, int bpp, int dep, int fsaa) : Window(w,h,fs,bpp,dep,fsaa), m_hWnd(0) {
+Win32Window::Win32Window(int w, int h, WindowMode mode, int bpp, int dep, int fsaa) : Window(w,h,mode,bpp,dep,fsaa), m_hWnd(0) {
 	WNDCLASS wc;
 	s_hInst = GetModuleHandle(NULL);
 	//register window class
@@ -80,7 +80,7 @@ bool Win32Window::createWindow() {
 	if(m_hWnd) return true;
 
 	//change screen settings for fullscreen window
-	if(m_fullScreen) {
+	if(m_windowMode == WindowMode::Fullscreen) {
 		DEVMODE screensettings;
 		memset(&screensettings, 0, sizeof(screensettings));
 		screensettings.dmSize = sizeof(screensettings);
@@ -88,8 +88,8 @@ bool Win32Window::createWindow() {
 		screensettings.dmPelsHeight = m_size.y;
 		screensettings.dmBitsPerPel = m_colourDepth;
 		screensettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-		if (ChangeDisplaySettings(&screensettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL) {
-			m_fullScreen = false;
+		if(ChangeDisplaySettings(&screensettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL) {
+			m_windowMode = WindowMode::Window; // Perhaps use borderless instead ?
 			printf("Unable to change to fullscreen.\n"); 
 		}
 	}
@@ -100,20 +100,21 @@ bool Win32Window::createWindow() {
 	crect.right = crect.left + m_size.x;
 	crect.bottom = crect.top + m_size.y;
 	
+	bool fullscreen = m_windowMode != WindowMode::Window;
 	unsigned windowStyle = WS_OVERLAPPEDWINDOW;
 	//unsigned windowStyle = WS_CAPTION | WS_POPUPWINDOW;
 
 	
 	//adjust the window rect so the client size is correct
-	if (!m_fullScreen) AdjustWindowRect(&crect, windowStyle | WS_VISIBLE, false);
+	if(!fullscreen) AdjustWindowRect(&crect, windowStyle | WS_VISIBLE, false);
 	
 	//create the window
 	m_hWnd = CreateWindow(	"basegame", "",
-				((m_fullScreen) ? 0 : windowStyle) | WS_POPUPWINDOW | WS_VISIBLE,
-				((m_fullScreen) ? 0 : m_position.x),
-				((m_fullScreen) ? 0 : m_position.y),
-				crect.right-crect.left,
-				crect.bottom-crect.top,
+				(fullscreen ? 0 : windowStyle) | WS_POPUPWINDOW | WS_VISIBLE,
+				fullscreen ? 0 : m_position.x,
+				fullscreen ? 0 : m_position.y,
+				crect.right - crect.left,
+				crect.bottom - crect.top,
 				NULL, NULL, s_hInst, NULL);
 	if(!m_hWnd) {
 		printf("Failed to create window [%u]\n", (uint) GetLastError());
@@ -206,7 +207,7 @@ bool Win32Window::createWindow() {
 }
 void base::Win32Window::destroyWindow() {
 	if(!m_hWnd) return;
-	if(m_fullScreen) ChangeDisplaySettings(NULL, 0);
+	if(m_windowMode == WindowMode::Fullscreen) ChangeDisplaySettings(NULL, 0);
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(m_hRC);
 	ReleaseDC(m_hWnd, m_hDC);
@@ -250,14 +251,14 @@ void Win32Window::setIcon() {
 }
 
 void Win32Window::setPosition(int x,int y) {
-	if(!m_fullScreen) {
+	if(m_windowMode == WindowMode::Window) {
 		m_position.set(x, y);
 		MoveWindow(m_hWnd, m_position.x, m_position.y, m_size.x, m_size.y, false);
 	}
 }
 
 void Win32Window::setSize(int w, int h) {
-	if(!created() || !m_fullScreen) {
+	if(!created() || m_windowMode == WindowMode::Window) {
 		m_size.set(w,h);
 
 		RECT rect;
@@ -267,7 +268,7 @@ void Win32Window::setSize(int w, int h) {
 		rect.bottom = rect.top + m_size.y;
 		
 		//adjust the window rect so the client size is correct
-		if (!m_fullScreen) AdjustWindowRect(&rect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
+		if(m_windowMode == WindowMode::Window) AdjustWindowRect(&rect, WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE, false);
 		MoveWindow(m_hWnd, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top, false);
 	}
 }

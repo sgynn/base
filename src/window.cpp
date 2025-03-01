@@ -5,8 +5,8 @@
 #include "base/framebuffer.h"
 #include <cstdio>
 
-base::Window::Window(int width, int height, bool fullscreen, int bpp, int depth, int fsaa) 
-	: m_fsaa(fsaa), m_size(width, height), m_colourDepth(bpp), m_depthBuffer(depth), m_fullScreen(fullscreen)
+base::Window::Window(int width, int height, WindowMode mode, int bpp, int depth, int fsaa) 
+	: m_fsaa(fsaa), m_size(width, height), m_colourDepth(bpp), m_depthBuffer(depth), m_windowMode(mode)
 {
 	base::FrameBuffer::setScreenSize(width, height);
 }
@@ -14,12 +14,12 @@ base::Window::Window(int width, int height, bool fullscreen, int bpp, int depth,
 base::Window::~Window() {
 }
 
-bool base::Window::setFullScreen(bool fs) {
+bool base::Window::setMode(WindowMode mode) {
 	bool r = true;
-	if(!created()) m_fullScreen = fs;
-	else if(fs!=m_fullScreen) {
+	if(!created()) m_windowMode = mode;
+	else if(mode != m_windowMode) {
 		destroyWindow();
-		m_fullScreen = fs;
+		m_windowMode = mode;
 		r = createWindow();
 		if(r) makeCurrent();
 	}
@@ -40,7 +40,7 @@ bool base::Window::setFSAA(int samples) {
 
 
 void base::Window::centreScreen() {
-	if(m_fullScreen) return;
+	if(m_windowMode != WindowMode::Window) return;
 	Point s = getScreenResolution();
 	setPosition( s.x/2-m_size.x/2, s.y/2-m_size.y/2);
 }
