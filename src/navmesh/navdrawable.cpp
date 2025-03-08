@@ -3,6 +3,7 @@
 #include <base/renderer.h>
 #include <base/shader.h>
 #include <base/hardwarebuffer.h>
+#include <base/debuggeometry.h>
 #include <base/opengl.h>
 
 using namespace base;
@@ -31,6 +32,7 @@ void NavDrawable::SubDrawable::draw(RenderState& r) {
 
 
 NavDrawable::NavDrawable(const NavMesh* m, float offset, float alpha, Material* mat): m_nav(m), m_offset(offset), m_lc(0) {
+	if(!mat) mat = DebugGeometryManager::getDefaultMaterial();
 	setMaterial(mat);
 	m_lines = new SubDrawable(GL_LINES);
 	m_polys = new SubDrawable(GL_TRIANGLES);
