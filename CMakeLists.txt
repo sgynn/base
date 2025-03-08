@@ -67,6 +67,8 @@ set(src
 	src/world/skydome.cpp
 	src/world/terraindrawable.cpp
 	src/world/terrainfoliage.cpp
+	src/world/infoplate.cpp
+	src/world/floatingtext.cpp
 )
 
 set(gui
@@ -210,6 +212,8 @@ set(worldheaders
 	include/base/world/skydome.h
 	include/base/world/terraindrawable.h
 	include/base/world/terrainfoliage.h
+	include/base/world/infoplate.h
+	include/base/world/floatingtext.h
 )
 
 set(guiheaders
