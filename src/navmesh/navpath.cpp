@@ -59,33 +59,44 @@ void Pathfinder::clear() {
 PathState Pathfinder::search(const vec3& a, const vec3& b) {
 	uint startPoly = m_navmesh->getPolygonID(a);
 	uint endPoly   = m_navmesh->getPolygonID(b);
-	return search( a, startPoly, b, endPoly);
+	if(startPoly == NavPoly::Invalid || endPoly == NavPoly::Invalid) return PathState::Invalid;
+	return search({a, startPoly}, {b, endPoly});
 }
 
 PathState Pathfinder::search(uint a, uint b) {
-	vec3 start, end;
 	NavPoly* p;
 	p = m_navmesh->getPolygon(a);
 	if(!p) return PathState::Invalid;
 
-	for(int i=0; i<p->size; ++i) start += p->points[i];
-	start /= p->size;
+	Location start = {0.f, a};
+	for(int i=0; i<p->size; ++i) start.position += p->points[i];
+	start.position /= p->size;
 
 	p = m_navmesh->getPolygon(b);
 	if(!p) return PathState::Invalid;
 
-	for(int i=0; i<p->size; ++i) end += p->points[i];
-	end /= p->size;
+	Location end = {0.f, b};
+	for(int i=0; i<p->size; ++i) end.position += p->points[i];
+	end.position /= p->size;
 
-	return search(start, a, end, b);
+	return search(start, end);
 }
 
-PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
-	clear();
-	if(pa==NavPoly::Invalid || pb==NavPoly::Invalid) return PathState::Invalid;
-	//if(pa==pb) return (m_state=PathState::Success);
+bool Pathfinder::checkTraversal(const NavPoly* poly, const vec3& a, const vec3& b) {
+	if(!poly->traversalCalculated) nav::calculateTraversal(poly, s_maxRadius);
+	for(const NavTraversalThreshold& t: poly->traversal) {
+		if(t.threshold < m_radius*2) {
+			if((t.normal.dot(a.xz()) < t.d) != (t.normal.dot(b.xz()) < t.d)) return false;
+		}
+	}
+	return true;
+};
 
-	const NavPoly* poly = m_navmesh->getPolygon(a);
+template<class AtGoal, class Heuristic>
+PathState Pathfinder::searchInternal(const Location& start, AtGoal&& atGoal, Heuristic&& heuristic) {
+	clear();
+
+	const NavPoly* poly = m_navmesh->getPolygon(start.position);
 	if(!poly) {
 		m_state = PathState::Fail; // Invalid staring polygon
 		return m_state;
@@ -93,30 +104,17 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 
 	struct AStarNode { const NavLink* link; int k; vec3 p; float value; AStarNode* parent; };
 	static const auto cmp = [](const AStarNode* a, const AStarNode* b) { return a->value > b->value; };
-	static const auto checkTraversal = [](const NavPoly* poly, const vec3& a, const vec3& b, float radius) {
-		if(!poly->traversalCalculated) nav::calculateTraversal(poly, s_maxRadius);
-		for(const NavTraversalThreshold& t: poly->traversal) {
-			if(t.threshold < radius*2) {
-				if((t.normal.dot(a.xz()) < t.d) != (t.normal.dot(b.xz()) < t.d)) return false;
-			}
-		}
-		return true;
-	};
-
 
 	std::vector<AStarNode*> open, all;
-	AStarNode startNode { nullptr, 0, a, 0.f, nullptr };
+	AStarNode startNode { nullptr, 0, start.position, 0.f, nullptr };
 	AStarNode* node = &startNode;
 
 	std::map<const NavLink*, AStarNode*> states;
-	std::map<const NavLink*, AStarNode*>::iterator state;
+	typename std::map<const NavLink*, AStarNode*>::iterator state;
 
 	while(true) {
 		int added = 0;
-		if(poly->id == pb) {
-			if(checkTraversal(poly, node->p, b, m_radius)) break;
-			else if(open.empty()) return (m_state=PathState::Fail);
-		}
+		if(atGoal(poly, node->p)) break;
 		else for(int i=0; i<poly->size; ++i) {
 			NavLink* link = poly->links[i];
 			if(link && m_filter.hasType(poly->typeIndex)) {	// ToDo: Clearance
@@ -139,10 +137,10 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 				vec3 p = (u + v) * 0.5;
 
 				// Traversal thresholds
-				if(!checkTraversal(poly, node->p, p, m_radius)) continue;
+				if(!checkTraversal(poly, node->p, p)) continue;
 
 				// Heuristic
-				float h = node->value + p.distance(node->p) + p.distance(b);
+				float h = node->value + p.distance(node->p) + heuristic(p);
 
 				// Create / update node
 				AStarNode* n = 0;
@@ -173,7 +171,7 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 	
 	// Build path
 	Node pathNode;
-	if(poly->id == pb && checkTraversal(poly, node->p, b, m_radius)) {
+	if(atGoal(poly, node->p)) {
 		while(node->link) {
 			pathNode.poly = node->link->poly[ node->k^1 ]->id;
 			pathNode.edge = node->link->edge[ node->k^1 ];
@@ -182,11 +180,46 @@ PathState Pathfinder::search(const vec3& a, uint pa, const vec3& b, uint pb) {
 		}
 		std::reverse(m_path.begin(), m_path.end());
 		m_state = PathState::Success;
-	} else m_state = PathState::Fail;
+	}
+	else m_state = PathState::Fail;
 
 	// cleanup
 	for(uint i=0; i<all.size(); ++i) delete all[i];
 	return m_state;
+}
+
+PathState Pathfinder::search(const Location& start, const Location& goal) {
+	return searchInternal(
+		start, 
+		[goal, this](const NavPoly* poly, const vec3& pos) {
+			if(poly->id != goal.polygon) return false;
+			return checkTraversal(poly, pos, goal.position);
+		},
+		[goal](const vec3& pos) {
+			return pos.distance(goal.position);
+		}
+	);
+}
+
+PathState Pathfinder::search(const Location& start, const std::vector<Location>& goals, int& goalIndex) {
+	if(goals.empty()) return PathState::Invalid;
+	return searchInternal(
+		start, 
+		[&goals, &goalIndex, this](const NavPoly* poly, const vec3& pos) {
+			for(const Location& g: goals) {
+				if(poly->id == g.polygon && checkTraversal(poly, pos, g.position)) {
+					goalIndex = (int)(&g - goals.data());
+					return true;
+				}
+			}
+			return false;
+		},
+		[&goals](const vec3& pos) {
+			float min = 1e30f;
+			for(const Location& g: goals) min = fmin(min, pos.distance(g.position));
+			return min;
+		}
+	);
 }
 
 
@@ -245,16 +278,16 @@ float Pathfinder::ray(const Ray& ray, float limit, uint polyID, const NavFilter&
 
 // ============================================================================================= //
 
-bool Pathfinder::resolvePoint(vec3& pt, float r, float search, int iter) const {
+const NavPoly* Pathfinder::resolvePoint(vec3& pt, float r, float search, int iter) const {
 	NavPoly* poly = m_navmesh->getPolygon(pt);
-	if(!poly) {
+	if(!poly || fabs(pt.y - poly->centre.y) > poly->extents.y + 0.1) {
 		vec3 close;
 		poly = m_navmesh->getClosestPolygon(pt, search, &close);
-		if(!poly) return false;
+		if(!poly) return nullptr;
 		pt = close;
 	}
 
-	if(r==0) return m_navmesh->isInsidePolygon(pt, poly);
+	if(r==0 &&  m_navmesh->isInsidePolygon(pt, poly)) return poly;
 
 	vec3 close;
 	uint pix, eix;
@@ -272,7 +305,7 @@ bool Pathfinder::resolvePoint(vec3& pt, float r, float search, int iter) const {
 			DebugLine(pt, pt + resolve*penetration, 0xffffff);
 			pt += resolve * penetration;
 		}
-		else return true;
+		else return poly;
 	}
 
 	return m_navmesh->getPolygon(pt);
@@ -332,16 +365,49 @@ void PathFollower::setPosition(const vec3& p) {
 
 bool PathFollower::setGoal(const vec3& t) {
 	m_goal = t;
-	if(!m_path.resolvePoint(m_goal, m_radius)) {
-		printf("Failed to resolve navmesh location (%g, %g)\n", t.x, t.z);
+	const NavPoly* poly = m_path.resolvePoint(m_goal, m_radius);
+	if(!poly) {
+		printf("Failed to resolve navmesh location (%g, %g, %g)\n", t.x, t.y, t.z);
 		stop();
 		return false;
 	}
-	uint tp = m_path.getNavMesh()->getPolygonID(m_goal);
 	if(atGoal(1e-6)) return true;
-	m_goalPoly = tp;
+	m_goalPoly = poly->id;
 	PathState r = repath();
 	return r==PathState::Success || r==PathState::Partial;
+}
+
+int PathFollower::setGoal(const std::vector<vec3>& goals) {
+	if(goals.empty()) return -1;
+	if(goals.size() == 1) return setGoal(goals[0])? 1: -1;
+	std::vector<Pathfinder::Location> targets;
+	targets.reserve(goals.size());
+	bool atLeastOneGoalIsValid;
+	for(vec3 g: goals) {
+		const NavPoly* poly = m_path.resolvePoint(g, m_radius);
+
+		// at this goal already
+		if(poly && m_polygon == poly->id && m_position.xz().distance2(m_goal.xz()) < 1e-12) {
+			m_goal = g;
+			return targets.size();
+		}
+
+		targets.push_back({g, poly? poly->id: NavPoly::Invalid});
+		atLeastOneGoalIsValid |= (bool)poly;
+		if(!poly) printf("Failed to resolve navmesh location (%g, %g, %g)\n", g.x, g.y, g.z);
+	}
+	if(!atLeastOneGoalIsValid) {
+		stop();
+		return -1;
+	}
+
+	int goalIndex = -1;
+	m_pathIndex = 0;
+	PathState r = m_path.search({m_position, m_polygon}, targets, goalIndex);
+	if(r != PathState::Success) return -1;
+	m_goalPoly = targets[goalIndex].polygon;
+	m_goal = targets[goalIndex].position;
+	return goalIndex;
 }
 
 uint PathFollower::getPolygonID() const {
@@ -375,13 +441,20 @@ int PathFollower::findNextPolygon(int typeIndex, int skip) {
 VecPair PathFollower::nextPoint() {
 	if(m_position.distance2(m_goal) < m_radius*m_radius) return m_goal;
 	const uint end = m_path.m_path.size();
-	if(m_pathIndex < end && m_path.m_path[m_pathIndex].poly != m_polygon) { //not on path
-		repath();
-		return m_position;
-	}
 
+	auto repathAndUpdatePoly = [this]() {
+		if(repath() != PathState::Success) return false;
+		m_polygon = m_path.m_path[0].poly; // May have changed
+		return true;
+	};
+	if(m_pathIndex < end && m_path.m_path[m_pathIndex].poly != m_polygon) { //not on path
+		if(!repathAndUpdatePoly()) return m_position;
+	}
 	const NavPoly* p = m_path.getNavMesh()->getPolygon(m_polygon);
-	if(!p) { repath(); return m_position; }
+	if(!p) { // Current polygon no longer exists
+		if(!repathAndUpdatePoly()) return m_position;
+		p = m_path.getNavMesh()->getPolygon(m_polygon);
+	}
 
 	auto insetPoint = [start=m_position](const vec3& point, float inset) {
 		vec3 n(start.z - point.z, 0, point.x - start.x);
@@ -489,7 +562,7 @@ PathState PathFollower::repath() {
 	uint goalID = m_path.getNavMesh()->getPolygonID(m_goal);
 	m_goalPoly = goalID; // may have changed
 	m_findCache.clear();
-	return m_path.search(m_position, m_polygon, m_goal, goalID);
+	return m_path.search({m_position, m_polygon}, {m_goal, goalID});
 }
 
 void PathFollower::stop() {

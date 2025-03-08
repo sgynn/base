@@ -6,8 +6,9 @@
 namespace base {
 
 	class NavMesh;
+	class NavPoly;
 
-	enum class PathState { None, Success, Fail, Partial, Invalid };
+	enum class PathState : char { None, Success, Fail, Partial, Invalid };
 
 	/** Filter for navpoly type traversal */
 	class NavFilter {
@@ -28,10 +29,12 @@ namespace base {
 	class Pathfinder {
 		friend class PathFollower;
 		public:
+		struct Location { vec3 position; uint polygon=-1; };
 		Pathfinder(const NavMesh* mesh);
 		PathState search(uint startPoly, uint endPoly);
 		PathState search(const vec3& start, const vec3& end);
-		PathState search(const vec3& start, uint startPoly, const vec3& end, uint endPoly);
+		PathState search(const Location& start, const Location& goal);
+		PathState search(const Location& start, const std::vector<Location>& goals, int& goalIndex);
 		PathState state() const { return m_state; }
 		void clear();
 
@@ -41,15 +44,19 @@ namespace base {
 		bool ray(const vec3& start, const vec3& end, uint poly=~0u, const NavFilter& f=NavFilter::ALL) const;
 		float ray(const Ray& ray, float limit=1e6f, uint poly=~0u, const NavFilter& f=NavFilter::ALL) const;
 
-		bool resolvePoint(vec3& point, float radius=0, float search=1, int iterations=4) const;
+		const NavPoly* resolvePoint(vec3& point, float radius=0, float search=1, int iterations=4) const;
 
 		const NavMesh* getNavMesh() const { return m_navmesh; }
 		static void setMaxRadius(float m) { s_maxRadius = m; }
 
+		private:
+		template<class AtGoal, class Heuristic>
+		PathState searchInternal(const Location& start, AtGoal&&, Heuristic&&);
+		bool checkTraversal(const base::NavPoly* poly, const vec3& a, const vec3& b);
 
 		protected:
 		const NavMesh*  m_navmesh;			// Navmesh to search
-		NavFilter    m_filter;					// Navmesh polygon type filter
+		NavFilter m_filter;					// Navmesh polygon type filter
 		float     m_radius;					// Character radius
 		uint      m_length;					// Path distance
 		PathState m_state;					// Pathfinder state
@@ -75,6 +82,7 @@ namespace base {
 		void        setRadius(float r);			// Set character radius
 		void        setPosition(const vec3&);	// Update the internal actor position
 		bool        setGoal(const vec3&);		// Set the target
+		int         setGoal(const std::vector<vec3>&); // Multi-pathfind, returns goal index or -1
 		VecPair     nextPoint();				// Get the next point to head to
 		PathState   repath();					// Re-generate path
 		void        stop();						// stop everything
