@@ -136,6 +136,9 @@ namespace base {
 			return out;
 		}
 
+		// Use this if the char array is created externally, to avoid a copy
+		static String move(char* str) { String s; s.m_data = str; return s; };
+
 		private:
 		friend class StringView;
 		void set(const char* s) { if(m_data==s) return; if(m_data) free(m_data); m_data = s && s[0]? strdup(s): 0; }
