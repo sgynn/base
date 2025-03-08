@@ -32,7 +32,7 @@ class GUIComponent : public GameStateComponent {
 		if(Game::LastKey() && !hasComponentFlags(BLOCK_KEYS)) {
 			m_gui->keyEvent(Game::LastKey(), Game::LastChar());
 		}
-		m_gui->update();
+		m_gui->updateAnimators(base::Game::frameTime());
 		if(m_gui->getWidgetUnderMouse()) setComponentFlags(BLOCK_MOUSE);
 		if(m_gui->getWheelEventConsumed()) setComponentFlags(BLOCK_WHEEL);
 		if(textboxWasFocused) setComponentFlags(BLOCK_KEYS);

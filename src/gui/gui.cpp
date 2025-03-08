@@ -6,6 +6,7 @@
 #include <base/gui/tree.h>
 #include <base/gui/layouts.h>
 #include <base/gui/font.h>
+#include <base/gui/animator.h>
 #include <cstdio>
 
 using namespace gui;
@@ -239,10 +240,6 @@ void Root::setKeyMask(bool ctrl, bool shift, bool alt, bool meta) {
 	m_keyMask = (KeyMask)((ctrl?1:0) | (shift?2:0) | (alt?4:0) | (meta?8:0));
 }
 
-void Root::update() {
-	// Anything actually need updating?
-}
-
 void Root::draw(const Point& viewport) const {
 	const Point& view = viewport.x? viewport: m_root->m_rect.size();
 	getRenderer()->begin(m_root->m_rect.size(), view);
@@ -257,6 +254,36 @@ void Root::draw(const Matrix& transform, Widget* widget, bool depth) const {
 	getRenderer()->end(transform, false, depth);
 }
 
+
+void Root::startAnimator(Animator* a) {
+	assert(a->getWidget()->getRoot() == this); // Must be in root
+	a->getWidget()->m_states |= 0x800; // HasAnimator bit
+	m_animators.push_back(a);
+}
+
+
+
+void Root::updateAnimators(float time) {
+	for(auto it = m_animators.begin(); it!=m_animators.end();) {
+		if((*it)->update(time) == Animator::ACTIVE) ++it;
+		else {
+			if((*it)->isTransient()) delete *it;
+			it = m_animators.erase(it);
+		}
+	}
+}
+
+void Root::deleteAnimators(Widget* target) {
+	if(~target->m_states & 0x800) return;
+	for(auto it = m_animators.begin(); it!=m_animators.end();) {
+		if((*it)->getWidget() == target) {
+			if((*it)->isTransient()) delete *it;
+			it = m_animators.erase(it);
+		}
+		else ++it;
+	}
+	target->m_states &= ~0x800;
+}
 
 // ------------- //
 template<class T> Root::StringList getMapKeys( const base::HashMap<T>& map) {
@@ -915,6 +942,8 @@ void Widget::setRoot(Root* r) {
 		if(m_root && m_root!=r && m_root->m_widgets.get(m_name, 0) == this) m_root->m_widgets.erase(m_name);
 		if(added) r->m_widgets[m_name] = this;
 	}
+
+	if(m_root && (m_states&0x800)) m_root->deleteAnimators(this);
 
 	m_root = r;
 	if(added) onAdded();

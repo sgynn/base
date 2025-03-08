@@ -220,6 +220,7 @@ set(worldheaders
 
 set(guiheaders
 	include/base/gui/any.h
+	include/base/gui/animator.h
 	include/base/gui/delegate.h
 	include/base/gui/font.h
 	include/base/gui/gui.h

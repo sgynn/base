@@ -25,6 +25,7 @@ class Widget;
 class Root;
 class Renderer;
 class Layout;
+class Animator;
 
 using base::String;
 
@@ -203,7 +204,7 @@ class Widget {
 	char     m_anchor;			// { Left, Right, Middle, Both} { Top, Bottom, Centre, Both }
 	Layout*  m_layout;			// Automatic layouts
 	float*   m_relative;		// alternative coordinates as multiple of parent
-	short    m_states;			// Visible, Enabled, Tangible[2], Selected, Template, InheritState, Autosize, OverrideColour[2], LayoutPaused
+	short    m_states;			// Visible, Enabled, Tangible[2],  Selected, Template, InheritState, Autosize,  OverrideColour[2], LayoutPaused, HasAnimator
 	char     m_skipTemplate;	// Templates in client widget to skip
 	Widget*  m_parent;			// Parent widget
 	Widget*  m_client;			// Client widget
@@ -262,7 +263,6 @@ class Root {
 
 	void    resize(const Point& s) { resize(s.x, s.y); }
 	void    resize(int width, int height);
-	void    update();
 	void    draw(const Point& viewport=Point()) const;
 	void    draw(const Matrix&, Widget* w=nullptr, bool depthTest=false) const;
 	Widget* parse(const char* xml, Widget* root=0, LoadFlags flags=LoadFlags::ALL|LoadFlags::REPLACE);	// Load all from string
@@ -334,6 +334,11 @@ class Root {
 	int getMouseState() const { return m_mouseState; }
 	KeyMask getKeyMask() const { return m_keyMask; }
 
+	// Animators
+	void startAnimator(Animator*);
+	void updateAnimators(float time);
+	void deleteAnimators(Widget* target);
+
 	protected:
 	Widget* m_focus;		// Widget with key focus
 	Widget* m_mouseFocus;	// Widget with mouse focus
@@ -352,6 +357,8 @@ class Root {
 	base::HashMap<Widget*>   m_templates;	// Template list
 	base::HashMap<Widget*>   m_widgets;		// Named widgets
 	Renderer*                m_renderer;	// Overrideable renderer class
+
+	std::vector<Animator*>   m_animators;
 
 	template<typename T> static T* findInMap(const base::HashMap<T*>& map, const char* key) {
 		typename base::HashMap<T*>::const_iterator i = map.find(key);
