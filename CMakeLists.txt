@@ -3,6 +3,7 @@ project(basecode)
 
 set(src
 	src/archive.cpp
+	src/binaryfile.cpp
 	src/camera.cpp
 	src/cameras.cpp
 	src/collision.cpp
@@ -134,6 +135,7 @@ set(headers
 	include/base/audio.h
 	include/base/autovariables.h
 	include/base/batcher.h
+	include/base/binaryfile.h
 	include/base/bmloader.h
 	include/base/bounds.h
 	include/base/bresenham.h
