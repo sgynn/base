@@ -95,7 +95,7 @@ class ColourAnimator : public LerpAnimator<unsigned> {
 		return getState();
 	}
 };
-class FadeAnimator : public LerpAnimator<unsigned> {
+class FadeAnimator : public LerpAnimator<float> {
 	public:
 	using LerpAnimator::LerpAnimator;
 	State update(float time) override {
