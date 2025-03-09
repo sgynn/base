@@ -23,13 +23,17 @@ SceneComponent::~SceneComponent() {
 	delete m_workspace;
 }
 
+int SceneComponent::translateCameraUpdateFlags(int componentFlags) {
+	int cameraUpdateFlags = 0;
+	if(!(componentFlags & BLOCK_KEYS)) cameraUpdateFlags |= CU_KEYS;
+	if(!(componentFlags & BLOCK_MOUSE)) cameraUpdateFlags |= CU_MOUSE;
+	if(!(componentFlags & BLOCK_WHEEL)) cameraUpdateFlags |= CU_WHEEL;
+	return cameraUpdateFlags;
+}
+
 void SceneComponent::update() {
 	if(m_updateCamera) {
-		int cameraUpdateFlags = 0;
-		if(!hasComponentFlags(BLOCK_KEYS)) cameraUpdateFlags |= CU_KEYS;
-		if(!hasComponentFlags(BLOCK_MOUSE)) cameraUpdateFlags |= CU_MOUSE;
-		if(!hasComponentFlags(BLOCK_WHEEL)) cameraUpdateFlags |= CU_WHEEL;
-		static_cast<CameraBase*>(m_camera)->update(cameraUpdateFlags);
+		static_cast<CameraBase*>(m_camera)->update(translateCameraUpdateFlags(getComponentFlags()));
 	}
 
 	if(!getState()->isPaused()) m_time += Game::frameTime();

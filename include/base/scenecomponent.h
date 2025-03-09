@@ -22,6 +22,7 @@ class SceneComponent : public base::GameStateComponent {
 	Renderer* getRenderer() { return m_renderer; }
 	Scene* getScene() { return m_scene; }
 	void setCamera(Camera* cam, bool update=true);
+	static int translateCameraUpdateFlags(int componentFlags);
 	private:
 	Scene*     m_scene;
 	Workspace* m_workspace;
