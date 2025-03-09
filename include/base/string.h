@@ -136,8 +136,8 @@ namespace base {
 			return out;
 		}
 
-		// Use this if the char array is created externally, to avoid a copy
-		static String move(char* str) { String s; s.m_data = str; return s; };
+		// Allocate uninitialised string memory to avoid unnessesary copies
+		char* allocateUnsafe(int len) { free(m_data); m_data = (char*)malloc(len); return m_data; }
 
 		private:
 		friend class StringView;

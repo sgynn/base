@@ -150,10 +150,11 @@ base::String BinaryFileReader::get(const char* fallback) {
 	int len = fgetc(m_file);
 	if(len&0x80) len = (len&0x7f) << 8 | fgetc(m_file);
 	if(len == 0) return base::String();
-	char* buffer = new char[len+1];
+	base::String string;
+	char* buffer = string.allocateUnsafe(len+1);
 	if(read(buffer, len)) {
 		buffer[len] = 0;
-		return base::String::move(buffer);
+		return string;
 	}
 	return base::String();
 }
