@@ -261,14 +261,17 @@ void Root::startAnimator(Animator* a) {
 	m_animators.push_back(a);
 }
 
-
-
 void Root::updateAnimators(float time) {
 	for(auto it = m_animators.begin(); it!=m_animators.end();) {
 		if((*it)->update(time) == Animator::ACTIVE) ++it;
 		else {
+			Widget* target = (*it)->getWidget();
 			if((*it)->isTransient()) delete *it;
 			it = m_animators.erase(it);
+
+			bool remain = false;
+			for(const Animator* a: m_animators) if(a->getWidget() == target) remain = true;
+			if(!remain) target->m_states &= ~0x800;
 		}
 	}
 }

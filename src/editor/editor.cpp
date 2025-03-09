@@ -209,7 +209,7 @@ void SceneEditor::update() {
 	m_gui->setKeyMask((gui::KeyMask)(Game::input()->getKeyModifier()>>9));
 	m_gui->mouseEvent(Point(mouse.x, Game::height()-mouse.y), mouse.button, mouse.wheel);
 	if(Game::LastKey()) m_gui->keyEvent(Game::LastKey(), Game::LastChar());
-	m_gui->update();
+	m_gui->updateAnimators(Game::frameTime());
 
 	// Block flags from gui
 	if(m_gui->getWidgetUnderMouse()) setComponentFlags(BLOCK_MOUSE);
