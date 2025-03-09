@@ -46,11 +46,11 @@ InfoPlate::~InfoPlate() {
 InfoPlateManager::InfoPlateManager(const base::Camera* camera, base::Scene* scene, int queue) : m_camera(camera), m_rendererQueue(queue) {
 	setTangible(gui::Tangible::NONE);
 	if(scene) m_sceneNode = scene->add("InfoPlates");
-	setVisible(!scene);
+	setVisible(true);
 }
 
 void InfoPlateManager::setVisible(bool vis) {
-	Widget::setVisible(vis);
+	Widget::setVisible(vis && !m_sceneNode);
 	if(m_sceneNode) m_sceneNode->setVisible(vis);
 }
 
