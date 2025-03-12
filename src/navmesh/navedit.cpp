@@ -97,7 +97,8 @@ namespace nav {
 	NavPoly* drill(const NavPoly* a, NavPoly* b, bool connect);					// Drill a hole in polygon a with polygon b
 	
 	inline bool eq(float a, float b, float epsilon=EPSILON) { return fabs(a-b)<epsilon; }
-	inline bool eq(const vec3& a, const vec3& b, float epsilon=EPSILON) { return a.distance2(b)<epsilon; }
+	inline bool eq(const vec3& a, const vec3& b, float epsilon=EPSILON) { return a.distance2(b) < epsilon; }
+	inline bool eqSplit(const vec3& a, const vec3& b, float h=EPSILON, float epsilon=EPSILON) { return fabs(a.x-b.x)<epsilon && fabs(a.z-b.z)<epsilon && fabs(a.y-b.y)<h; }
 	inline int previousIndex(const NavPoly* p, int i) { return (i-1+p->size) % p->size; }
 	inline int nextIndex(const NavPoly* p, int i) { return (i+1) % p->size; }
 
@@ -208,9 +209,11 @@ int nav::intersect(const NavPoly* a, const NavPoly* b) {
 	bool touch = false; // touches via a spike, but not connected
 	for(int i=a->size-1,j=0; j<a->size; i=j, ++j) {
 		for(int u=b->size-1, v=0; v<b->size; u=v, ++v) {
-			if( eq(a->points[i],b->points[v]) && eq(a->points[j], b->points[u])) return 4;
-			if( eq(a->points[i],b->points[v]) || eq(a->points[j], b->points[u])) touch = true;
-			
+			bool eiv = eqSplit(a->points[i], b->points[v], 0.1);
+			bool eju = eqSplit(a->points[j], b->points[u], 0.1);
+			if(eiv && eju) return 4; // Connected
+			if(eiv || eju) touch = true;
+
 			if(nav::intersectLines(a->points[i], a->points[j], b->points[u], b->points[v], s, t)) {
 				if(s>0 && s<1 && t>0 && t<1) {
 					// Check the next point to skip spikes just touching the edge
@@ -923,8 +926,10 @@ int nav::makeConvex(const NavPoly* p, PList& out) {
 					else splitLinks[s].poly[side] = (NavPoly*)0x1;
 				}
 			}
-			printf("ERROR: MakeConvex created a non-convex polygon\n");
-			assert(isConvex(np));
+			if(!isConvex(np)) {
+				printf("ERROR: MakeConvex created a non-convex polygon\n");
+				assert(false);
+			}
 			out.push_back(np);
 		}
 	}
@@ -1446,10 +1451,14 @@ int nav::getIntersections(const NavPoly* a, const NavPoly* b, IList& list) {
 				float dot = dot2d(ae - be, vec2(bd.z, -bd.x));
 				sect.s = dot <= 0? 1: 0;
 
+				// Normalise because of precision issues
+				dot = dot2d((ae - be).setY(0).normalise(), vec2(bd.z, -bd.x).normalise());
+
 				// Get side from the other direction if coincident
 				// should only happen if sect.u[0]==1 || sect.u[1]==1
 				if(eq(dot,0)) {
-					assert((sect.u[0]==1) != (sect.u[1]==1));
+					assert((sect.u[0]==1) || (sect.u[1]==1));
+					if(sect.u[0]==1 && sect.u[1]==1) printf("Warning: intercestion coincident\n");
 					if(sect.u[0] == 1) {
 						// bn.dot(ad);
 						float dd = dot2d(vec2(bd.z, -bd.x), a->points[j]-a->points[i]);
@@ -1663,6 +1672,7 @@ void NavMesh::carve(const NavPoly& sb, int precidence, bool add) {
 		if(debugFlags&0x10) {
 			auto printPoly = [](const NavPoly* p) { for(const vec3& v: p) { printf("(%g,%g)", v.x, v.z); } printf("\n"); };
 			for(NavPoly* i: in) if(i) { printf("Poly: "); printPoly(i); }
+			printf("Brush: "); printPoly(&sb);
 		}
 		#endif
 
