@@ -126,6 +126,20 @@ void LayoutViewer::setRoot(SceneNode* n) {
 	refresh();
 }
 
+bool LayoutViewer::isValid(TreeNode* treeNode) {
+	if(!treeNode->getParent()) return true; // SceneRoot can't change
+	if(!isValid(treeNode->getParent())) return false;
+	static auto getSceneNode = [](TreeNode* n) { return n->getData().getValue<SceneNode*>(nullptr); };
+	SceneNode* parent = getSceneNode(treeNode->getParent());
+	if(SceneNode* node = getSceneNode(treeNode)) {
+		for(SceneNode* child: parent->children()) if(child == node) return true;
+	}
+	else if(Drawable* drawable = treeNode->getData().getValue<Drawable*>(nullptr)) {
+		for(Drawable* attached: parent->attachments()) if(attached == drawable) return true;
+	}
+	return false;
+}
+
 void LayoutViewer::setGizmoRenderQueue(int q) {
 	m_gizmoQueue = q;
 	if(m_gizmo) m_gizmo->setRenderQueue(q);
@@ -280,18 +294,19 @@ void LayoutViewer::refreshItem(gui::TreeNode* n, gui::Widget* w) {
 	bool visible = true;
 	int icon = 0;
 	bool isNode = n->getData().isType<SceneNode*>();
-
-	if(isNode) {
-		SceneNode* node = n->getData(0).getValue<SceneNode*>(0);
-		SceneNodeType* type = n->getData(1).getValue<SceneNodeType*>(0);
-		if(type) type->getValues(node, name, icon, visible);
-		if(!name[0]) name = "Scene Node";
-	}
-	else {
-		icon = 1; // default icon
-		Drawable* drawable = n->getData(0).getValue<Drawable*>(0);
-		DrawableType* type = n->getData(1).getValue<DrawableType*>(0);
-		if(type) type->getValues(drawable, name, icon, visible);
+	if(isValid(n)) {
+		if(isNode) {
+			SceneNode* node = n->getData(0).getValue<SceneNode*>(0);
+			SceneNodeType* type = n->getData(1).getValue<SceneNodeType*>(0);
+			if(node && type) type->getValues(node, name, icon, visible);
+			if(!name[0]) name = "Scene Node";
+		}
+		else {
+			icon = 1; // default icon
+			Drawable* drawable = n->getData(0).getValue<Drawable*>(0);
+			DrawableType* type = n->getData(1).getValue<DrawableType*>(0);
+			if(drawable && type) type->getValues(drawable, name, icon, visible);
+		}
 	}
 
 	w->getWidget(0)->as<Image>()->setImage(icon);
@@ -301,6 +316,7 @@ void LayoutViewer::refreshItem(gui::TreeNode* n, gui::Widget* w) {
 }
 
 void LayoutViewer::itemEvent(gui::TreeView*, gui::TreeNode* n, gui::Widget* w) {
+	if(!isValid(n)) return;
 	bool vis = cast<Checkbox>(w)->isChecked();
 	SceneNode* node = n->getData().getValue<SceneNode*>(0);
 	if(node) node->setVisible(vis);
@@ -315,7 +331,7 @@ void LayoutViewer::itemSelected(gui::TreeView*, gui::TreeNode* n) {
 	m_properties->add(m_gizmoWidget);
 	m_gizmoWidget->setVisible(false);
 
-	if(!n) {
+	if(!n || !isValid(n)) {
 		destroyGizmo();
 		m_active = 0;
 		m_drawable = 0;
