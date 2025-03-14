@@ -48,6 +48,7 @@ class Animator {
 		     | ((unsigned)((a&0xff0000)*st + (b&0xff0000)*t) & 0xff0000)
 		     | ((unsigned)((a&0xff000000)*st + (b&0xff000000)*t) & 0xff0000);
 	}
+
 	protected:
 	Widget* m_widget;
 	bool m_transient;
@@ -62,7 +63,14 @@ class LerpAnimator : public Animator {
 		if(m_value >= 1) return m_end;
 		return lerp(m_start, m_end, ease(m_value, m_ease));
 	}
-	inline State getState() { return m_value<1? ACTIVE: ENDED; }
+	public:
+	Delegate<void()> eventCompleted;
+
+	protected:
+	inline State getState() {
+		if(m_value >= 1 && eventCompleted) eventCompleted();
+		return m_value<1? ACTIVE: ENDED;
+	}
 	private:
 	T m_start, m_end;
 	Ease m_ease;
