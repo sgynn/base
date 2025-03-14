@@ -369,11 +369,11 @@ class Slider : public Widget {
 	int  getPixelRange() const;
 	protected:
 	Orientation m_orientation;
-	Widget* m_block[2];
+	Widget* m_block[3] = { nullptr, nullptr, nullptr };
 	int     m_held = -1;
 	Range   m_range = {0,1};
 	Range   m_value = {0,1};
-	float   m_quantise=0;
+	float   m_quantise = 0;
 };
 
 

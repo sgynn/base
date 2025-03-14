@@ -1023,6 +1023,7 @@ void Slider::initialise(const Root*, const PropertyMap& p) {
 	p.readValue("max", m_range.max);
 	m_block[0] = getTemplateWidget("_block");
 	m_block[1] = getTemplateWidget("_block2");
+	if(m_block[0] && m_block[1]) m_block[2] = getTemplateWidget("_fill");
 	m_orientation = p.getEnum("orientaton", {"horizontal", "vertical"}, HORIZONTAL);
 	for(Widget* w: m_block) {
 		if(w) {
@@ -1086,9 +1087,9 @@ void Slider::pressBlock(Widget*, const Point& p, int b) {
 
 void Slider::moveBlock(Widget* c, const Point& p, int b) {
 	if(b && m_held>=0) {
-		int pmin=0, pmax=getSize()[m_orientation] - c->getSize()[m_orientation];
-		if(c==m_block[0] && m_block[1]) pmax -= m_block[1]->getSize()[m_orientation];
-		if(c==m_block[1] && m_block[0]) pmin += m_block[0]->getSize()[m_orientation];
+		int pmin=0, pmax=getSize()[m_orientation];
+		if(c!=m_block[0]) pmin += m_block[0]->getSize()[m_orientation];
+		if(m_block[1] && c!=m_block[1]) pmax -= m_block[1]->getSize()[m_orientation];
 		if(pmax <= pmin) return; // error
 
 		int np = p[m_orientation] - m_held + c->getPosition()[m_orientation];
@@ -1098,7 +1099,12 @@ void Slider::moveBlock(Widget* c, const Point& p, int b) {
 		if(value>m_range.max) value = m_range.max;
 
 		if(c==m_block[0]) setValue(value, fmax(value, m_value.max), true);
-		if(c==m_block[1]) setValue(fmin(value, m_value.min), value, true);
+		else if(c==m_block[1]) setValue(fmin(value, m_value.min), value, true);
+		else if(c==m_block[2]) {
+			float separation = m_value.max - m_value.min;
+			if(value > m_range.max - separation) value = m_range.max - separation;
+			setValue(value, value+separation, true);
+		}
 	}
 	else m_held = -1;
 }
@@ -1121,6 +1127,15 @@ void Slider::updateBlock() {
 		Point pos = m_block[1]->getPosition();
 		pos[m_orientation] = pmin + p * (pmax-pmin);
 		m_block[1]->setPosition(pos);
+	}
+
+	if(m_block[2]) {
+		Point s = m_block[2]->getSize();
+		Point p = m_block[2]->getPosition();
+		p[m_orientation] = m_block[0]->getRect().bottomRight()[m_orientation];
+		s[m_orientation] = m_block[1]->getPosition()[m_orientation] - p[m_orientation];
+		m_block[2]->setPosition(p);
+		m_block[2]->setSize(s);
 	}
 }
 
