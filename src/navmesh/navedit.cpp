@@ -221,8 +221,10 @@ int nav::intersect(const NavPoly* a, const NavPoly* b) {
 					else touch = true;
 				}
 				// FIXME: Need to check the next points to see if they actually cross
-				if(s<=0 && t>low && t<high)
-					return 1;
+				if((s<=0 || s>=1) && t>low && t<high) {
+					if(!checkSpike(s, i,j,u,v))	return 1;
+					else touch = true;
+				}
 				if((t<=0 || t>=1)  && s>low && s<high) {
 					if(!checkSpike(t, i,j,u,v)) return 1;
 					else touch = true;
