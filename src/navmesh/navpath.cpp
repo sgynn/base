@@ -337,6 +337,7 @@ void PathFollower::setPosition(const vec3& p) {
 		NavPoly* next = NavMesh::getLinkedPolygon( poly, edge );
 		for(uint i=m_pathIndex+1; next && i<m_pathIndex+6 && i<m_path.m_path.size(); ++i) {
 			if(next->id != m_path.m_path[i].poly) break; // invalid path
+			if(fabs(next->centre.y - poly->centre.y) > next->extents.y + poly->extents.y + 1) break;
 			if(NavMesh::isInsidePolygon(p, next)) {
 				m_pathIndex = i;
 				m_polygon = next->id;
