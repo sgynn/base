@@ -535,19 +535,30 @@ VecPair PathFollower::nextPoint() {
 
 	// Collapse remaining wedge
 	const NavPoly* pathPoly = poly;
-	for(uint i=m_pathIndex+1; i<end && !collapsed; ++i) {
-		pathPoly = NavMesh::getLinkedPolygon(pathPoly, edgeIndex);
-		edgeIndex = m_path.m_path[i].edge;
+	if(!collapsed) {
+		vec3 leftAnchor, rightAnchor;
+		for(uint i=m_pathIndex+1; i<end; ++i) {
+			pathPoly = NavMesh::getLinkedPolygon(pathPoly, edgeIndex);
+			edgeIndex = m_path.m_path[i].edge;
 
-		// Path error
-		if(!pathPoly || pathPoly->id != m_path.m_path[i].poly) {
-			repath();
-			return m_position;
+			// Path error
+			if(!pathPoly || pathPoly->id != m_path.m_path[i].poly) {
+				repath();
+				return m_position;
+			}
+
+			vec3 leftPoint = pathPoly->points[edgeIndex];
+			vec3 rightPoint = pathPoly->points[(edgeIndex+1)%pathPoly->size];
+			if(collapsed && (leftPoint!=leftAnchor && rightPoint!=rightAnchor)) break;
+
+			processPoint(leftPoint, 0);
+			processPoint(rightPoint, 1);
+			collapsed = normal[0].dot(target[1]-position) > 0;
+			if(collapsed) {
+				leftAnchor = leftPoint;
+				rightAnchor = rightPoint;
+			}
 		}
-
-		processPoint(pathPoly->points[edgeIndex], 0);
-		processPoint(pathPoly->points[(edgeIndex+1)%pathPoly->size], 1);
-		collapsed = normal[0].dot(target[1]-position) > 0; // Collapsed
 	}
 	
 	// Collapse into goal
