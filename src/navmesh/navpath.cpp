@@ -466,89 +466,98 @@ VecPair PathFollower::nextPoint() {
 	if(m_pathIndex < end && m_path.m_path[m_pathIndex].poly != m_polygon) { //not on path
 		if(!repathAndUpdatePoly()) return m_position;
 	}
-	const NavPoly* p = m_path.getNavMesh()->getPolygon(m_polygon);
-	if(!p) { // Current polygon no longer exists
+	const NavPoly* poly = m_path.getNavMesh()->getPolygon(m_polygon);
+	if(!poly) { // Current polygon no longer exists
 		if(!repathAndUpdatePoly()) return m_position;
-		p = m_path.getNavMesh()->getPolygon(m_polygon);
+		poly = m_path.getNavMesh()->getPolygon(m_polygon);
 	}
 
-	auto insetPoint = [start=m_position](const vec3& point, float inset) {
-		vec3 n(start.z - point.z, 0, point.x - start.x);
+	auto insetPoint = [start=m_position.xz()](const vec3& point, float inset) {
+		vec2 n(start.y - point.z, point.x - start.x);
 		n.normalise();
 
-		float vv = powf(start.x-point.x,2) + powf(start.z-point.z, 2);
+		float vv = powf(start.x-point.x,2) + powf(start.y-point.z, 2);
 		float rr = inset * inset;
 		float aa = vv - rr;
 		float xx = vv * rr / aa;
 
 		if(vv < rr + 1e-8) {
 			//printf("Stuck on a corner\n");
-			return point + (start - point).setY(0).normalise() * fabs(inset);
+			return point.xz() + (start - point.xz()).normalise() * fabs(inset);
 		}
 
 		float x = sqrt(xx);
-		vec3 target = point + n * x * fsign(inset);
+		vec2 target = point.xz() + n * x * fsign(inset);
 		return start + (target-start) * (fabs(inset) / x);
 	};
 
 	//Setup wedge
 	int edgeIndex = -1;
 	bool collapsed = false;
-	vec3 target[2], normal[2];
+	vec2 position = m_position.xz();
+	vec2 target[2], normal[2];
+	float distanceSquared[2];
 	static constexpr float mult[2] = { 1, -1 };
 	if(m_pathIndex < end) {
 		edgeIndex = m_path.m_path[m_pathIndex].edge;
-		int otherSide = (edgeIndex+1) % p->size;
-		target[0] = insetPoint(p->points[edgeIndex], m_radius);
-		target[1] = insetPoint(p->points[otherSide], -m_radius);
-		DebugLine(p->points[edgeIndex], target[0], 0xa000ff); DebugLine(m_position, target[0], 0xa000ff);
-		DebugLine(p->points[otherSide], target[1], 0xffa000); DebugLine(m_position, target[1], 0xffa000);
+		int otherSide = (edgeIndex+1) % poly->size;
+		target[0] = insetPoint(poly->points[edgeIndex], m_radius);
+		target[1] = insetPoint(poly->points[otherSide], -m_radius);
+		distanceSquared[0] = position.distance2(target[0]);
+		distanceSquared[1] = position.distance2(target[1]);
+		DebugLine(poly->points[edgeIndex], target[0].xzy(poly->points[edgeIndex].y), 0xa000ff);
+		DebugLine(m_position, target[0].xzy(poly->points[edgeIndex].y), 0xa000ff);
+		DebugLine(poly->points[otherSide], target[1].xzy(poly->points[otherSide].y), 0xffa000);
+		DebugLine(m_position, target[1].xzy(poly->points[otherSide].y), 0xffa000);
 	}
 	else {
-		target[0] = target[1] = m_goal;
+		target[0] = target[1] = m_goal.xz();
+		distanceSquared[0] = distanceSquared[1] = position.distance2(target[0]);
 		collapsed = true;
 	}
-	normal[0].set(target[0].z - m_position.z, 0, m_position.x - target[0].x);
-	normal[1].set(m_position.z - target[1].z, 0, target[1].x - m_position.x);
+	normal[0].set(target[0].y - position.y,  position.x - target[0].x);
+	normal[1].set(position.y - target[1].y,  target[1].x - position.x);
 
 	// Inset target point and update wedges
 	auto processPoint = [&](const vec3& p, int side) {
-		vec3 insetTarget = insetPoint(p, m_radius * mult[side]);
-		if(normal[side].dot(insetTarget - m_position) < 0 || normal[side].dot(p-m_position) < 0) {
+		vec2 insetTarget = insetPoint(p, m_radius * mult[side]);
+		if(normal[side].dot(insetTarget - position) < 0 || normal[side].dot(p.xz()-position) < 0) {
 			target[side] = insetTarget;
-			normal[side].set(target[side].z - m_position.z, 0, m_position.x - target[side].x);
+			normal[side].set(target[side].y - position.y, position.x - target[side].x);
+			distanceSquared[side] = position.distance2(insetTarget);
 			if(side) normal[side] *= -1;
-			DebugLine(p, target[side], side? 0xffa000: 0xa000ff);
-			DebugLine(m_position, target[side], side? 0xffa000: 0xa000ff);
+			DebugLine(p, target[side].xzy(p.y), side? 0xffa000: 0xa000ff);
+			DebugLine(m_position, target[side].xzy(p.y), side? 0xffa000: 0xa000ff);
 			return true;
 		}
 		return false;
 	};
 
 	// Collapse remaining wedge
+	const NavPoly* pathPoly = poly;
 	for(uint i=m_pathIndex+1; i<end && !collapsed; ++i) {
-		p = NavMesh::getLinkedPolygon(p, edgeIndex);
+		pathPoly = NavMesh::getLinkedPolygon(pathPoly, edgeIndex);
 		edgeIndex = m_path.m_path[i].edge;
 
 		// Path error
-		if(!p || p->id != m_path.m_path[i].poly) {
+		if(!pathPoly || pathPoly->id != m_path.m_path[i].poly) {
 			repath();
 			return m_position;
 		}
 
-		processPoint(p->points[edgeIndex], 0);
-		processPoint(p->points[(edgeIndex+1)%p->size], 1);
-		collapsed = normal[0].dot(target[1]-m_position) > 0; // Collapsed
+		processPoint(pathPoly->points[edgeIndex], 0);
+		processPoint(pathPoly->points[(edgeIndex+1)%pathPoly->size], 1);
+		collapsed = normal[0].dot(target[1]-position) > 0; // Collapsed
 	}
 	
 	// Collapse into goal
 	if(!collapsed) {
-		vec3 m = m_goal - m_position;
-		if(m.dot(normal[0]) > 0) target[1] = m_goal;
-		else if(m.dot(normal[1]) > 0) target[0] = m_goal;
-		else return target[0] = target[2] = m_goal;
-		normal[0].set(target[0].z - m_position.z, 0, m_position.x - target[0].x);
-		normal[1].set(m_position.z - target[1].z, 0, target[1].x - m_position.x);
+		vec2 m = m_goal.xz() - position;
+		if(m.dot(normal[0]) > 0) target[1] = m_goal.xz();
+		else if(m.dot(normal[1]) > 0) target[0] = m_goal.xz();
+		else target[0] = target[1] = m_goal.xz();
+		normal[0].set(target[0].y - position.y, position.x - target[0].x);
+		normal[1].set(position.y - target[1].y, target[1].x - position.x);
 		collapsed = true;
 	}
 
@@ -557,16 +566,15 @@ VecPair PathFollower::nextPoint() {
 		float collapseDistSquared = 1e8f;
 		auto checkCollapse = [&]() {
 			// project the invalid target onto the closen direction, make sure it is not shorter
-			target[0].setY(m_position.y);
-			target[1].setY(m_position.y);
-			int side = target[0].distance2(m_position) < target[1].distance2(m_position)? 1: 0;
-			vec3 targetDirection = target[side^1] - m_position;
+			int side = target[0].distance2(position) < target[1].distance2(position)? 1: 0;
+			vec2 targetDirection = target[side^1] - position;
 			float nearDistance = targetDirection.normaliseWithLength();
-			float distance = targetDirection.dot(target[side] - m_position);
+			float distance = targetDirection.dot(target[side] - position);
 			if(distance <= nearDistance) target[side] = target[side^1];
-			else target[side] = m_position + targetDirection * distance;
+			else target[side] = position + targetDirection * distance;
+			distanceSquared[side] = powf(fmax(distance, nearDistance), 2);
 			normal[side] = -normal[side^1];
-			collapseDistSquared = nearDistance * nearDistance;
+			collapseDistSquared = distanceSquared[side^1];
 		};
 
 		// Need to use a 2D projection
@@ -578,19 +586,19 @@ VecPair PathFollower::nextPoint() {
 
 		checkCollapse();
 		struct EdgeStack { const NavPoly* poly; uint from; };
-		std::vector<EdgeStack> stack = {{p, -1u}}; 
+		std::vector<EdgeStack> stack = {{poly, -1u}}; 
 		for(size_t i=0; i<stack.size(); ++i) {
 			for(auto& edge: stack[i].poly) {
 				const EdgeStack& item = stack[i];
 				if(edge.a == item.from || !edge.link()) continue;
-				if(closestPointOnLine2D(m_position, edge.pointA(), edge.pointB()).distance2(m_position.xz()) < m_radius*m_radius) {
-					vec3 m = (edge.pointA() - m_position).setY(0);
-					if(m.dot((target[0] - m_position).setY(0)) >= 0 && m.length2() < collapseDistSquared) {
+				if(closestPointOnLine2D(m_position, edge.pointA(), edge.pointB()).distance2(position) < m_radius*m_radius) {
+					vec2 m = edge.pointA().xz() - position;
+					if(m.dot(target[0] - position) >= 0 && m.length2() < collapseDistSquared) {
 						if(processPoint(edge.pointA(), m.dot(normal[0]) > 0? 0: 1)) checkCollapse();
 					}
 
-					m = (edge.pointB() - m_position).setY(0);
-					if(m.dot((target[0] - m_position).setY(0)) >= 0 && m.length2() < collapseDistSquared) {
+					m = edge.pointB().xz() - position;
+					if(m.dot(target[0] - position) >= 0 && m.length2() < collapseDistSquared) {
 						if(processPoint(edge.pointB(), m.dot(normal[0]) > 0? 0: 1)) checkCollapse();
 					}
 					
@@ -599,11 +607,10 @@ VecPair PathFollower::nextPoint() {
 			}
 		}
 	}
-
-	target[0].setY(m_position.y);
-	target[1].setY(m_position.y);
-	if(target[0].distance2(m_position) < target[1].distance2(m_position)) return VecPair(target[0], target[1]);
-	else return VecPair(target[1], target[0]);
+	
+	float y = m_position.y;
+	if(distanceSquared[0] < distanceSquared[1]) return VecPair(target[0].xzy(y), target[1].xzy(y));
+	else return VecPair(target[1].xzy(y), target[0].xzy(y));
 }
 
 PathState PathFollower::repath() {
