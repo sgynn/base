@@ -111,21 +111,23 @@ class NavMesh {
 	/** Edge Iterator system for ranged iterator. Can iterate edges or points */
 	struct EdgeInfo {
 		const NavPoly& poly;
-		int a, b;
+		uint a, b;
 		const vec3& point() const { return poly.points[a]; }
+		const vec3& pointA() const { return poly.points[a]; }
+		const vec3& pointB() const { return poly.points[b]; }
 		operator const vec3&() const { return point(); }
 		NavLink* link() { return poly.links[a]; }
 		const NavLink* link() const { return poly.links[a]; }
 		bool isConnected() const { return poly.links[a]; }
 		NavPoly* connected() { if(NavLink* l=link()) return l->poly[l->poly[0]==&poly?1:0]; return nullptr;  }
-		int oppositeEdge() const { return NavMesh::getLinkedEdge(&poly, a); }
+		uint oppositeEdge() const { return NavMesh::getLinkedEdge(&poly, a); }
 		vec3 direction() const { return poly.points[b] - poly.points[a]; }
 		vec3 normal() const { return vec3(poly.points[b].z-poly.points[a].z, 0, poly.points[a].x-poly.points[b].x); }
 	};
 	class EdgeIterator {
 		EdgeInfo data;
 		public:
-		EdgeIterator(const NavPoly* p, int i, int j) : data{*p, i, j} {}
+		EdgeIterator(const NavPoly* p, uint i, uint j) : data{*p, i, j} {}
 		EdgeInfo& operator*() { return data; }
 		EdgeInfo* operator->() { return &data; }
 		EdgeIterator& operator++() { data.a=data.b; ++data.b; return *this; }

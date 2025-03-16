@@ -547,27 +547,48 @@ VecPair PathFollower::nextPoint() {
 	};
 
 	// Check if there are collisions before the first edge
-	struct EdgeStack { const NavPoly* poly; int from; };
-	std::vector<EdgeStack> stack = {{p, edgeIndex}};
+	struct EdgeStack { const NavPoly* poly; uint from; int onPath; };
+	std::vector<EdgeStack> stack = {{p, -1u, (int)m_pathIndex}}; 
 	for(size_t i=0; i<stack.size(); ++i) {
 		for(auto& edge: stack[i].poly) {
-			if(edge.a == stack[i].from) continue;
+			const EdgeStack& item = stack[i];
+			if(edge.a == item.from || !edge.link()) continue;
 			if(closestPointOnLine2D(m_position, edge.poly.points[edge.a], edge.poly.points[edge.b]).distance2(m_position.xz()) < m_radius*m_radius) {
-				vec3 m = (edge.point() - m_position).setY(0);
-				if(!collapsed || (m.dot((target[0]-m_position).setY(0)) >= 0 && m.length2()<collapseDistSquared)) {
-					if(m.dot(normal[0]) > 0) processPoint(edge.point(), 0);
-					if(m.dot(normal[1]) > 0) processPoint(edge.point(), 1);
-					collapsed |= checkCollapse();
+				if(item.onPath>=0 && item.onPath<(int)end && edge.a == m_path.m_path[item.onPath].edge) { // Next edge along path
+					processPoint(edge.pointA(), 0);
+					processPoint(edge.pointB(), 1);
+					if(item.onPath + 1 < (int)end) stack.push_back({edge.connected(), edge.oppositeEdge(), item.onPath+1});
 				}
-
-				m = edge.poly.points[edge.b] - m_position;
-				if(!collapsed || (m.dot((target[0]-m_position).setY(0)) >= 0 && m.length2()<collapseDistSquared)) {
-					if(m.dot(normal[0]) > 0) processPoint(edge.poly.points[edge.b], 0);
-					if(m.dot(normal[1]) > 0) processPoint(edge.poly.points[edge.b], 1);
-					collapsed |= checkCollapse();
+				else if(item.onPath > (int)m_pathIndex) { // An edge leading off the path
+					uint n = m_path.m_path[item.onPath].edge;
+					assert(edge.a != n);
+					int side;
+					if(n>item.from) side = edge.a < item.from || edge.a > n;
+					else side = edge.a < item.from && edge.a > n;
+					processPoint(edge.pointA(), side);
+					processPoint(edge.pointB(), side);
+					stack.push_back({edge.connected(), edge.oppositeEdge(), side? -2: -3});
 				}
+				else if(item.onPath < -1) { // A polygon to one side of the path
+					processPoint(edge.pointA(), item.onPath+3);
+					processPoint(edge.pointB(), item.onPath+3);
+					stack.push_back({edge.connected(), edge.oppositeEdge(), item.onPath});
+				}
+				else { // Behind the path
+					vec3 m = (edge.point() - m_position).setY(0);
+					if(!collapsed || (m.dot((target[0]-m_position).setY(0)) >= 0 && m.length2()<collapseDistSquared)) {
+						if(m.dot(normal[0]) > 0) processPoint(edge.pointA(), 0);
+						if(m.dot(normal[1]) > 0) processPoint(edge.pointA(), 1);
+					}
 
-				if(const NavPoly* c = edge.connected()) stack.push_back({c, edge.oppositeEdge()});
+					m = edge.poly.points[edge.b] - m_position;
+					if(!collapsed || (m.dot((target[0]-m_position).setY(0)) >= 0 && m.length2()<collapseDistSquared)) {
+						if(m.dot(normal[0]) > 0) processPoint(edge.pointB(), 0);
+						if(m.dot(normal[1]) > 0) processPoint(edge.pointB(), 1);
+					}
+					if(const NavPoly* c = edge.connected()) stack.push_back({c, edge.oppositeEdge(), -1});
+				}
+				collapsed |= checkCollapse();
 			}
 		}
 	}
