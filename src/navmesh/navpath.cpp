@@ -517,6 +517,7 @@ VecPair PathFollower::nextPoint() {
 	}
 	normal[0].set(target[0].y - position.y,  position.x - target[0].x);
 	normal[1].set(position.y - target[1].y,  target[1].x - position.x);
+	collapsed |= normal[0].dot(target[1]-position) > 0;
 
 	// Inset target point and update wedges
 	auto processPoint = [&](const vec3& p, int side) {
