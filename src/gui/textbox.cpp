@@ -18,7 +18,6 @@ Textbox::Textbox()
 	m_text = new char[m_buffer];
 	m_selectColour = 0x80ffff00;
 	m_text[0] = 0;
-	m_selectRect.position() = m_rect.position();
 }
 Textbox::~Textbox() {
 	if(m_text) delete [] m_text;
@@ -31,6 +30,8 @@ void Textbox::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("password")) m_password = p["password"][0];
 	if(p.contains("suffix")) setSuffix(p["suffix"]);
 	if(p.contains("hint")) setHint(p["hint"]);
+	if(m_skin) m_offset = m_skin->getState(0).textPos;
+	m_selectRect.position() = getPosition() + m_offset;
 }
 
 void Textbox::copyData(const Widget* from) {
@@ -74,7 +75,7 @@ void Textbox::setText(const char* t) {
 	select(tmp);
 	updateLineData();
 	updateAutosize();
-	m_offset = 0;
+	m_offset = m_skin->getState(0).textPos;
 }
 
 void Textbox::setMultiLine(bool m) {
@@ -174,10 +175,10 @@ void Textbox::select(int s, int len, bool shift) {
 			if(start >= m_lines[i]) startLine = i + 1;
 			if(end >= m_lines[i]) endLine = i + 1;
 		}
-		m_selectRect.y = m_rect.y + startLine * lineHeight;
+		m_selectRect.y = m_rect.y + m_offset.y + startLine * lineHeight;
 		m_selectRect.height = (endLine-startLine+1) * lineHeight;
 		int startStart = startLine? m_lines[startLine-1]: 0;
-		m_selectRect.x = m_rect.x + getTextSize(m_text+startStart, start-startStart);
+		m_selectRect.x = m_rect.x + m_offset.x + getTextSize(m_text+startStart, start-startStart);
 		if(len==0) 	m_selectRect.width = 1;
 		else if(startLine == endLine) m_selectRect.width = getTextSize(m_text+start, abs(len));
 		else {
@@ -189,8 +190,8 @@ void Textbox::select(int s, int len, bool shift) {
 	else {
 		if(s != m_cursor) {
 			Point textSize = m_skin->getFont()->getSize(m_text, m_skin->getFontSize(), start);
-			m_selectRect.x = m_rect.x + textSize.x - m_offset;
-			m_selectRect.y = m_rect.y;
+			m_selectRect.x = m_rect.x + textSize.x + m_offset.x;
+			m_selectRect.y = m_rect.y + m_offset.y;
 			m_cursor = s;
 		}
 		if(len != 0) m_selectRect.width = getTextSize(m_text+start, abs(len));
@@ -201,6 +202,7 @@ void Textbox::select(int s, int len, bool shift) {
 }
 
 void Textbox::updateOffset(bool end) {
+	Point textOffset = m_skin->getState(0).textPos;
 	if(Scrollpane* pane = cast<Scrollpane>(getParent())) {
 		int lineHeight = m_skin->getFont()->getLineHeight(m_skin->getFontSize());
 		Point pos = end? m_selectRect.bottomRight(): m_selectRect.position();
@@ -209,18 +211,18 @@ void Textbox::updateOffset(bool end) {
 		pane->ensureVisible(pos);
 		pos.y += lineHeight;
 		pane->ensureVisible(pos);
-		m_offset = 0;
+		m_offset = textOffset;
 	}
-	else if(isAutosize()) m_offset = 0;
+	else if(isAutosize()) m_offset = textOffset;
 	else {
-		int min = m_rect.x + m_skin->getState( getState() ).textPos.x;
+		int min = m_rect.x + textOffset.x;
 		int max = m_rect.right() - 1;
 		int x = end? m_selectRect.right(): m_selectRect.x;
 		int shift = 0;
 		if(x < min) shift = min - x;
 		else if(x > max) shift = max - x;
 		m_selectRect.x += shift;
-		m_offset -= shift;
+		m_offset.x += shift;
 	}
 }
 
@@ -294,10 +296,10 @@ void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 	}
 }
 int Textbox::indexAt(const Point& pos) const {
-	int px = pos.x - m_skin->getState( getState() ).textPos.x - m_offset;
+	int px = pos.x - m_offset.x;
 	int start = 0;
 	if(m_multiline && !m_lines.empty()) {
-		int py = pos.y - m_skin->getState(getState()).textPos.y;
+		int py = pos.y - m_offset.y;
 		int line = py / m_skin->getFont()->getLineHeight(m_skin->getFontSize());
 		if(line > (int)m_lines.size()) start = m_lines.back();
 		else if(line > 0) start = m_lines[line-1];
@@ -367,25 +369,23 @@ void Textbox::draw() const {
 			int selectedBlock = abs(m_selectLength) - selectedEol;
 			int postEol = findEol(m_text + end);
 
-			Point tp = m_rect.position();
-			tp.x -= m_offset;
+			Point tp = m_rect.position() + m_offset;
 			drawText(tp, m_text, start, col);
 			if(selectedEol>0 || m_text[start]=='\n') {
 				drawText(tp, m_text+start, selectedEol, scol);
-				tp.x = m_rect.x - m_offset;
+				tp.x = m_rect.x + m_offset.x;
 			}
 			if(selectedBlock>0) drawText(tp, m_text+start+selectedEol, selectedBlock, scol);
 			if(postEol > 0 || m_text[end]=='\n') {
 				drawText(tp, m_text+end, postEol, col);
-				tp.x = m_rect.x - m_offset;
+				tp.x = m_rect.x + m_offset.x;
 			}
 			drawText(tp, m_text+end+postEol, m_length, col);
 		}
 		else {
 			int start = m_selectLength<0? m_cursor+m_selectLength: m_cursor;
 			m_root->getRenderer()->drawRect(m_selectRect, m_selectColour);
-			Point tp = m_rect.position();
-			tp.x -= m_offset;
+			Point tp = m_rect.position() + m_offset;
 			drawText(tp, m_text, start, col);
 			drawText(tp, m_text+start, abs(m_selectLength), scol);
 			drawText(tp, m_text+start+abs(m_selectLength), ~0u, col);
@@ -393,16 +393,16 @@ void Textbox::draw() const {
 		}
 	}
 	else {
-		Point tp = m_rect.position();
-		tp.x -= m_offset;
-		tp = m_root->getRenderer()->drawText(tp, m_text, 0, m_skin, getState());
-		if(m_suffix) m_root->getRenderer()->drawText(tp, m_suffix, 0, m_skin, getState());
+		const Skin::State& state = m_skin->getState(getState());
+		Point tp = m_rect.position() + m_offset;
+		drawText(tp, m_text, -1u, state.foreColour);
+		if(m_suffix) drawText(tp, m_suffix, -1u, state.foreColour);
 		if(hasFocus() && (clock()&0x1000)) m_root->getRenderer()->drawRect(m_selectRect, m_selectColour); // I beam
 
 		if(m_length==0 && m_hint && !hasFocus()) {
 			unsigned hintColour = m_skin->getState(getState()).foreColour;
 			hintColour = (hintColour & 0xffffff) | (hintColour >> 26) << 24;
-			m_root->getRenderer()->drawText(tp, m_hint, 0, m_skin->getFont(), m_skin->getFontSize(), hintColour);
+			drawText(tp, m_hint, -1u, hintColour);
 		}
 	}
 	m_root->getRenderer()->pop();

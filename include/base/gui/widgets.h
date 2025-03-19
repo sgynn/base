@@ -222,7 +222,7 @@ class Textbox : public Widget {
 	char   m_password;
 	String m_suffix;
 	int    m_held;
-	int    m_offset;
+	Point  m_offset;
 	SubmitOption m_submitAction = KeepFocus;
 	String m_hint;
 	mutable char* m_selection;
