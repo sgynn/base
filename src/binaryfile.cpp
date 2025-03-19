@@ -136,11 +136,11 @@ bool BinaryFileReader::insideBlock(int type) const {
 bool BinaryFileReader::readString(char* s, int lim) {
 	int len = fgetc(m_file);
 	if(len&0x80) len = (len&0x7f) << 8 | fgetc(m_file);
-	if(len == 0) return true; // Empty string
+	if(len == 0) { s[0] = 0; return true; } // Empty string
 	if(--lim > len) lim = len;
 	if(read(s, lim)) {
 		if(lim < len) fseek(m_file, len-lim, SEEK_CUR); // Truncated
-		s[lim+1] = 0;
+		s[lim] = 0;
 		return true;
 	}
 	return false;
