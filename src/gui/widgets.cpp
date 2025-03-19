@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <base/input.h>
+#include <base/assert.h>
 
 using namespace gui;
 

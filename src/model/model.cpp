@@ -1,5 +1,6 @@
 #include <base/model.h>
 #include <base/hardwarebuffer.h>
+#include <base/assert.h>
 #include <cstring>
 #include <cstdio>
 

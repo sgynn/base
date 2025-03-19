@@ -7,6 +7,7 @@
 #include <base/hardwarebuffer.h>
 #include <base/opengl.h>
 #include <base/hashmap.h>
+#include <base/assert.h>
 #include <cstring>
 #include <map>
 #include <set>

@@ -1,5 +1,6 @@
 #include <base/navmesh.h>
 #include <base/opengl.h>
+#include <base/assert.h>
 #include <cstdio>
 #include <map>
 

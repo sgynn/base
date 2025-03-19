@@ -2,7 +2,6 @@
 
 #include <cstring>
 #include <cstdlib>
-#include <assert.h>
 #include <initializer_list>
 #include <utility>
 
@@ -221,7 +220,7 @@ template<typename T> void base::HashMap<T>::resize(unsigned int newSize) {
 
 template<typename T> bool base::HashMap<T>::validate() const {
 	for(unsigned i=0; i<m_capacity; ++i) {
-		if(m_data[i] && index(m_data[i]->key, m_capacity)!=i) { assert(false); return false; }
+		if(m_data[i] && index(m_data[i]->key, m_capacity)!=i) throw 1;
 	}
 	return true;
 }

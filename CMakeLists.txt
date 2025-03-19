@@ -128,6 +128,7 @@ set(editor
 )
 
 set(headers
+	include/base/assert.h
 	include/base/archive.h
 	include/base/animationcontroller.h
 	include/base/animation.h

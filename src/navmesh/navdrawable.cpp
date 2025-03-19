@@ -5,6 +5,7 @@
 #include <base/hardwarebuffer.h>
 #include <base/debuggeometry.h>
 #include <base/opengl.h>
+#include <base/assert.h>
 
 using namespace base;
 

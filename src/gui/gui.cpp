@@ -7,6 +7,7 @@
 #include <base/gui/layouts.h>
 #include <base/gui/font.h>
 #include <base/gui/animator.h>
+#include <base/assert.h>
 #include <cstdio>
 
 using namespace gui;
