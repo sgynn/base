@@ -17,6 +17,7 @@ class InfoPlate {
 	friend class InfoPlateDrawable;
 	public:
 	~InfoPlate();
+	void setVisible(bool);
 	void setPosition(const vec3& p) { m_position = p; }
 	template<class T=gui::Widget> T* getWidget(const char* name) { return m_widget->getTemplateWidget<T>(name); }
 	template<class T=gui::Widget> T* getWidget(int index) { return cast<T>(m_widget->getTemplateWidget(index)); }
@@ -26,6 +27,7 @@ class InfoPlate {
 	gui::Widget* m_widget = nullptr;
 	InfoPlateDrawable* m_drawable = nullptr;
 	vec3 m_position;
+	bool m_visible = true;
 	float m_depth = 0;
 	float m_range = 2;
 	float m_scale = 1;

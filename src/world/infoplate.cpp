@@ -41,6 +41,14 @@ InfoPlate::~InfoPlate() {
 	delete m_widget;
 }
 
+void InfoPlate::setVisible(bool vis) {
+	if(m_visible && !vis) {
+		if(m_widget) m_widget->setVisible(false);
+		if(m_drawable) m_drawable->setVisible(false);
+	}
+	m_visible = vis;
+}
+
 // ------------------------------------------ //
 
 InfoPlateManager::InfoPlateManager(const base::Camera* camera, base::Scene* scene, int queue) : m_camera(camera), m_rendererQueue(queue) {
@@ -90,8 +98,9 @@ void InfoPlateManager::update() {
 	Point view = getRoot()->getRootWidget()->getSize();
 	setSize(view);
 	for(InfoPlate* p: m_plates) {
-		bool visible = m_camera->getDirection().dot(p->m_position - m_camera->getPosition()) < 0;
-		visible &= m_camera->getPosition().distance2(p->m_position) < p->m_range;
+		if(!p->m_visible) continue;
+		bool visible = m_camera->getDirection().dot(p->m_position - m_camera->getPosition()) < 0
+					&& m_camera->getPosition().distance2(p->m_position) < p->m_range;
 		p->m_widget->setVisible(visible);
 		if(p->m_drawable) {
 			p->m_drawable->setVisible(visible);
@@ -113,7 +122,9 @@ void InfoPlateManager::update() {
 	}
 	
 	// Depth sorting
-	std::sort(m_plates.begin(), m_plates.end(), [](InfoPlate* a, InfoPlate* b) { return a->m_depth > b->m_depth; });
-	for(size_t i=0; i<m_plates.size(); ++i) m_children[i] = m_plates[i]->m_widget;
+	if(!m_sceneNode) {
+		std::sort(m_plates.begin(), m_plates.end(), [](InfoPlate* a, InfoPlate* b) { return a->m_depth > b->m_depth; });
+		for(size_t i=0; i<m_plates.size(); ++i) m_children[i] = m_plates[i]->m_widget;
+	}
 }
 
