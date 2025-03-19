@@ -51,7 +51,7 @@ class InfoPlateManager : public gui::Widget {
 	private:
 	const base::Camera* m_camera;
 	std::vector<InfoPlate*> m_plates;
-	base::SceneNode* m_sceneNode;
+	base::SceneNode* m_sceneNode = nullptr;
 	int m_rendererQueue;
 };
 
