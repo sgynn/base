@@ -96,7 +96,7 @@ template<class AtGoal, class Heuristic>
 PathState Pathfinder::searchInternal(const Location& start, AtGoal&& atGoal, Heuristic&& heuristic) {
 	clear();
 
-	const NavPoly* poly = m_navmesh->getPolygon(start.position);
+	const NavPoly* poly = m_navmesh->getPolygon(start.polygon);
 	if(!poly) {
 		m_state = PathState::Fail; // Invalid staring polygon
 		return m_state;
@@ -308,7 +308,7 @@ const NavPoly* Pathfinder::resolvePoint(vec3& pt, float r, float search, int ite
 		else return poly;
 	}
 
-	return m_navmesh->getPolygon(pt);
+	return poly;
 }
 
 
@@ -374,7 +374,12 @@ void PathFollower::setPosition(const vec3& p) {
 
 
 	// Full search
-	m_polygon = m_path.getNavMesh()->getPolygonID(p);
+	poly = m_path.m_navmesh->getPolygon(p);
+	if(!poly || fabs(p.y - poly->centre.y) > poly->extents.y + 0.1) {
+		vec3 close;
+		poly = m_path.m_navmesh->getClosestPolygon(p, 1, &close);
+	}
+	m_polygon = poly? poly->id: NavPoly::Invalid;
 	if(m_polygon==NavPoly::Invalid) printf("Error: Positon not on navmesh\n");
 	else if(getState() == PathState::Success) repath();
 }
@@ -554,10 +559,10 @@ VecPair PathFollower::nextPoint() {
 
 			processPoint(leftPoint, 0);
 			processPoint(rightPoint, 1);
-			collapsed = normal[0].dot(target[1]-position) > 0;
-			if(collapsed) {
+			if(!collapsed && normal[0].dot(target[1]-position) > 0) {
 				leftAnchor = leftPoint;
 				rightAnchor = rightPoint;
+				collapsed = true;
 			}
 		}
 	}
@@ -730,8 +735,15 @@ bool PathFollower::resolvePoint(vec3& out, const vec3& target, float radius, flo
 }
 
 bool PathFollower::setPositionAndResolve(const vec3& pos, float search) {
-	bool r = m_path.resolvePoint(m_position, m_radius, search);
-	setPosition(m_position);
-	return r;
+	vec3 newPos = pos;
+	const NavPoly* poly = m_path.resolvePoint(newPos, m_radius, search);
+	if(poly && poly->id != m_polygon) {
+		m_position = newPos;
+		m_polygon = poly->id;
+		if(m_pathIndex < m_path.m_path.size()) repath();
+		else stop();
+	}
+	else setPosition(newPos);
+	return poly;
 }
 
