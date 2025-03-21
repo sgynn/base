@@ -42,6 +42,7 @@ class InfoPlateManager : public gui::Widget {
 	WIDGET_TYPE(InfoPlateManager);
 	public:
 	InfoPlateManager(const base::Camera* camera, base::Scene* scene=nullptr, int renderQueue=5);
+	~InfoPlateManager();
 	InfoPlate* create(const char* widget, float range=10, float scale=1);
 	using Widget::remove;
 	void remove(InfoPlate*);

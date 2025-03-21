@@ -32,6 +32,13 @@ namespace base {
 		private:
 		InfoPlate* m_plate;
 	};
+
+	class InfoPlateSceneNode : public SceneNode {
+		SceneNode*& m_pointer;
+		public:
+		InfoPlateSceneNode(SceneNode*& p) : SceneNode("InfoPlates"), m_pointer(p) {}
+		~InfoPlateSceneNode() { m_pointer = nullptr; }
+	};
 }
 
 
@@ -53,9 +60,19 @@ void InfoPlate::setVisible(bool vis) {
 
 InfoPlateManager::InfoPlateManager(const base::Camera* camera, base::Scene* scene, int queue) : m_camera(camera), m_rendererQueue(queue) {
 	setTangible(gui::Tangible::NONE);
-	if(scene) m_sceneNode = scene->add("InfoPlates");
+	if(scene) {
+		m_sceneNode = new InfoPlateSceneNode(m_sceneNode);
+		scene->add(m_sceneNode);
+	}
 	setVisible(true);
 }
+
+InfoPlateManager::~InfoPlateManager() {
+	for(InfoPlate* p: m_plates) p->m_drawable = nullptr;
+	if(m_sceneNode) m_sceneNode->deleteAttachments();
+	delete m_sceneNode;
+}
+
 
 void InfoPlateManager::setVisible(bool vis) {
 	Widget::setVisible(vis && !m_sceneNode);
@@ -86,7 +103,7 @@ void InfoPlateManager::remove(InfoPlate* p) {
 			break;
 		}
 	}
-	if(p->m_drawable) {
+	if(p->m_drawable && m_sceneNode) {
 		m_sceneNode->detach(p->m_drawable);
 		delete p->m_drawable;
 		p->m_drawable = nullptr;
