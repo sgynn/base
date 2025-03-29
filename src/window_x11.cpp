@@ -1,5 +1,6 @@
 #define GLX_GLXEXT_PROTOTYPES
 #include "base/window_x11.h"
+#include <X11/Xatom.h>
 #include <cstring>
 #include <GL/gl.h>
 #include <GL/glxext.h>
@@ -241,43 +242,74 @@ bool X11Window::setMode(WindowMode mode) {
 		hints.decorations = 0;
 		Atom property = XInternAtom(m_display,"_MOTIF_WM_HINTS", True);
 		XChangeProperty(m_display, m_window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
-		XMoveWindow(m_display, m_window, 0, 0);
-		XResizeWindow(m_display, m_window, m_size.x, m_size.y);
 
-		XMoveResizeWindow(m_display, m_window, 0, 0, m_size.x, m_size.y);
-		XMapRaised(m_display, m_window);
-		XGrabPointer(m_display, m_window, True, 0, GrabModeAsync, GrabModeAsync, m_window, 0L, CurrentTime);
-		XGrabKeyboard(m_display, m_window, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+		//XMapRaised(m_display, m_window);
+		//XMoveResizeWindow(m_display, m_window, 0, 0, m_size.x, m_size.y);
+		//XGrabPointer(m_display, m_window, True, 0, GrabModeAsync, GrabModeAsync, m_window, 0L, CurrentTime);
+		//XGrabKeyboard(m_display, m_window, False, GrabModeAsync, GrabModeAsync, CurrentTime);
 	}
-	else if(mode == WindowMode::Window) {
+
+
+	/*
+	// Set the position and size hints - seems to do nothing
+	XSizeHints *xsh = XAllocSizeHints();
+	xsh->flags |= PPosition | PSize;
+	xsh->x = mode==WindowMode::Window? m_position.x: 0;
+	xsh->y = mode==WindowMode::Window? m_position.y: 0;
+	xsh->width = m_size.x;
+	xsh->height = m_size.y;
+	if(mode == WindowMode::Window) {
+		bool allowResize = true;
+		if(!allowResize) { // If resizing is disabled, use the forced size
+			xsh->flags |= PMinSize | PMaxSize;
+			xsh->min_width = m_size.x;
+			xsh->max_width = m_size.x;
+			xsh->min_height = m_size.y;
+			xsh->max_height = m_size.y;
+		}
+	}
+	XSetWMNormalHints(m_display, m_window, xsh);
+	XFree(xsh);
+	*/
+
+
+
+	// Try sending window manager a message
+	bool full = mode != WindowMode::Window;
+	XEvent e;
+	memset(&e, 0, sizeof(XEvent));
+	e.xany.type = ClientMessage;
+	e.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE", false);
+	e.xclient.format = 32;
+	e.xclient.window = m_window;
+	e.xclient.data.l[0] = full? 1: 0; //XInternAtom(m_display, full? "_NET_WM_STATE_ADD": "_NET_WM_STATE_REMOVE", false);
+	e.xclient.data.l[1] = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", false);
+	XSendEvent(m_display, RootWindow(m_display, m_screen), false, SubstructureNotifyMask | SubstructureRedirectMask, &e);
+
+
+	// set bypass compositor hint
+	Atom bypass_compositor = XInternAtom(m_display, "_NET_WM_BYPASS_COMPOSITOR", False);
+	if(bypass_compositor != None) {
+		unsigned long compositing_disable_on;
+		switch(mode) {
+		case WindowMode::Window: compositing_disable_on = 0; break; // Default
+		case WindowMode::Fullscreen: compositing_disable_on = 1; break; // Disable compositor
+		case WindowMode::Borderless: compositing_disable_on = 2; break; // Force composition on
+		}
+		XChangeProperty(m_display, m_window, bypass_compositor, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&compositing_disable_on, 1);
+	}
+
+	XFlush(m_display);
+	if(mode == WindowMode::Window) {
 		m_size = m_windowSize;
 		hints.flags = 2; // changing decoration
 		hints.decorations = 1;
 		Atom property = XInternAtom(m_display,"_MOTIF_WM_HINTS", True);
 		XChangeProperty(m_display, m_window, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
-		XResizeWindow(m_display, m_window, m_size.x, m_size.y);
-		XMoveWindow(m_display, m_window, m_position.x, m_position.y);
-		XUngrabPointer(m_display, CurrentTime);
-		XUngrabKeyboard(m_display, CurrentTime);
-	}
-
-
-
-	// Try sending window manager a message
-	if(mode == WindowMode::Fullscreen || m_windowMode == WindowMode::Fullscreen) {
-		bool full = mode == WindowMode::Fullscreen;
-		XEvent e;
-		memset(&e, 0, sizeof(XEvent));
-		e.xany.type = ClientMessage;
-		e.xclient.message_type = XInternAtom(m_display, "_NET_WM_STATE", false);
-		e.xclient.format = 32;
-		e.xclient.window = m_window;
-		e.xclient.data.l[0] = XInternAtom(m_display, full? "_NET_WM_STATE_ADD": "_NET_WM_STATE_REMOVE", false);
-		e.xclient.data.l[1] = XInternAtom(m_display, "_NET_WM_STATE_FULLSCREEN", false);
-		e.xclient.data.l[3] = 0l;
-		XSendEvent(m_display, RootWindow(m_display, m_screen), 0, SubstructureNotifyMask | SubstructureRedirectMask, &e);
-		XFlush(m_display);
-		printf("Fullscreen message sent %d\n", full);
+		XMoveResizeWindow(m_display, m_window, m_position.x, m_position.y, m_size.x, m_size.y);
+		notifyResize(Point(m_size));
+		//XUngrabPointer(m_display, CurrentTime);
+		//XUngrabKeyboard(m_display, CurrentTime);
 	}
 
 	return true;

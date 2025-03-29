@@ -98,6 +98,11 @@ void Game::exit() {
 	s_inst->m_state->quit();
 }
 
+void Game::toggleFullScreen(bool borderless) {
+	bool fs = s_window->getMode() != WindowMode::Window;
+	s_window->setMode(fs? WindowMode::Window: borderless? WindowMode::Borderless: WindowMode::Fullscreen);
+}
+
 uint64 Game::getTicks() { 
 	#ifdef LINUX
 	unsigned long long ticks;

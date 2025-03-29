@@ -68,6 +68,7 @@ class Game {
 	static Input* input() { return s_input; }
 
 	static base::Window* window() { return s_window; }
+	static void toggleFullScreen(bool borderless=true);
 
 	protected:
 	friend class Window;
