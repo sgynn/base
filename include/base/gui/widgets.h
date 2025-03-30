@@ -114,7 +114,7 @@ class Checkbox : public Button {
 	void setSelected(bool) override;
 	bool isChecked() const { return isSelected(); }
 	void setChecked(bool c) { setSelected(c); }
-	void setDragSelect(int s) { m_dragMode = s; }
+	void setDragSelect(int searchParent) { m_dragMode = searchParent; }
 	void setIcon(IconList* list, int checked, int unchecked=-1);
 	void setIcon(IconList* list, const char* checked, const char* unchecked=0);
 	void setIcon(int checked, int unchecked=-1) { setIcon(getIconGroup(), checked, unchecked); }

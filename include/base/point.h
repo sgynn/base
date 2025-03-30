@@ -76,6 +76,9 @@ struct Rect {
 	const Point& position() const { return *reinterpret_cast<const Point*>(&x); }
 	const Point& size() const     { return *reinterpret_cast<const Point*>(&width); }
 	Point bottomRight() const     { return Point(x+width, y+height); }
+	Point bottomLeft() const      { return Point(x, y+height); }
+	Point topRight() const        { return Point(x+width, y); }
+	const Point& topLeft() const  { return position(); }
 
 	Point clamp(const Point& p) const;
 
