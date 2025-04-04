@@ -1,10 +1,5 @@
 #pragma once
 
-#ifndef EMSCRIPTEN
-#undef assert
-#define assert(x) if(!(x)) asm("int $3\nnop");
-#endif
-
 #include <base/rtti.h>
 #include <base/scene.h>
 #include <base/variable.h>

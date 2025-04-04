@@ -1,6 +1,7 @@
 #include <base/world/object.h>
 #include <base/world/objectworld.h>
 #include <base/scene.h>
+#include <base/assert.h>
 
 using namespace base;
 using script::Variable;

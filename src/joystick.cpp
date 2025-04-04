@@ -1,4 +1,5 @@
 #include <base/input.h>
+#include <base/assert.h>
 #include <cstdio>
 
 
