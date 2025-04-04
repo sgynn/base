@@ -1356,7 +1356,7 @@ void CollapsePane::updateAutosize() {
 	Point s = getSize();
 	if(!m_collapsed) Widget::updateAutosize();
 	if(s != getSize()) {
-		if(Widget* parent = getParent()) parent->refreshLayout();
+		if(Widget* parent = getParent()) if(!parent->isLayoutPaused()) parent->refreshLayout();
 	}
 }
 void CollapsePane::onChildChanged(Widget* w) {
