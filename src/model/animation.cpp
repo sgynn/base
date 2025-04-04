@@ -5,7 +5,7 @@
 
 using namespace base;
 
-Animation::Animation() : m_animations(0), m_name(""), m_length(0), m_fps(0), m_loop(true), m_ref(0) {}
+Animation::Animation() : m_animations(0), m_name(""), m_length(0), m_fps(0), m_loop(true) {}
 Animation::~Animation() {
 	for(uint i=0; i<m_animations.size(); ++i)
 		delete m_animations[i];

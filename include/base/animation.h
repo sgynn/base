@@ -14,9 +14,6 @@ namespace base {
 		Animation();										/**< Default constructor */
 		~Animation();										/**< Destructor */
 
-		Animation*  addReference();							/** Add reference */
-		int         dropReference();						/** Drop reference */
-
 		Animation*  subAnimation(int start, int end) const;	/**< Create an animation from a subset of keyframes */
 		void        optimise();								/**< Remove redundant keyframes */
 		int         getLength() const;						/**< Get the animation length in frames */
@@ -62,7 +59,6 @@ namespace base {
 		int      m_length;			// Animation length in frames
 		float    m_fps;				// Animation speed
 		bool     m_loop;			// Does animation loop
-		int      m_ref;				// Reference counter
 
 		template<int N> void addKey(    std::vector< Keyframe<N> >&, int frame, const float* value);
 		template<int N> bool removeKey( std::vector< Keyframe<N> >&, int frame);
@@ -106,9 +102,6 @@ namespace base {
 	};
 
 	// Inline implementation
-	
-	inline Animation*  Animation::addReference()         { ++m_ref; return this; }
-	inline int         Animation::dropReference()        { if(--m_ref>0) return m_ref; delete this; return 0; }
 	inline int         Animation::getLength() const      { return m_length; }
 	inline float       Animation::getSpeed() const       { return m_fps; }
 	inline void        Animation::setSpeed(float fps)    { m_fps = fps; }

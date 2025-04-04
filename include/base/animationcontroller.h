@@ -50,7 +50,6 @@ enum class ActionMode {
 /// Animations and metadata
 class AnimationBank {
 	public:
-	using Animation = base::Animation;
 	struct AnimationInfo {
 		AnimationKey key;		// Key
 		Animation* animation;	// Animation data
