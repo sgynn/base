@@ -403,7 +403,7 @@ int PathFollower::setGoal(const std::vector<vec3>& goals) {
 	if(goals.size() == 1) return setGoal(goals[0])? 1: -1;
 	std::vector<Pathfinder::Location> targets;
 	targets.reserve(goals.size());
-	bool atLeastOneGoalIsValid;
+	bool atLeastOneGoalIsValid = false;
 	for(vec3 g: goals) {
 		const NavPoly* poly = m_path.resolvePoint(g, m_radius);
 
