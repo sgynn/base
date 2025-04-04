@@ -1304,6 +1304,7 @@ void CollapsePane::initialise(const Root* root, const PropertyMap& p) {
 	if(caption) setCaption(caption);
 	m_collapsed = p.getValue("collapsed", 0);
 	m_expandAnchor = m_anchor;
+	m_clientBorder = Rect(m_client->getPosition(), getSize() - m_client->getSize());
 	expand(!m_collapsed);
 }
 void CollapsePane::copyData(const Widget* from) {
@@ -1331,9 +1332,11 @@ void CollapsePane::expand(bool e) {
 		if((m_expandAnchor>>4)==3) expandedSize.y = getSize().y;
 		setSize(expandedSize);
 		m_client->setAnchor(0x33);
+		m_client->setRect(m_clientBorder.x, m_clientBorder.y, m_rect.width - m_clientBorder.width, m_rect.height - m_clientBorder.height);
 		if(m_expandAnchor) m_anchor = m_expandAnchor;
 	}
 	else if(m_header) {
+		m_clientBorder = Rect(m_client->getPosition(), getSize() - m_client->getSize());
 		m_client->setAnchor(0);
 		Point collapsedSize = m_header->getSize() + m_header->getPosition();
 		m_expandAnchor = m_anchor;

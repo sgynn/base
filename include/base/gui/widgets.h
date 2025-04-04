@@ -437,6 +437,7 @@ class CollapsePane : public Widget {
 	Widget* m_stateWidget;
 	bool m_collapsed;
 	char m_expandAnchor;
+	Rect m_clientBorder;
 };
 
 /** SplitPane */

@@ -230,7 +230,7 @@
 	</template>
 	<template class="CollapsePane" rect="0 0 100 100" name="category" skin="none" category="Containers">
 		<widget anchor="tlr" template="button" rect="0 0 100 20" name="_header"/>
-		<widget anchor="tlr" rect="0 20 100 90" name="_client" skin="none"/>
+		<widget anchor="tlr" rect="0 20 100 80" name="_client" skin="none"/>
 	</template>
 	<template anchor="lt" image="0" template="icon" rect="621 851 12 12" group="connectors" name="connector" tangible="3"/>
 	<template class="TabbedPane" rect="0 0 100 100" name="tabbedpane" skin="panel" category="Containers">
