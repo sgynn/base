@@ -82,6 +82,7 @@ Root::~Root() {
 	for(auto& i: m_skins) delete i.value;
 	for(auto& i: m_iconLists) delete i.value;
 	for(auto& i: m_templates) delete i.value;
+	for(Animator* a: m_animators) delete a;
 }
 
 void Root::setRenderer(Renderer* r) {
@@ -263,12 +264,13 @@ void Root::startAnimator(Animator* a) {
 }
 
 void Root::updateAnimators(float time) {
-	for(auto it = m_animators.begin(); it!=m_animators.end();) {
-		if((*it)->update(time) == Animator::ACTIVE) ++it;
+	for(size_t i=0; i<m_animators.size();) {
+		Animator* animator = m_animators[i];
+		if(animator->update(time) == Animator::ACTIVE) ++i;
 		else {
-			Widget* target = (*it)->getWidget();
-			if((*it)->isTransient()) delete *it;
-			it = m_animators.erase(it);
+			Widget* target = animator->getWidget();
+			if(animator->isTransient()) delete animator;
+			m_animators.erase(m_animators.begin()+i);
 
 			bool remain = false;
 			for(const Animator* a: m_animators) if(a->getWidget() == target) remain = true;
