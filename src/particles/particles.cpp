@@ -274,6 +274,10 @@ void RenderData::setCount(Instance* instance, size_t count, int threads) const {
 void RenderData::updateT(int threadIndex, int threadCount, Instance* instance, int emitter, const Matrix& view) const {
 	const std::vector<uint>& indices = instance->m_emitters[emitter].particles;
 	Instance::RenderInstance& data = instance->m_renderers[getDataIndex()];
+	if(indices.size() > data.count) {
+		printf("Particle buffer error\n");
+		return;
+	}
 	size_t step = m_attributes.getStride() * m_verticesPerParticle * threadCount;
 	char* ptr = (char*)data.head[threadIndex];
 	for(size_t i=threadIndex; i<indices.size(); i+=threadCount) {
