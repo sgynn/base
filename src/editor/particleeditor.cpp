@@ -867,8 +867,9 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 			auto createSpinbox = [row](float value) {
 				SpinboxFloat* w = row->createChild<SpinboxFloat>("spinboxf");
 				w->setAnchor("lr");
-				w->setValue(value);
+				w->setRange(-1e6f, 1e8f);
 				w->setStep(0.1, 0.01);
+				w->setValue(value);
 				return w;
 			};
 
