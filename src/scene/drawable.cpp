@@ -7,6 +7,7 @@
 #include <base/hardwarebuffer.h>
 #include <base/mesh.h>
 #include <base/model.h>
+#include <base/assert.h>
 #include <cstdio>
 
 using namespace base;
@@ -33,7 +34,9 @@ void Drawable::addBuffer(HardwareVertexBuffer* buffer) {
 	if(!buffer) return;
 	bind();
 	buffer->createBuffer();
-	const int stride = buffer->attributes.getStride();
+	int stride = buffer->getStride();
+	if(!stride) stride = buffer->attributes.getStride();
+	assert(stride);
 	const char* base = (const char*)buffer->bind();
 	for(const Attribute& a : buffer->attributes) {
 		int loc = 0;

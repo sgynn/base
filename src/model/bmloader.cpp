@@ -217,6 +217,9 @@ Mesh* BMLoader::loadMesh(const XMLElement& e) {
 			size_t wStride = weightsPerVertex * sizeof(VertexType);
 			size_t iStride = weightsPerVertex * sizeof(IndexType);
 			size_t stride = wStride + iStride;
+			#ifdef EMSCRIPTEN
+			if(stride&2) stride += 2; // webgl is fussy
+			#endif
 			char* buffer = new char[ count * stride ];
 			for(size_t i=0; i<count; ++i) {
 				memcpy(buffer + i*stride, tmp+i*weightsPerVertex, wStride);

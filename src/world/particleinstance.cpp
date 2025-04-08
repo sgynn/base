@@ -33,9 +33,10 @@ void ParticleInstance::initialise() {
 }
 
 void* ParticleInstance::createDrawable(const RenderData* data) {
-	TagData* tag = new TagData{0,0,0,0};
+	TagData* tag = new TagData{0,0,0,0,0};
 	tag->buffer = new HardwareVertexBuffer();
 	tag->buffer->attributes = data->getVertexAttributes();
+	tag->buffer->setData(nullptr, 0, tag->buffer->attributes.getStride(), false); // set stride
 	tag->stride = data->getVertexAttributes().calculateStride();
 
 	if(data->getDataType() == RenderData::INSTANCE) {
@@ -104,9 +105,12 @@ void ParticleInstance::updateGeometry() {
 	for(RenderInstance& r : m_renderers) {
 		TagData* a = (TagData*)r.drawable;
 		if(!a) continue;
+		if(a->empty && r.count==0) continue;
 		a->buffer->setData(r.data, r.count * r.render->getVerticesPerParticle(), a->stride, false);
+		assert(a->buffer->getStride() == a->buffer->attributes.getStride());
 		a->drawable->setVisible(r.count);
 		if(a->instanced) a->drawable->setInstanceCount(r.count);
+		a->empty = r.count == 0;
 	}
 }
 
