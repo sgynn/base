@@ -1,8 +1,8 @@
 #pragma once
 
 #include <base/hashmap.h>
+#include <base/assert.h>
 #include <vector>
-#include <assert.h>
 
 namespace base {
 class VirtualFileSystem;
