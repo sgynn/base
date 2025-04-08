@@ -49,9 +49,10 @@ AnimationBank* Object::getAnimationBank(const char* filename) {
 		return getAnimationBank(m);
 	return nullptr;
 }
-AnimationBank* Object::getAnimationBank(Model* model) {
+AnimationBank* Object::getAnimationBank(Model* model, bool create) {
 	AnimationBankExtension* data = model->getExtension<AnimationBankExtension>();
 	if(!data) {
+		if(!create) return nullptr;
 		if(model->getAnimationCount()==0) return nullptr; // No animations to create
 		AnimationBank* bank = new AnimationBank("root");
 		data = new AnimationBankExtension(bank);

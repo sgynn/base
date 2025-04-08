@@ -33,7 +33,7 @@ class Object : public SceneNode {
 	static Material* loadMaterial(const char* name, int weights=0, const char* base=0);
 	static Material* loadMaterial(const char* name, const char* base) { return loadMaterial(name, 0, base); }
 	static AnimationBank* getAnimationBank(const char* filename);
-	static AnimationBank* getAnimationBank(Model*);
+	static AnimationBank* getAnimationBank(Model*, bool create=true);
 	static void storeAnimationBank(AnimationBank*, Model*);
 	static int addAnimationsFromModel(AnimationBank* bank, Model* model, bool replaceExisting=false);
 	static int addAnimationsFromModel(AnimationBank* bank, const char* modelFile, bool replaceExisting=false);
