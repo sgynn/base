@@ -171,6 +171,7 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 			// Overwrite existing skin - keep pointer
 			else if(Skin* s = getSkin(name)) {
 				s->setStateCount(0);
+				s->getState(0) = Skin::State();
 				s->setImage(-1);
 				skin = s;
 			}
