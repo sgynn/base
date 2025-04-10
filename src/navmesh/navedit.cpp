@@ -106,7 +106,7 @@ namespace nav {
 
 	bool validateLinks(const NavPoly* poly, bool removeInvalid);
 	void validateAllLinks(const NavPolyList& mesh);
-	bool logPolygon(const NavPoly& p, int precidence, bool add, bool clean=false);	// Log polygon to file to load in test debugger
+	bool logPolygon(const NavMesh* mesh, const NavPoly& p, int precidence, bool add, bool clean=false);	// Log polygon to file to load in test debugger
 
 	inline float dot2d(const vec3& a, const vec3& b) { return a.x*b.x + a.z*b.z; }
 	inline float dot2d(const vec3& a, const vec2& b) { return a.x*b.x + a.z*b.y; }
@@ -1607,8 +1607,7 @@ void NavMesh::carve(const NavPoly& sb, int precidence, bool add) {
 	if(sb.size < 3) return; // Invalid polygon
 
 	#ifndef DEBUGGER
-	/*static NavMesh* lastMesh = this;
-	if(lastMesh == this)*/ logPolygon(sb, precidence, add, m_mesh.empty());
+	logPolygon(this, sb, precidence, add, m_mesh.empty());
 	#endif
 
 	printf("-------------------------\nCarve: %s\n", add?"Add":"Remove");
@@ -1821,8 +1820,18 @@ void nav::validateAllLinks(const NavPolyList& mesh) {
 
 
 
-bool nav::logPolygon(const NavPoly& p, int precidence, bool add, bool clean) {
-	FILE* fp = fopen("navmesh-log", clean? "w": "a");
+bool nav::logPolygon(const NavMesh* mesh, const NavPoly& p, int precidence, bool add, bool clean) {
+	static std::vector<const NavMesh*> meshes;
+	size_t index;
+	for(index=0; index<meshes.size(); ++index) if(meshes[index] == mesh) break;
+	FILE* fp;
+	if(index == meshes.size()) meshes.push_back(mesh);
+	if(index == 0) fp = fopen("navmesh-log", clean? "w": "a");
+	else {
+		char logFile[16];
+		sprintf(logFile, "navmesh-log-%c", 'A' + (char)index);
+		fp = fopen(logFile, clean? "w": "a");
+	}
 	if(!fp) return false;
 	if(add) fprintf(fp, "ADD %s %d [", NavMesh::getTypeName(p.typeIndex), precidence);
 	else fprintf(fp, "DEL %d [", precidence);
