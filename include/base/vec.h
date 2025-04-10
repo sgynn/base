@@ -291,7 +291,7 @@ ImplementFuncOp(floor);
 ImplementFuncOpT(pow, float);
 
 ImplementCommonExt(lerp, return a*(1-t) + b*t );
-ImplementCommonExt(step, float d=a.distance(b); return d<t? b: a + (b-a) * (t / d) );
+ImplementCommonExt(step, float d=a.distance(b); return d<=t? b: a + (b-a) * (t / d) );
 
 inline vec2 vec2::operator-() const { return vec2(-x,-y); }
 inline vec3 vec3::operator-() const { return vec3(-x,-y,-z); }
