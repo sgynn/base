@@ -128,9 +128,6 @@ inline vec3 Matrix::rotate(const vec3& v) const {
 	result.z = m[2]*v.x + m[6]*v.y + m[10]*v.z;
 	return result;
 }
-inline vec3 Matrix::transform(const vec3& v) const {
-	return *this * v;
-}
 inline vec3 Matrix::unrotate(const vec3& v) const {
 	vec3 result;
 	result.x = m[0]*v.x + m[1]*v.y + m[2]*v.z;
@@ -138,12 +135,11 @@ inline vec3 Matrix::unrotate(const vec3& v) const {
 	result.z = m[8]*v.x + m[9]*v.y + m[10]*v.z;
 	return result;
 }
+inline vec3 Matrix::transform(const vec3& v) const {
+	return *this * v;
+}
 inline vec3 Matrix::untransform(const vec3& v) const {
-	vec3 result, t = v - vec3(&m[12]);
-	result.x = m[0]*t.x + m[1]*t.y + m[2]*t.z;
-	result.y = m[4]*t.x + m[5]*t.y + m[6]*t.z;
-	result.z = m[8]*t.x + m[9]*t.y + m[10]*t.z;
-	return result;
+	return unrotate(v - vec3(&m[12]));
 }
 inline Ray Matrix::transform(const Ray& ray) const {
 	Ray result;
