@@ -9,11 +9,12 @@
 #include <base/autovariables.h>
 #include <base/resources.h>
 #include <base/bmloader.h>
+#include <base/string.h>
 #include <base/xml.h>
 #include <set>
 
 using namespace base;
-using script::Variable;
+using namespace world;
 
 /// Model extension for storing animationbanks
 class AnimationBankExtension : public ModelExtension {
@@ -40,16 +41,18 @@ class AnimationPropertyExtension : public base::ModelExtension {
 };
 
 
-void Object::storeAnimationBank(AnimationBank* bank, Model* model) {
+void world::storeAnimationBank(AnimationBank* bank, Model* model) {
 	if(model->getExtension<AnimationBankExtension>()) printf("Error: Model already contains an animation bank\n");
 	model->addExtension(new AnimationBankExtension(bank));
 }
-AnimationBank* Object::getAnimationBank(const char* filename) {
+
+AnimationBank* world::getAnimationBank(const char* filename) {
 	if(Model* m = Resources::getInstance()->models.get(filename))
 		return getAnimationBank(m);
 	return nullptr;
 }
-AnimationBank* Object::getAnimationBank(Model* model, bool create) {
+
+AnimationBank* world::getAnimationBank(Model* model, bool create) {
 	AnimationBankExtension* data = model->getExtension<AnimationBankExtension>();
 	if(!data) {
 		if(!create) return nullptr;
@@ -61,7 +64,8 @@ AnimationBank* Object::getAnimationBank(Model* model, bool create) {
 	}
 	return data->animations;
 }
-int Object::addAnimationsFromModel(AnimationBank* bank, Model* model, bool replace) {
+
+int world::addAnimationsFromModel(AnimationBank* bank, Model* model, bool replace) {
 	std::set<AnimationKey> added;
 	for(size_t i=0; i<model->getAnimationCount(); ++i) {
 		Animation* a = model->getAnimation(i);
@@ -81,12 +85,14 @@ int Object::addAnimationsFromModel(AnimationBank* bank, Model* model, bool repla
 	}
 	return model->getAnimationCount();
 }
-int Object::addAnimationsFromModel(AnimationBank* bank, const char* file, bool replace) {
+
+int world::addAnimationsFromModel(AnimationBank* bank, const char* file, bool replace) {
 	if(Model* model = Resources::getInstance()->models.get(file)) {
 		return addAnimationsFromModel(bank, model, replace);
 	}
 	return 0;
 }
+
 AnimationKey getIdleAnimation(Model* model) {
 	for(ModelExtension* e: model->getExtensions()) {
 		if(AnimationPropertyExtension* prop = e->as<AnimationPropertyExtension>()) {
@@ -97,22 +103,18 @@ AnimationKey getIdleAnimation(Model* model) {
 }
 
 
-Object::Object(const Variable& data, const char* name) {
-	setName(name? name: (const char*)data.get("name"));
-	m_data.set("data", data);
-	m_data.link("position", m_position);
-}
 
-Object::~Object() {
-	deleteAttachments();
-}
+// --------------------------------------------------------------------------- //
+
+
 
 static HashMap<std::vector<const char*>> textureSearchPatterns;
-void Object::addTextureSearchPattern(const char* var, const char* pattern) {
+void world::addTextureSearchPattern(const char* var, const char* pattern) {
 	assert(strstr(pattern, "%*s")); // Texture search pattern must be of the form "%*s_suffix.png"
 	textureSearchPatterns[var].push_back(pattern);
 }
-Material* Object::loadMaterial(const char* name, int weights, const char* base) {
+
+Material* world::loadMaterial(const char* name, int weights, const char* base) {
 	Resources& res = *Resources::getInstance();
 	if(name && name[0]) {
 		char temp[64];
@@ -189,25 +191,36 @@ Material* Object::loadMaterial(const char* name, int weights, const char* base) 
 }
 
 
-Model* Object::loadModel(const char* file, AnimationController** animated, bool moves, const char* filter, const char* overrideMaterial) {
+Model* world::attachModel(SceneNode* node, const char* file, AnimationController** animated, bool moves, MeshFilter&& filter, const char* overrideMaterial, float* custom) {
 	static bool init = false;
 	if(!init) {
 		base::BMLoader::registerExtension<AnimationPropertyExtension>("animation");
 		init = true;
 	}
 
+	auto checkFilter = [&filter](const char* mesh) {
+		for(const char* val : filter.values) {
+			bool matched = false;
+			if(String::match(mesh, val)) {
+				if(filter.mode == INCLUDE) return true;
+				matched = true;
+			}
+			if(matched && filter.mode == EXCLUDE) return false;
+		}
+		return filter.mode == EXCLUDE;
+	};
+
+	assert(node);
 	Model* model = Resources::getInstance()->models.get(file);
 	if(model) {
 		if(!model->getSkeleton() && animated && !*animated) animated = nullptr;
-		for(int i=0; i<model->getMeshCount(); ++i) {
-			Mesh* mesh = model->getMesh(i);
-			if(filter && strcmp(model->getMeshName(i), filter)!=0) continue;
-			if(strncmp(model->getMeshName(i), "COLLISION", 9)==0) continue;
-			DrawableMesh* d = new DrawableMesh(mesh);
-			const char* materialName = overrideMaterial? overrideMaterial: model->getMaterialName(i);
-			int weights = animated? mesh->getWeightsPerVertex(): 0;
-			d->setMaterial( loadMaterial(materialName, weights) );
-			d->setCustom(m_custom);
+		for(const Model::MeshInfo& mesh: model->meshes()) {
+			if(!checkFilter(mesh.name)) continue;
+			DrawableMesh* drawable = new DrawableMesh(mesh.mesh);
+			const char* materialName = overrideMaterial? overrideMaterial: mesh.materialName;
+			int weights = animated? mesh.mesh->getWeightsPerVertex(): 0;
+			drawable->setMaterial( loadMaterial(materialName, weights) );
+			drawable->setCustom(custom);
 			if(animated && weights) {
 				if(!*animated) {
 					*animated = new AnimationController();
@@ -216,16 +229,27 @@ Model* Object::loadModel(const char* file, AnimationController** animated, bool 
 						(*animated)->setIdle(getIdleAnimation(model));
 					}
 				}
-				d->setupSkinData((*animated)->getSkeleton());
+				drawable->setupSkinData((*animated)->getSkeleton());
 			}
-			attach(d);
+			node->attach(drawable);
 		}
 	}
 	return model;
 }
 
-void Object::setUpdate(bool u) {
-	if(!m_world) m_hasUpdate = u;
-	else if(u != m_hasUpdate) m_world->setUpdate(this, u);
+
+// ======================================================================================= //
+
+
+WorldObjectBase::~WorldObjectBase() {
+	deleteAttachments(true);
+}
+
+void WorldObjectBase::setUpdate(bool u) {
+	if(m_world && u != m_hasUpdate) {
+		if(u) m_world->m_messages.push_back({ObjectWorldBase::Message::StartUpdate, this});
+		else  m_world->m_messages.push_back({ObjectWorldBase::Message::StopUpdate,  this});
+	}
+	else m_hasUpdate = u;
 }
 
