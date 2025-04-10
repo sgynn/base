@@ -37,6 +37,7 @@ namespace base {
 		bool startsWith(const char* s) const        { return !s || strncmp(str(), s, strlen(s))==0; }
 		bool endsWith(const char* s) const          { if(!s) return true; if(!m_data) return false; int sl=strlen(s); return strncmp(str() + length() - sl, s, sl) == 0; }
 		const char* contains(const char* s) const   { if(!s) return nullptr; return strstr(str(), s); }
+		bool match(const char* pattern) const       { return match(str(), pattern); }
 
 		char operator[](unsigned i) const           { return m_data[i]; }
 		char& operator[](unsigned i)                { return m_data[i]; }
@@ -60,6 +61,26 @@ namespace base {
 			}
 			return *this;
 		}
+
+		// Wildcard match - supports * and ? wildcards
+		static bool match(const char* s, const char* pattern, int limit=-1) {
+			const char* rollback = nullptr;
+			const char* p = pattern;
+			for(const char* c = s; *c; ++c) {
+				if(*p=='?' || *p==*c) ++p;
+				else if(*p=='*') {
+					while(p[1]=='*') ++p; // Ignore multiple * characters
+					rollback = p;
+					if(*c == p[1]) p+=2;
+				}
+				else if(rollback) p = rollback;
+				else return false;
+				if(--limit==0) break;
+			}
+			while(*p=='*') ++p;
+			return *p==0;
+		}
+
 
 		static String format(const char* format, ...) {
 			char buffer[128];
@@ -178,6 +199,7 @@ namespace base {
 			for(const char* c = m_data; c<=end; ++c) if(strcmp(c, s)==0) return c;
 			return nullptr;
 		}
+		bool match(const char* pattern)				{ return String::match(m_data? m_data: "", pattern, m_length); }
 
 		char operator[](unsigned i) const           { return m_data[i]; }
 		String operator+(const char* s) const       { return String::cat(m_data, m_length, s, s?strlen(s):0); }
