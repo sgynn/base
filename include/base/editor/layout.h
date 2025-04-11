@@ -60,6 +60,7 @@ class LayoutViewer : public EditorComponent {
 	bool filterItem(base::SceneNode*, const char*) const;
 	bool filterItem(base::Drawable*, const char*) const;
 	static bool isValid(gui::TreeNode*);
+	static bool isParentVisible(gui::TreeNode*);
 
 	private:
 	gui::Widget*      m_panel = 0;

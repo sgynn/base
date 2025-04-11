@@ -140,6 +140,15 @@ bool LayoutViewer::isValid(TreeNode* treeNode) {
 	return false;
 }
 
+bool LayoutViewer::isParentVisible(TreeNode* node) {
+	if(!node->getParent()) return true;
+	if(isValid(node)) {
+		SceneNode* n = node->getParent()->getData(0).getValue<SceneNode*>(nullptr);
+		if(n && !n->isVisible()) return false;
+	}
+	return isParentVisible(node->getParent());
+}
+
 void LayoutViewer::setGizmoRenderQueue(int q) {
 	m_gizmoQueue = q;
 	if(m_gizmo) m_gizmo->setRenderQueue(q);
@@ -312,7 +321,9 @@ void LayoutViewer::refreshItem(gui::TreeNode* n, gui::Widget* w) {
 	w->getWidget(0)->as<Image>()->setImage(icon);
 	w->getWidget(1)->as<Label>()->setCaption(name);
 	w->getWidget(2)->as<Checkbox>()->setChecked(visible);
-	w->getWidget(2)->setVisible(isNode);
+	
+	Image* checkIcon = w->getWidget(2)->as<Checkbox>()->getIcon();
+	checkIcon->setColour(isParentVisible(n)? 0xffffff: 0x808080);
 }
 
 void LayoutViewer::itemEvent(gui::TreeView*, gui::TreeNode* n, gui::Widget* w) {
@@ -322,6 +333,8 @@ void LayoutViewer::itemEvent(gui::TreeView*, gui::TreeNode* n, gui::Widget* w) {
 	if(node) node->setVisible(vis);
 	Drawable* drawable = n->getData().getValue<Drawable*>(0);
 	if(drawable) drawable->setVisible(vis);
+	// update child visibility checkboxes
+	m_tree->refresh();
 }
 
 void LayoutViewer::itemSelected(gui::TreeView*, gui::TreeNode* n) {
