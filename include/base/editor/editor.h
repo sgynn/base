@@ -46,7 +46,8 @@ class SceneEditor : public base::GameStateComponent {
 	base::Camera* getCamera() const { return m_camera; }
 	void changeWorkspace(base::Workspace* ws);
 
-
+	base::SceneNode* getSelectedSceneNode() const { return m_selectedSceneNode; }
+	base::Drawable* getSelectedDrawable() const { return m_selectedDrawable; }
 
 	struct TraceResult {
 		base::SceneNode* node = nullptr;
@@ -115,6 +116,8 @@ class SceneEditor : public base::GameStateComponent {
 	base::Camera* m_camera = nullptr;
 	base::Scene* m_scene = nullptr;
 	base::FrameBuffer* m_selectionBuffer = nullptr;
+	base::SceneNode* m_selectedSceneNode = nullptr;
+	base::Drawable* m_selectedDrawable = nullptr;
 	std::vector<EditorComponent*> m_components;
 	std::vector<EditorComponent*(*)()> m_creation;
 	std::vector<Delegate<base::SceneNode*(const Asset&)>> m_construct;
@@ -152,6 +155,8 @@ class EditorComponent {
 	gui::Widget* loadUI(const char* file) { char e=0; return loadUI(file, e); }
 	gui::Widget* loadUI(const char* file, const char& embed);
 	virtual bool drop(gui::Widget* target, const Point& p, const Asset&, bool apply) { return false; }
+
+	void setSelectedObject(base::SceneNode* n, base::Drawable* d=nullptr) { m_editor->m_selectedSceneNode = n; m_editor->m_selectedDrawable = d; }
 
 	// Use these for editors that interact with the viewport. Return true to stop processing
 	virtual bool mouseEvent(const MouseEventData&) { return false; }

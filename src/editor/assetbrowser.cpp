@@ -270,6 +270,10 @@ String AssetBrowser::getUniqueFileName(const char* base, const char* localPath) 
 	return buffer;
 }
 
+void AssetBrowser::refresh() {
+	refreshItems();
+}
+
 void AssetBrowser::refreshItems() {
 	m_items->deleteChildWidgets();
 	buildResourceTree();

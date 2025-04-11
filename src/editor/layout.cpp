@@ -219,6 +219,7 @@ void LayoutViewer::refresh() {
 			if(TreeNode* node = findNode(tree, selected)) {
 				m_tree->scrollToItem(node);
 				node->select();
+				m_tree->eventSelected(m_tree, node);
 			}
 		}
 		m_clearFilter->setEnabled(m_filter->getText()[0]);
@@ -234,6 +235,7 @@ void LayoutViewer::populate(TreeNode* node, SceneNode* value, const char* filter
 	if(value == m_active && !m_drawable) node->select();
 	if(!type || type->showAttachments()) {
 		for(Drawable* d: value->attachments()) {
+			if(d == m_gizmo) continue;
 			if(!filterItem(d, filter)) continue;
 			TreeNode* n = node->add(new TreeNode());
 			if(m_drawable==d) n->select();
@@ -283,6 +285,7 @@ void LayoutViewer::filterChanged(Textbox*, const char* filter) {
 
 
 void LayoutViewer::selectItem(SceneNode* n) {
+	setSelectedObject(n);
 	TreeNode* node = findNode(m_tree->getRootNode(), Any(n));
 	if(node) {
 		// Select mesh if there is only one ?
@@ -357,6 +360,7 @@ void LayoutViewer::itemSelected(gui::TreeView*, gui::TreeNode* n) {
 	m_active = item.node;
 	m_activeType = item.nodeType;
 	m_drawable = item.drawable;
+	setSelectedObject(m_active, m_drawable);
 	if(!m_activeType) return;
 	if(item.nodeType) item.nodeType->showProperties(panel, m_active);
 	if(item.drawableType) item.drawableType->showProperties(panel, m_active, m_drawable);
@@ -546,6 +550,27 @@ void LayoutProperties::addTransform(SceneNode* node) {
 		cat.add(container);
 	}
 }
+
+void LayoutProperties::addDrawableInfo(base::Drawable* d) {
+	LayoutCategory drawable = getCategory("Drawable");
+	LayoutCategory row = drawable.addRow();
+	row.addLabel("Render Queue");
+	Spinbox* queue = row.addWidget<Spinbox>("spinbox");
+	queue->setValue(d->getRenderQueue());
+	queue->setRange(0, 100);
+	queue->eventChanged.bind([d](Spinbox*, int v) { d->setRenderQueue(v); });
+
+	row = drawable.addRow();
+	row.addLabel("Visible");
+	Checkbox* vis = row.addWidget<Checkbox>("checkbox");
+	vis->setChecked(d->isVisible());
+	vis->eventChanged.bind([d](Button* b) {
+		d->setVisible(b->isSelected());
+		// Find the treeview somehow
+		b->getRoot()->getWidget<TreeView>("tree")->refresh();
+	});
+}
+
 void LayoutProperties::addMaterial(base::Material* mat) {
 	base::Resources* res = base::Resources::getInstance();
 	LayoutCategory cat = getCategory("Material");
@@ -632,6 +657,7 @@ void DrawableType::getValues(Drawable* d, const char*& name, int& icon, bool& vi
 }
 void DrawableType::setVisible(Drawable* d, bool vis) const { d->setVisible(vis); }
 void DrawableType::showProperties(LayoutProperties& panel, SceneNode*, Drawable* d) { 
+	panel.addDrawableInfo(d);
 	panel.addMaterial(d->getMaterial());
 }
 
@@ -649,6 +675,8 @@ void DrawableMeshType::getValues(Drawable* d, const char*& name, int& icon, bool
 	icon = 1;
 }
 void DrawableMeshType::showProperties(LayoutProperties& panel, SceneNode*, Drawable* d) {
+	panel.addDrawableInfo(d);
+
 	LayoutCategory cat = panel.getCategory("Mesh");
 	base::Mesh* mesh = static_cast<DrawableMesh*>(d)->getMesh();
 	const base::Skeleton* skeleton = static_cast<DrawableMesh*>(d)->getSkeleton();

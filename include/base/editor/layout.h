@@ -98,6 +98,7 @@ class LayoutProperties {
 	LayoutProperties(gui::Widget* panel) : m_panel(panel) {}
 	LayoutCategory getCategory(const char* name);
 	void addTransform(base::SceneNode* node);
+	void addDrawableInfo(base::Drawable*);
 	void addMaterial(base::Material* material);
 };
 

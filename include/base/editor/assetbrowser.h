@@ -13,6 +13,7 @@ class AssetBrowser : public EditorComponent {
 	bool isActive() const override;
 	void activate() override;
 	void deactivate() override;
+	void refresh() override;
 	void setRootPath(const char* path);
 	void setPath(const char* path);
 	void refreshItems();
