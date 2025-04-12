@@ -32,10 +32,17 @@ MaterialEditor::~MaterialEditor() {
 	delete m_autoVarList;
 }
 
-bool MaterialEditor::newAsset(const char*& name, const char*& file, const char*& body) const {
-	name = "Material";
-	file = "material.mat";
-	return true;
+void MaterialEditor::assetCreationActions(AssetCreationBuilder& data) {
+	data.add("Material", [](const char* path) {
+		base::Resources& res = *base::Resources::getInstance();
+		Asset asset { ResourceType::Material, "material.mat" };
+		int uniqueIndex = 0;
+		while(res.materials.exists(asset.resource)) {
+			asset.resource = String::format("material_%d.mat", ++uniqueIndex);
+		}
+		res.materials.add(asset.resource, new Material());
+		return asset;
+	});
 }
 
 bool MaterialEditor::assetActions(MenuBuilder& menu, const Asset& asset) {

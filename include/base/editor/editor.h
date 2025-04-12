@@ -118,6 +118,7 @@ class SceneEditor : public base::GameStateComponent {
 	base::FrameBuffer* m_selectionBuffer = nullptr;
 	base::SceneNode* m_selectedSceneNode = nullptr;
 	base::Drawable* m_selectedDrawable = nullptr;
+	base::VirtualFileSystem* m_filesystem = nullptr;
 	std::vector<EditorComponent*> m_components;
 	std::vector<EditorComponent*(*)()> m_creation;
 	std::vector<Delegate<base::SceneNode*(const Asset&)>> m_construct;
@@ -144,9 +145,14 @@ class EditorComponent {
 	virtual void activate() {}
 	virtual void deactivate() {}
 	SceneEditor* getEditor() { return m_editor; }
+	base::VirtualFileSystem& getFileSystem() const { return *m_editor->m_filesystem; };
 	public:
-	virtual bool newAsset(const char*& name, const char*& file, const char*& body) const { return false; }
+	struct AssetCreationBuilder {
+		std::vector<std::pair<const char*, Delegate<Asset(const char*)>>> list;
+		template<class ...T>void add(const char* name, T...t) { list.push_back({name, {}}); list.back().second.bind(t...); };
+	};
 	virtual gui::Widget* openAsset(const Asset&) { return nullptr; }
+	virtual void assetCreationActions(AssetCreationBuilder&) {}
 	virtual bool assetActions(gui::MenuBuilder& menu, const Asset&) { return false; }
 	virtual int assetThumbnail(const Asset&) { return 0; }
 	static const char* getResourceNameFromFile(base::ResourceManagerBase& rc, const char* file);
@@ -163,8 +169,6 @@ class EditorComponent {
 	virtual bool wheelEvent(const MouseEventData&) { return false; }
 	virtual bool keyEvent(int keyCode) { return false; }
 	void promoteEventHandler(); // Make sure this editor handles events first
-
-
 };
 
 

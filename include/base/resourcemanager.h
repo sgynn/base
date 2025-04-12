@@ -163,7 +163,7 @@ void ResourceManager<T>::add(const char* name, T* resource, Loader* loader, int 
 	typename base::HashMap<Resource*>::iterator it = m_resources.find(name);
 	// Check if resource exists
 	if(it != m_resources.end()) {
-		assert(it->value->ref==0); // Resource already exists and is referenced by something
+		assert(it->value->ref==0 || it->value->ref==FAILED); // Resource already exists and is referenced by something
 		drop(it->value, false);
 		m_resources.erase(name);
 	}

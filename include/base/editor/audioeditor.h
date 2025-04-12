@@ -19,7 +19,7 @@ class AudioEditor : public EditorComponent {
 	void refreshDataTree();
 	void refreshFileList();
 
-	bool newAsset(const char*& name, const char*& file, const char*& body) const override;
+	void assetCreationActions(AssetCreationBuilder&) override;
 	bool assetActions(gui::MenuBuilder&, const Asset&) override;
 	gui::Widget* openAsset(const Asset&) override;
 	

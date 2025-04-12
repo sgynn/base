@@ -55,6 +55,7 @@ bool SceneEditor::addEmbeddedPNGImage(const char* name, const char& bin, unsigne
 
 void SceneEditor::initialiseComponents() {
 	printf("------ EDITOR ------\n");
+	m_filesystem = &const_cast<VirtualFileSystem&>(Resources::getInstance()->getFileSystem());
 	m_gui = new Root(base::Game::getSize());
 	addEmbeddedPNGImage("data/editor/editoricons.png", editor_icons, editor_icons_len);
 	if(m_gui->load("data/editor/editor.xml") || m_gui->parse(&editor_gui)) {

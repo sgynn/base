@@ -17,24 +17,6 @@ using namespace gui;
 using namespace editor;
 using namespace base;
 
-// Wildcard string matching:
-bool matchWildcard(const char* s, const char* pattern) {
-	const char* rollback = nullptr;
-	const char* p = pattern;
-	for(const char* c = s; *c; ++c) {
-		if(*p=='?' || *p==*c) ++p;
-		else if(*p=='*') {
-			while(p[1]=='*') ++p; // Clear multiple * characters
-			rollback = p;
-			if(*c == p[1]) p+=2;
-		}
-		else if(rollback) p = rollback;
-		else return false;
-	}
-	while(*p=='*') ++p;
-	return *p==0;
-}
-
 class AssetTile : public Button {
 	WIDGET_TYPE(AssetTile);
 	Asset asset;
@@ -106,7 +88,7 @@ void AssetBrowser::initialise() {
 
 	getEditor()->assetChanged.bind([this](const Asset& asset, bool changed) {
 		if(!asset.file) return;
-		if(!changed) printf("NotifySaved %s\n", asset.file.name.str());
+		if(!changed) printf("NotifySaved %s\n", asset.file.getFullPath().str());
 		for(size_t i=0; i<m_modifiedFiles.size(); ++i) {
 			if(m_modifiedFiles[i] == asset.file) {
 				if(changed) return;
@@ -142,7 +124,7 @@ void AssetBrowser::addTypeFilter(const char* text, ResourceType type) {
 	c->setSelected(m_typeFilter & 1ull << (int)type);
 	c->eventChanged.bind([this, type](Button* b) {
 		if(b->isSelected()) m_typeFilter |= 1ull<<(int)type;
-		else m_typeFilter &= ~1ull<<(int)type;
+		else m_typeFilter &= ~(1ull<<(int)type);
 		refreshItems();
 	});
 }
@@ -151,23 +133,19 @@ void AssetBrowser::populateCreateMenu() {
 	Root* root = m_panel->getRoot();
 	m_newItemMenu = new Popup();
 	m_newItemMenu->setSize(100, 0);
-	for(EditorComponent* handler: getEditor()) {
-		const char* name = nullptr;
-		const char* file = nullptr;
-		const char* data = nullptr;
-		if(handler->newAsset(name, file, data)) {
-			m_newItemMenu->addItem(root, "button", "", name, [this, file, data](Button*) {
-				m_newItemMenu->hide();
-				String filename = getUniqueFileName(file, m_localPath);
-				printf("New file: %s\n", filename.str());
-				if(data) {
-					FILE* fp = fopen(filename, "wb");
-					fputs(data, fp);
-					fclose(fp);
-				}
-				refreshItems();
-			});
-		}
+
+	AssetCreationBuilder builder;
+	for(EditorComponent* handler: getEditor()) handler->assetCreationActions(builder);
+	for(auto& i: builder.list) {
+		m_newItemMenu->addItem(root, "button", "", i.first, [this, create=i.second](Button*) {
+			m_newItemMenu->hide();
+			Asset newAsset = create(m_localPath);
+			if(!newAsset.file && !newAsset.resource) return; // Nope
+			if(!newAsset.file) newAsset.file = getFileSystem().createTransientFile(newAsset.resource);
+			assert(newAsset.file);
+			getEditor()->assetChanged(newAsset, true);
+			openAssetEvent(newAsset);
+		});
 	}
 }
 
@@ -261,13 +239,12 @@ String AssetBrowser::getUniqueFileName(const char* base, const char* localPath) 
 
 	char buffer[1024];
 	sprintf(buffer, "%s%s", localPath, base);
-	auto exists = [](const char* s) { FILE* fp = fopen(s, "r"); if(fp) fclose(fp); return fp; };
 	int index = 1;
-	while(exists(buffer)) {
+	while(getFileSystem().getFile(buffer)) {
 		sprintf(buffer, "%s%.*s_%d%s", localPath, baseLen, base, index, ext);
 		++index;
 	}
-	return buffer;
+	return buffer + strlen(localPath);
 }
 
 void AssetBrowser::refresh() {
@@ -283,7 +260,7 @@ void AssetBrowser::refreshItems() {
 	if(m_typeFilter & 1) {
 		const VirtualFileSystem::Folder& folder = Resources::getInstance()->getFileSystem().getFolder(m_localPath);
 		for(auto& file: folder) {
-			if(filter && !matchWildcard(file.name, filter)) continue;
+			if(filter && !String::match(file.name, filter)) continue;
 			addAssetTile(Asset{ResourceType::None, "", file}, file.isFolder());
 		}
 	}
@@ -302,7 +279,7 @@ void AssetBrowser::refreshItems() {
 					goto next;
 				}
 			}
-			if(filter && !matchWildcard(asset.resource + pathLength, filter)) continue;
+			if(filter && !String::match(asset.resource + pathLength, filter)) continue;
 			addAssetTile(asset);
 		}
 		next:;
@@ -312,7 +289,7 @@ void AssetBrowser::refreshItems() {
 	for(const Asset& asset : m_custom) {
 		if(~m_typeFilter & 1ull<<(int)asset.type) continue;
 		if(asset.resource.startsWith(m_localPath) && !strchr(asset.resource+pathLength, '/')) {
-			if(filter && !matchWildcard(asset.resource + pathLength, filter)) continue;
+			if(filter && !String::match(asset.resource + pathLength, filter)) continue;
 			addAssetTile(asset);
 		}
 	}
@@ -425,9 +402,10 @@ bool AssetBrowser::openAsset(Widget* w) {
 		setPath(m_localPath + tile->getCaption());
 		return false;
 	}
+	return openAssetEvent(tile->asset);
+}
 
-	const Asset& asset = tile->asset;
-
+bool AssetBrowser::openAssetEvent(const Asset& asset) {
 	// Already open ?
 	for(Editor& e: m_activeEditors) {
 		if(e.asset == asset) {
@@ -480,7 +458,11 @@ bool AssetBrowser::openAsset(Widget* w) {
 
 void AssetBrowser::deleteAsset(Widget* item) {
 	const Asset& asset = cast<AssetTile>(item)->asset;
-	if(asset.file) remove(asset.file.getFullPath());
+	if(asset.file && !asset.file.inArchive()) {
+		printf("Delete %s\n", asset.file.getFullPath().str());
+		getFileSystem().removeFile(m_localPath + asset.file.name);
+		remove(asset.file.getFullPath());
+	}
 	refreshItems();
 }
 
@@ -489,22 +471,19 @@ void AssetBrowser::duplicateAsset(Widget* item) {
 	const char* name = getAssetName(asset);
 	if(!name) name = asset.file.name;
 	String src = asset.file.getFullPath();
-	String dst = getUniqueFileName(name, m_localPath.str()); // FIXME: Which folder ?
 	if(!src) return;
-	printf("Copy %s -> %s\n", src.str(), dst.str());
-	FILE* sp = fopen(src, "rb");
-	FILE* dp = fopen(dst, "wb");
-	if(sp && dp) {
-		fseek(sp, 0, SEEK_END);
-		size_t len = ftell(sp);
-		rewind(sp);
-		char* buffer = new char[len];
-		fread(buffer, 1, len, sp);
-		fwrite(buffer, 1, len, dp);
-		delete [] buffer;
+
+	String dstName = getUniqueFileName(name, m_localPath);
+	VirtualFileSystem::File dst = getFileSystem().createTransientFile(m_localPath + dstName);
+
+	printf("Copy %s -> %s\n", src.str(), dst.getFullPath().str());
+	File data = asset.file.read();
+	if(!data) return;
+	FILE* fp = fopen(dst.getFullPath(), "wb");
+	if(fp) {
+		fwrite(data, 1, data.size(), fp);
+		fclose(fp);
 	}
-	fclose(sp);
-	fclose(dp);
 	refreshItems();
 }
 
@@ -520,16 +499,24 @@ void AssetBrowser::renameAsset(Widget* item) {
 	box->setFocus();
 	lbl->setVisible(false);
 
-	box->eventSubmit.bind([this, lbl](Textbox* t) {
+	box->eventSubmit.bind([this, lbl, item](Textbox* t) {
+		const Asset& asset = cast<AssetTile>(t->getParent())->asset;
 		lbl->setVisible(true);
-		String file = m_localPath + t->getText(); // FIXME: Which folder ?
+		if(asset.file.inArchive()) return; // Nope
+
+		getFileSystem().removeFile(m_localPath + asset.file.name);
+		String file = asset.file.getFullPath();
+		const char* e = strrchr(file, '/');
+		String newFile = (e? StringView(file, e-file.str()+1): StringView()) + t->getText();
+
 		FILE* fp = fopen(file, "r");
-		if(fp) fclose(fp);
+		if(!fp) fclose(fp);
 		else {
-			const Asset& asset = cast<AssetTile>(t->getParent())->asset;
-			printf("Rename %s -> %s\n", asset.file.name.str(), file.str());
-			rename(asset.file.getFullPath(), file); // FIXME: What about archived files
+			printf("Rename %s -> %s\n", file.str(), newFile.str());
+			rename(file, newFile);
 			t->removeFromParent();
+
+			getFileSystem().scanFolders();
 			refreshItems();
 			
 			// We may need to update the resource manager FIXME

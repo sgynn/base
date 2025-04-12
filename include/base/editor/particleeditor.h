@@ -21,7 +21,7 @@ class ParticleEditorComponent : public EditorComponent {
 	particle::Manager* getParticleManager() { return m_manager; }
 	void saveAll();
 	public:
-	bool newAsset(const char*& name, const char*& file, const char*& body) const override;
+	void assetCreationActions(AssetCreationBuilder&) override;
 	bool assetActions(gui::MenuBuilder& menu, const Asset&) override;
 	gui::Widget* openAsset(const Asset&) override;
 	protected:

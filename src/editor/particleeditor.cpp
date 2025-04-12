@@ -73,15 +73,22 @@ void ParticleEditorComponent::initialise() {
 	if(m_panel) m_panel->setVisible(false);
 }
 
-void ParticleEditorComponent::setParticleManager(particle::Manager* manager) {
-	m_manager = manager;
+void ParticleEditorComponent::assetCreationActions(AssetCreationBuilder& data) {
+	data.add("Particles", [](const char* localPath) {
+		base::Resources& res = *base::Resources::getInstance();
+		Asset asset { ResourceType::Particle, "particles.pt" };
+		int uniqueIndex = 0;
+		while(res.particles.exists(asset.resource)) {
+			asset.resource = String::format("particles_%d.pt", ++uniqueIndex);
+		}
+		particle::System* sys = new particle::System();
+		base::Resources::getInstance()->particles.add(asset.resource, sys);
+		return asset;
+	});
 }
 
-bool ParticleEditorComponent::newAsset(const char*& name, const char*& file, const char*& body) const {
-	name = "Particles";
-	file = "particles.pt";
-	body = "system = { emitters = [] }";
-	return true;
+void ParticleEditorComponent::setParticleManager(particle::Manager* manager) {
+	m_manager = manager;
 }
 
 bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset) {
@@ -100,7 +107,7 @@ bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset
 }
 
 Widget* ParticleEditorComponent::openAsset(const Asset& asset) {
-	if(!asset.file.name.endsWith(".pt")) return nullptr;
+	if(asset.type != ResourceType::Particle && !(asset.type==ResourceType::None && asset.file.name.endsWith(".pt"))) return nullptr;
 	auto& res = base::Resources::getInstance()->particles;
 	const char* name = asset.resource? asset.resource: asset.file.name;
 	particle::System* system = res.get(name);
@@ -1187,6 +1194,7 @@ bool ParticleEditor::save(particle::System* system, const char* filename) {
 		}
 	}
 
+	if(system->emitters().empty()) fprintf(fp, "\temitters = []\n");
 	for(particle::Emitter* e: system->emitters()) {
 		if(!e->eventOnly) saveObject(fp, "emitters[]", e, references, 1);
 	}

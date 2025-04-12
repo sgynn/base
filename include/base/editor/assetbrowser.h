@@ -31,6 +31,7 @@ class AssetBrowser : public EditorComponent {
 	int createShaderIcon(const char* name);
 	int allocateIcon(const char* name);
 
+	bool openAssetEvent(const Asset& asset);
 	bool openAsset(gui::Widget*);
 	void duplicateAsset(gui::Widget*);
 	void renameAsset(gui::Widget*);
@@ -45,7 +46,7 @@ class AssetBrowser : public EditorComponent {
 	static const char* getAssetName(const Asset&);
 	using EditorComponent::openAsset;
 	protected:
-	gui::String m_localPath;
+	gui::String m_localPath; // always ends with / and never starts with ./
 	gui::String m_search;
 	unsigned long long m_typeFilter = -1;
 

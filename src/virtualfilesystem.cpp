@@ -178,3 +178,83 @@ bool VirtualFileSystem::addArchive(const char* path, const char* target) {
 	return true;
 }
 
+bool VirtualFileSystem::scanFolders() {
+	int foundNewFiles = 0;
+	for(size_t i=0; i<m_sources.size(); ++i) {
+		if(m_sources[i].archive) continue;
+		int folder = getOrCreateFolder(m_sources[i].mount);
+		for(auto& f: Directory(m_sources[i].path)) {
+			if(f.type == Directory::FILE) {
+				bool exists = false;
+				for(const File& file: m_folders[folder]) {
+					if(file.name == f.name) { exists=true; break; }
+				}
+				if(exists) continue;
+				addFile(m_folders[folder], f.name, i);
+				++foundNewFiles;
+			}
+			// ToDo: subfolders if recursive
+		}
+	}
+	return foundNewFiles;
+}
+
+
+int VirtualFileSystem::getSource(const char* systemPath) const {
+	for(size_t i=0; i<m_sources.size(); ++i) {
+		if(m_sources[i].path == systemPath) return i;
+	}
+	return -1;
+}
+
+int VirtualFileSystem::getWriteableSource() const {
+	int source = -1;
+	for(size_t i=0; i<m_sources.size(); ++i) {
+		if(m_sources[i].archive) continue; // Archives are read only
+		if(source<0 || !m_sources[i].path.startsWith(m_sources[source].path)) source = i;
+	}
+	return source;
+}
+
+int VirtualFileSystem::getFolderFromFile(const char* filePath) {
+	const char* e = strrchr(filePath, '/');
+	StringView path = e? StringView(filePath, e-filePath): StringView();
+	for(uint i=0; i<m_folders.size(); ++i) if(m_folders[i].name == path) return i;
+	return -1;
+}
+
+const VirtualFileSystem::File& VirtualFileSystem::createTransientFile(const char* file, int source) {
+	static File invalid;
+	if(getFile(file)) return invalid; // File already exists
+	if(source < 0) source = getWriteableSource();
+	if(source<0 || source >= (int)m_sources.size()) return invalid;
+
+	int folder = getFolderFromFile(file);
+	if(folder < 0) return invalid;
+	const char* e = strrchr(file, '/');
+	const char* filename = e? e+1: file;
+
+	m_folders[folder].m_files.push_back(File(this, filename, source));
+	return m_folders[folder].m_files.back();
+}
+
+bool VirtualFileSystem::removeFile(const char* file) {
+	int folderIndex = getFolderFromFile(file);
+	if(folderIndex<0) return false;
+	Folder& folder = m_folders[folderIndex];
+	const char* e = strrchr(file, '/');
+	const char* filename = e? e+1: file;
+
+	for(size_t i=0; i<folder.m_files.size(); ++i) {
+		if(folder.m_files[i].name == filename) {
+			folder.m_files[i] = folder.m_files.back();
+			folder.m_files.pop_back();
+			return true;
+		}
+	}
+	return false;
+	
+	
+}
+
+

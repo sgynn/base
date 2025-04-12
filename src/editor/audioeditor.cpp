@@ -70,9 +70,14 @@ void AudioEditor::initialise() {
 	if(!audio::Data::instance) button->setEnabled(false);
 
 	MenuBuilder bankMenu(m_panel->getRoot(), "button", "button");
-	bankMenu.addAction("New Soundbank",    [this]() { });
-	bankMenu.addAction("Unload Soundbank", [this]() { audio::unload(m_bankList->getSelectedItem()->getText()); m_loadMessage=2; });
+	bankMenu.addAction("New Soundbank",    [this]() {
+		audio::Data::instance->m_banks.push_back(new audio::SoundBank({"soundbank", {}, (unsigned)audio::Data::instance->m_banks.size()}));
+		m_loadMessage = 2;
+	});
+	bankMenu.addAction("Load Soundbank",   [this]() { audio::load(m_bankList->getSelectedItem()->getText()); m_loadMessage = 2; });
 	bankMenu.addAction("Save Soundbank",   [this]() { save(m_bankList->getSelectedItem()->getText()); });
+	bankMenu.addAction("Unload Soundbank", [this]() { audio::unload(m_bankList->getSelectedItem()->getText()); m_loadMessage=2; });
+
 	m_bankMenu = bankMenu;
 
 	m_bankList->eventMouseDown.bind([this](Widget* w, const Point& p, int b) {
@@ -80,8 +85,10 @@ void AudioEditor::initialise() {
 			ListItem* item = m_bankList->getItemAt(p);
 			if(item) m_bankList->selectItem(item->getIndex());
 			else m_bankList->clearSelection();
-			m_bankMenu->getWidget("Unload Soundbank")->setEnabled(item);
-			m_bankMenu->getWidget("Save Soundbank")->setEnabled(item);
+			bool loaded = item && !audio::Data::instance->getBank(item->getIndex())->data.empty();
+			m_bankMenu->getWidget("Unload Soundbank")->setEnabled(item && loaded);
+			m_bankMenu->getWidget("Save Soundbank")->setEnabled(item && loaded);
+			m_bankMenu->getWidget("Load Soundbank")->setEnabled(item && !loaded);
 			m_bankMenu->popup(w->getRoot(), w->getDerivedTransform().transform(p));
 		}
 	});
@@ -108,9 +115,9 @@ void AudioEditor::initialise() {
 			TreeNode* over = m_data->getNodeAt(p);
 			if(over) over->select();
 			else m_data->clearSelection();
-			bool sel = getSelectedObject().id != INVALID;
+			Object sel = getSelectedObject();
 			m_menu->getWidget("Add")->setEnabled(audio::Data::instance && !audio::Data::instance->m_banks.empty());
-			m_menu->getWidget("Delete")->setEnabled(sel);
+			m_menu->getWidget("Delete")->setEnabled(sel.id != INVALID && !(sel.id==0 && sel.type==Type::Mixer));
 			m_menu->popup(w->getRoot(), w->getDerivedTransform().transform(p));
 		}
 	});
@@ -137,11 +144,22 @@ void AudioEditor::activate() { m_panel->setVisible(true); refreshDataTree(); ref
 void AudioEditor::deactivate() { }
 bool AudioEditor::isActive() const { return m_panel->isVisible(); }
 
-bool AudioEditor::newAsset(const char*& name, const char*& file, const char*& body) const {
-	name = "Soundbank";
-	file = "audio.xml";
-	body = "<?xml version='1.0'/>\n<soundbank>\n</soundbank>\n";
-	return true;
+void AudioEditor::assetCreationActions(AssetCreationBuilder& data) {
+	data.add("Soundbank", [this](const char* path) {
+		Asset asset { ResourceType::None };
+		int uniqueIndex = 0;
+		String file = "audio.xml";
+		while(getFileSystem().getFile(file)) {
+			file = String::format("audio_%d.xml", ++uniqueIndex);
+		}
+		asset.file = getFileSystem().createTransientFile(file);
+		FILE* fp = fopen(asset.file.getFullPath(), "w");
+		if(fp) {
+			fprintf(fp, "<?xml version='1.0'/>\n<soundbank>\n</soundbank>\n");
+			fclose(fp);
+		}
+		return asset;
+	});
 }
 
 bool isSoundbankFile(const Asset& asset) {
@@ -233,12 +251,12 @@ void AudioEditor::refreshDataTree() {
 			split = strchr(name, '.');
 		}
 
-		if(!node) { queue.push_back(queue[i]); continue; } // Come back later
+		const SoundBase* sound = data->lookupSound(queue[i].value);
+		if(!node && sound) { queue.push_back(queue[i]); continue; } // Come back later
 
 		// prefix: Random "56% Name"; Switch: "Key: name";
 
-		const SoundBase* sound = data->lookupSound(queue[i].value);
-		node->add(name, queue[i].value, typeIcon[sound->type], (Type)sound->type);
+		if(sound) node->add(name, queue[i].value, typeIcon[sound->type], (Type)sound->type);
 	}
 
 	// Refresh other comboboxes
@@ -859,6 +877,7 @@ void AudioEditor::save(const char* file) {
 	}
 
 	xml.save(file);
+	printf("Saved soundbank %s\n", file);
 }
 
 
