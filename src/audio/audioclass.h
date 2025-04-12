@@ -116,8 +116,11 @@ namespace audio {
 
 		static soundID   getSoundID(unsigned local, const SoundBank* bank) { return local | bank->id<<20; }
 		static unsigned  getLocalIndex(soundID id) { return id&0xfffff; }
-		const SoundBase* lookupSound(soundID id) const { return getBank(id)->data[ getLocalIndex(id) ]; }
-		const SoundBank* getBank(soundID id) const { return m_banks[id>>20]; }
+		const SoundBank* getBank(soundID id) const { return id>>20<m_banks.size()? m_banks[id>>20]:  nullptr; }
+		const SoundBase* lookupSound(soundID id) const { 
+			if(const SoundBank* bank = getBank(id)) if(getLocalIndex(id) < bank->data.size()) return bank->data[getLocalIndex(id)];
+			return nullptr;
+		}
 		const char*      findSoundName(soundID) const;	// For debug - slow
 
 		static size_t lookup(const char* name, const LookupMap& map) {
