@@ -67,9 +67,14 @@ namespace base {
 			const char* rollback = nullptr;
 			const char* p = pattern;
 			for(const char* c = s; *c; ++c) {
-				if(*p=='?' || *p==*c) ++p;
+				if(p==rollback) {
+					if(p[1]=='?') rollback = ++p;
+					if(*c == p[1]) p+=2;
+				}
+				else if(*p=='?' || *p==*c) ++p;
 				else if(*p=='*') {
-					while(p[1]=='*') ++p; // Ignore multiple * characters
+					while(p[1]=='*') ++p;
+					if(p[1]=='?') ++p; // Essentially swap *? to ?*
 					rollback = p;
 					if(*c == p[1]) p+=2;
 				}
@@ -77,6 +82,7 @@ namespace base {
 				else return false;
 				if(--limit==0) break;
 			}
+			if(p==rollback) ++p;
 			while(*p=='*') ++p;
 			return *p==0;
 		}
