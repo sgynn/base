@@ -126,6 +126,8 @@ ParticleEditor* ParticleEditorComponent::showParticleSystem(particle::System* sy
 		}
 	}
 
+	if(!m_manager) printf("Warning: Particle Manager not set - editing active particle systems will likely crash\n");
+
 	// Spawn a new editor
 	Widget* panel = m_panel->clone();
 	panel->setVisible(true);
@@ -599,10 +601,8 @@ void ParticleEditor::notifyChange() {
 }
 
 void ParticleEditor::reinitialise() {
-	if(!m_manager) {
-		printf("Particle Manager not set - existing particle systems will not update\n");
-	}
-	else for(particle::Instance* i: *m_manager) {
+	if(!m_manager) return;
+	for(particle::Instance* i: *m_manager) {
 		if(i->getSystem() == m_system) i->initialise();
 	}
 }
