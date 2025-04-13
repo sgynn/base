@@ -35,8 +35,8 @@ namespace base {
 		ResourceManager<CompositorGraph>  graphs;
 		ResourceManager<particle::System> particles;
 
-		// Load xml file defining multiple resources ?
-		bool loadFile(const char* file);
+		// Load xml file defining multiple resources. Use create=false to merely declare them
+		bool loadFile(const char* file, bool create=true);
 
 		// Add search paths to filesystem
 		void addFolder(const char* path, bool recursive=true, const char* mount="");

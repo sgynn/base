@@ -51,8 +51,36 @@ class XMLResourceLoader {
 	ShaderVars*      loadShaderVars(const XMLElement&);
 	Compositor*      loadCompositor(const XMLElement&);
 	CompositorGraph* loadGraph(const XMLElement&);
-	void load(const XML&, const char* path=0);
+	void load(const XML&, const char* path=0, bool create=true);
+	template<class R> R* loadResource(const XMLElement&);
 };
+template<> Material* XMLResourceLoader::loadResource<Material>(const XMLElement& e) { return loadMaterial(e); }
+template<> Compositor* XMLResourceLoader::loadResource<Compositor>(const XMLElement& e) { return loadCompositor(e); }
+template<> CompositorGraph* XMLResourceLoader::loadResource<CompositorGraph>(const XMLElement& e) { return loadGraph(e); }
+
+
+template<class T>
+class XMLSubResourceLoader : public ResourceLoader<T> {
+	Resources* m_resources;
+	String m_file;
+	const char* m_type;
+	public:
+	XMLSubResourceLoader(Resources* res, const char* type, const char* file) : m_resources(res), m_file(file), m_type(type) {}
+	void destroy(T* item) override { delete item; }
+	T* create(const char* name, ResourceManager<T>*) override {
+		File file = m_resources->openFile(m_file);
+		if(!file) file = File(m_file); // Allow absolute path if not found in virtual file system
+		XML xml = XML::parse(file);
+		for(const XMLElement& e : xml.getRoot()) {
+			if(e == m_type && strcmp(e.attribute("name"), name)==0) {
+				return XMLResourceLoader(m_resources).loadResource<T>(e);
+			}
+		}
+		return nullptr;
+	}
+	//bool reload(const char* name, T* object, Manager*) override; // TODO operator= on supported resources
+};
+
 
 // ----------------------------------------------------------------------------------- //
 
@@ -1069,9 +1097,14 @@ CompositorGraph* XMLResourceLoader::loadGraph(const XMLElement& e) {
 	return chain;
 }
 
+
 // ================================================================================== //
 
-void XMLResourceLoader::load(const XML& xml, const char* path) {
+void XMLResourceLoader::load(const XML& xml, const char* path, bool create) {
+	XMLSubResourceLoader<Material>* matLoader = nullptr;
+	XMLSubResourceLoader<Compositor>* compositorLoader = nullptr;
+	XMLSubResourceLoader<CompositorGraph>* graphLoader = nullptr;
+
 	for(const XMLElement& e: xml.getRoot()) {
 		if(e.type()!=XML::TAG) continue;
 		if(e=="include") {
@@ -1085,23 +1118,29 @@ void XMLResourceLoader::load(const XML& xml, const char* path) {
 		}
 
 		const char* name = e.attribute("name");
+		auto validateName = [&] {
+			if(!name[0]) { printf("Warning: Unnamed %s in %s\n", e.name(), path); name = path; }
+		};
 		if(e=="material") {
-			if(!name[0]) printf("Warning: Unnamed %s in %s\n", e.name(), path);
-			Material* mat = loadMaterial(e, name[0]? name: path);
-			resources.materials.add(name, mat);
+			validateName();
+			if(!matLoader) matLoader = new XMLSubResourceLoader<Material>(&resources, "material", path);
+			Material* mat = create? loadMaterial(e, name[0]? name: path): nullptr;
+			resources.materials.add(name, mat, matLoader);
 		}
 		else if(e=="compositor") {
-			if(!name[0]) printf("Warning: Unnamed %s in %s\n", e.name(), path);
-			Compositor* c = loadCompositor(e);
-			resources.compositors.add(name, c);
+			validateName();
+			if(!compositorLoader) compositorLoader = new XMLSubResourceLoader<Compositor>(&resources, "compositor", path);
+			Compositor* c = create? loadCompositor(e): nullptr;
+			resources.compositors.add(name, c, compositorLoader);
 		}
 		else if(e=="graph") {
-			if(!name[0]) printf("Warning: Unnamed %s in %s\n", e.name(), path);
-			CompositorGraph* graph = loadGraph(e);
-			resources.graphs.add(name, graph);
+			validateName();
+			if(!graphLoader) graphLoader = new XMLSubResourceLoader<CompositorGraph>(&resources, "graph", path);
+			CompositorGraph* graph = create? loadGraph(e): nullptr;
+			resources.graphs.add(name, graph, graphLoader);
 		}
 		else if(e == "shared") {
-			if(!name[0]) printf("Warning: Unnamed %s in %s\n", e.name(), path);
+			validateName();
 			bool changed = false;
 			ShaderVars* vars = resources.shaderVars.getIfExists(name);
 			if(!vars) {
@@ -1115,7 +1154,7 @@ void XMLResourceLoader::load(const XML& xml, const char* path) {
 			}
 			if(changed) {
 				for(const auto& m: resources.materials) {
-					for(Pass* p: *m.value) if(p->hasShared(vars)) compilePass(p, m.key, p->getName());
+					if(m.value) for(Pass* p: *m.value) if(p->hasShared(vars)) compilePass(p, m.key, p->getName());
 				}
 			}
 		}
@@ -1124,7 +1163,7 @@ void XMLResourceLoader::load(const XML& xml, const char* path) {
 		}
 	}
 }
-bool Resources::loadFile(const char* filename) {
+bool Resources::loadFile(const char* filename, bool create) {
 	File file = openFile(filename);
 	if(!file) file = File(filename); // Allow absolute path if not found in virtual file system
 	XML xml = XML::parse(file);
@@ -1133,7 +1172,7 @@ bool Resources::loadFile(const char* filename) {
 		return false;
 	}
 	XMLResourceLoader loader(this);
-	loader.load(xml, filename);
+	loader.load(xml, filename, create);
 	return true;
 }
 

@@ -193,6 +193,11 @@ void CompositorEditor::newCompositor(Button*) {
 
 void CompositorEditor::selectCompositor(Listbox* list, ListItem& item) {
 	m_compositor = item.getValue<Compositor*>(1, nullptr);
+	if(!m_compositor) {
+		m_compositor = Resources::getInstance()->compositors.get(item.getText());
+		item.setValue(1, m_compositor);
+	}
+
 	setCompositor(m_compositor);
 }
 

@@ -188,6 +188,7 @@ bool ResourceManager<T>::drop(Resource* r, bool force) {
 	if(--r->ref<=0 || force) {
 		if(r->loader) r->loader->destroy(r->object);
 		else if(m_defaultLoader) m_defaultLoader->destroy(r->object);
+		else assert(false); // Failed to delete item
 		r->object = 0;
 		r->ref = 0;
 		return true;
@@ -198,7 +199,7 @@ bool ResourceManager<T>::drop(Resource* r, bool force) {
 template<class T>
 int ResourceManager<T>::drop(const char* name) {
 	typename base::HashMap<Resource*>::iterator it = m_resources.find(name);
-	if(it->value->ref==FAILED) return 0;
+	if(it == m_resources.end()) return 0;
 	if(drop(it->value, false)) return 0;
 	return it->value->ref;
 }
@@ -207,7 +208,6 @@ int ResourceManager<T>::drop(const T* resource) {
 	if(!resource) return 0;
 	for(auto i : m_resources) {
 		if(i.value->object == resource) {
-			if(i.value->ref == FAILED) return 0;
 			if(drop(i.value, false)) return 0;
 			else return i.value->ref;
 		}
@@ -216,6 +216,7 @@ int ResourceManager<T>::drop(const T* resource) {
 }
 template<class T>
 void ResourceManager<T>::clear() {
+	std::vector<Loader*> deletedLoaders;
 	for(auto i : m_resources) {
 		drop(i.value, true);
 		// Detect aliases - resource may be in the map multiple times
@@ -223,7 +224,16 @@ void ResourceManager<T>::clear() {
 		for(auto j=++m_resources.find(i.key); j!=m_resources.end(); ++j) {
 			if(i.value == j->value) { alias = true; break; }
 		}
-		if(!alias) delete i.value;
+		if(!alias) drop(i.value, true);
+
+		// Delete any custom loaders
+		Loader* loader = i.value->loader;
+		if(loader == m_defaultLoader) loader = nullptr;
+		else if(loader) for(Loader* l: deletedLoaders) if(l==loader) loader=nullptr;
+		if(loader) {
+			deletedLoaders.push_back(loader);
+			delete loader;
+		}
 	}
 	m_resources.clear();
 }
