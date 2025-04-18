@@ -63,7 +63,7 @@ void base::Window::clear() {
 	swapBuffers();
 }
 
-void base::Window::notifyResize(Point&& s) {
+void base::Window::notifyResize(const Point& s) {
 	m_size = s;
 	base::FrameBuffer::setScreenSize(s.x, s.y);
 	base::Game::s_inst->m_state->onResized(s);

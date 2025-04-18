@@ -52,6 +52,7 @@ Game::Game( int width, int height, int bpp, bool fullscreen, uint fsaa) : m_stat
 	#endif
 	#ifdef EMSCRIPTEN
 	s_window = new EMWindow(width, height);
+	(void)mode;
 	#endif
 
 	s_window->centreScreen();

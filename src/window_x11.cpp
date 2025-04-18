@@ -250,30 +250,6 @@ bool X11Window::setMode(WindowMode mode) {
 	}
 
 
-	/*
-	// Set the position and size hints - seems to do nothing
-	XSizeHints *xsh = XAllocSizeHints();
-	xsh->flags |= PPosition | PSize;
-	xsh->x = mode==WindowMode::Window? m_position.x: 0;
-	xsh->y = mode==WindowMode::Window? m_position.y: 0;
-	xsh->width = m_size.x;
-	xsh->height = m_size.y;
-	if(mode == WindowMode::Window) {
-		bool allowResize = true;
-		if(!allowResize) { // If resizing is disabled, use the forced size
-			xsh->flags |= PMinSize | PMaxSize;
-			xsh->min_width = m_size.x;
-			xsh->max_width = m_size.x;
-			xsh->min_height = m_size.y;
-			xsh->max_height = m_size.y;
-		}
-	}
-	XSetWMNormalHints(m_display, m_window, xsh);
-	XFree(xsh);
-	*/
-
-
-
 	// Try sending window manager a message
 	bool full = mode != WindowMode::Window;
 	XEvent e;
@@ -311,7 +287,7 @@ bool X11Window::setMode(WindowMode mode) {
 		//XUngrabPointer(m_display, CurrentTime);
 		//XUngrabKeyboard(m_display, CurrentTime);
 	}
-
+	else notifyResize(m_size);
 	return true;
 }
 

@@ -65,7 +65,7 @@ namespace base {
 		virtual void createCursor(unsigned c, const char* image, int w, int h, int x=0, int y=0) = 0; // ARGB image
 
 		protected:
-		void notifyResize(Point&& newSize);
+		void notifyResize(const Point& newSize);
 		void notifyFocus(bool hasFocus);
 
 		protected:
