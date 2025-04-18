@@ -327,10 +327,7 @@ bool audio::processAudioMessages() {
 			if(m.target == INVALID) printf("Error: variable %s not found\n", m.string);
 			else {
 				data->m_variables[m.target].value = m.floatValue;
-				for(size_t i=0; i<data->m_mixers.size(); ++i) {
-					Mixer& mixer = data->m_mixers[i];
-					mixer.setVar(m.target, m.floatValue);
-				}
+				for(Mixer& mixer: data->m_mixers) mixer.setVar(m.target, m.floatValue);
 			}
 			break;
 

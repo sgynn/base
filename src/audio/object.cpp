@@ -20,9 +20,9 @@ void Mixer::setVar(objectID var, float v) {
 	}
 }
 void Mixer::updateVolumes(float v) const {
-	v *= volume.value;
 	for(size_t i=0; i<children.size(); ++i) {
-		Data::instance->m_mixers[ children[i] ].updateVolumes(v);
+		Mixer& childMixer = Data::instance->m_mixers[children[i]];
+		childMixer.updateVolumes(v * childMixer.volume.value);
 	}
 	for(size_t i=0; i<instances.size(); ++i) {
 		Object* object = Data::instance->getObject(instances[i]&0x3ff);
@@ -114,6 +114,11 @@ int Object::play(soundID id) {
 
 	if(!inst.sound->source) {
 		printf("Error: Sound %s not loaded\n", inst.sound->file);
+		return -1;
+	}
+
+	if(inst.sound->targetID == INVALID) {
+		printf("Error: Sound %s has no target mixer\n", Data::instance->findSoundName(id));
 		return -1;
 	}
 	
