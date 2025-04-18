@@ -15,6 +15,7 @@ class Label : public Widget {
 	WIDGET_TYPE(Label);
 	Label(const char* c="");
 	Label(const char* caption, Font* font, int size=0);
+	virtual void setSkin(Skin*) override;
 	virtual void draw() const override;
 	virtual void setSize(int w, int h) override;
 	virtual Point getPreferredSize(const Point& hint=Point()=Point()) const override;
@@ -34,7 +35,8 @@ class Label : public Widget {
 	int   m_fontSize;	// Override font sise
 	int   m_fontAlign;	// Override font align
 	bool  m_wordWrap;	// Word wrap option
-	std::vector<int> m_wrapValues; // Length of each line
+	struct Line { unsigned short start; unsigned short width; };
+	std::vector<Line> m_lines;
 
 };
 

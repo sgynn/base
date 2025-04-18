@@ -44,9 +44,13 @@ void Label::copyData(const Widget* from) {
 		m_font = label->m_font;
 	}
 }
+void Label::setSkin(Skin* s) {
+	Super::setSkin(s);
+	updateWrap();
+}
 void Label::setCaption( const char* c) {
 	m_caption = c;
-	if(m_wordWrap) updateWrap();
+	updateWrap();
 	updateAutosize();
 }
 void Label::setSize(int w, int h) {
@@ -60,12 +64,11 @@ Point Label::getPreferredSize(const Point& hint) const {
 	const char* t = m_caption? m_caption.str(): "XX";
 	int fontSize = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
 	Point size;
-	if(m_wrapValues.empty()) size = font->getSize(t, fontSize);
+	if(m_lines.empty()) size = font->getSize(t, fontSize);
 	else {
-		char* cap = const_cast<char*>((const char*)m_caption); // nasty
-		for(int w: m_wrapValues) cap[w] = '\n';
-		size = font->getSize(t, fontSize);
-		for(int w: m_wrapValues) cap[w] = ' ';
+		size.x = 0;
+		for(const Line& line: m_lines) size.x = std::max(size.x, (int)line.width);
+		size.y = m_lines.size() * font->getLineHeight(fontSize);
 	}
 	if(m_skin) {
 		Point& offset = m_skin->getState(0).textPos; // Approximate - could have weird effects
@@ -96,29 +99,48 @@ void Label::updateAutosize() {
 }
 void Label::setWordWrap(bool w) {
 	m_wordWrap = w;
-	if(w) updateWrap();
-	else m_wrapValues.clear();
+	updateWrap();
 }
 void Label::updateWrap() {
-	m_wrapValues.clear();
-	Font* font = m_font? m_font: m_skin->getFont();
+	m_lines.clear();
+	Font* font = m_font? m_font: m_skin? m_skin->getFont(): nullptr;
 	if(!m_caption || !font) return;
 	int size = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
-	int length = m_caption.length();
-	Point full = font->getSize(m_caption, size, length);
-	if(full.x > m_rect.width) {
-		int start=0, end=0;
-		const char* e = m_caption;
-		while(end<length) {
-			while(*e && *e!=' ') ++e;
-			Point s = font->getSize(m_caption+start, size, e-m_caption-start);
-			if(s.x>m_rect.width && e>m_caption+start && (m_wrapValues.empty()||end>m_wrapValues.back())) {
-				m_wrapValues.push_back(end);
-				start = end + 1;
+
+	if(m_wordWrap) {
+		int length = m_caption.length();
+		Point full = font->getSize(m_caption, size, length);
+		if(full.x > m_rect.width) {
+			int start=0, end=0;
+			const char* e = m_caption;
+			while(end < length) {
+				while(*e && *e!=' ' && *e!='\n') ++e;
+				Point s = font->getSize(m_caption+start, size, e-m_caption-start);
+				if((s.x > m_rect.width && e > m_caption + start && end > start)) {
+					m_lines.push_back({(unsigned short)start, (unsigned short)s.x});
+					start = end + 1;
+				}
+				else if(!*e || *e=='\n') {
+					m_lines.push_back({(unsigned short)start, (unsigned short)s.x});
+					if(!*e) return;
+					start = ++e - m_caption;
+				}
+				else end = e++ - m_caption;
 			}
-			else end = e-m_caption, ++e;
+			return;
 		}
 	}
+
+	// set wrap values on line breaks to handle alignment properly
+	const char* br = strchr(m_caption, '\n');
+	if(!br || !br[1]) return; // Single line - simple version
+	const char* start = m_caption;
+	while(br) {
+		m_lines.push_back({(unsigned short)(start-m_caption), (unsigned short)font->getSize(start, size, br-start).x});
+		start = br + 1;
+		br = strchr(start, '\n');
+	}
+	m_lines.push_back({(unsigned short)(start-m_caption), (unsigned short)font->getSize(start, size, br-start).x});
 }
 void Label::setFont(Font* font, int size) {
 	m_font = font;
@@ -144,18 +166,32 @@ void Label::draw() const {
 		static Skin tempSkin(1);
 		int align = m_fontAlign? m_fontAlign: m_skin? m_skin->getFontAlign(): 0;
 		int size = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
-		tempSkin.setFont(font, size, align);
-		tempSkin.getState(0).foreColour = deriveColour(s.foreColour, m_colour, m_states);
-		tempSkin.getState(0).textPos = s.textPos;
-		if(m_wrapValues.empty()) {
+		unsigned colour = deriveColour(s.foreColour, m_colour, m_states);
+		if(m_lines.empty()) {
+			tempSkin.setFont(font, size, align);
+			tempSkin.getState(0).foreColour = colour;
+			tempSkin.getState(0).textPos = s.textPos;
 			m_root->getRenderer()->drawText(m_rect, m_caption, 0, &tempSkin, 0);
 		}
 		else {
-			// FIXME  - do this properly
-			char* caption = const_cast<char*>(m_caption.str());
-			for(int w: m_wrapValues) caption[w] = '\n';
-			m_root->getRenderer()->drawText(m_rect, caption, 0, &tempSkin, 0);
-			for(int w: m_wrapValues) caption[w] = ' ';
+			Point pos = m_rect.position() + s.textPos;
+			if((align&0xc)==ALIGN_BOTTOM) pos.y += m_rect.height - m_lines.size() * font->getLineHeight(size);
+			else if((align&0xc)==ALIGN_MIDDLE) pos.y += (m_rect.height - m_lines.size() * font->getLineHeight(size)) / 2;
+			int h = align&3;
+			Line line = m_lines[0];
+			for(size_t i=1; i<m_lines.size(); ++i) {
+				pos.x = m_rect.x + s.textPos.x;
+				if(h == ALIGN_RIGHT) pos.x += m_rect.width - line.width;
+				else if(h == ALIGN_CENTER) pos.x += (m_rect.width - line.width) / 2;
+				int limit = m_lines[i].start - line.start;
+				m_root->getRenderer()->drawText(pos, m_caption+line.start, limit, font, size, colour);
+				line = m_lines[i];
+				pos.y += m_skin->getFont()->getLineHeight(size);
+			}
+			pos.x = m_rect.x + s.textPos.x;
+			if(h == ALIGN_RIGHT) pos.x += m_rect.width - line.width;
+			else if(h == ALIGN_CENTER) pos.x += (m_rect.width - line.width) / 2;
+			m_root->getRenderer()->drawText(pos, m_caption+line.start, -1, font, size, colour);
 		}
 	}
 	drawChildren();
