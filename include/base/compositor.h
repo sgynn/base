@@ -36,8 +36,9 @@ namespace base {
 	
 	class MaterialResolver {
 		public:
+		virtual ShaderVars* resolveVariables(const char* name) = 0;
 		virtual Material* resolveMaterial(const char* name) = 0;
-		virtual base::Texture* resolveTexture(const char* name) = 0;
+		virtual Texture* resolveTexture(const char* name) = 0;
 	};
 
 
@@ -263,13 +264,20 @@ namespace base {
 		bool        requiresTargetSize() const; // Does we need to recreate the buffers if the target size changes
 
 		void resolveExternals(MaterialResolver*);	// Resolve any material or textures referenced by name
+
+		struct GlobalVariable { const char* group; const char* name; vec4 value; ShaderVars* target; };
+		void setVariable(const char* group, const char* name, float value) { return setVariable(group, name, vec4(value,0,0,1)); }
+		void setVariable(const char* group, const char* name, const vec2& value) { return setVariable(group, name, value.xyz()); }
+		void setVariable(const char* group, const char* name, const vec4& value);
+		void eraseVariable(const char* group, const char* name);
+		const std::vector<GlobalVariable>& getVariables() const { return m_variables; }
+
 		protected:
 		friend class Workspace;
 		std::vector<Compositor*> m_compositors;
 		std::vector<Link> m_links;
-
+		std::vector<GlobalVariable> m_variables;
 	};
-
 	// Compiled compositor graph. Simple list of all passes with target framebuffers
 	class Workspace {
 		public:
@@ -281,6 +289,7 @@ namespace base {
 		void execute(Scene*, Renderer*);								// Execute compositor
 		void execute(const base::FrameBuffer* target, Scene*, Renderer*);	// Execute compositor
 		void execute(const base::FrameBuffer* target, const Rect& view, Scene*, Renderer*);	// Execute compositor
+		void applyVariables();
 		const CompositorGraph* getGraph() const { return m_graph; }
 		bool isCompiled() const;
 		int getWidth() const { return m_width; }

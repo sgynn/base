@@ -524,6 +524,10 @@ void Compositor::setPassTarget(CompositorPass* pass, const char* target) {
 CompositorGraph::CompositorGraph() {
 }
 CompositorGraph::~CompositorGraph() {
+	for(GlobalVariable& var: m_variables) {
+		free((char*)var.group);
+		free((char*)var.name);
+	}
 }
 void CompositorGraph::link(Compositor* a, Compositor* b) { link(a,b,0,0); }
 void CompositorGraph::link(Compositor* a, Compositor* b, const char* key) { link(a,b,key,key); }
@@ -565,6 +569,9 @@ void CompositorGraph::resolveExternals(MaterialResolver* r) {
 	for(Compositor* c: m_compositors) {
 		for(Compositor::Pass& p: c->m_passes) p.pass->resolveExternals(r);
 	}
+	for(GlobalVariable& var: m_variables) {
+		var.target = r->resolveVariables(var.group);
+	}
 }
 
 size_t CompositorGraph::size() const {
@@ -579,6 +586,29 @@ bool CompositorGraph::requiresTargetSize() const {
 	}
 	return false;
 }
+
+void CompositorGraph::setVariable(const char* group, const char* name, const vec4& value) {
+	for(GlobalVariable& v: m_variables) {
+		if(strcmp(v.group, group)==0 && strcmp(v.name, name)==0) {
+			v.value = value;
+			return;
+		}
+	}
+	m_variables.push_back({strdup(group), strdup(name), value, nullptr});
+}
+
+void CompositorGraph::eraseVariable(const char* group, const char* name) {
+	for(size_t i=0; i<m_variables.size(); ++i) {
+		if(strcmp(m_variables[i].group, group)==0 && strcmp(m_variables[i].name, name)==0) {
+			free((char*)m_variables[i].group);
+			free((char*)m_variables[i].name);
+			m_variables[i] = std::move(m_variables.back());
+			m_variables.pop_back();
+		}
+	}
+}
+
+
 
 // ================================================================================ //
 
@@ -596,6 +626,16 @@ void Workspace::destroy() {
 bool Workspace::isCompiled() const {
 	return m_compiled;
 }
+void Workspace::applyVariables() {
+	for(const CompositorGraph::GlobalVariable& var: m_graph->getVariables()) {
+		if(var.target) {
+			float* ptr = var.target->getFloatPointer(var.name);
+			assert(var.target->getElements(var.name) <= 4);
+			if(ptr) memcpy(ptr, var.value, var.target->getElements(var.name) * sizeof(float));
+		}
+	}
+}
+
 void Workspace::execute(Scene* scene, Renderer* renderer) {
 	execute(&FrameBuffer::Screen, scene, renderer);
 }
@@ -603,6 +643,7 @@ void Workspace::execute(const FrameBuffer* output, Scene* scene, Renderer* rende
 	execute(output, Rect(0,0,output->width(), output->height()), scene, renderer);
 }
 void Workspace::execute(const FrameBuffer* output, const Rect& view, Scene* scene, Renderer* renderer) {
+	applyVariables();
 	CompositorTextures* tex = CompositorTextures::getInstance();
 	for(const Pass& pass: m_passes) {
 		// Expose buffers

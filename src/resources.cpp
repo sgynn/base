@@ -84,6 +84,15 @@ class XMLSubResourceLoader : public ResourceLoader<T> {
 
 // ----------------------------------------------------------------------------------- //
 
+template<class T> class DefaultNullLoader : public ResourceLoader<T> {
+	public:
+	T* create(const char* name, ResourceManager<T>*) override { return nullptr; }
+	void destroy(T* item) override { delete item; }
+};
+
+
+// ----------------------------------------------------------------------------------- //
+
 
 class TextureLoader : public ResourceLoader<Texture> {
 	public:
@@ -590,7 +599,7 @@ static int floatArray(const char* s, float* array, int max) {
 	int count;
 	char* end;
 	for(count=0; count<max; ++count) {
-		while(*s==' ' || *s=='\t' || *s=='\n' || *s == '\r') ++s; //whitespace
+		while(*s==' ' || *s=='\t' || *s=='\n' || *s == '\r' || *s==',' || *s==';') ++s; //whitespace
 		if(*s==0) break; // End of string
 		array[count] = strtof(s, &end);
 		if(s == end) break;
@@ -863,6 +872,14 @@ Material* XMLResourceLoader::loadMaterial(const XMLElement& e, const char* name)
 	return m;
 }
 
+class CompositorResourceResolver : public MaterialResolver {
+	Resources& m_resources;
+	public:
+	CompositorResourceResolver(Resources& res) : m_resources(res) {}
+	Material* resolveMaterial(const char* name) { return m_resources.materials.get(name); }
+	Texture* resolveTexture(const char* name) { return m_resources.textures.get(name); }
+	ShaderVars* resolveVariables(const char* name) { return m_resources.shaderVars.get(name); }
+};
 
 Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 	int iw=0, ih=0;
@@ -1093,7 +1110,22 @@ CompositorGraph* XMLResourceLoader::loadGraph(const XMLElement& e) {
 				lookup[name] = chain->add(c);
 			}
 		}
+		else if(i=="variable") {
+			vec4 value;
+			const char* group = i.attribute("group", "constants");
+			const char* name = i.attribute("name");
+			int r = floatArray(i.attribute("value"), value, 4);
+			if(r==0) {
+				value.x = i.attribute("r", 0.f);
+				value.y = i.attribute("g", 0.f);
+				value.z = i.attribute("b", 0.f);
+				value.w = i.attribute("a", 0.f);
+			}
+			chain->setVariable(group, name, value);
+		}
 	}
+	CompositorResourceResolver resolver(resources);
+	chain->resolveExternals(&resolver);
 	return chain;
 }
 
@@ -1191,6 +1223,7 @@ Resources::Resources() {
 	materials.setDefaultLoader( new MaterialLoader(this) );
 	models.setDefaultLoader( new ModelLoader(this));
 	particles.setDefaultLoader( new ParticleLoader(this) );
+	shaderVars.setDefaultLoader(new DefaultNullLoader<ShaderVars>());
 }
 
 Resources::~Resources() {
