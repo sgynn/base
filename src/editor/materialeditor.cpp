@@ -33,11 +33,11 @@ MaterialEditor::~MaterialEditor() {
 }
 
 void MaterialEditor::assetCreationActions(AssetCreationBuilder& data) {
-	data.add("Material", [](const char* path) {
+	data.add("Material", [this](const char* path) {
 		base::Resources& res = *base::Resources::getInstance();
 		Asset asset { ResourceType::Material, "material.mat" };
 		int uniqueIndex = 0;
-		while(res.materials.exists(asset.resource)) {
+		while(res.materials.exists(asset.resource) || getFileSystem().getFile(asset.resource)) {
 			asset.resource = String::format("material_%d.mat", ++uniqueIndex);
 		}
 		res.materials.add(asset.resource, new Material());

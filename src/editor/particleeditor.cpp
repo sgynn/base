@@ -74,11 +74,11 @@ void ParticleEditorComponent::initialise() {
 }
 
 void ParticleEditorComponent::assetCreationActions(AssetCreationBuilder& data) {
-	data.add("Particles", [](const char* localPath) {
+	data.add("Particles", [this](const char* localPath) {
 		base::Resources& res = *base::Resources::getInstance();
 		Asset asset { ResourceType::Particle, "particles.pt" };
 		int uniqueIndex = 0;
-		while(res.particles.exists(asset.resource)) {
+		while(res.particles.exists(asset.resource) || getFileSystem().getFile(asset.resource)) {
 			asset.resource = String::format("particles_%d.pt", ++uniqueIndex);
 		}
 		particle::System* sys = new particle::System();

@@ -176,6 +176,10 @@ void CompositorEditor::newGraph(Button*) {
 void CompositorEditor::selectGraph(Listbox* list, ListItem& item) {
 	if(item.isValid()) {
 		GraphInfo graph = item.getValue<GraphInfo>(1, GraphInfo{0});
+		if(!graph.graph) {
+			graph.graph = Resources::getInstance()->graphs.get(item.getText());
+			item.setValue(1, graph);
+		}
 		setGraph(graph);
 		applyGraph(graph.graph);
 	}

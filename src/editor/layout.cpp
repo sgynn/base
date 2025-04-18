@@ -428,6 +428,22 @@ void LayoutViewer::update() {
 	if(getEditor()->getSceneRoot()->getChildCount() != m_lastNodeCount) {
 		refresh();
 	}
+	// Active scene node may have moved
+	if(m_activeType) {
+		static vec3 lastPos;
+		vec3 derivedPosition = vec3(&m_active->getDerivedTransform()[12]);
+		if(derivedPosition != lastPos) {
+			lastPos = derivedPosition;
+			m_activeType->updateTransform(m_properties);
+			if(m_gizmo && !m_gizmo->isHeld()) {
+				m_gizmo->setPosition( m_active->getPosition() );
+				m_gizmo->setOrientation( m_active->getOrientation() );
+				m_gizmo->setScale( m_active->getScale() );
+				m_gizmo->setBasis( m_active->getParent()? m_active->getParent()->getDerivedTransform(): Matrix() );
+			}
+		}
+		if(m_gizmo && m_gizmo->isHeld()) getEditor()->setComponentFlags(base::BLOCK_MOUSE);
+	}
 }
 
 bool LayoutViewer::mouseEvent(const MouseEventData& event) {
@@ -454,6 +470,7 @@ bool LayoutViewer::mouseEvent(const MouseEventData& event) {
 				m_gizmo->setPosition( m_active->getPosition() );
 				m_gizmo->setOrientation( m_active->getOrientation() );
 				m_gizmo->setScale( m_active->getScale() );
+				m_gizmo->setBasis( m_active->getParent()? m_active->getParent()->getDerivedTransform(): Matrix() );
 			}
 			else if(moved) {
 				m_active->setPosition( m_gizmo->getPosition() );
