@@ -216,7 +216,7 @@ int ResourceManager<T>::drop(const T* resource) {
 }
 template<class T>
 void ResourceManager<T>::clear() {
-	std::vector<Loader*> deletedLoaders;
+	std::vector<Loader*> uniqueLoaders;
 	for(auto i : m_resources) {
 		drop(i.value, true);
 		// Detect aliases - resource may be in the map multiple times
@@ -229,12 +229,10 @@ void ResourceManager<T>::clear() {
 		// Delete any custom loaders
 		Loader* loader = i.value->loader;
 		if(loader == m_defaultLoader) loader = nullptr;
-		else if(loader) for(Loader* l: deletedLoaders) if(l==loader) loader=nullptr;
-		if(loader) {
-			deletedLoaders.push_back(loader);
-			delete loader;
-		}
+		else if(loader) for(Loader* l: uniqueLoaders) if(l==loader) { loader=nullptr; break; }
+		if(loader) uniqueLoaders.push_back(loader);
 	}
+	for(Loader* loader: uniqueLoaders) delete loader;
 	m_resources.clear();
 }
 
