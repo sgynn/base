@@ -6,7 +6,7 @@
 namespace base {
 
 	class NavMesh;
-	class NavPoly;
+	struct NavPoly;
 
 	enum class PathState : char { None, Success, Fail, Partial, Invalid };
 

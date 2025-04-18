@@ -178,18 +178,13 @@ int NavMesh::getClosestBoundary(const vec3& p, uint id, float radius, vec3& out,
 
 // ==== Link and polygon functions ==== //
 
-#ifdef EMSCRIPTEN
-#define sert(x) assert(x)
-#else
-#define sert(x) if(!(x)) asm("int $3\nnop");
-#endif
-
 std::vector<NavLink*> allLinks;
 void validateLinkMemory() {
 	for(NavLink* l: allLinks) {
-		sert(l->poly[0] && l->poly[1]);
-		sert(!l->poly[0] || l->poly[0]->links[l->edge[0]] == l);
-		sert(!l->poly[1] || l->poly[1]->links[l->edge[1]] == l);
+		(void)l;
+		assert(l->poly[0] && l->poly[1]);
+		assert(!l->poly[0] || l->poly[0]->links[l->edge[0]] == l);
+		assert(!l->poly[1] || l->poly[1]->links[l->edge[1]] == l);
 	}
 }
 
@@ -199,8 +194,8 @@ NavLink::NavLink() : poly{0,0}, edge{0,0}, width(0), step(0), distance(0) {
 }
 NavLink::~NavLink() {
 	for(size_t i=0; i<allLinks.size(); ++i) if(allLinks[i]==this) { allLinks[i]=allLinks.back(); allLinks.pop_back(); break; }
-	sert(!poly[0] || poly[0]->links[edge[0]] == this);
-	sert(!poly[1] || poly[1]->links[edge[1]] == this);
+	assert(!poly[0] || poly[0]->links[edge[0]] == this);
+	assert(!poly[1] || poly[1]->links[edge[1]] == this);
 	if(poly[0]) poly[0]->links[ edge[0] ] = 0;
 	if(poly[1]) poly[1]->links[ edge[1] ] = 0;
 }
