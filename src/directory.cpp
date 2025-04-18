@@ -237,5 +237,7 @@ bool Directory::create(const char* folder) {
 	#ifdef WIN32
 	return _mkdir(folder) == 0;
 	#endif
+
+	return false;
 }
 

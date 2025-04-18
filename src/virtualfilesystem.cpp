@@ -219,7 +219,7 @@ int VirtualFileSystem::getWriteableSource() const {
 int VirtualFileSystem::getFolderFromFile(const char* filePath) {
 	const char* e = strrchr(filePath, '/');
 	StringView path = e? StringView(filePath, e-filePath): StringView();
-	for(uint i=0; i<m_folders.size(); ++i) if(m_folders[i].name == path) return i;
+	for(size_t i=0; i<m_folders.size(); ++i) if(m_folders[i].name == path) return i;
 	return -1;
 }
 
