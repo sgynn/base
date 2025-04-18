@@ -52,11 +52,11 @@ void BinaryFileWriter::writeString(const char* string, int length) {
 		fputc(0x80 | length>>8, m_file);
 		fputc(length&0xff, m_file);
 	}
-	fwrite(string, 1, length, m_file);
+	if(length>0) fwrite(string, 1, length, m_file);
 }
 
 void BinaryFileWriter::write(const char* string) {
-	writeString(string, strlen(string));
+	writeString(string, string? strlen(string): 0);
 }
 
 void BinaryFileWriter::write(const base::String& string) {
@@ -163,6 +163,12 @@ base::String BinaryFileReader::get(const char* fallback) {
 bool BinaryFileReader::read(void* data, int stride, int count) {
 	if(!m_blockStack.empty() && ftell(m_file) + stride*count > (int)m_blockStack.back().end) return false;
 	return fread(data, stride, count, m_file) == (size_t)count;
+}
+
+bool BinaryFileReader::read(base::String& string) {
+	if(!valid()) return false;
+	string = get("");
+	return true;
 }
 
 bool BinaryFileReader::read(std::vector<bool>& bitset, int count) {

@@ -44,6 +44,7 @@ class BinaryFileReader {
 	bool insideBlock(int type) const;
 	void endBlock(int id=0);
 	bool readString(char* s, int limit);
+	bool read(base::String& string);
 	bool read(bool& b) { b=get<char>(); return 1; }
 	bool read(void* data, int stride, int count=1);
 	bool read(std::vector<bool>& bitset, int count); // special override for reading a packed bitset
