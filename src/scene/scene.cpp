@@ -26,12 +26,27 @@ void SceneNode::setName(const char* n) {
 const char* SceneNode::getName() const {
 	return m_name? m_name: "";
 }
+SceneNode* SceneNode::createChild(const char* name, Drawable* d, const vec3& pos, const Quaternion& rot) {
+	SceneNode* node = new SceneNode(name);
+	addChild(node, pos, rot);
+	if(d) node->attach(d);
+	return node;
+}
 
-SceneNode* SceneNode::createChild(const char* name, const vec3& pos) {
-	SceneNode* n = new SceneNode(name);
-	n->setPosition(pos);
-	addChild(n);
-	return n;
+SceneNode* SceneNode::createChild(const char* name, Drawable* d, const vec3& pos, const Quaternion& rot, const vec3& scale) {
+	SceneNode* node = createChild(name, d, pos, rot);
+	node->setScale(scale);
+	return node;
+}
+
+void SceneNode::addChild(SceneNode* node, const vec3& pos, const Quaternion& rot) {
+	node->setTransform(pos, rot);
+	addChild(node);
+}
+
+void SceneNode::addChild(SceneNode* node, const vec3& pos, const Quaternion& rot, const vec3& scale) {
+	node->setTransform(pos, rot, scale);
+	addChild(node);
 }
 
 void SceneNode::addChild(SceneNode* n) {

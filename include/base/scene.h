@@ -25,9 +25,16 @@ namespace base {
 		SceneNode(const char* name=0);
 		virtual ~SceneNode();
 		
-		SceneNode* createChild(const char* name, const vec3& pos=vec3());
-		SceneNode* createChild(const vec3& pos=vec3()) { return createChild(0,pos); }
+		SceneNode* createChild(const char* name, const vec3& pos=vec3()) { return createChild(name, nullptr, pos); }
+		SceneNode* createChild(const vec3& pos=vec3()) { return createChild(nullptr, nullptr, pos); }
+		SceneNode* createChild(Drawable* d, const vec3& pos=0.f, const Quaternion& rot={}) { return createChild(nullptr, d, pos, rot); }
+		SceneNode* createChild(Drawable* d, const vec3& pos, const Quaternion& rot, const vec3& scale) { return createChild(nullptr, d, pos, rot, scale); }
+		SceneNode* createChild(const char* name, Drawable* d, const vec3& pos, const Quaternion& r, const vec3& scale);
+		SceneNode* createChild(const char* name, Drawable* d, const vec3& pos=0.f, const Quaternion& r={});
+
 		void addChild(SceneNode*);
+		void addChild(SceneNode*, const vec3& pos, const Quaternion& rot={});
+		void addChild(SceneNode*, const vec3& pos, const Quaternion& rot, const vec3& scale);
 		bool removeChild(SceneNode*);
 		bool removeFromParent();
 		void attach(Drawable*);
