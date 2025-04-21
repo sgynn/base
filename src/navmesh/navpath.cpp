@@ -326,6 +326,10 @@ void PathFollower::setRadius(float r) {
 	m_path.m_radius = r;
 }
 
+void PathFollower::setSearchRadius(float r) {
+	m_search = r;
+}
+
 void PathFollower::setPosition(const vec3& p) {
 	m_position = p;
 	NavPoly* poly = m_path.getNavMesh()->getPolygon(m_polygon);
@@ -377,16 +381,16 @@ void PathFollower::setPosition(const vec3& p) {
 	poly = m_path.m_navmesh->getPolygon(p);
 	if(!poly || fabs(p.y - poly->centre.y) > poly->extents.y + 0.1) {
 		vec3 close;
-		poly = m_path.m_navmesh->getClosestPolygon(p, 1, &close);
+		poly = m_path.m_navmesh->getClosestPolygon(p, m_search, &close);
 	}
 	m_polygon = poly? poly->id: NavPoly::Invalid;
-	if(m_polygon==NavPoly::Invalid) printf("Error: Positon not on navmesh\n");
+	if(m_polygon==NavPoly::Invalid) printf("Error: Position not on navmesh\n");
 	else if(getState() == PathState::Success) repath();
 }
 
 bool PathFollower::setGoal(const vec3& t) {
 	m_goal = t;
-	const NavPoly* poly = m_path.resolvePoint(m_goal, m_radius);
+	const NavPoly* poly = m_path.resolvePoint(m_goal, m_radius, m_search);
 	if(!poly) {
 		printf("Failed to resolve navmesh location (%g, %g, %g)\n", t.x, t.y, t.z);
 		stop();
@@ -405,7 +409,7 @@ int PathFollower::setGoal(const std::vector<vec3>& goals) {
 	targets.reserve(goals.size());
 	bool atLeastOneGoalIsValid = false;
 	for(vec3 g: goals) {
-		const NavPoly* poly = m_path.resolvePoint(g, m_radius);
+		const NavPoly* poly = m_path.resolvePoint(g, m_radius, m_search);
 
 		// at this goal already
 		if(poly && m_polygon == poly->id && m_position.xz().distance2(m_goal.xz()) < 1e-12) {

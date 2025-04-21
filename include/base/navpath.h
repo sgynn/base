@@ -79,6 +79,7 @@ namespace base {
 		public:
 		PathFollower(const NavMesh* nav = nullptr);
 		void        setNavMesh(const NavMesh*);
+		void        setSearchRadius(float r);	// Set radius for finding polygons
 		void        setRadius(float r);			// Set character radius
 		void        setPosition(const vec3&);	// Update the internal actor position
 		bool        setGoal(const vec3&);		// Set the target
@@ -111,6 +112,7 @@ namespace base {
 		vec3 m_goal;		// Goal position
 		vec3 m_next;		// Next point to head for
 		float m_radius;		// Character radius
+		float m_search = 1; // Polygon search radius
 		std::vector<short> m_findCache;
 	};
 
