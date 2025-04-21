@@ -3,6 +3,7 @@
 #include <base/mesh.h>
 #include <base/hardwarebuffer.h>
 #include <cstdio>
+#include <algorithm>
 
 using base::Mesh;
 using base::DrawableMesh;
@@ -546,11 +547,18 @@ void FoliageSystem::removeLayer(FoliageLayer* l) {
 }
 
 void FoliageSystem::update(const vec3& context) {
+	if(!m_sorted) {
+		MutexLock scopedLock(m_mutex);
+		std::sort(m_queue.begin(), m_queue.end(), [context](const GenChunk& a, const GenChunk& b) { return a.centre.distance2(context) > b.centre.distance2(context); });
+		m_sorted = true;
+	}
 	// Single thread version
-	if(!m_threads && !m_queue.empty()) {
-		m_queue.back().chunk->geometry = m_queue.back().layer->generateGeometry(m_queue.back().index);
-		m_queue.back().chunk->state = FoliageLayer::GENERATED;
-		m_queue.pop_back();
+	if(!m_threads) {
+		for(int i=0; i<10 && !m_queue.empty(); ++i) {
+			m_queue.back().chunk->geometry = m_queue.back().layer->generateGeometry(m_queue.back().index);
+			m_queue.back().chunk->state = FoliageLayer::GENERATED;
+			m_queue.pop_back();
+		}
 	}
 
 	for(FoliageLayer* layer : m_layers) layer->update(context);
@@ -561,7 +569,11 @@ void FoliageSystem::update(const vec3& context) {
 
 void FoliageSystem::queueChunk(FoliageLayer* layer, const Index& index, FoliageLayer::Chunk* chunk) {
 	MutexLock scopedLock(m_mutex);
-	m_queue.push_back( GenChunk { layer, index, chunk } );
+	static vec3 corners[5];
+	getCorners(index, layer->m_chunkSize, corners, corners[4]);
+	vec3 centre = (corners[0] + corners[2]) * 0.5;
+	m_queue.push_back( GenChunk { layer, index, chunk, centre } );
+	m_sorted = false;
 }
 bool FoliageSystem::cancelChunk(FoliageLayer::Chunk* chunk) {
 	if(chunk->state > FoliageLayer::GENERATING) return true;

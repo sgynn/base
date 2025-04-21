@@ -207,7 +207,8 @@ private:
 	base::Mutex   m_mutex;
 	int     m_threadCount;
 	bool    m_running;
-	struct GenChunk { FoliageLayer* layer; FoliageLayer::Index index; FoliageLayer::Chunk* chunk; };
+	bool    m_sorted = false;
+	struct GenChunk { FoliageLayer* layer; FoliageLayer::Index index; FoliageLayer::Chunk* chunk; vec3 centre; };
 	std::vector<GenChunk> m_queue;
 	void threadFunc(int index);
 };
