@@ -133,10 +133,10 @@ void main() {
 		vec3 dy = cross(sun, dx);
 		dir = vec3(dot(dir, dx), dot(dir, dy), dot(dir, sun));
 		for(int i=1; i<4; ++i) {
-			float res = 5.0 * i;
+			float res = 5.0 * float(i);
 			vec3 cell = floor(dir * res);
 			vec3 r = normalize(cell + hash3(cell) * 0.8 + 0.1);
-			fragment += max(0.0, 1.0 - length(r - dir) * 200.0 * i) * max(0.0, 1.0 - fragment.a * 1.2);
+			fragment += max(0.0, 1.0 - length(r - dir) * 200.0 * float(i)) * max(0.0, 1.0 - fragment.a * 1.2);
 		}
 	}
 	#endif
