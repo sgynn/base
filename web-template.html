@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en-us">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>$title</title>
+	<style>
+		body {
+			font-family: arial;
+			margin: 0;
+			padding: none;
+			text-align: center;
+			background-color: #101020;
+			overflow: hidden;
+		}
+
+		div.wrap {
+			display: inline-block;
+			margin: 0 auto;
+		}
+
+		div.layered { display: grid; }
+		div.layered > * { grid-column-start: 2; grid-row-start: 1; }
+
+		/* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+		canvas.emscripten { /* LD 948x533 */
+			border: 0px none;
+			background-color: black; 
+			width: 948px; 
+			height: 533px;
+		}
+
+		div#fullscreen {
+			width: 32px;
+			height: 32px;
+			font-size: 26pt;
+			background-color: #c0c0c0;
+			border: 1px solid black;
+			text-align: center;
+			border-radius: 3px;
+			cursor: pointer;
+			z-index: 1;
+			justify-self: end;
+			align-self: end;
+			display:grid;
+			opacity: 0.4;
+		}
+		div#fullscreen:hover {
+			background-color: #e0e0e0;
+			color: #808080;
+			opacity: 1;
+		}
+		div#fullscreen div {
+			grid-row: 1;
+			grid-column: 1;
+		}
+
+
+		div#statusbox {
+			z-index: 1;
+			color: white;
+			justify-self: center; /* :start */
+			align-self: center;
+			background-color: #606060;
+			vertical-align: middle;
+			padding: 8px;
+			border-radius: 6px;
+		}
+
+		div#spinner {
+			float: left;
+			width: 16px;
+			height: 16px;
+			margin: 4px;
+			border-radius: 100%;
+			border-left: 5px solid white;
+			border-top: 5px solid transparent;
+			animation: rotation 1.5s linear infinite;
+		}
+		@keyframes rotation {
+			from{transform:rotate(0deg);}
+			to{transform:rotate(360deg);}
+		}
+		div.statuscontent { float: left; }
+		progress { height: 6px; }
+
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<div class="layered">
+			<canvas class="emscripten" id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+			<div id="fullscreen">
+				<div style="margin-top:-6px;margin-left:-3px">&#x21F1;</div>
+				<div style="margin-top:-3px;margin-left: 3px">&#x21F2;</div>
+			</div>
+			<div id="statusbox">
+				<div id="spinner"></div>
+				<div class="statuscontent">
+					<div id="status">Javascript is required!</div>
+					<progress id="progress" value="0" max="100" hidden="1"/>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<script type='text/javascript'>
+		var statusElement = document.getElementById('status');
+		var progressElement = document.getElementById('progress');
+		var spinnerElement = document.getElementById('spinner');
+		var fullscreenElement = document.getElementById('fullscreen');
+		var statusBoxElement = document.getElementById('statusbox');
+		fullscreenElement.hidden = true;
+
+		var Module = {
+			preRun: [],
+			postRun: [],
+			print: function(text) {
+				console.log(text);
+			},
+			printErr: function(text) {
+				if(arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+				console.error(text);
+			},
+			canvas: (function() {
+				var canvas = document.getElementById('canvas');
+
+				// As a default initial behavior, pop up an alert when webgl context is lost. To make your
+				// application robust, you may want to override this behavior before shipping!
+				// See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+				canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+				canvas.onwheel = function(event){ event.preventDefault(); };
+				canvas.onmousewheel = function(event){ event.preventDefault(); };
+
+
+				return canvas;
+			})(),
+
+			setStatus: function(text) {
+				if(!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+				if(text === Module.setStatus.last.text) return;
+				var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+				var now = Date.now();
+				if(m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+				Module.setStatus.last.time = now;
+				Module.setStatus.last.text = text;
+				if(m) {
+					text = m[1];
+					progressElement.value = parseInt(m[2])*100;
+					progressElement.max = parseInt(m[4])*100;
+					progressElement.hidden = false;
+					spinnerElement.hidden = false;
+				}
+				else {
+					progressElement.value = null;
+					progressElement.max = null;
+					progressElement.hidden = true;
+					if(!text) {
+						spinnerElement.style.display = 'none';
+						statusBoxElement.hidden = true;
+						fullscreenElement.hidden = false;
+					}
+				}
+				statusElement.innerHTML = text;
+			},
+
+			totalDependencies: 0,
+			monitorRunDependencies: function(left) {
+				this.totalDependencies = Math.max(this.totalDependencies, left);
+				Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+			}
+		};
+
+
+		Module.setStatus('Downloading...');
+		window.onerror = function(event) {
+			// TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+			Module.setStatus('Exception thrown, see JavaScript console');
+			spinnerElement.style.display = 'none';
+			statusBoxElement.hidden = false;
+			Module.setStatus = function(text) {
+				if(text) Module.printErr('[post-exception status] ' + text);
+			};
+		};
+
+
+		// Try to prevent ctrl+w from ruining your day
+		window.onbeforeunload = function (e) {
+			e.preventDefault(); // Cancel the event
+			e.returnValue = 'Really want to quit the game?'; // Chrome requires returnValue to be set
+		};
+
+		//Prevent Ctrl+S (and Ctrl+W for old browsers and Edge)
+		document.onkeydown = function (e) {
+			e = e || window.event; //Get event
+			if (!e.ctrlKey) return;
+			var code = e.which || e.keyCode;//Get key code
+			switch (code) {
+				case 83://Block Ctrl+S
+				case 87://Block Ctrl+W -- Not work in Chrome and new Firefox
+					e.preventDefault();
+					e.stopPropagation();
+					break;
+			}
+		};
+
+
+	</script>
+	<script async type="text/javascript" src="index.js"></script>
+</body>
+</html>
+
+
