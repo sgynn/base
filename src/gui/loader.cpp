@@ -109,6 +109,7 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 		rescale = root;
 		root = new Widget();
 		root->setSize(baseSize);
+		root->setRoot(this);
 	}
 
 	for(XML::iterator i = xmlRoot.begin(); i!=xmlRoot.end(); ++i) {
