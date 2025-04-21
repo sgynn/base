@@ -721,7 +721,11 @@ void XMLResourceLoader::loadMaterialPass(const XMLElement& e, Pass* pass) {
 			}
 			else {
 				Texture* tex = resources.textures.get(i.attribute("file"));
-				if(tex) pass->setTexture( i.attribute("name"), tex );
+				if(tex) {
+					Texture::Wrapping wrap = enumValue(i.attribute("wrap"), {"repeat", "clamp", "border"}, Texture::REPEAT);
+					if(wrap) tex->setWrap(wrap);
+					pass->setTexture( i.attribute("name"), tex );
+				}
 				else printf("Error: Texture '%s' not found\n", i.attribute("file"));
 			}
 		}
