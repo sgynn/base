@@ -22,15 +22,18 @@
 	</iconlist>
 	<!--Templates-->
 	<template class="Button" rect="550 636 118 20" name="menuitem" skin="none">
-		<widget anchor="lm" image="0" rect="2 2 16 16" template="icon" group="audioicons" skin="listitem" name="_icon" autosize="1"/>
+		<widget anchor="lm" group="audioicons" rect="2 2 16 16" template="icon" skin="listitem" image="0" name="_icon" autosize="1"/>
 		<widget inheritstate="1" anchor="tl" rect="21 0 97 20" template="label" skin="listitem" align="13" name="_text"/>
 	</template>
-	<template class="VariableWidget" rect="488 625 300 21" name="variablevalue" skin="none">
-		<widget anchor="l" template="spinboxf" name="value" rect="0 0 48 20"/>
-		<widget anchor="lr" template="droplist" name="variable" rect="60 0 240 20"/>
+	<template anchor="lt" class="VariableWidget" rect="332 682 300 21" name="variablevalue" skin="none">
+		<widget step="0.1" template="spinboxf" name="value" min="-100" rect="0 0 48 20"/>
+		<widget anchor="lrt" template="droplist" name="variable" rect="60 0 240 20"/>
+	</template>
+	<template anchor="lt" class="Checkbox" icon="sound" group="audioicons" nicon="sound" rect="336 673 21 21" skin="button" name="typefilter" drag="1">
+		<widget inheritstate="1" anchor="lt" group="audioicons" template="icon" rect="0 0 21 21" image="sound" name="_icon"/>
 	</template>
 	<template class="Button" rect="559 686 118 20" name="submenu" skin="none">
-		<widget anchor="rm" image="6" rect="100 2 16 16" template="icon" group="audioicons" skin="listitem" name="_icon" autosize="1"/>
+		<widget anchor="rm" group="audioicons" rect="100 2 16 16" template="icon" skin="listitem" image="6" name="_icon" autosize="1"/>
 		<widget inheritstate="1" anchor="lrtb" rect="21 0 79 20" template="label" skin="listitem" align="13" name="_text"/>
 	</template>
 	<template anchor="lr" class="Widget" rect="528 684 213 20" name="testvalue" skin="none">
@@ -44,32 +47,33 @@
 	<!--Widget Layout-->
 	<widget anchor="lt" template="window" caption="Audio System Editor" rect="144 120 696 456">
 		<widget anchor="lrtb" template="hsplit" rect="0 0 686 429">
-			<widget anchor="lt" class="Widget" template="frame" rect="0 0 244 429">
-				<widget anchor="lrtb" resize="last" template="vsplit" rect="0 0 244 429">
-					<widget anchor="lt" class="Widget" template="frame" rect="0 0 244 59">
-						<widget anchor="lrtb" template="listbox" name="banks" rect="0 24 244 35"/>
-						<widget anchor="lrt" class="Widget" layout="HorizontalLayout" margin="2" rect="0 -1 244 27" skin="none" spacing="3">
-							<widget tip="Add Mixer" anchor="lt" image="1" template="iconbutton" rect="2 2 24 23" group="audioicons" name="addmixer"/>
-							<widget tip="Add Variable" anchor="lt" image="8" template="iconbutton" rect="29 2 24 23" group="audioicons" name="addfolder"/>
-							<widget tip="Add Random Container" anchor="lt" image="4" template="iconbutton" rect="56 2 24 23" group="audioicons" name="addrandom"/>
-							<widget tip="Add Sequence Container" anchor="lt" image="3" template="iconbutton" rect="83 2 24 23" group="audioicons" name="addsequence"/>
-							<widget tip="Add Switch Container" anchor="lt" image="5" template="iconbutton" rect="110 2 24 23" group="audioicons" name="addswitch"/>
-							<widget tip="Add Sound" anchor="lt" group="audioicons" template="iconbutton" name="addsound" rect="137 2 24 23"/>
-							<widget tip="Add Event" anchor="lt" image="6" template="iconbutton" rect="164 2 24 23" group="audioicons" name="addevent"/>
-							<widget tip="Add Variable" anchor="lt" image="7" template="iconbutton" rect="191 2 24 23" group="audioicons" name="addattenuation"/>
-							<widget tip="Add Variable" anchor="lt" image="2" template="iconbutton" rect="218 2 24 23" group="audioicons" name="addvariable"/>
-						</widget>
+			<widget anchor="lt" class="Widget" template="frame" rect="0 0 165 429">
+				<widget anchor="lrtb" resize="last" template="vsplit" rect="0 0 165 429">
+					<widget anchor="lt" class="Widget" template="frame" rect="0 0 165 59">
+						<widget anchor="lrtb" template="listbox" name="banks" rect="0 0 165 59"/>
 					</widget>
-					<widget anchor="lt" hideroot="1" template="tree" name="objects" rect="0 61 244 368">
-						<widget anchor="lt" class="Widget" visible="0" template="frame" rect="0 0 189 20" skin="none" name="_item" tangible="2">
-							<widget anchor="lt" group="audioicons" template="icon" name="_2" image="0" rect="2 2 16 16"/>
-							<widget inheritstate="1" anchor="lrt" template="label" name="_0" skin="listitem" rect="20 0 169 20"/>
+					<widget anchor="lt" class="Widget" rect="0 61 165 368">
+						<widget anchor="lrtb" hideroot="1" template="tree" name="objects" rect="0 0 165 323">
+							<widget anchor="lt" class="Widget" visible="0" template="frame" rect="0 0 189 20" skin="none" name="_item" tangible="2">
+								<widget anchor="lt" image="0" template="icon" name="_2" group="audioicons" rect="2 2 16 16"/>
+								<widget inheritstate="1" anchor="lrt" template="label" name="_0" skin="listitem" rect="20 0 169 20"/>
+							</widget>
+						</widget>
+						<widget anchor="lrb" submit="1" template="editbox" name="filter" rect="0 348 149 20"/>
+						<widget anchor="rb" group="glyphs" rect="149 348 15 20" template="iconbutton" skin="none" image="cross" name="clearfilter"/>
+						<widget anchor="lrb" class="Widget" layout="HorizontalLayout" margin="2" rect="0 322 165 27" skin="none" name="types" spacing="3">
+							<widget tip="Show Mixers" icon="mixer" nicon="mixer" template="typefilter" rect="2 2 24 23" image="1" name="showmixers"/>
+							<widget tip="Show Sounds" template="typefilter" name="showsounds" rect="29 2 24 23"/>
+							<widget tip="Show folders" icon="folder" nicon="folder" template="typefilter" rect="56 2 24 23" image="8" name="showfolders"/>
+							<widget tip="Show Events" icon="event" nicon="event" template="typefilter" rect="83 2 24 23" image="6" name="showevents"/>
+							<widget tip="Show Attenuations" icon="attenuation" nicon="attenuation" template="typefilter" rect="110 2 24 23" image="7" name="showattenuations"/>
+							<widget tip="Show Variables" icon="variable" nicon="variable" template="typefilter" rect="137 2 24 23" image="2" name="showvariables"/>
 						</widget>
 					</widget>
 				</widget>
 			</widget>
-			<widget anchor="lt" tab="_client" template="tabbedpane" name="tabs" rect="246 0 440 429">
-				<widget anchor="lrtb" class="Widget" rect="0 0 440 405" name="Properties" skin="none">
+			<widget anchor="lt" tab="_client" template="tabbedpane" name="tabs" rect="167 0 519 429">
+				<widget anchor="lrtb" class="Widget" rect="0 0 519 405" name="Properties" skin="none">
 					<widget anchor="lt" class="Widget" layout="VerticalLayout" rect="12 12 312 300" skin="none" name="objectdata" spacing="8">
 						<widget anchor="lt" class="Widget" rect="0 0 312 20" skin="none">
 							<widget anchor="lt" template="label" caption="Name" rect="0 0 72 20"/>
@@ -124,7 +128,7 @@
 						<widget anchor="lrtb" layout="VerticalLayout" template="scrollpane" name="values" rect="0 0 211 86" showscrollbars="0"/>
 					</widget>
 				</widget>
-				<widget anchor="lrtb" class="Widget" rect="0 0 440 405" name="Scene" skin="none" visible="0">
+				<widget anchor="lrtb" class="Widget" rect="0 0 519 405" name="Scene" skin="none" visible="0">
 					<widget anchor="lt" template="droplist" name="game" rect="24 12 142 300"/>
 					<widget anchor="lt" colour="#afafaf" wrap="1" template="label" rect="204 36 229 177" fontsize="12" caption="This is tab has a list of all registered game objects, and a graph of playing sounds.
 

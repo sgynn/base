@@ -6,6 +6,7 @@
 #include <base/gui/lists.h>
 #include <base/gui/tree.h>
 #include <base/gui/menubuilder.h>
+#include <base/assert.h>
 #include <base/xml.h>
 #include <algorithm>
 
@@ -122,6 +123,31 @@ void AudioEditor::initialise() {
 		}
 	});
 
+	// Filtering
+	m_filter = m_panel->getWidget<Textbox>("filter");
+	m_filter->setSubmitAction(Textbox::ClearFocus);
+	m_filter->eventChanged.bind([this](Textbox*, const char*) { refreshDataTree(); });
+	m_panel->getWidget<Button>("clearfilter")->eventPressed.bind([this](Button*) {
+		m_filter->setText("");
+		refreshDataTree();
+	});
+	auto addTypeFilter = [this](const char* name, Type key, Type key2 = (Type)-1) {
+		Checkbox* check = m_panel->getWidget<Checkbox>(name);
+		check->setChecked(true);
+		int mask = 1<<(int)key;
+		if((int)key2>=0) mask |= 1<<(int)key2;
+		check->eventChanged.bind([this, mask](Button* b) {
+			if(b->isSelected()) m_typeFilter |= mask;
+			else m_typeFilter &= ~mask;
+			refreshDataTree();
+		});
+	};
+	addTypeFilter("showmixers", Type::Mixer);
+	addTypeFilter("showsounds", Type::Sound);
+	addTypeFilter("showfolders", Type::Folder);
+	addTypeFilter("showevents", Type::Event);
+	addTypeFilter("showattenuations", Type::Attenuation);
+	addTypeFilter("showvariables", Type::Variable, Type::Enum);
 	
 	m_preview = m_panel->getWidget("preview");
 	m_preview->getWidget<Button>("play")->eventPressed.bind(this, &AudioEditor::playSound);
@@ -215,6 +241,17 @@ TreeNode* AudioEditor::findNode(Object obj, TreeNode* node) {
 	return nullptr;
 }
 
+template<class T>
+inline void AudioEditor::listItems(Type type, TreeNode* root, const T& list, const char* icon) {
+	if(~m_typeFilter & (1<<(int)type)) return;
+	String filter;
+	if(m_filter->getText()[0]) filter = String::cat("*", m_filter->getText(), "*");
+	for(const auto& i: list) {
+		if(filter && !String::match(i.key, filter)) continue;
+		root->add(i.key, i.value, icon, type);
+	}
+}
+
 void AudioEditor::refreshDataTree() {
 	Data* data = audio::Data::instance;
 	if(!data) return;
@@ -226,37 +263,45 @@ void AudioEditor::refreshDataTree() {
 
 	TreeNode* root = m_data->getRootNode();
 	root->clear();
-	for(const auto& i: data->m_mixerMap) root->add(i.key, i.value, "mixer", Type::Mixer);
-	for(const auto& i: data->m_variableMap) root->add(i.key, i.value, "variable", Type::Variable);
-	for(const auto& i: data->m_enumMap) root->add(i.key, i.value, "variable", Type::Enum);
-	for(const auto& i: data->m_eventMap) root->add(i.key, i.value, "event", Type::Event);
-	for(const auto& i: data->m_attenuationMap) root->add(i.key, i.value, "attenuation", Type::Attenuation);
+	listItems(Type::Mixer, root, data->m_mixerMap, "mixer");
+	listItems(Type::Variable, root, data->m_variableMap, "variable");
+	listItems(Type::Enum, root, data->m_enumMap, "variable");
+	listItems(Type::Event, root, data->m_eventMap, "event");
+	listItems(Type::Attenuation, root, data->m_attenuationMap, "attenuation");
 
-	const char* typeIcon[] = { "none", "sound", "folder", "random", "sequence", "switch" };
+	String filter;
+	if(m_filter->getText()[0]) filter = String::cat("*", m_filter->getText(), "*");
+	static const char* typeIcon[] = { "none", "sound", "folder", "random", "sequence", "switch" };
 	std::vector<LookupMap::Pair> queue;
-	for(const auto& i: data->m_soundMap) queue.push_back(i);
-	for(size_t i=0; i<queue.size(); ++i) {
-		TreeNode* node = root;
-		const char* name = queue[i].key;
-		const char* split = strchr(name, '.');
-		while(split && node) {
-			int len = split - name;
-			TreeNode* next = nullptr;
-			for(TreeNode* n: *node) {
-				Type type = n->getValue<Type>(3, Type::Folder);
-				if(isSoundType(type) && strncmp(name, n->getText(), len)==0) { next=n; break; }
+	if(m_typeFilter & 1<<(int)Type::Sound) {
+		for(const auto& i: data->m_soundMap) {
+			if(filter && !String::match(i.key, filter)) continue;
+			TreeNode* node = root;
+			const char* name = i.key;
+			const char* split = strchr(name, '.');
+			while(node) {
+				int len = split? split - name: strlen(name);
+				TreeNode* next = nullptr;
+				for(TreeNode* n: *node) {
+					Type type = n->getValue<Type>(3, Type::Folder);
+					if(isSoundType(type) && strncmp(name, n->getText(), len)==0) { next=n; break; }
+				}
+				if(!next) { // Add it
+					String fullName = split? String(i.key, split-i.key): String(i.key);
+					audio::soundID s = data->m_soundMap.get(fullName, audio::INVALID);
+					const SoundBase* soundData = data->lookupSound(s);
+					assert(soundData);
+					if(soundData) {
+						String title = split? String(name, split-name): String(name);
+						next = node->add(title, s, typeIcon[soundData->type], (Type)soundData->type);
+					}
+				}
+				if(!split) break;
+				node = next;
+				name = split + 1;
+				split = strchr(name, '.');
 			}
-			node = next;
-			name = split+1;
-			split = strchr(name, '.');
 		}
-
-		const SoundBase* sound = data->lookupSound(queue[i].value);
-		if(!node && sound) { queue.push_back(queue[i]); continue; } // Come back later
-
-		// prefix: Random "56% Name"; Switch: "Key: name";
-
-		if(sound) node->add(name, queue[i].value, typeIcon[sound->type], (Type)sound->type);
 	}
 
 	// Refresh other comboboxes
@@ -276,6 +321,8 @@ void AudioEditor::refreshDataTree() {
 		Type tb = b->getValue<Type>(3, Type::Mixer);
 		return ta<tb || (ta==tb && strcmp(a->getText(), b->getText()) < 0);
 	});
+
+	if(filter) root->expandAll();
 
 	// Selection
 	if(TreeNode* sel = findNode(selected, root)) {
@@ -368,7 +415,7 @@ void AudioEditor::addItem(Type type) {
 	switch(type) {
 		case Type::Mixer:
 			item.id = data.m_mixers.size();
-			data.m_mixers.push_back({item.id, item.id});
+			data.m_mixers.push_back({item.id, 0, {1}});
 			break;
 		case Type::Variable:
 			item.id = data.m_variables.size();
@@ -521,7 +568,7 @@ void AudioEditor::selectObject(gui::TreeView*, gui::TreeNode* node) {
 	for(Widget* w: m_properties) if(!cast<Label>(w)) w->setVisible(false);
 	if(!node) return;
 
-	auto show = [](Widget* w) { w->getParent()->setVisible(true); };
+	auto show = [this](Widget* w) { for(;w!=m_properties; w=w->getParent()) w->setVisible(true); };
 	#define findWidget(Type, name) if(Type* w=m_properties->getWidget<Type>(#name)) show(w), w
 
 	Data& data = *audio::Data::instance;
@@ -543,8 +590,9 @@ void AudioEditor::selectObject(gui::TreeView*, gui::TreeNode* node) {
 		findWidget(Combobox, target)->setText(getObjectName(Type::Mixer, sound->targetID));
 		findWidget(VariableWidget, gain)->setVariable(sound->gain);
 		findWidget(VariableWidget, pitch)->setVariable(sound->pitch);
-		findWidget(Checkbox, loop)->setChecked(sound->loop >= 0);
+		findWidget(Checkbox, loop)->setChecked(sound->flags & audio::LOOP);
 		findWidget(Spinbox, loopcount)->setValue(sound->loop > 0? sound->loop: 0);
+		findWidget(Spinbox, loopcount)->setEnabled(sound->flags & audio::LOOP);
 		setValidSkin(m_properties->getWidget<Combobox>("source"), sound->source);
 		}
 		break;
@@ -623,6 +671,21 @@ void AudioEditor::setupPropertyEvents() {
 	CONNECT(Combobox, source, eventSelected, [this](Combobox* c, ListItem& i) {
 		if(i.isValid()) c->eventSubmit(c);
 	});
+
+	// Loop
+	CONNECT(Checkbox, loop, eventChanged, [this](Button* b) {
+		Spinbox* count = b->getParent()->getWidget<Spinbox>("loopcount");
+		count->setEnabled(b->isSelected());
+		Object o = getSelectedObject();
+		if(Sound* s = ((Sound*)audio::Data::instance->lookupSound(o.id))) {
+			if(b->isSelected()) s->flags |= audio::LOOP;
+			else s->flags &= ~audio::LOOP;
+		}
+	});
+	CONNECT(Spinbox, loopcount, eventChanged, [this](Spinbox*, int v) {
+		if(Sound* s = ((Sound*)audio::Data::instance->lookupSound(getSelectedObject().id))) s->loop = v;
+	});
+
 }
 
 
@@ -798,6 +861,10 @@ base::XMLElement& writeSound(base::XMLElement& node, audio::objectID id, const c
 			fade.setAttribute("fadein", s->fadeIn);
 			fade.setAttribute("fadeout", s->fadeOut);
 		}
+		if(s->flags & audio::LOOP) {
+			XMLElement& loop = m.add("loop");
+			if(s->loop>0) loop.setAttribute("count", s->loop);
+		}
 		writeVariable(m, "pitch", s->pitch);
 		writeVariable(m, "gain", s->gain);
 		attenuation = s->attenuationID;
@@ -827,10 +894,6 @@ base::XMLElement& writeSound(base::XMLElement& node, audio::objectID id, const c
 		m.add("attenuation").setAttribute("ref", getNameFromID(data.m_attenuationMap, attenuation));
 	}
 
-	if(sound->loop>=0) {
-		XMLElement& loop = m.add("loop");
-		if(sound->loop>0) loop.setAttribute("count", sound->loop);
-	}
 	return m;
 }
 
@@ -844,9 +907,12 @@ void AudioEditor::save(const char* file) {
 
 
 	for(const auto& i: data.m_mixerMap) {
+		if(i.value == 0) continue; // Don't save master mixer
+		const Mixer& mixer = data.m_mixers[i.value];
 		XMLElement& m = root.add("mixer");
 		m.setAttribute("name", i.key);
-		writeVariable(m, "volume", data.m_mixers[i.value].volume);
+		writeVariable(m, "volume", mixer.volume);
+		if(mixer.targetID) m.add("target").setAttribute("mixer", getNameFromID(data.m_mixerMap, mixer.targetID));
 	}
 	for(const auto& i: data.m_variableMap) {
 		XMLElement& m = root.add("variable");
@@ -872,7 +938,7 @@ void AudioEditor::save(const char* file) {
 	for(SoundBank* bank: data.m_banks) {
 		for(size_t i=0; i<bank->data.size(); ++i) {
 			objectID id = Data::getSoundID(i, bank);
-			if(isRootLevelSound(id)) writeSound(root, id, nullptr, INVALID, INVALID);
+			if(isRootLevelSound(id)) writeSound(root, id, nullptr, 0, INVALID);
 		}
 	}
 

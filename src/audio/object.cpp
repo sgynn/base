@@ -218,7 +218,7 @@ void Object::onEndEvent(const Data::EndEvent& e) {
 
 
 	// Stop sound
-	if(inst.sound->targetID>0) {
+	if(inst.sound->targetID!=INVALID) {
 		alSourceStop(inst.source); // to be sure - possibly fixes a bug
 		Data::instance->m_mixers[ inst.sound->targetID ].removeInstance(this, e.index);
 		inst.sound = 0;
