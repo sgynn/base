@@ -50,6 +50,7 @@ class Shader {
 
 	/** Currently bound shader */
 	static const Shader& current() { return *s_currentShader; }
+	static void notifyUnbound() { s_currentShader = &Null; };
 	static const Shader Null;
 
 	// Quick shader creation
