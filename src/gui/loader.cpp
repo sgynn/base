@@ -8,6 +8,10 @@
 #include <cstdlib>
 #include <cstdio>
 
+#ifdef EMSCRIPTEN
+#include <base/gui/freetype.h>
+#endif
+
 using namespace base;
 using namespace gui;
 
@@ -126,8 +130,13 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 				if(!src || size<=0) return false;
 				FontLoader* loader = nullptr;
 				if(strstr(src, ".png")) loader = new BitmapFont(src, face.attribute("characters", nullptr));
-				else if(strstr(src, ".ttf")) loader = new FreeTypeFont(src);
+				else if(strstr(src, ".ttf")) {
+					if(FontLoader::getFreetypeLoader()) loader = FontLoader::getFreetypeLoader()(src);
+					else printf("Error: Freetype fonts not enabled.\n");
+				}
 				else loader = new SystemFont(src);
+				if(!loader) return false;
+
 				// Code point ranges
 				Point range = parsePoint(face.attribute("range"));
 				if(range.y>0) loader->addRange(range.x, range.y);

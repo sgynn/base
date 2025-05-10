@@ -224,6 +224,7 @@ set(guiheaders
 	include/base/gui/animator.h
 	include/base/gui/delegate.h
 	include/base/gui/font.h
+	include/base/gui/freetype.h
 	include/base/gui/gui.h
 	include/base/gui/layouts.h
 	include/base/gui/lists.h
@@ -270,8 +271,15 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)	# C++14 - needed for auto return type in Delegate class
 
+find_package(Freetype)
+if(${Freetype_FOUND})
+	set(FREETYPE "-DFREETYPE")
+endif()
+
 add_library(base STATIC ${src} ${gui} ${script} ${audio} ${particles} ${headers} ${guiheaders} ${worldheaders} ${editor} ${editorheaders} )
-include_directories( include )
+include_directories(include)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+
 install(FILES ${headers} DESTINATION include/base)
 install(FILES ${guiheaders} DESTINATION include/base/gui)
 install(FILES ${worldheaders} DESTINATION include/base/world)
@@ -286,10 +294,10 @@ if(WEB)
 	set(CMAKE_CXX_FLAGS "-g -Wall -DEMSCRIPTEN -DFREETYPE ${EditorPath} -s USE_FREETYPE=1")
 	install(TARGETS base DESTINATION lib/wasm32-emscripten)
 elseif(MINGW)
-	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32 ${EditorPath}")
+	set(CMAKE_CXX_FLAGS "-g -Wall -DWIN32 ${FREETYPE} ${EditorPath}")
 	install(TARGETS base DESTINATION lib)
 elseif(UNIX)
-	set(CMAKE_CXX_FLAGS "-g -Wall -DLINUX ${EditorPath}")
+	set(CMAKE_CXX_FLAGS "-g -Wall -DLINUX ${FREETYPE} ${EditorPath}")
 	set(CMAKE_C_FLAGS "-g -Wall")
 	message(STATUS ${CMAKE_CXX_FLAGS})
 	install(TARGETS base DESTINATION lib64)

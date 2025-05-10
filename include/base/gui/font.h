@@ -69,6 +69,10 @@ class FontLoader {
 	private:
 	Font::Face* m_face = 0;
 	Font* m_font = 0;
+
+	public:
+	using FontLoaderCreateFunc = FontLoader*(*)(const char*);
+	static FontLoaderCreateFunc& getFreetypeLoader() { static FontLoaderCreateFunc f; return f; }
 };
 
 class SystemFont : public FontLoader {
@@ -79,6 +83,7 @@ class SystemFont : public FontLoader {
 	char m_name[32];
 };
 
+/*
 class FreeTypeFont : public FontLoader {
 	public:
 	FreeTypeFont(const char* file);
@@ -86,6 +91,7 @@ class FreeTypeFont : public FontLoader {
 	protected:
 	char m_file[128];
 };
+*/
 
 class BitmapFont : public FontLoader {
 	public:
