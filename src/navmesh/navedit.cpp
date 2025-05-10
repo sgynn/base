@@ -323,52 +323,52 @@ void nav::updateLink(NavLink* l) {
 	l->width = a.distance(b);
 }
 
+// Generates 2D lines through the polygon that agents with a radius above threshold can't cross
 void nav::calculateTraversal(const NavPoly* poly, float maxRadius) {
 	if(!poly) return;
 	poly->traversal.clear();
 	maxRadius *= maxRadius;
+	auto processPoly = [](const NavPoly* poly, const NavPoly* look, uint64 skipMask, const vec2& from, float limit, const auto& recurse)->bool {
+		for(NavMesh::EdgeInfo& e: look) {
+			if(skipMask & (1<<e.a)) continue;
+			vec2 ea = e.pointA().xz();
+			vec2 ed = e.pointB().xz() - ea;
+			float t = ed.dot(from - ea) / ed.dot(ed);
+			if(t>0 && t<1) {
+				vec2 p = ea + ed * t;
+				float dist = p.distance2(from);
+				if(dist < limit) {
+					if(e.link()) recurse(poly, e.connected(), 1ull<<e.oppositeEdge(), from, limit, recurse);
+					else {
+						vec2 normal(p.y-from.y, from.x-p.x);
+						poly->traversal.push_back({sqrt(dist), normal, normal.dot(from)});
+					}
+				}
+			}
+		}
+		return false;
+	};
+	// FIXME- this only adds them to this polygon if they cross into another
+	
 	for(NavMesh::EdgeInfo& edge: poly) {
 		if(!edge.link()) continue;
 		const vec2 a = edge.poly.points[edge.a].xz();
 		const vec2 b = edge.poly.points[edge.b].xz();
-		float width2 = fmin(a.distance2(b), maxRadius);
-		
+		float width2 = a.distance2(b);
+
 		// Closest edge to edge.a
 		for(NavMesh::EdgeInfo& e: poly) {
-			if(e.link()) continue;
-			if(e.a == edge.a || e.b == edge.a) continue;
-			vec2 ea = e.point().xz();
-			vec2 ed = e.poly.points[e.b].xz() - ea;
-			float t = ed.dot(a - ea) / ed.dot(ed);
-			if(t>0 && t<1) {
-				vec2 p = ea + ed * t;
-				float dist = p.distance2(a);
-				if(dist < width2) {
-					vec2 normal(p.y-a.y, a.x-p.x);
-					poly->traversal.push_back({sqrt(dist), normal, normal.dot(a)});
-				}
-			}
+			uint64 skip = 1ull<<e.a | 1ull<<((e.a - 1 + poly->size) % poly->size);
+			processPoly(poly, poly, skip, a, width2, processPoly);
 		}
 		
 		// closest edge to edge.b
 		for(NavMesh::EdgeInfo& e: poly) {
-			if(e.link()) continue;
-			if(e.a == edge.b || e.b == edge.b) continue;
-			vec2 ea = e.point().xz();
-			vec2 ed = e.poly.points[e.b].xz() - ea;
-			float t = ed.dot(b - ea) / ed.dot(ed);
-			if(t>0 && t<1) {
-				vec2 p = ea + ed * t;
-				float dist = p.distance2(b);
-				if(dist < width2) {
-					vec2 normal(p.y-b.y, b.x-p.x);
-					poly->traversal.push_back({sqrt(dist), normal, normal.dot(b)});
-				}
-			}
+			uint64 skip = 1ull<<e.a | 1ull<<e.b;
+			processPoly(poly, poly, skip, b, width2, processPoly);
 		}
 	}
-	// FIXME: This fails if the blocking edge is in an adjacent polygon
-	// Need to traverse links and add the entries to both polygons
+	poly->traversalCalculated = true;
 
 }
 
