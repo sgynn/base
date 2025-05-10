@@ -167,9 +167,12 @@ void Renderer::dropImageReference(unsigned i) {
 // ========================================================================================= //
 
 int Renderer::createAtlas(int width, int height) {
-	base::Texture t = base::Texture::create(width, height, base::Texture::RGBA8, 0);
+	char* data = new char[width*height*4];
+	memset(data, 0, width*height*4);
+	base::Texture t = base::Texture::create(width, height, base::Texture::RGBA8, data);
 	t.setWrap(base::Texture::CLAMP);
 	m_atlases.push_back(Atlas{t.unit(), width, height});
+	delete [] data;
 	return m_atlases.size() - 1;
 }
 
