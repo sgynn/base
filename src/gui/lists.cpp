@@ -267,7 +267,7 @@ void Listbox::initialise(const Root* root, const PropertyMap& p) {
 		}
 		bindEvents(item);
 	}
-	else {
+	else if(getSkin() && getSkin()->getFont()) {
 		m_itemHeight = getSkin()->getFont()->getLineHeight(getSkin()->getFontSize());
 		m_tileWidth = 0;
 	}
