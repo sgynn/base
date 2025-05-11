@@ -256,10 +256,13 @@ class Table : public Widget {
 	void draw() const override;
 	void setSize(int,int) override;
 	void copyData(const Widget*) override;
+	Point getPreferredSize(const Point& hint) const;
 
 	public:
 	void showHeader(bool visible);
+	void showScrollbars(bool always);
 	void setRowHeight(int Height);
+	void clearColumns();
 	uint addColumn(const char* name, const char* title, int width=0, const char* itemTemplate=0);
 	uint insertColumn(uint index, const char* name, const char* title, int width=0, const char* itemTemplate=0);
 	void removeColumn(uint index);
@@ -312,7 +315,7 @@ class Table : public Widget {
 	protected:
 	Widget*     m_headerTemplate = nullptr;
 	Widget*     m_header = nullptr;
-	Scrollpane* m_dataPanel = nullptr;
+	Widget*     m_dataPanel = nullptr;
 	bool        m_sortable = false;	// Are columns sortable
 	int         m_sorted = 0;   // column to sort by. negative for inverse order. 0=none;
 	int         m_rowHeight = 16;
@@ -324,8 +327,8 @@ class Table : public Widget {
 	std::vector<Column> m_columns;
 
 	// Cell widget cache
-	uint m_cacheOffset;
-	uint m_cacheSize;
+	uint m_cacheOffset = 0;
+	uint m_cacheSize = 0;
 	typedef std::vector<Widget*> RowCache;
 	std::vector<RowCache> m_cellCache;
 	void clearCache();

@@ -5,10 +5,8 @@
 
 using namespace gui;
 
-Table::Table()
-	: m_headerTemplate(0), m_header(0), m_dataPanel(0)
-	, m_sortable(false), m_sorted(0), m_rowHeight(20), m_cacheOffset(0)
-{}
+Table::Table() {
+}
 
 Table::~Table() {
 }
@@ -17,10 +15,14 @@ void Table::initialise(const Root* r, const PropertyMap& p) {
 	m_header = getTemplateWidget("_header");
 	m_headerTemplate = getTemplateWidget("_headeritem");
 	m_dataPanel = getTemplateWidget<Scrollpane>("_data");
-	m_dataPanel->getTemplateWidget("_client")->setSkin(0);	// Need a better way of overriding skins
-	m_dataPanel->setSkin(0);
-	m_dataPanel->useFullSize(true);
-	m_dataPanel->setAutosize(false);
+	if(m_dataPanel) {
+		m_dataPanel->as<Scrollpane>()->useFullSize(true);
+		m_dataPanel->setAutosize(false);
+		if(p.contains("showscrollbars")) showScrollbars(p.getValue("showscrollbars", 0));
+	}
+	else if(!m_header) {
+		m_dataPanel = this;
+	}
 	bool hasHeader = !p.contains("header") || atoi(p["header"]);
 	if(p.contains("rowheight")) m_rowHeight = atoi(p["rowheight"]);
 
@@ -28,7 +30,6 @@ void Table::initialise(const Root* r, const PropertyMap& p) {
 	if(m_header) m_header->setVisible(hasHeader);
 
 	// No idea how to get column header data here. perhaps items ? or add another tag to copy in
-	
 }
 
 void Table::draw() const {
@@ -52,8 +53,20 @@ void Table::setSize(int w, int h) {
 	updateScrollSize();
 }
 
+Point Table::getPreferredSize(const Point&) const {
+	int width = 0;
+	for(const Column& c: m_columns) width += c.width;
+	if(cast<Scrollpane>(m_dataPanel)) return Point(width, m_rect.height);
+	else return Point(width, m_data.size() * m_rowHeight + (m_header? m_header->getSize().y: 0));
+}
+
 void Table::showHeader(bool v) {
 	if(m_header) m_header->setVisible(v);
+	else if(v) printf("Warning: Table template has no header\n");
+}
+
+void Table::showScrollbars(bool always) {
+	if(Scrollpane* scroll = cast<Scrollpane>(m_dataPanel)) scroll->alwaysShowScrollbars(always);
 }
 
 void Table::setRowHeight(int h) {
@@ -70,6 +83,11 @@ void Table::onMouseButton(const Point&, int, int) {
 }
 
 // ===================================================================== //
+
+void Table::clearColumns() {
+	for(Column& c: m_columns) delete c.header;
+	m_columns.clear();
+}
 
 uint Table::getColumnCount() const {
 	return m_columns.size();
@@ -93,7 +111,7 @@ uint Table::insertColumn(uint index, const char* name, const char* title, int wi
 	if(index>m_columns.size()) index = m_columns.size();
 
 	Column c;
-	c.header = m_header && m_headerTemplate? m_headerTemplate->clone(): 0;
+	c.header = m_header && m_headerTemplate? m_headerTemplate->clone(): nullptr;
 	c.name = name;
 	c.width = width;
 	c.widgets = itemWidget;
@@ -119,6 +137,7 @@ uint Table::insertColumn(uint index, const char* name, const char* title, int wi
 void Table::removeColumn(uint index) {
 	if(index>=m_columns.size()) return;
 	m_columns[index].header->removeFromParent();
+	delete m_columns[index].header;
 	for(uint i=index+1; i<m_columns.size(); ++i) m_columns[i].pos -= m_columns[index].width;
 	m_columns.erase(m_columns.begin() + index);
 	// TODO: remove cached widgets
@@ -280,9 +299,10 @@ void Table::fireCustomEvent(Widget* w) {
 // --------------------------------------------------------------------------------------- //
 
 void Table::updateScrollSize() {
-	if(!m_dataPanel) return;
-	if(m_data.empty()) m_dataPanel->setPaneSize(0,0);
-	else m_dataPanel->setPaneSize( m_columns.back().pos + m_columns.back().width, m_data.size() * m_rowHeight);
+	if(Scrollpane* scroll = cast<Scrollpane>(m_dataPanel)) {
+		if(m_data.empty()) scroll->setPaneSize(0,0);
+		else scroll->setPaneSize( m_columns.back().pos + m_columns.back().width, m_data.size() * m_rowHeight);
+	}
 }
 
 inline const char* anyToString(const Any& v) {
