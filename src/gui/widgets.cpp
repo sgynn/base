@@ -159,7 +159,7 @@ const char* Label::getCaption() const {
 }
 void Label::draw() const {
 	if(!isVisible()) return;
-	Font* font = m_font? m_font: m_skin->getFont();
+	Font* font = m_font? m_font: m_skin? m_skin->getFont(): nullptr;
 	if(font && m_caption) {
 		static const Skin::State fallback;
 		const Skin::State& s = m_skin? m_skin->getState(getState()): fallback;
