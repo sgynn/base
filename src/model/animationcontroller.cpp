@@ -128,8 +128,8 @@ void AnimationBank::add(const AnimationKey& key, Animation* anim, uint groupMask
 	*ptr = a;
 
 	calculateMeta(*a, m_rootBone);
-	
-	if(move) {
+	if(!move) a->speedKey = 0;
+	if(a->speedKey != 0) {
 		m_movement.push_back(a);
 		std::sort(m_movement.begin(), m_movement.end(), [](AnimationInfo* a, AnimationInfo* b) { return a->speedKey<b->speedKey; });
 	}
@@ -143,6 +143,12 @@ void AnimationBank::remove(const AnimationKey& key, uint groupMask) {
 		AnimationInfo* anim = *ptr;
 		if(groupMask & anim->groupMask) {
 			*ptr = anim->next;
+			// remove from move list
+			if(anim->speedKey != 0) {
+				for(auto i=m_movement.begin(); i!=m_movement.end(); ++i) {
+					if(*i == anim) { m_movement.erase(i); break; }
+				}
+			}
 			delete anim;
 		}
 		else ptr = &(*ptr)->next;
@@ -382,6 +388,10 @@ ActionState AnimationController::getState() const {
 	else if(m_state->isEnded(m_actionTrack)) return ActionState::Ended;
 	else return ActionState::Action;
 }
+ActionMode AnimationController::getMode() const {
+	if(m_actionTrack<0) return ActionMode::End;
+	return m_meta[m_actionTrack].mode;
+}
 AnimationKey AnimationController::getAction() const {
 	return m_action;
 }
@@ -395,6 +405,10 @@ float AnimationController::getProgress() const {
 float AnimationController::getWeight() const {
 	if(m_lastAction<0) return 0;
 	return m_state->getWeight(m_lastAction);
+}
+float AnimationController::getSpeed() const {
+	if(m_lastAction<0) return 1;
+	return m_state->getSpeed(m_lastAction);
 }
 float AnimationController::deriveMoveSpeed() const {
 	float weight = 0;

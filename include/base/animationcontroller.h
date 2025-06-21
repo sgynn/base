@@ -108,9 +108,11 @@ class AnimationController {
 
 	AnimationKey getIdle() const;		// Get the assigned idle animation (may not be playing)
 	ActionState  getState() const;
+	ActionMode   getMode() const;		// Get mode of the current action
 	AnimationKey getAction() const;		// Get the active action - It may have ended.
 	float        getProgress() const;	// 0-1 value through active animation
 	float        getWeight() const;		// Weight of active action
+	float        getSpeed() const;		// Speed multiplier of current action
 	int          getGroup() const { return m_group; }
 
 	void         setProgress(float);	// Set progress of current action.
