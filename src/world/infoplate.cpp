@@ -80,8 +80,13 @@ void InfoPlateManager::setVisible(bool vis) {
 }
 
 InfoPlate* InfoPlateManager::create(const char* type, float range, float scale) {
+	Widget* widget = createChild<Widget>(type);
+	if(!widget) {
+		printf("Error: No widget type '%s' for InfoPlate\n", type);
+		return nullptr;
+	}
 	InfoPlate* plate = new InfoPlate();
-	plate->m_widget = createChild<Widget>(type);
+	plate->m_widget = widget;
 	plate->m_widget->setVisible(false);
 	plate->m_range = range * range;
 	plate->m_scale = scale;
