@@ -450,7 +450,7 @@ void Listbox::updateCache(bool full) {
 				cacheItem(getItem(i), itemWidget);
 			}
 
-			m_cacheOffset = (m_cacheOffset + (first - m_cacheFirst) + m_cache.size()) % m_cache.size();
+			m_cacheOffset = (m_cacheOffset + first + m_cache.size() - m_cacheFirst) % m_cache.size();
 			m_cacheFirst = first;
 			m_cacheSize = requiredCount;
 		}
