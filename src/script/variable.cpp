@@ -1,5 +1,5 @@
 #include <base/script.h>
-#include <assert.h>
+#include <base/assert.h>
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
@@ -98,7 +98,7 @@ Variable::~Variable() {
 Variable::Variable(Variable&& v) noexcept : type(v.type) {
 	obj = v.obj;
 	v.obj = 0;
-	v.type = 0;
+	v.type = -1u; // Flag invalid
 }
 /*
 Variable& Variable::operator=(Variable&& v) noexcept {
@@ -112,6 +112,7 @@ Variable::Variable(const Variable& v) : type(0) { *this = v; }
 const Variable& Variable::operator=(const Variable& v) {
 	if(this==&v) return v;
 	if(isConst()) return *this;
+	assert(v.type !=-1u); // Invalid variable pointer due to a move, likely vector resize
 	// Take a reference to the object to avoid deleting what we are setting it to
 	Object* tmp = isObject() || isArray() || isVector()? obj: nullptr;
 	if(tmp) ++tmp->ref;
