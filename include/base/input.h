@@ -187,6 +187,7 @@ namespace base {
 		void  getCalibration(uint, int*) const;		/// Get axis calibration
 		void  setCalibration(uint, const int*);		/// Set axis calibration
 		virtual void vibrate(uint duration, float amplitude, float frequency) {}		/// Trigger a haptic pulse. Duration in microseconds
+		void setEnabled(bool e);
 		protected:
 		friend class Input;
 		Joystick(int axes, int buttons);
@@ -194,6 +195,7 @@ namespace base {
 		protected:
 		uint  m_index;
 		char m_name[128];
+		bool m_enabled;
 		// State
 		uint   m_numAxes;
 		uint   m_numButtons;
@@ -245,7 +247,7 @@ namespace base {
 		/** Get a joystick state */
 		Joystick& joystick(uint id=0) const;
 		/** Initialise joysticks - returns number found */
-		int initialiseJoysticks();
+		int initialiseJoysticks(bool startEnabled=true);
 		int addJoystick(Joystick*, int forceId=-1);
 
 		/// Binding

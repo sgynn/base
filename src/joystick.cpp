@@ -55,10 +55,20 @@ void Joystick::setCalibration(uint n, const int* data) {
 	}
 }
 
+void Joystick::setEnabled(bool e) {
+	m_enabled = e;
+	if(!e) {
+		m_changed = m_buttons;
+		m_buttons = 0;
+		m_hat.set(0,0);
+		for(uint i=0; i<m_numAxes; ++i) m_axis[i] = 0;
+	}
+}
+
 // ================================================================= //
 
 void Input::updateJoysticks() {
-	for(Joystick* j: m_joysticks) if(j) j->update();
+	for(Joystick* j: m_joysticks) if(j && j->m_enabled) j->update();
 }
 Joystick& Input::joystick(uint i) const {
 	if(i<m_joysticks.size() && m_joysticks[i]) return *m_joysticks[i];
@@ -104,7 +114,7 @@ inline bool isValidJoystick(int file, int bufSize, uint* evBit, uint* keyBit, ui
 	return true;
 }
 
-int Input::initialiseJoysticks() {
+int Input::initialiseJoysticks(bool startEnabled) {
 	int js;
 	unsigned int evBit[40];
 	unsigned int keyBit[40];
@@ -139,6 +149,7 @@ int Input::initialiseJoysticks() {
 			}
 			// Create joystick object
 			Joystick* joy = new Joystick(axes, btn);
+			joy->m_enabled = startEnabled;
 			joy->m_file = js;
 			joy->m_keyMap = btnMap;
 			joy->m_absMap = absMap;
