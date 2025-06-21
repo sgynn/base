@@ -17,6 +17,7 @@
 
 namespace base {
 
+class Mesh;
 class Model;
 class Material;
 class AnimationController;
@@ -36,6 +37,7 @@ struct ObjectTraceResult { float t=-1; vec3 normal; operator bool()const{return 
 namespace world {
 
 
+	// Helper functions //
 	extern void addTextureSearchPattern(const char* variable, const char* pattern);
 	extern Material* loadMaterial(const char* name, int weights=0, const char* base=0);
 	inline Material* loadMaterial(const char* name, const char* base) { return loadMaterial(name, 0, base); }
@@ -45,6 +47,8 @@ namespace world {
 	extern int addAnimationsFromModel(AnimationBank* bank, Model* model, bool replaceExisting=false);
 	extern int addAnimationsFromModel(AnimationBank* bank, const char* modelFile, bool replaceExisting=false);
 	extern Model* attachModel(SceneNode* target, const char* file, AnimationController** animated=nullptr, bool moves=false, MeshFilter&& meshFilter={}, const char* overrideMaterial=nullptr, float* customData=nullptr);
+	extern Drawable* attachMesh(SceneNode* target, Mesh* mesh, const char* material = nullptr);
+	extern Drawable* attachMesh(SceneNode* target, Mesh* mesh, Material* material);
 
 	class ObjectWorldBase;
 	class WorldObjectBase : public SceneNode {
@@ -81,6 +85,7 @@ namespace world {
 		ObjectWorldBase* m_world = nullptr;
 		bool m_hasUpdate = false;
 		int m_traceGroup = 0;
+		protected:
 		vec4 m_custom = 0.f;
 	};
 
