@@ -346,7 +346,7 @@ bool Input::released(uint action) const {
 		switch(b.type) {
 		case BindingType::Key:              if(keyReleased(b.button)) return true; break;
 		case BindingType::MouseButton:      if(mouse.released & b.button) return true; break;
-		case BindingType::ControllerButton: if(joystick(b.mask).pressed(b.button)) return true; break;
+		case BindingType::ControllerButton: if(joystick(b.mask).released(b.button)) return true; break;
 		case BindingType::ControllerAxis:   if(m_axisBinding[b.button].last && !checkJoystickThreshold(m_axisBinding[b.button])) return true; break;
 		}
 	}
