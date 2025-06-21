@@ -320,13 +320,30 @@ void DebugGeometry::axis(const Matrix& m, float s) {
 
 
 void DebugGeometry::circle(const vec3& p, const vec3& axis, float r, int seg, int c) {
-	assert(seg<1024); // Probably wrong parameter
+	assert(seg<1024);
+	if(seg >= 1024) seg = 32; // Probbaly mixed up parameters
 	DebugGeometryVertex v;
 	setColour(v, c);
 	vec3 x = axis.cross( vec3(1,1,4) );
 	vec3 y = axis.cross( x );
 	x.normalise() *= r;
-	y.normalise() *= r;;
+	y.normalise() *= r;
+	float step = TWOPI / seg;
+	v.pos = p + y;
+	for(int i=1; i<=seg; ++i) {
+		m_buffer->push_back(v);
+		v.pos = p + x * sin(i*step)  + y * cos(i*step);
+		m_buffer->push_back(v);
+	}
+}
+
+void DebugGeometry::ellipse(const vec3& p, const Quaternion& orientation, const vec2& r, int seg, int c) {
+	assert(seg<1024);
+	if(seg >= 1024) seg = 32; // Probbaly mixed up parameters
+	DebugGeometryVertex v;
+	setColour(v, c);
+	vec3 x = orientation.xAxis() * r.x;
+	vec3 y = orientation.zAxis() * r.y;
 	float step = TWOPI / seg;
 	v.pos = p + y;
 	for(int i=1; i<=seg; ++i) {
@@ -392,6 +409,22 @@ void DebugGeometry::capsule(const vec3& a, const vec3& b, float radius, int seg,
 		arc(b,  y, n*cap, seg, colour);
 		arc(b, -y, n*cap, seg, colour);
 	}
+}
+
+
+void DebugGeometry::capsule2D(const vec3& a, const vec3& b, const vec3& basis, float radius, int seg, int colour) {
+	vec3 n = (b-a).normalise();
+	vec3 x = n.cross(basis).normalise() * radius;
+	line(a+x, b+x, colour);
+	line(a-x, b-x, colour);
+	// Caps
+	seg /= 4;
+	n *= radius;
+	constexpr float cap = 1;
+	arc(a,  x, n*-cap, seg, colour);
+	arc(a, -x, n*-cap, seg, colour);
+	arc(b,  x, n*cap, seg, colour);
+	arc(b, -x, n*cap, seg, colour);
 }
 
 // ---------------------------------------------- //

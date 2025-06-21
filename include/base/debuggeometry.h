@@ -40,7 +40,9 @@ namespace base {
 		void arrow(const vec3& a, const vec3& b, int colour=0xffffff);
 		void vector(const vec3& start, const vec3& dir, int colour=0xffffff);
 		void circle(const vec3& centre, const vec3& axis, float radius, int segments=32, int colour=0xffffff);
+		void ellipse(const vec3& centre, const Quaternion& oriantation, const vec2& radius, int segments=32, int colour=0xffffff);
 		void capsule(const vec3& a, const vec3& b, float radius, int seg=32, int colour=0xffffff, float cap=1);
+		void capsule2D(const vec3& a, const vec3& b, const vec3& basis, float radius, int seg=32, int colour=0xffffff);
 		void arc(const vec3& centre, const vec3& dstart, const vec3& dend, int segments=32, int colour=0xffffff);
 		void marker(const vec3& point, float size=1, int colour=0xffffff);
 		void marker(const vec3& point, const Quaternion& orientation, float size=1, int colour=0xffffff);
