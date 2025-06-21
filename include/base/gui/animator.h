@@ -6,7 +6,7 @@ namespace gui {
 	
 class Animator {
 	public:
-	enum Ease { Linear, Smooth, SmoothIn, SmoothOut, Bounce, Spring };
+	enum Ease { Linear, Smooth, SmoothIn, SmoothOut, Bounce, Spring, Overshoot };
 	enum State { ACTIVE, ENDED };
 	Animator(Widget* target, bool transient=true) : m_widget(target), m_transient(transient) {}
 	virtual ~Animator() {}
@@ -32,7 +32,9 @@ class Animator {
 			if (t < B4) return 7.5625 * (t - B5) * (t - B5) + .9375;
 			return 7.5625 * (t - B6) * (t - B6) + .984375;
 		case Spring:
-			return 1 - sin(6.2832 * (t+0.5) * (t+0.5));
+			return 1 - cos(11 * t) * pow(3, -3*t);
+		case Overshoot:
+			return 1 - cos(4.7124 * t) * pow(3, -3*t);
 		}
 		return t;
 	}
@@ -53,6 +55,25 @@ class Animator {
 	Widget* m_widget;
 	bool m_transient;
 };
+
+// Delay the start time of another animator
+class Delay : public Animator {
+	public:
+	Delay(Widget* w, float seconds, Animator* next) : Animator(w), m_remaining(seconds), m_next(next) { }
+	~Delay() { if(m_remaining > 0 && m_next->isTransient()) delete m_next; }
+	State update(float time) {
+		m_remaining -= time;
+		if(m_remaining <= 0) {
+			m_widget->getRoot()->startAnimator(m_next);
+			return ENDED;
+		}
+		return ACTIVE;
+	}
+	private:
+	float m_remaining;
+	Animator* m_next;
+};
+
 
 template<typename T>
 class LerpAnimator : public Animator {

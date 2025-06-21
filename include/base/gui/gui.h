@@ -120,6 +120,7 @@ class Widget {
 	bool hasFocus() const;		// Does this widget have focus
 	void setMouseFocus();		// Set mouse focus to this widget
 	bool hasMouseFocus() const;	// Does this widget have mouse focus
+	bool hasAnimator() const;	// Are any active animators affecting this widget
 	bool isVisible() const;		// Is this widget visible
 	bool isEnabled() const;		// Is this widget enabled
 	Tangible getTangible() const;	// Do mouse clicks register on this widget, or go to the one behind

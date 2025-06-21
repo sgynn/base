@@ -280,7 +280,7 @@ void Root::updateAnimators(float time) {
 }
 
 void Root::deleteAnimators(Widget* target) {
-	if(~target->m_states & 0x800) return;
+	if(!target->hasAnimator()) return;
 	for(auto it = m_animators.begin(); it!=m_animators.end();) {
 		if((*it)->getWidget() == target) {
 			if((*it)->isTransient()) delete *it;
@@ -795,6 +795,10 @@ bool Widget::hasMouseFocus() const {
 		if((m_children[i]->isTemplate()) && m_children[i]->hasMouseFocus()) return true;
 	}
 	return false;
+}
+
+bool Widget::hasAnimator() const {
+	return m_states & 0x800;
 }
 
 Widget* Widget::getWidget(size_t index) const {
