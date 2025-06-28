@@ -66,6 +66,7 @@ AnimationBank* world::getAnimationBank(Model* model, bool create) {
 }
 
 int world::addAnimationsFromModel(AnimationBank* bank, Model* model, bool replace) {
+	if(!model) return 0;
 	std::set<AnimationKey> added;
 	for(size_t i=0; i<model->getAnimationCount(); ++i) {
 		Animation* a = model->getAnimation(i);
@@ -87,10 +88,7 @@ int world::addAnimationsFromModel(AnimationBank* bank, Model* model, bool replac
 }
 
 int world::addAnimationsFromModel(AnimationBank* bank, const char* file, bool replace) {
-	if(Model* model = Resources::getInstance()->models.get(file)) {
-		return addAnimationsFromModel(bank, model, replace);
-	}
-	return 0;
+	return addAnimationsFromModel(bank, Resources::getInstance()->models.get(file), replace);
 }
 
 AnimationKey getIdleAnimation(Model* model) {
