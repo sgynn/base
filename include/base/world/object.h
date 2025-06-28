@@ -64,6 +64,7 @@ namespace world {
 
 		void setUpdate(bool);
 		void setTraceGroup(int group) { m_traceGroup = group; }
+		int  getTraceGroup() const { return m_traceGroup; }
 
 		// Redirectors for legacy access
 		static void addTextureSearchPattern(const char* variable, const char* pattern)		{ world::addTextureSearchPattern(variable, pattern); }
