@@ -357,10 +357,10 @@ int base::intersectBoxes(const vec3& ac, const vec3& ae, const Quaternion& aq, c
 	rb = be.y * amat[2][2] + be.z * amat[1][2];
 	if(fabs(t.y * mat[0][0] - t.x * mat[0][1]) > ra + rb) return 0;
 
-	// Test axis AY x BY
+	// Test axis AZ x BY
 	ra = ae.x * amat[1][1] + ae.y * amat[1][0];
 	rb = be.x * amat[2][2] + be.z * amat[0][2];
-	if(fabs(t.y * mat[0][0] - t.x * mat[1][1]) > ra + rb) return 0;
+	if(fabs(t.y * mat[1][0] - t.x * mat[1][1]) > ra + rb) return 0;
 
 	// Test axis AZ x BZ
 	ra = ae.x * amat[2][1] + ae.y * amat[2][0];
