@@ -182,7 +182,7 @@ namespace base {
 		const StringView& operator=(const char* s)  { m_data=s; m_length=s? strlen(s): 0; return *this; }
 
 		operator String() const { return String(m_data, m_length); }
-		bool operator==(const char* s) const        { return (empty() && (!s||!s[0])) || (m_data && s && strncmp(m_data, s, m_length)==0); }
+		bool operator==(const char* s) const        { return (empty() && (!s||!s[0])) || (m_data && s && strncmp(m_data, s, m_length)==0 && s[m_length]==0); }
 		bool operator==(const StringView& s) const  { return m_length==s.m_length && (m_length==0 || m_data==s.m_data || strncmp(m_data, s.m_data, m_length)==0); }
 		bool operator==(const String& s) const      { return *this == s.str(); }
 		bool operator!=(const char* s) const        { return !operator==(s); }
