@@ -677,6 +677,20 @@ Variable* parseConstant(const char*& s) {
 			return createConstant(value);
 		}
 	}
+	// Variable Name Constant
+	else if(*s == '@') {
+		const char* e = s;
+		VariableName name;
+		char buffer[64];
+		do {
+			++e;
+			e += script::name(e, buffer);
+			if(buffer[0]) name += buffer;
+			else return nullptr;
+		} while(*e=='.');
+		s = e;
+		return createConstant(name);
+	}
 	// Vector constant
 	else if(*s == '(') {
 		const char* start = s;

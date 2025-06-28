@@ -21,7 +21,7 @@ namespace script {
 		// CONST    : Value cannot be changed
 		// LINK     : Data stored externally (Always FIXED)
 		// EXPLICIT : Object has fixed structure
-		enum Types { OBJECT=1, BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, ARRAY, STRING, FUNCTION, FIXED=0x20, CONST=0x40, LINK=0x80, EXPLICIT=0x100 };
+		enum Types { OBJECT=1, BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, ARRAY, STRING, FUNCTION, NAME, FIXED=0x20, CONST=0x40, LINK=0x80, EXPLICIT=0x100 };
 		struct Object {
 			std::vector<uint8> lookup;		// map of nameID -> item index
 			std::vector<uint> keys;			// list of sub variable names
@@ -34,6 +34,7 @@ namespace script {
 			float* fp; double* dp; int* ip; uint* up; bool* bp; const char** sp;	// Linked
 			Function* func;															// Function
 			Object* obj;															// Object
+			VariableName* name;
 		};
 		template<typename T> T getValue() const;
 		template<typename T> bool setValue(const T&);
@@ -74,6 +75,7 @@ namespace script {
 		operator String() const;				// Get value as string
 		operator const char*() const;			// Get string value. Returns 0 if not a string
 		operator Function*() const;				// Get as function. Returns 0 if not a function
+		operator VariableName() const;
 
 		bool   operator=(bool);
 		float  operator=(float);
@@ -85,12 +87,15 @@ namespace script {
 		const vec3& operator=(const vec3&);
 		const vec4& operator=(const vec4&);
 		const char* operator=(const char*);
-		const char* operator=(const String&);
+		const String& operator=(const String&);
+		const VariableName& operator=(const VariableName&);
 
 		bool operator==(const Variable&) const;
 		bool operator!=(const Variable&) const;
 		bool operator==(const char* string) const;
 		bool operator!=(const char* string) const;
+		bool operator==(const VariableName&) const;
+		bool operator!=(const VariableName&) const;
 
 		enum LinkFlags { LINK_DEFAULT, LINK_READONLY=1, LINK_SET=2 }; // LINK_SET uses value from script
 		bool link(bool&,   int flags=0);
@@ -102,6 +107,7 @@ namespace script {
 		bool link(vec3&,   int flags=0);
 		bool link(vec4&,   int flags=0);
 		bool link(const char*&, int flags=0);
+		bool link(VariableName&, int flags=0);
 		bool isLinked() const;
 		void unlink();							// Unlink variable
 		void lock();							// Make value read only
@@ -126,6 +132,7 @@ namespace script {
 		bool isBoolean() const;					// Is this a boolean value
 		bool isString() const;					// Is this a string value
 		bool isFunction() const;				// Is this a function
+		bool isName() const;					// Is this a variable name
 		bool isConst() const;					// Is is const
 		bool isNull() const;					// Is this a null variable
 		bool isRef() const;						// Is this a linked variable

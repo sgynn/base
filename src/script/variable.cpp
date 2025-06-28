@@ -93,6 +93,7 @@ Variable::~Variable() {
 	if((isObject() || isVector() || isArray()) && --obj->ref==0) delete obj;
 	if(isFunction() && func && --func->ref==0) delete func;
 	if(type == STRING && s) free((char*)s);
+	if(type == NAME) delete name;
 }
 //// Move constructor - needs noexcept to be used in vector resize ////
 Variable::Variable(Variable&& v) noexcept : type(v.type) {
@@ -148,6 +149,11 @@ const Variable& Variable::operator=(const Variable& v) {
 			if(func && --func->ref==0) delete func;
 			func = v.func;
 			++func->ref;
+		}
+		// Names are just copied
+		else if(isName()) {
+			if(name) *name = *v.name;
+			else name = new VariableName(*v.name);
 		}
 	}
 	else if(~type&CONST) {
@@ -233,6 +239,11 @@ Variable::operator const char*() const {
 	else return type&LINK? *sp: s;
 }
 Variable::operator Function*() const { return isFunction()? func: 0; }
+Variable::operator VariableName() const {
+	if((type&0xf) == NAME && name) return *name;
+	else if((type&0xf) == STRING) return (const char*)*this;
+	else return VariableName();
+}
 
 //// Set value ////
 bool Variable::setType(uint t) {
@@ -243,6 +254,7 @@ bool Variable::setType(uint t) {
 	if((isObject() || isVector() || isArray()) && --obj->ref==0) delete obj;
 	if(isFunction() && func && --func->ref==0) delete func;
 	if(type == STRING && s) free((char*)s);
+	if(type == NAME) delete name;
 	type = t;
 
 	// Initialise new data
@@ -278,7 +290,7 @@ int    Variable::operator=(int v)    { setType(INT);    setValue(v); return v; }
 uint   Variable::operator=(uint v)   { setType(UINT);   setValue(v); return v; }
 float  Variable::operator=(float v)  { setType(FLOAT);  setValue(v); return v; }
 double Variable::operator=(double v) { setType(DOUBLE); setValue(v); return v; }
-const char* Variable::operator=(const String& v) { *this = (const char*)v; return v;  }
+const String& Variable::operator=(const String& v) { *this = (const char*)v; return v;  }
 const char* Variable::operator=(const char* v) {
 	setType(STRING);
 	if(type==STRING) {
@@ -321,6 +333,17 @@ Function* Variable::operator=(Function* f) {
 	}
 	return f;
 }
+const VariableName& Variable::operator=(const VariableName& n) {
+	if(!n) {
+		if(isLinked() && isName()) *name = n;
+		else *this == Variable();
+	}
+	else if(setType(NAME)) {
+		if(name) *name = n;
+		else name = new VariableName(n);
+	}
+	return n;
+}
 
 //// LINKING ////
 
@@ -355,6 +378,15 @@ bool Variable::link(const char*& v, int f) { return linkValue(STRING, sp, v, f);
 bool Variable::link(vec2& v, int f)   { return linkVector(VEC2, v, f); }
 bool Variable::link(vec3& v, int f)   { return linkVector(VEC3, v, f); }
 bool Variable::link(vec4& v, int f)   { return linkVector(VEC4, v, f); }
+bool Variable::link(VariableName& n, int f) {
+	if(!setType(NAME)) return false;
+	if(name && (f&LINK_SET)) n = *name;
+	if(name && !isLinked()) delete name;
+	name = &n;
+	type |= LINK;
+	if(f&LINK_READONLY) type |= CONST;
+	return true;
+}
 
 
 
@@ -369,6 +401,7 @@ void Variable::unlink() {
 		case VEC2:   get("x").unlink(); get("y").unlink(); break;
 		case VEC3:   get("x").unlink(); get("y").unlink(); get("z").unlink(); break;
 		case VEC4:   get("x").unlink(); get("y").unlink(); get("z").unlink(); get("w").unlink(); break;
+		case NAME:   name = *name? new VariableName(*name): nullptr; break;
 		default: break;
 		}
 		type &= ~LINK;
@@ -397,6 +430,7 @@ bool Variable::operator==(const Variable& v) const {
 	case FLOAT: return getValue<float>() == (float)v;
 	case DOUBLE: return getValue<double>() == (double)v;
 	case STRING: return strcmp((const char*)*this, (const char*)v)==0;
+	case NAME: return *name == *v.name;
 	case FUNCTION: return func == v.func;
 	default: return false;
 	}
@@ -404,6 +438,7 @@ bool Variable::operator==(const Variable& v) const {
 bool Variable::operator!=(const Variable& v) const { return !operator==(v); }
 
 bool Variable::operator==(const char* string) const {
+	if(isName()) return *name == string;
 	if(!isString()) return false;
 	const char* s = *this;
 	if(s == string) return true;
@@ -414,6 +449,14 @@ bool Variable::operator!=(const char* string) const {
 	return !operator==(string);
 }
 
+bool Variable::operator==(const VariableName& n) const {
+	if(isName()) return *name == n;
+	if(isString()) return n == (const char*)*this;
+	else return false;
+}
+bool Variable::operator!=(const VariableName& n) const {
+	return !operator==(n);
+}
 
 
 //// Utilities ////
@@ -424,6 +467,7 @@ bool Variable::isNumber() const { return (type&0xf)>=INT && (type&0xf)<=DOUBLE; 
 bool Variable::isBoolean() const { return (type&0xf)==BOOL; }
 bool Variable::isString() const { return (type&0xf)==STRING; }
 bool Variable::isFunction() const { return (type&0xf)==FUNCTION; }
+bool Variable::isName() const { return (type&0xf)==NAME; }
 bool Variable::isConst() const { return type&CONST; }
 bool Variable::isNull() const { return (type&0x1f)==0; }
 bool Variable::isRef() const { return type&LINK; }
@@ -489,6 +533,7 @@ int Variable::size() const {
 	case VEC3: return 3;
 	case VEC4: return 4;
 	case STRING: return strlen(type&LINK? *sp: s);
+	case NAME: return name->size();
 	default: return 0;
 	}
 }
@@ -688,6 +733,9 @@ String Variable::toString(int depth, bool quotes, int multiLine, int indent) con
 	case LINK|VEC3:   sprintf(buffer, "(%g, %g, %g)", (float)get("x"), (float)get("y"), (float)get("z")); break;
 	case VEC4:
 	case LINK|VEC4:   sprintf(buffer, "(%g, %g, %g, %g)", (float)get("x"), (float)get("y"), (float)get("z"), (float)get("w")); break;
+
+	case NAME:
+	case NAME|LINK:	  return String::cat("@", name->toString());
 	default: return String();
 	}
 	return String(b);
