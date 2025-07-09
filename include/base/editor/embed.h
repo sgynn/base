@@ -9,9 +9,12 @@
 #elif defined(EMSCRIPTEN)
 #warning BINDATA requires nasm
 #define BINDATA(n,s) \
+	_Pragma("clang diagnostic push") \
+	_Pragma("clang diagnostic ignored \"-Wunused\"") \
 	static char n = 0; \
 	static int n##_len = 0; \
-	static const char* n##_file = 0;
+	static const char* n##_file = 0; \
+	_Pragma("clang diagnostic pop")
 #else
 
 asm(

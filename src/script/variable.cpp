@@ -336,7 +336,7 @@ Function* Variable::operator=(Function* f) {
 const VariableName& Variable::operator=(const VariableName& n) {
 	if(!n) {
 		if(isLinked() && isName()) *name = n;
-		else *this == Variable();
+		else *this = Variable();
 	}
 	else if(setType(NAME)) {
 		if(name) *name = n;

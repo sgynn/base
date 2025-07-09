@@ -201,7 +201,7 @@ void AssetBrowser::pressedCrumb(gui::Button* b) {
 		char buffer[1024];
 		char* e = buffer;
 		for(int i=2; i<=index; i+=1) {
-			e += sprintf(buffer, "%s/", m_breadcrumbs->getWidget(i)->as<Button>()->getCaption());
+			e += sprintf(e, "%s/", m_breadcrumbs->getWidget(i)->as<Button>()->getCaption());
 		}
 		setPath(buffer);
 	}
@@ -210,7 +210,7 @@ void AssetBrowser::pressedCrumb(gui::Button* b) {
 		static char buffer[1024];
 		char* e = buffer;
 		for(int i=2; i<=index; i+=1) {
-			e += sprintf(buffer, "%s/", m_breadcrumbs->getWidget(i)->as<Button>()->getCaption());
+			e += sprintf(e, "%s/", m_breadcrumbs->getWidget(i)->as<Button>()->getCaption());
 		}
 
 		Popup* popup = new Popup();
@@ -499,7 +499,7 @@ void AssetBrowser::renameAsset(Widget* item) {
 	box->setFocus();
 	lbl->setVisible(false);
 
-	box->eventSubmit.bind([this, lbl, item](Textbox* t) {
+	box->eventSubmit.bind([this, lbl](Textbox* t) {
 		const Asset& asset = cast<AssetTile>(t->getParent())->asset;
 		lbl->setVisible(true);
 		if(asset.file.inArchive()) return; // Nope

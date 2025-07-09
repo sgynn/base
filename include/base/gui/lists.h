@@ -256,7 +256,7 @@ class Table : public Widget {
 	void draw() const override;
 	void setSize(int,int) override;
 	void copyData(const Widget*) override;
-	Point getPreferredSize(const Point& hint) const;
+	Point getPreferredSize(const Point& hint) const override;
 
 	public:
 	void showHeader(bool visible);

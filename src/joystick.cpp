@@ -212,7 +212,7 @@ bool Joystick::update() {
 #include <windows.h>
 #include <mmsystem.h>
 #include <regstr.h>
-int Input::initialiseJoysticks() {
+int Input::initialiseJoysticks(bool startEnabled) {
 	JOYINFOEX joyInfo;
 	JOYCAPS   joyCaps;
 	MMRESULT  result;
@@ -227,6 +227,7 @@ int Input::initialiseJoysticks() {
 				// valid
 				Joystick* joy = new Joystick(joyCaps.wNumAxes, joyCaps.wNumButtons);
 				joy->m_file = i;
+				joy->m_enabled = startEnabled;
 				strcpy(joy->m_name, joyCaps.szPname);
 				int axes = joyCaps.wNumAxes;
 				if(axes>0) joy->m_range[0] = { (int)joyCaps.wXmin, (int)joyCaps.wXmax };
@@ -276,7 +277,7 @@ bool Joystick::update() {
 #include <emscripten.h>
 #include <emscripten/html5.h>
 
-int Input::initialiseJoysticks() {
+int Input::initialiseJoysticks(bool startEnabled) {
 	printf("Initialising joysticks\n");
 	if(emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS) return 0;
 	int num = emscripten_get_num_gamepads();
@@ -288,6 +289,7 @@ int Input::initialiseJoysticks() {
 		if(emscripten_get_gamepad_status(i, &state) == EMSCRIPTEN_RESULT_SUCCESS) {
 			printf("Detected controller: %s (%d axes, %d buttons)\n", state.id, state.numAxes, state.numButtons);
 			Joystick* joy = new Joystick(state.numAxes, state.numButtons);
+			joy->m_enabled = startEnabled;
 			joy->m_file = i;
 			joy->setDeadzone(0.3);
 			addJoystick(joy);
