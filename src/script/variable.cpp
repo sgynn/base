@@ -743,24 +743,24 @@ String Variable::toString(int depth, bool quotes, int multiLine, int indent) con
 
 
 Variable::const_iterator Variable::begin() const {
-	if(isObject() || isVector() || isArray()) return {&obj->keys[0], &obj->items[0], isArray()};
+	if(isObject() || isVector() || isArray()) return {obj->keys.data(), obj->items.data(), isArray()};
 	else return {nullptr,0,false};
 }
 Variable::const_iterator Variable::end() const {
 	if(isObject() || isVector() || isArray()) {
 		size_t s = obj->items.size();
-		return {&obj->keys[0] + s, &obj->items[0] + s, isArray()};
+		return {obj->keys.data() + s, obj->items.data() + s, isArray()};
 	}
 	else return {nullptr,0,false};
 }
 Variable::iterator Variable::begin() {
-	if(isObject() || isVector() || isArray()) return {&obj->keys[0], &obj->items[0], isArray()};
+	if(isObject() || isVector() || isArray()) return {obj->keys.data(), obj->items.data(), isArray()};
 	else return {nullptr,0,false};
 }
 Variable::iterator Variable::end() {
 	if(isObject() || isVector() || isArray()) {
 		size_t s = obj->items.size();
-		return {&obj->keys[0] + s, &obj->items[0] + s, isArray()};
+		return {obj->keys.data() + s, obj->items.data() + s, isArray()};
 	}
 	else return {nullptr,0,false};
 }
