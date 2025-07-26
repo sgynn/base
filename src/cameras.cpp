@@ -10,7 +10,7 @@ constexpr unsigned unbound = ~0u;
 
 CameraBase::CameraBase(float fov, float aspect, float near, float far) 
 	: Camera(fov,aspect?aspect:Game::aspect(),near,far), m_active(true), m_grabMouse(false),
-	m_useUpVector(false), m_constraint(-8,8), m_binding{0,1,2,3,unbound,unbound,unbound,unbound,unbound,unbound} {}
+	m_useUpVector(false), m_constraint(-8,8), m_binding{0,1,2,3,unbound,unbound,unbound,unbound,unbound,unbound,unbound} {}
 
 void CameraBase::setSpeed(float m, float r) {
 	m_moveSpeed = m;
@@ -50,9 +50,10 @@ void CameraBase::setMoveBinding(unsigned forward, unsigned back, unsigned left, 
 	m_binding.down = down;
 }
 
-void CameraBase::setModeBinding(unsigned rotate, unsigned pan) {
+void CameraBase::setModeBinding(unsigned rotate, unsigned pan, unsigned zoom) {
 	m_binding.rotate = rotate;
 	m_binding.pan = pan;
+	m_binding.zoom = zoom;
 }
 
 void CameraBase::setRotateBinding(unsigned yaw, unsigned pitch) {
@@ -207,7 +208,7 @@ void OrbitCamera::update(int mask) {
 	else m_velocity.set(0,0,0);
 
 
-	// Mouse grap panning
+	// Mouse grab panning
 	static const vec3 zero(0,0,0);
 	if(m_active && m_panNormal != zero) {
 		if((mask&CU_MOUSE) && in.pressed(m_binding.pan)) {
@@ -234,8 +235,13 @@ void OrbitCamera::update(int mask) {
 		else m_panHold = zero;
 	}
 	
-
-
+	// Mouse drag zoom
+	if(m_active && (mask&CU_MOUSE) && in.check(m_binding.zoom) && in.mouse.delta.y) {
+		vec3 dir = getPosition() - getTarget();
+		float dist = dir.normaliseWithLength();
+		dist *= 1 - in.mouse.delta.y * 0.004f;
+		m_position = m_target + dir * fclamp(dist, m_zoomMin, m_zoomMax);
+	}
 
 	// Mouse Rotation input
 	if(m_active && (mask&CU_MOUSE) && (m_binding.rotate==unbound || in.check(m_binding.rotate))) {

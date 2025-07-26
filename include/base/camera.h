@@ -135,8 +135,8 @@ namespace base {
 		/** Set pitch constraint */
 		void setPitchLimits(float min=-PI, float max=PI);
 		/** Set key input binding */
-		void setMoveBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up=~0u, unsigned down=~0u);
-		void setModeBinding(unsigned rotate, unsigned pan);
+		void setMoveBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up=-1, unsigned down=-1);
+		void setModeBinding(unsigned rotate, unsigned pan=-1, unsigned zoom=-1);
 		void setRotateBinding(unsigned yaw, unsigned pitch);
 
 		protected:
@@ -163,6 +163,7 @@ namespace base {
 			unsigned down;		// Move down
 			unsigned rotate;	// Mouse rotates when held
 			unsigned pan;		// Mouse pan when held
+			unsigned zoom;		// Mouse zoom when held
 			unsigned yaw;		// Yaw rotate value
 			unsigned pitch;		// Pitch rotate value
 		} m_binding;
