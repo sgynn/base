@@ -101,7 +101,7 @@ namespace world {
 
 		private:
 		void baseObjectAdded(WorldObjectBase* o) final { objectAdded(static_cast<ObjectType*>(o)); }
-		void baseObjectRemoved(WorldObjectBase* o) final { objectAdded(static_cast<ObjectType*>(o)); }
+		void baseObjectRemoved(WorldObjectBase* o) final { objectRemoved(static_cast<ObjectType*>(o)); }
 	};
 	template<class ObjectType> typename ObjectWorld<ObjectType>::ObjectIterator begin(const ObjectWorld<ObjectType>* world) { return world->begin(); }
 	template<class ObjectType> typename ObjectWorld<ObjectType>::ObjectIterator end(const ObjectWorld<ObjectType>* world) { return world->end(); }
