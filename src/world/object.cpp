@@ -80,9 +80,9 @@ int world::addAnimationsFromModel(AnimationBank* bank, Model* model, bool replac
 			}
 		}
 		AnimationKey name = a->getName();
-		if(type == AnimationPropertyExtension::Idle) name = "Idle";
 		if(replace && added.insert(name).second) bank->remove(name);
 		bank->add(name, a, ~0u, 1, type == AnimationPropertyExtension::Move);
+		if(type == AnimationPropertyExtension::Idle) bank->add("Idle", a);
 	}
 	return model->getAnimationCount();
 }
