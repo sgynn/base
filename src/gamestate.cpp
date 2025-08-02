@@ -20,6 +20,7 @@ GameState::~GameState() {
 
 template<class T> inline void addToList(std::vector<GameStateComponent*>& list, GameStateComponent* c, const T& less) {
 	for(auto i=list.begin(); i!=list.end(); ++i) {
+		if(*i == c) return; // Already added
 		if(less(c, *i)) {
 			list.insert(i, c);
 			return;
