@@ -103,6 +103,8 @@ namespace base {
 		bool  resolvePoint(vec3& out, const vec3& target, float radius=0, float search=10) const;
 		bool  setPositionAndResolve(const vec3& pos, float search=10);
 
+		std::vector<vec3> getDebugPath(bool detail=false) const;
+
 		protected:
 		Pathfinder m_path;	// Path object
 		uint m_pathIndex;	// Position in path

@@ -751,3 +751,139 @@ bool PathFollower::setPositionAndResolve(const vec3& pos, float search) {
 	return poly;
 }
 
+#include <base/assert.h>
+std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
+	std::vector<vec3> points;
+	if(getState() != PathState::Success) return points;
+
+	vec3 a, b;
+	const NavPoly* poly = getNavMesh()->getPolygon(m_polygon);
+	if(!detail) {
+		points.push_back(m_position);
+		for(uint i=m_pathIndex; i<m_path.m_path.size(); ++i) {
+			const Pathfinder::Node& node = m_path.m_path[i];
+			NavMesh::getEdgePoints(poly, node.edge, a, b);
+			points.push_back((a+b)*0.5);
+			poly = NavMesh::getLinkedPolygon(poly, node.edge);
+			//if(poly->id != node.poly) break; // Error ?
+		}
+		points.push_back(m_goal);
+	}
+	else {
+		struct Line { vec2 a, b; };
+		struct Node { vec3 pivot; int side; uint index; const NavPoly* poly; };
+		static auto getTangentNormal = [](vec2 p, vec2 c, float r, int side) { // gets direction from circle centre to line tangent
+			vec2 cp = p - c;
+			float d = sqrt(cp.x*cp.x + cp.y*cp.y - r*r) * side;
+			float n = r*r + d*d;
+			return vec2((cp.x*r + cp.y*d) / n, (cp.y*r - cp.x*d) / n);
+		};
+		static auto getLine = [](const Node& a, const Node& b, float radius) {
+			if(a.side == b.side) {
+				if(a.side == 0) return Line{a.pivot.xz(), b.pivot.xz()};
+				vec2 shift = vec2(b.pivot.z-a.pivot.z, a.pivot.x-b.pivot.x).normalise() * a.side * radius;
+				return Line{a.pivot.xz() - shift, b.pivot.xz() - shift};
+			}
+			else if(a.side == 0) {
+				vec2 n = getTangentNormal(a.pivot.xz(), b.pivot.xz(), radius, b.side);
+				return Line{a.pivot.xz(), b.pivot.xz() + n * radius};
+			}
+			else if(b.side == 0) {
+				vec2 n = getTangentNormal(b.pivot.xz(), a.pivot.xz(), radius, -a.side);
+				return Line{a.pivot.xz() + n * radius, b.pivot.xz()};
+			}
+			else {
+				vec2 n = getTangentNormal(a.pivot.xz(), b.pivot.xz(), radius*2, -a.side);
+				return Line{a.pivot.xz() - n * radius, b.pivot.xz() + n * radius};
+			}
+		};
+		static auto side = [](const Line& a, const Line& b) {
+			if(a.b == b.b) return 0.f;
+			return vec2(a.b.y-a.a.y, a.a.x-a.b.x).dot(b.b - b.a);
+		};
+		// Wedge collapse
+		// TODO: Process edges overlapping start and end
+		vec3 v[2];
+		std::vector<Node> nodes = {{m_position, 0, m_pathIndex, poly}};
+		for(size_t i=0; i<nodes.size(); ++i) {
+			const NavPoly* p = nodes[i].poly;
+			const Pathfinder::Node& n = m_path.m_path[nodes[i].index];
+			NavMesh::getEdgePoints(nodes[i].poly, n.edge, v[0], v[1]);
+			Node lnode = { v[1], -1, nodes[i].index, p };
+			Node rnode = { v[0],  1, nodes[i].index, p };
+			Line left  = getLine(nodes[i], lnode, m_radius);
+			Line right = getLine(nodes[i], rnode, m_radius);
+
+			bool collapsed = false;
+			p = NavMesh::getLinkedPolygon(p, m_path.m_path[nodes[i].index].edge);
+			for(uint e = nodes[i].index + 1; e<m_path.m_path.size(); p=NavMesh::getLinkedPolygon(p, m_path.m_path[e++].edge)) {
+				NavMesh::getEdgePoints(p, m_path.m_path[e].edge, v[0], v[1]);
+				Line r = getLine(nodes[i], {v[0], 1}, m_radius);
+				Line l = getLine(nodes[i], {v[1], -1}, m_radius);
+
+				if(side(r,l) > 0) {
+					if(r.a.distance2(r.b) < l.a.distance2(l.b)) {
+						if(side(right, r) <= 0) rnode = {v[0], 1, e, p};
+						nodes.push_back(rnode);
+					}
+					else {
+						if(side(left, l) >= 0) lnode = {v[1], -1, e, p};
+						nodes.push_back(lnode);
+					}
+					collapsed = true;
+					break;
+				}
+				
+				if(side(left, r) < 0) {
+					nodes.push_back(lnode);
+					collapsed = true;
+					break;
+				}
+				else if(side(left, l) >= 0) { lnode = { v[1], -1, e, p }; left=l; }
+
+				if(side(right, l) > 0) {
+					nodes.push_back(rnode);
+					collapsed = true;
+					break;
+				}
+				else if(side(right, r) <= 0) { rnode = { v[0], 1, e, p }; right=r; }
+			}
+			if(!collapsed) {
+				Line goal = getLine(nodes[i], {m_goal, 0}, m_radius);
+				if(side(left, goal) < 0) {
+					if(goal.a.distance2(goal.b) >= left.a.distance2(left.b)) nodes.push_back(lnode);
+				}
+				else if(side(right, goal) > 0) {
+					if(goal.a.distance2(goal.b) >= right.a.distance2(right.b)) nodes.push_back(rnode);
+				}
+			}
+
+			if(nodes.size() > 50) break;
+		}
+
+		// Build path point list
+		nodes.push_back({m_goal, 0});
+		for(size_t i=1; i<nodes.size(); ++i) {
+			Line line = getLine(nodes[i-1], nodes[i], m_radius);
+			// Rounded corners?
+			if(i>1) {
+				const vec3& ctr = nodes[i-1].pivot;
+				vec2 a = (points.back() - ctr).xz();
+				vec2 b = line.a - ctr.xz();
+				float angle = acos(a.dot(b) / (m_radius*m_radius));
+				int steps = 32 * TWOPI / angle;
+				angle *= -nodes[i-1].side;
+				for(int j=1; j<steps; ++j) {
+					float s = sin(j*angle/steps), c = cos(j*angle/steps);
+					vec2 v(c*a.x - s*a.y, c*a.y + s*a.x);
+					points.push_back(ctr + v.xzy());
+				}
+			}
+			points.push_back(line.a.xzy(nodes[i-1].pivot.y));
+			points.push_back(line.b.xzy(nodes[i].pivot.y));
+		}
+	}
+	return points;
+}
+
+
