@@ -175,6 +175,7 @@ set(headers
 	include/base/point.h
 	include/base/primitives.h
 	include/base/quaternion.h
+	include/base/random.h
 	include/base/renderer.h
 	include/base/resources.h
 	include/base/resourcemanager.h

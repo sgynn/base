@@ -32,6 +32,9 @@ class RangeT {
 	T map(float t) const;							/// Map a 0-1 value to this range
 	float unmap(const T& t) const;					/// Map a value to a 0-1 range wrt this 
 
+	operator T*() { return &min; }
+	operator const T*() const { return &min; }
+
 	bool operator==(const RangeT<T>& r) const;
 	bool operator!=(const RangeT<T>& r) const;
 };

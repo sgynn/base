@@ -2,6 +2,7 @@
 #include <base/drawablemesh.h>
 #include <base/mesh.h>
 #include <base/hardwarebuffer.h>
+#include <base/random.h>
 #include <cstdio>
 #include <algorithm>
 
@@ -9,15 +10,6 @@ using base::Mesh;
 using base::DrawableMesh;
 using base::Material;
 using namespace base;
-
-class RNG {
-	unsigned m_seed;
-	public:
-	RNG(unsigned seed=0) : m_seed(seed) {}
-	unsigned rand() { m_seed = m_seed * 1103515245 + 12345; return m_seed&0x7fffffff; }
-	float    randf() { return (float)rand() / (float)0x7fffffff; }
-	float    randf(const Rangef& r) { return r.min + randf() * r.size(); }
-};
 
 // ===================================================================================================== //
 
