@@ -18,6 +18,7 @@ namespace base {
 		SDG_MANUAL,			// Requires calling DebugGeometry::flush() manually
 		SDG_FRAME,			// Flush automatically called every frame
 		SDG_ALWAYS = SDG_FRAME,
+		SDG_UNPAUSED,		// Flush every frame if unpaused
 		SDG_FRAME_IF_DATA,	// Flush automatically called every frame if there is new data
 		SDG_AUTOMATIC = SDG_FRAME_IF_DATA,
 		SDG_APPEND			// Flush automatically, previous lines are not cleared. use reset() to clear.
@@ -87,7 +88,7 @@ namespace base {
 		void add(DebugGeometry*);
 		void remove(DebugGeometry*);
 		void removeNode(SceneNode*);
-		void update();
+		void update(bool paused=false);
 		protected:
 
 		int m_renderQueue;

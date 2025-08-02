@@ -42,7 +42,7 @@ void SceneComponent::update() {
 }
 
 void SceneComponent::draw() {
-	DebugGeometryManager::getInstance()->update();
+	DebugGeometryManager::getInstance()->update(getState()->isPaused());
 	m_workspace->execute(m_scene, m_renderer);
 	m_renderer->getState().reset();
 }
