@@ -801,68 +801,151 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 			if(a.b == b.b) return 0.f;
 			return vec2(a.b.y-a.a.y, a.a.x-a.b.x).dot(b.b - b.a);
 		};
+		static auto compareLength = [](const Line& a, const Line& b) {
+			return a.a.distance2(a.b) - b.a.distance2(b.b);
+		};
+		static auto drawWedge = [](const Line& line, const vec3& pivot, int side) {
+			addDebugLine(line.a.xzy(), line.b.xzy(), side>0? 0xff8000: 0xff0080);
+			addDebugLine(pivot, line.b.xzy(), side>0? 0xff8000: 0xff0080);
+		};
 		// Wedge collapse
-		// TODO: Process edges overlapping start and end
 		vec3 v[2];
 		std::vector<Node> nodes = {{m_position, 0, m_pathIndex, poly}};
-		for(size_t i=0; i<nodes.size(); ++i) {
-			const NavPoly* p = nodes[i].poly;
-			const Pathfinder::Node& n = m_path.m_path[nodes[i].index];
-			NavMesh::getEdgePoints(nodes[i].poly, n.edge, v[0], v[1]);
-			Node lnode = { v[1], -1, nodes[i].index, p };
-			Node rnode = { v[0],  1, nodes[i].index, p };
-			Line left  = getLine(nodes[i], lnode, m_radius);
-			Line right = getLine(nodes[i], rnode, m_radius);
 
-			bool collapsed = false;
-			p = NavMesh::getLinkedPolygon(p, m_path.m_path[nodes[i].index].edge);
-			for(uint e = nodes[i].index + 1; e<m_path.m_path.size(); p=NavMesh::getLinkedPolygon(p, m_path.m_path[e++].edge)) {
-				NavMesh::getEdgePoints(p, m_path.m_path[e].edge, v[0], v[1]);
-				Line r = getLine(nodes[i], {v[0], 1}, m_radius);
-				Line l = getLine(nodes[i], {v[1], -1}, m_radius);
+		// Manage off-path edges overlapping start location
+		auto getOffPathNode = [this](const vec2& centre, const Node& last, const Line& left, const Line& right, const NavPoly* poly, uint skipEdge) {
+			int s = 0;
+			for(auto& e: poly) {
+				if(e.a != skipEdge && e.isConnected()) {
+					vec2 edgeDir = e.direction().xz();
+					float t = fclamp(edgeDir.dot(centre - e.point().xz()) / edgeDir.dot(edgeDir),  0, 1);
+					if(centre.distance2(e.point().xz() + edgeDir * t) < m_radius * m_radius) {
+						addDebugLine(centre.xzy(), e.point() + edgeDir.xzy() * t, 0x0080ff);
+						
+						for(int ei : {e.a, e.b}) {
+							const vec3& p = e.poly.points[ei];
+							Line k { left.a, p.xz()};
+							if((left.b-left.a).dot(k.b-k.a)>0 && side(left, k)>0) s = 1;
+							else if((right.b-right.a).dot(k.b-k.a)>0 && side(right, k)<0) s = -1;
+							else continue;
 
-				if(side(r,l) > 0) {
-					if(r.a.distance2(r.b) < l.a.distance2(l.b)) {
-						if(side(right, r) <= 0) rnode = {v[0], 1, e, p};
-						nodes.push_back(rnode);
+							Node n = { p, s, 0, poly };
+							k = getLine(last, n, m_radius);
+							//drawWedge(k, p, s);
+							if(side(k, s<0? left: right)*s > 0 && compareLength(k, s<0?left:right)<0) {
+								return n;
+							}
+						}
 					}
-					else {
-						if(side(left, l) >= 0) lnode = {v[1], -1, e, p};
+				}
+			}
+			return Node{0.f, 0, 0, 0};
+		};
+
+		if(m_pathIndex < m_path.m_path.size()) {
+			for(size_t i=0; i<nodes.size(); ++i) {
+				const NavPoly* p = nodes[i].poly;
+				const Pathfinder::Node& n = m_path.m_path[nodes[i].index];
+				NavMesh::getEdgePoints(nodes[i].poly, n.edge, v[0], v[1]);
+				Node lnode = { v[1], -1, nodes[i].index, p };
+				Node rnode = { v[0],  1, nodes[i].index, p };
+				Line left  = getLine(nodes[i], lnode, m_radius);
+				Line right = getLine(nodes[i], rnode, m_radius);
+
+				// Off path edges at start of path
+				if(i==0) {
+					Node off = getOffPathNode(left.a, nodes[0], left, right, poly, m_path.m_path[m_pathIndex].edge);
+					if(off.poly) {
+						off.index = m_pathIndex;
+						if(off.side<0) { lnode = off; left = getLine(nodes[i], off, m_radius); }
+						else { rnode = off; right = getLine(nodes[i], off, m_radius); }
+						drawWedge(getLine(nodes[i], off, m_radius), off.pivot, off.side);
+						if(side(right, left) > 0) { // collapsed already?
+							nodes.push_back(compareLength(left, right) < 0? lnode: rnode);
+							continue;
+						}
+					}
+				}
+
+				bool collapsed = false;
+				if(nodes[i].index+1 < m_path.m_path.size()) p = NavMesh::getLinkedPolygon(p, m_path.m_path[nodes[i].index].edge);
+				for(uint e = nodes[i].index + 1; e<m_path.m_path.size(); p=NavMesh::getLinkedPolygon(p, m_path.m_path[e++].edge)) {
+					NavMesh::getEdgePoints(p, m_path.m_path[e].edge, v[0], v[1]);
+					Line r = getLine(nodes[i], {v[0], 1}, m_radius);
+					Line l = getLine(nodes[i], {v[1], -1}, m_radius);
+					drawWedge(left, lnode.pivot, -1);
+					drawWedge(right, rnode.pivot, 1);
+
+					if(side(r,l) > 0) {
+						if(compareLength(r, l) < 0) {
+							if(side(right, r) <= 0) rnode = {v[0], 1, e, p};
+							nodes.push_back(rnode);
+						}
+						else {
+							if(side(left, l) >= 0) lnode = {v[1], -1, e, p};
+							nodes.push_back(lnode);
+						}
+						collapsed = true;
+						break;
+					}
+					
+					if(side(left, r) < 0) {
 						nodes.push_back(lnode);
+						collapsed = true;
+						break;
 					}
-					collapsed = true;
-					break;
-				}
-				
-				if(side(left, r) < 0) {
-					nodes.push_back(lnode);
-					collapsed = true;
-					break;
-				}
-				else if(side(left, l) >= 0) { lnode = { v[1], -1, e, p }; left=l; }
+					else if(side(left, l) >= 0) { lnode = { v[1], -1, e, p }; left=l; }
 
-				if(side(right, l) > 0) {
-					nodes.push_back(rnode);
-					collapsed = true;
-					break;
+					if(side(right, l) > 0) {
+						nodes.push_back(rnode);
+						collapsed = true;
+						break;
+					}
+					else if(side(right, r) <= 0) { rnode = { v[0], 1, e, p }; right=r; }
 				}
-				else if(side(right, r) <= 0) { rnode = { v[0], 1, e, p }; right=r; }
-			}
-			if(!collapsed) {
-				Line goal = getLine(nodes[i], {m_goal, 0}, m_radius);
-				if(side(left, goal) < 0) {
-					if(goal.a.distance2(goal.b) >= left.a.distance2(left.b)) nodes.push_back(lnode);
-				}
-				else if(side(right, goal) > 0) {
-					if(goal.a.distance2(goal.b) >= right.a.distance2(right.b)) nodes.push_back(rnode);
-				}
-			}
+				assert(p);
+				if(!collapsed) {
+					Line goal = getLine(nodes[i], {m_goal, 0}, m_radius);
+					Node off = getOffPathNode(goal.b, nodes[i], goal, goal, p, -1);
+					if(off.poly) {
+						off.index = m_path.m_path.size() - 1;
+						Line line = getLine(nodes[i], off, m_radius);
+						if(side(line, off.side<0? left: right)*off.side < 0) {}
+						else if(off.side<0) { lnode = off; left = line; }
+						else { rnode = off; right = line; }
+						drawWedge(getLine(nodes[i], off, m_radius), off.pivot, off.side);
+					}
 
-			if(nodes.size() > 50) break;
+					if(side(left, goal) < 0) {
+						if(goal.a.distance2(goal.b) >= left.a.distance2(left.b)) nodes.push_back(lnode);
+					}
+					else if(side(right, goal) > 0) {
+						if(goal.a.distance2(goal.b) >= right.a.distance2(right.b)) nodes.push_back(rnode);
+					}
+				}
+
+				if(nodes.size() > 50) break;
+			}
+		}
+		else {
+			Line goal = { m_position.xz(), m_goal.xz() };
+			Node a = getOffPathNode(goal.a, nodes.back(), goal, goal, poly, -1);
+			Node b = getOffPathNode(goal.b, nodes.back(), goal, goal, poly, -1);
+			if(a.poly && b.poly && a.side==b.side) {
+				if(side(getLine(nodes[0], a, m_radius), getLine(nodes[0], b, m_radius)) * a.side < 0) a.poly = 0;
+				else b = getOffPathNode(goal.b, a, goal, goal, poly, -1);
+			}
+			if(a.poly) nodes.push_back(a);
+			if(b.poly) nodes.push_back(b);
+
+			if(a.poly) drawWedge(getLine(nodes[0], a, m_radius), a.pivot, a.side);
+			if(b.poly) drawWedge(getLine(a.poly? a: nodes[0], b, m_radius), b.pivot, b.side);
 		}
 
-		// Build path point list
 		nodes.push_back({m_goal, 0});
+
+
+		// Build path point list
 		for(size_t i=1; i<nodes.size(); ++i) {
 			Line line = getLine(nodes[i-1], nodes[i], m_radius);
 			// Rounded corners?
