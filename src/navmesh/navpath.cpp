@@ -102,11 +102,11 @@ PathState Pathfinder::searchInternal(const Location& start, AtGoal&& atGoal, Heu
 		return m_state;
 	}
 
-	struct AStarNode { const NavLink* link; int k; vec3 p; float value; AStarNode* parent; };
+	struct AStarNode { const NavLink* link; int k; vec3 p; float cost; float value; AStarNode* parent; };
 	static const auto cmp = [](const AStarNode* a, const AStarNode* b) { return a->value > b->value; };
 
 	std::vector<AStarNode*> open, all;
-	AStarNode startNode { nullptr, 0, start.position, 0.f, nullptr };
+	AStarNode startNode { nullptr, 0, start.position, 0.f, 0.f, nullptr };
 	AStarNode* node = &startNode;
 
 	std::map<const NavLink*, AStarNode*> states;
@@ -117,7 +117,7 @@ PathState Pathfinder::searchInternal(const Location& start, AtGoal&& atGoal, Heu
 		if(atGoal(poly, node->p)) break;
 		else for(int i=0; i<poly->size; ++i) {
 			NavLink* link = poly->links[i];
-			if(link && m_filter.hasType(poly->typeIndex)) {	// ToDo: Clearance
+			if(link && m_filter.hasType(poly->typeIndex)) {
 				state = states.find(link);
 				if(state != states.end() && state->second==0) continue; // closed
 
@@ -140,17 +140,19 @@ PathState Pathfinder::searchInternal(const Location& start, AtGoal&& atGoal, Heu
 				if(!checkTraversal(poly, node->p, p)) continue;
 
 				// Heuristic
-				float h = node->value + p.distance(node->p) + heuristic(p);
+				float cost = node->cost + p.distance(node->p);
+				float value = cost + heuristic(p);
 
 				// Create / update node
 				AStarNode* n = 0;
 				if(state==states.end()) all.push_back((n = new AStarNode));
-				else if(state->second->value<h) continue;
+				else if(state->second->value < value) continue;
 				else n = state->second;
 				n->parent = node;
 				n->link = link;
 				n->k = link->poly[0]==poly? 1: 0;
-				n->value = h;
+				n->cost = cost;
+				n->value = value;
 				n->p = p;
 
 				// Add to open list
@@ -805,14 +807,11 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 			return a.a.distance2(a.b) - b.a.distance2(b.b);
 		};
 		static auto drawWedge = [](const Line& line, const vec3& pivot, int side) {
-			addDebugLine(line.a.xzy(), line.b.xzy(), side>0? 0xff8000: 0xff0080);
-			addDebugLine(pivot, line.b.xzy(), side>0? 0xff8000: 0xff0080);
+			DebugLine(line.a.xzy(), line.b.xzy(), side>0? 0xff8000: 0xff0080);
+			DebugLine(pivot, line.b.xzy(), side>0? 0xff8000: 0xff0080);
 		};
-		// Wedge collapse
-		vec3 v[2];
-		std::vector<Node> nodes = {{m_position, 0, m_pathIndex, poly}};
 
-		// Manage off-path edges overlapping start location
+		// Get affecting node from off-path edges overlapping actor location
 		auto getOffPathNode = [this](const vec2& centre, const Node& last, const Line& left, const Line& right, const NavPoly* poly, uint skipEdge) {
 			int s = 0;
 			for(auto& e: poly) {
@@ -820,8 +819,6 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 					vec2 edgeDir = e.direction().xz();
 					float t = fclamp(edgeDir.dot(centre - e.point().xz()) / edgeDir.dot(edgeDir),  0, 1);
 					if(centre.distance2(e.point().xz() + edgeDir * t) < m_radius * m_radius) {
-						addDebugLine(centre.xzy(), e.point() + edgeDir.xzy() * t, 0x0080ff);
-						
 						for(int ei : {e.a, e.b}) {
 							const vec3& p = e.poly.points[ei];
 							Line k { left.a, p.xz()};
@@ -831,7 +828,7 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 
 							Node n = { p, s, 0, poly };
 							k = getLine(last, n, m_radius);
-							//drawWedge(k, p, s);
+							drawWedge(k, p, s);
 							if(side(k, s<0? left: right)*s > 0 && compareLength(k, s<0?left:right)<0) {
 								return n;
 							}
@@ -842,7 +839,10 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 			return Node{0.f, 0, 0, 0};
 		};
 
+		// Wedge collapse
+		std::vector<Node> nodes = {{m_position, 0, m_pathIndex, poly}};
 		if(m_pathIndex < m_path.m_path.size()) {
+			vec3 v[2];
 			for(size_t i=0; i<nodes.size(); ++i) {
 				const NavPoly* p = nodes[i].poly;
 				const Pathfinder::Node& n = m_path.m_path[nodes[i].index];
@@ -868,7 +868,7 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 				}
 
 				bool collapsed = false;
-				if(nodes[i].index+1 < m_path.m_path.size()) p = NavMesh::getLinkedPolygon(p, m_path.m_path[nodes[i].index].edge);
+				if(nodes[i].index < m_path.m_path.size()) p = NavMesh::getLinkedPolygon(p, m_path.m_path[nodes[i].index].edge);
 				for(uint e = nodes[i].index + 1; e<m_path.m_path.size(); p=NavMesh::getLinkedPolygon(p, m_path.m_path[e++].edge)) {
 					NavMesh::getEdgePoints(p, m_path.m_path[e].edge, v[0], v[1]);
 					Line r = getLine(nodes[i], {v[0], 1}, m_radius);
