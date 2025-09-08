@@ -169,11 +169,16 @@ def construct_export_meshes(obj, m, config):
         vmapList.append({})
         imapList.append([])
 
+    print("Output mesh count: " + str(len(result)))
 
     for face in m.loop_triangles:
-        mesh = result[face.material_index]
-        vmap = vmapList[face.material_index]
-        imap = imapList[face.material_index]
+        subindex = face.material_index
+        if subindex >= len(result):
+            print("Material index " + str(subindex) + " out of bounds")
+            subindex = 0
+        mesh = result[subindex]
+        vmap = vmapList[subindex]
+        imap = imapList[subindex]
 
 
         # get the three vertices
@@ -583,11 +588,11 @@ def export_scene(objects, config, xml):
     scene = append_element(xml.firstChild, "layout")
     stack = [(None,0, scene)]
     while len(stack)>0:
-        print(stack)
         a = stack[-1]
         root = a[0] == None
         items = children[a[0]]
         obj = items[a[1]]
+        if config.export_merged_meshes and obj.type == 'MESH': continue
         node = write_object(a[2], obj, config, offset if root else zero, skipRootTransform and root)
         if a[1] + 1 >= len(items): stack.pop()
         else: stack[-1] = (a[0], a[1]+1, a[2])
