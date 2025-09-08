@@ -93,7 +93,8 @@ size_t parseValues(VertexType* list, size_t count, const char* src) {
 	}
 	return count;
 }
-size_t parseValues(IndexType* list, size_t count, const char* src) {
+template<typename T>
+size_t parseValues(T* list, size_t count, const char* src) {
 	char* e = 0;
 	for(size_t i=0; i<count; ++i) {
 		list[i] = strtol(src, &e, 10);
@@ -102,6 +103,14 @@ size_t parseValues(IndexType* list, size_t count, const char* src) {
 		while(*src==' ' || *src=='\n') ++src;
 	}
 	return count;
+}
+template<typename T>
+HardwareIndexBuffer* createIndexBuffer(IndexSize type, size_t count, const char* src) {
+	T* ix = new T[count];
+	parseValues(ix, count, src);
+	HardwareIndexBuffer* buffer = new HardwareIndexBuffer(type);
+	buffer->setData(ix, count);
+	return buffer;
 }
 
 // ----------------------------------------------------------------------------------------------------------- //
@@ -180,10 +189,10 @@ Mesh* BMLoader::loadMesh(const XMLElement& e) {
 	const XMLElement& indices = e.find("polygons");
 	if(indices.name()) {
 		size_t count = indices.attribute("size", 0) * 3;
-		IndexType* ix = new IndexType[count];
-		parseValues(ix, count, indices.text());
-		HardwareIndexBuffer* ibuffer = new HardwareIndexBuffer();
-		ibuffer->setData(ix, count);
+		HardwareIndexBuffer* ibuffer;
+		if(count<256) ibuffer = createIndexBuffer<uint8>(IndexSize::I8, count, indices.text());
+		else if(count<65536) ibuffer = createIndexBuffer<uint16>(IndexSize::I16, count, indices.text());
+		else ibuffer = createIndexBuffer<uint32>(IndexSize::I32, count, indices.text());
 		mesh->setIndexBuffer(ibuffer);
 	}
 

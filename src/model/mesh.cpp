@@ -157,11 +157,11 @@ const vec3& Mesh::getNormal(uint index) const {
 }
 
 const vec3& Mesh::getIndexedVertex(uint index) const {
-	IndexType i = m_indexBuffer->getIndex(index);
+	uint i = m_indexBuffer->getIndex(index);
 	return getVertex(i);
 }
 const vec3& Mesh::getIndexedNormal(uint index) const {
-	IndexType i = m_indexBuffer->getIndex(index);
+	uint i = m_indexBuffer->getIndex(index);
 	return getNormal(i);
 }
 
