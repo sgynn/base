@@ -569,8 +569,9 @@ void nav::invert(NavPoly* p) {
 bool nav::inverted(const NavPoly* p) {
 	// Use shoelace formula for calculating polygon area
 	float sum = 0;
+	float shift = p->points[0].z * 2; // avoid numbers getting too large, math should be the same
 	for(int j=p->size-1, i=0; i<p->size; j=i, ++i) {
-		sum += (p->points[i].x - p->points[j].x) * (p->points[i].z + p->points[j].z);
+		sum += (p->points[i].x - p->points[j].x) * (p->points[i].z + p->points[j].z - shift);
 	}
 	return sum > 0;
 }
@@ -851,6 +852,7 @@ int nav::makeConvex(const NavPoly* p, PList& out) {
 
 	for(size_t i=0; i<truncate; ++i) {
 		if(splits[i].f==0) continue;
+		printf("Split: (%g,%g)(%g,%g)\n", p->points[splits[i].a].x, p->points[splits[i].a].z, p->points[splits[i].b].x, p->points[splits[i].b].z);
 		for(int start : {i|splitA, i|splitB}) {
 			if(splitLinks[start&splitMask].poly[start>>21]) continue; // Already done
 			

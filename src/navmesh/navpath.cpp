@@ -441,6 +441,10 @@ uint PathFollower::getPolygonID() const {
 	return m_polygon;
 }
 
+const NavPoly* PathFollower::getPolygon() const {
+	return getNavMesh()->getPolygon(m_polygon);
+}
+
 
 
 int PathFollower::findNextPolygon(int typeIndex, int skip) {
@@ -507,13 +511,16 @@ VecPair PathFollower::nextPoint() {
 	bool collapsed = false;
 	vec2 position = m_position.xz();
 	vec2 target[2], normal[2];
+	vec3 vertex[2];
 	float distanceSquared[2];
 	static constexpr float mult[2] = { 1, -1 };
 	if(m_pathIndex < end) {
 		edgeIndex = m_path.m_path[m_pathIndex].edge;
 		int otherSide = (edgeIndex+1) % poly->size;
-		target[0] = insetPoint(poly->points[edgeIndex], m_radius);
-		target[1] = insetPoint(poly->points[otherSide], -m_radius);
+		vertex[0] = poly->points[edgeIndex];
+		vertex[1] = poly->points[otherSide];
+		target[0] = insetPoint(vertex[0], m_radius);
+		target[1] = insetPoint(vertex[1], -m_radius);
 		distanceSquared[0] = position.distance2(target[0]);
 		distanceSquared[1] = position.distance2(target[1]);
 		DebugLine(poly->points[edgeIndex], target[0].xzy(poly->points[edgeIndex].y), 0xa000ff);
@@ -534,6 +541,7 @@ VecPair PathFollower::nextPoint() {
 	auto processPoint = [&](const vec3& p, int side) {
 		vec2 insetTarget = insetPoint(p, m_radius * mult[side]);
 		if(normal[side].dot(insetTarget - position) < 0 || normal[side].dot(p.xz()-position) < 0) {
+			vertex[side] = p;
 			target[side] = insetTarget;
 			normal[side].set(target[side].y - position.y, position.x - target[side].x);
 			distanceSquared[side] = position.distance2(insetTarget);
@@ -548,7 +556,6 @@ VecPair PathFollower::nextPoint() {
 	// Collapse remaining wedge
 	const NavPoly* pathPoly = poly;
 	if(!collapsed) {
-		vec3 leftAnchor, rightAnchor;
 		for(uint i=m_pathIndex+1; i<end; ++i) {
 			pathPoly = NavMesh::getLinkedPolygon(pathPoly, edgeIndex);
 			edgeIndex = m_path.m_path[i].edge;
@@ -561,13 +568,11 @@ VecPair PathFollower::nextPoint() {
 
 			vec3 leftPoint = pathPoly->points[edgeIndex];
 			vec3 rightPoint = pathPoly->points[(edgeIndex+1)%pathPoly->size];
-			if(collapsed && (leftPoint!=leftAnchor && rightPoint!=rightAnchor)) break;
+			if(collapsed && (leftPoint!=vertex[0] && rightPoint!=vertex[1])) break;
 
 			processPoint(leftPoint, 0);
 			processPoint(rightPoint, 1);
 			if(!collapsed && normal[0].dot(target[1]-position) > 0) {
-				leftAnchor = leftPoint;
-				rightAnchor = rightPoint;
 				collapsed = true;
 			}
 		}

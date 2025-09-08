@@ -92,6 +92,7 @@ namespace base {
 		bool        atGoal(float d=1) const;	// Have we reached the target?
 		int         findNextPolygon(int typeIndex, int skip=0); // Find next polygon in path of type
 
+		const NavPoly* getPolygon() const;
 		const NavMesh* getNavMesh() const { return m_path.getNavMesh(); }
 		const vec3& getPosition() const { return m_position; }
 		const vec3& getGoal() const { return m_goal; } 
