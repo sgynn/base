@@ -592,12 +592,13 @@ def export_scene(objects, config, xml):
         root = a[0] == None
         items = children[a[0]]
         obj = items[a[1]]
-        if config.export_merged_meshes and obj.type == 'MESH': continue
-        node = write_object(a[2], obj, config, offset if root else zero, skipRootTransform and root)
+        skip = config.merge_meshes and obj.type == 'MESH'
+        if not skip:
+            node = write_object(a[2], obj, config, offset if root else zero, skipRootTransform and root)
         if a[1] + 1 >= len(items): stack.pop()
         else: stack[-1] = (a[0], a[1]+1, a[2])
 
-        if children[obj]:
+        if not skip and children[obj]:
             stack.append( (obj, 0, node) )
 
 
@@ -739,7 +740,7 @@ def export(context, config):
     # Export as a single merged mesh
     if config.merge_meshes and config.export_meshes:
         export_merged_meshes(context.active_object, exportList, config, xml)
-        exportedMeshes.append(obj.data.name)
+        exportedMeshes.append("TempMergedMesh")
 
     # Export some stuff
     for obj in exportList:
