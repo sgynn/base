@@ -77,10 +77,10 @@ bool EMWindow::createWindow() {
 			emscripten_get_canvas_element_size(wnd->m_canvas, &size.x, &size.y);
 			printf("Resize: %dx%d (%g)\n", size.x, size.y, ratio);
 			wnd->notifyResize(std::forward<Point>(size));
-			return 0;
+			return true;
 		};
 		emscripten_request_fullscreen_strategy(wnd->m_canvas, 1, &s);
-		return 0;
+		return true;
 	});
 
 
