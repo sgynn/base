@@ -24,6 +24,13 @@ void Batcher::addMesh(Mesh* mesh, const vec3& pos, const Quaternion& rot, const 
 	addMesh(mesh, m, custom);
 }
 
+template<typename S, typename D>
+inline void addIndices(const char* src, char* dst, uint count, uint offset) {
+	D* dest = (D*)dst;
+	const S* source = (const S*)src;
+	for(uint i=0; i<count; ++i) dest[i] = source[i] + offset;
+}
+
 Mesh* Batcher::build(Mesh* out) const {
 	int vCount=0, iCount=0;
 	for(const BatchItem& i: m_items) {
@@ -36,9 +43,7 @@ Mesh* Batcher::build(Mesh* out) const {
 	int stride = attributes.calculateStride();
 	char* vData = new char[vCount * stride];
 	char* iData = new char[iCount * indexStride[(int)indexType]];
-	uint8*  ix8  = (uint8*)iData;
-	uint16* ix16 = (uint16*)iData;
-	uint32* ix32 = (uint32*)iData;
+	char* dst = iData;
 	uint32 offset = 0;
 
 	// Potential for multithreaded build with thread pool
@@ -73,23 +78,33 @@ Mesh* Batcher::build(Mesh* out) const {
 		}
 
 		// Indices
-		assert(item.mesh->getIndexBuffer()->getIndexSize() == IndexSize::I16);
+		IndexSize srcIndexType = item.mesh->getIndexBuffer()->getIndexSize();
+		const char* src = item.mesh->getIndexBuffer()->getData<char>();
 		count = item.mesh->getIndexCount();
-		const uint16* src = item.mesh->getIndexBuffer()->getData<uint16>(); // Fixme: Allow diffent types here
 		switch(indexType) {
 		case IndexSize::I8:
-			for(int i=0; i<count; ++i) ix8[i] = src[i] + offset;
-			ix8 += count;
+			switch(srcIndexType) {
+			case IndexSize::I8:  addIndices<uint8,  uint8>(src, dst, count, offset); break;
+			case IndexSize::I16: addIndices<uint16, uint8>(src, dst, count, offset); break;
+			case IndexSize::I32: addIndices<uint32, uint8>(src, dst, count, offset); break;
+			}
 			break;
 		case IndexSize::I16:
-			for(int i=0; i<count; ++i) ix16[i] = src[i] + offset;
-			ix16 += count;
+			switch(srcIndexType) {
+			case IndexSize::I8:  addIndices<uint8,  uint16>(src, dst, count, offset); break;
+			case IndexSize::I16: addIndices<uint16, uint16>(src, dst, count, offset); break;
+			case IndexSize::I32: addIndices<uint32, uint16>(src, dst, count, offset); break;
+			}
 			break;
 		case IndexSize::I32:
-			for(int i=0; i<count; ++i) ix32[i] = src[i] + offset;
-			ix32 += count;
+			switch(srcIndexType) {
+			case IndexSize::I8:  addIndices<uint8,  uint32>(src, dst, count, offset); break;
+			case IndexSize::I16: addIndices<uint16, uint32>(src, dst, count, offset); break;
+			case IndexSize::I32: addIndices<uint32, uint32>(src, dst, count, offset); break;
+			}
 			break;
 		}
+		dst += count * indexStride[(int)indexType];
 		offset += item.mesh->getVertexCount();
 	}
 
