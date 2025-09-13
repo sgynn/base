@@ -68,7 +68,7 @@ namespace base {
 		void rotate(const Quaternion& delta);
 
 		SceneNode* getParent() const;
-		SceneNode* getChild(size_t index) const;
+		SceneNode* getChild(int index) const;
 		SceneNode* getChild(const char* name) const;
 		Drawable*  getAttachment(size_t index) const;
 		size_t     getChildCount() const;

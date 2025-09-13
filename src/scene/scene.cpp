@@ -136,7 +136,9 @@ void SceneNode::deleteChildren(bool attachments) {
 }
 
 SceneNode* SceneNode::getParent() const { return m_parent; }
-SceneNode* SceneNode::getChild(size_t index) const { return index<m_children.size()? m_children[index]: 0; }
+SceneNode* SceneNode::getChild(int index) const {
+	return index>=0 && index<(int)m_children.size()? m_children[index]: 0;
+}
 SceneNode* SceneNode::getChild(const char* name) const {
 	for(SceneNode* node: m_children) {
 		if(node->m_name && strcmp(node->m_name, name)==0) return node;
