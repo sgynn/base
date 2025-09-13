@@ -1,9 +1,9 @@
 #include <base/navmesh.h>
 #include <base/collision.h>
+#include <base/assert.h>
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
-#include <assert.h>
 
 #define EPSILON 1e-6f
 
@@ -16,11 +16,6 @@ uint debugFlags = 0u;
 #define printf(...) if(debugFlags&0x10) printf(__VA_ARGS__);
 #else
 #define printf(...)
-#endif
-
-#ifdef LINUX
-#undef assert
-#define assert(x) if(!(x)) asm("int $3\nnop");
 #endif
 
 using namespace base;
@@ -1008,27 +1003,32 @@ NavPoly* nav::drill(const NavPoly* a, NavPoly* b, bool connect) {
 }
 
 
-/** COnstruct polygons from intersection data
+/** Construct polygons from intersection data
  *	@param list		List of all intersections between brush and mesh polygons
  *	@param out		List to add created polygons to
  *	@return			Number of polygons created
  * */
 int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 	// Construct polygons from intersections - intersections sorted by positon along brush
+	// Note: intersection index0 = brush, index1 = polygon
 	// ToDo - use unsorted list and two sorted lookup maps for brush and polygon.
 	PList holes;
+	enum FollowMode { FORWARD_POLYGON, REVERSE_POLYGON, FORWARD_BRUSH, REVERSE_BRUSH, INVALID };
+	struct Connect { NavPoly* p[2]; int index[2]; };
+	std::vector<Connect> linkStart(list.size(), Connect{});
 
 	// Loop until we have used all intersections
 	uint count=0, ci=0, ni=0;
 	while(true) {
-		// Pick an intersection
+		// Pick an unprocessed intersection
 		for(ci=0; ci<list.size(); ++ci) {
-			if(list[ci].s<2) break;
+			if(~list[ci].s&0xc) break;
 		}
 		if(ci==list.size()) break; // No intersections left
 
 		uint start = ci;
-		int  type  = list[ci].p[1]->typeIndex;
+		int side = list[ci].s&4? 0: 1;
+		int  type  = list[ci].p[side]->typeIndex;
 		TempPoly data;
 		NavPoly* newPoly = create(list[ci].p[1], 0);
 		printf("\nConstructing polygon %s\n", NavMesh::getTypeName(type));
@@ -1047,28 +1047,36 @@ int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 
 			// Mark intersection as used
 			if(cur.p[1]->typeIndex == type) cur.s |= 4;
+			if(cur.p[0]->typeIndex == type || cur.p[0]->typeIndex<0) cur.s |= 8;
 
 			// Determine follow action
-			int op = -1; 
-			if(type==brushType) {
-				if(cur.p[1]->typeIndex == type) op = cur.s&1? 0: 2;
-				else op = 2;
-			} else {
-				op = cur.s&1? 0: 3;
+			FollowMode op = INVALID; 
+			if(side == 0 && cur.p[1]->typeIndex != type) {
+				assert(type == brushType);
+				op = FORWARD_BRUSH;
+			}
+			else if(type==brushType) {
+				if(cur.p[1]->typeIndex == type) op = cur.s&1? FORWARD_POLYGON: FORWARD_BRUSH;
+				else op = FORWARD_BRUSH;
+			}
+			else {
+				op = cur.s&1? FORWARD_POLYGON: REVERSE_BRUSH;
 			}
 
 			// Precidence override
 			if(NavMesh::getPrecidence(cur.p[1]->typeIndex) > precidence) {
 				printf("*");
-				if(op==2) op = cur.s&1? 1: 2;
-				else op = 0;
+				if(op==FORWARD_BRUSH) op = cur.s&1? REVERSE_POLYGON: FORWARD_BRUSH;
+				else op = FORWARD_POLYGON;
 			}
 
 			printf("From %d: ", ci);
 			float ev, sv;
 			NavSect* ts;
 			switch(op) {
-			case 0: 		// FORWARD POLYGON
+			case FORWARD_POLYGON:
+				linkStart[ci].p[1] = newPoly;
+				linkStart[ci].index[1] = data.points.size()-1;
 				ev = -1; sv = cur.e[1] + cur.u[1];
 				for(uint i=0; i<list.size(); ++i) {
 					if(i!=ci && list[i].p[1] == cur.p[1] && (i==start || !(list[i].s&4))) {
@@ -1080,7 +1088,9 @@ int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 				follow(cur.p[1], sv, ev, true, newPoly, data, false);
 				ci = ni;
 				break;
-			case 1:			// REVERSE POLYGON
+			case REVERSE_POLYGON:
+				linkStart[ci].p[0] = newPoly;
+				linkStart[ci].index[0] = data.points.size()-1;
 				ev = -1; sv = cur.e[1] + cur.u[1];
 				for(uint i=0; i<list.size(); ++i) {
 					if(i!=ci && list[i].p[1] == cur.p[1] && (i==start || !(list[i].s&4))) {
@@ -1092,13 +1102,17 @@ int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 				follow(cur.p[1], sv, ev, false, newPoly, data, false);
 				ci = ni;
 				break;
-			case 2:			// FORWARD BRUSH
+			case FORWARD_BRUSH:
+				linkStart[ci].p[0] = newPoly;
+				linkStart[ci].index[0] = data.points.size() - 1;
 				ci = (ci+1)%list.size();
 				ts = &list[ci];
 				printf("FB %g-%g\n", cur.e[0]+cur.u[0], ts->e[0]+ts->u[0]);
 				follow(cur.p[0], cur.e[0]+cur.u[0], ts->e[0]+ts->u[0], true, newPoly, data, true);
 				break;
-			case 3:			// REVERSE BRUSH
+			case REVERSE_BRUSH:
+				linkStart[ci].p[1] = newPoly;
+				linkStart[ci].index[1] = data.points.size() - 1;
 				ci = ci>0? ci-1: list.size()-1;
 				ts = &list[ci];
 				printf("RB %g-%g\n", cur.e[0]+cur.u[0], ts->e[0]+ts->u[0]);
@@ -1110,6 +1124,7 @@ int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 			}
 
 		} while(ci!=start);
+		printf("\n");
 
 
 		// Finalise polygon
@@ -1121,6 +1136,7 @@ int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 			newPoly->size = data.points.size();
 			newPoly->points = new vec3[newPoly->size];
 			newPoly->links = new NavLink*[newPoly->size];
+			newPoly->typeIndex = type;
 			memcpy((char*)newPoly->points, &data.points[0], newPoly->size * sizeof(vec3));
 			memcpy(newPoly->links, &data.edges[0], newPoly->size * sizeof(NavLink*));
 
@@ -1166,8 +1182,26 @@ int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 			printf("Failed to resolve partial (%g, %g)\n", (a.x+b.x)/2, (a.z+b.z)/2);
 		}
 	}
+
+	// Zip up internal links
+	for(const Connect& k: linkStart) {
+		if(k.p[0] && k.p[1]) {
+			if(k.p[0]->links[k.index[0]]) continue;
+			// Folow 0 forwards and the 1 backwards. Either all edges should be linked, or none of them
+			printf("Zip (%g, %g) B%d - P%d\n", k.p[0]->points[k.index[0]].x, k.p[0]->points[k.index[0]].z, k.index[0], k.index[1]);
+			int a[2] = { k.index[0], k.index[1] };
+			while(true) {
+				int b[2] = { nextIndex(k.p[0], a[0]), previousIndex(k.p[1], a[1]) };
+				if(k.p[0]->points[b[0]] != k.p[1]->points[b[1]]) break;
+				createLink(k.p[0], a[0], k.p[1], b[1]);
+				a[0] = b[0];
+				a[1] = b[1];
+			}
+		}
+	}
 	
 	// Clean polygons
+	if(~debugFlags&8)
 	for(uint i=out.size()-count; i<out.size(); ++i) cleanPolygon(out[i]);
 
 	// Fix holes. If there are holes, they will all be in the same polygon ...
