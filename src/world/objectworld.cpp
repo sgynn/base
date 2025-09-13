@@ -81,6 +81,7 @@ bool ObjectWorldBase::processMessages() {
 			break;
 		case Message::StartUpdate:
 			if(o->m_world != this) break;
+			if(o->m_hasUpdate) break;
 			m_update.push_back(o);
 			o->m_hasUpdate = true;
 			break;
