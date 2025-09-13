@@ -1,6 +1,7 @@
 #pragma once
 
 #include <base/image.h>
+#include <cstdio>
 
 namespace base {
 
