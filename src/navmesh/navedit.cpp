@@ -87,7 +87,7 @@ namespace nav {
 	int      expand     (PList& list, int mask);								// Expand selection along links
 	int		 getIntersections (const NavPoly* b, const NavPoly* p, IList& out);	// Get all intersections
 
-	int      construct(IList&, PList&, int brushType, int precidence);			// Construct polygons from intersection list
+	int      construct(IList&, PList&, int brushType, short tag, int precidence);			// Construct polygons from intersection list
 	int      follow(const NavPoly* p, float s, float e, bool f, NavPoly* np, TempPoly& data, bool isBrush);	// Follow polygon edge from s to e, adding vertices to output
 	NavPoly* drill(const NavPoly* a, NavPoly* b, bool connect);					// Drill a hole in polygon a with polygon b
 	
@@ -1008,7 +1008,7 @@ NavPoly* nav::drill(const NavPoly* a, NavPoly* b, bool connect) {
  *	@param out		List to add created polygons to
  *	@return			Number of polygons created
  * */
-int nav::construct(IList& list, PList& out, int brushType, int precidence) {
+int nav::construct(IList& list, PList& out, int brushType, short tag, int precidence) {
 	// Construct polygons from intersections - intersections sorted by positon along brush
 	// Note: intersection index0 = brush, index1 = polygon
 	// ToDo - use unsorted list and two sorted lookup maps for brush and polygon.
@@ -1031,6 +1031,7 @@ int nav::construct(IList& list, PList& out, int brushType, int precidence) {
 		int  type  = list[ci].p[side]->typeIndex;
 		TempPoly data;
 		NavPoly* newPoly = create(list[ci].p[1], 0);
+		if(side==0) newPoly->tag = tag;
 		printf("\nConstructing polygon %s\n", NavMesh::getTypeName(type));
 
 		// Follow edges to build polygon
@@ -1713,7 +1714,7 @@ void NavMesh::carve(const NavPoly& sb, int precidence, bool add) {
 		}
 		#endif
 
-		if(construct(sect, out, add? sb.typeIndex: -1, precidence)<0) return;
+		if(construct(sect, out, add? sb.typeIndex: -1, sb.tag, precidence)<0) return;
 	}
 
 	// TODO: re-drill any internal polygons with higher precidence
