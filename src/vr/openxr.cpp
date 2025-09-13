@@ -101,6 +101,7 @@ class XRController : public base::Joystick {
 	XRController(vr::Side hand) : Joystick(6, 6), side(hand) {
 		sprintf(m_name, "XR Controller %s", side? "Right": "Left");
 		for(uint i=0; i<m_numAxes; ++i) { m_range[i].min=-100000; m_range[i].max=100000; }
+		setEnabled(true);
 	}
 	bool update() override;
 	void vibrate(uint duration, float amplitude, float frequency) override;
@@ -376,6 +377,7 @@ void xr::setupActions() {
 	};
 	
 	// Get the XrPath for the left and right hands - we will use them as subaction paths.
+	xr::hand[Left].active = xr::hand[Right].active = true; // FIXME: Can we detect them?
 	xr::hand[Left].role = vr::HAND_LEFT; 
 	xr::hand[Right].role = vr::HAND_RIGHT; 
 	xr::hand[Left].subaction = path("/user/hand/left");
@@ -429,13 +431,14 @@ void xr::setupActions() {
 		suggestedBindings.interactionProfile = path(target);
 		suggestedBindings.suggestedBindings = bindingData.data();
 		suggestedBindings.countSuggestedBindings = bindingData.size();
-		if(xrSuggestInteractionProfileBindings(xr::instance, &suggestedBindings) != XR_SUCCESS) {
-			printf("Failed profile for %s\n", strrchr(target, '/'));
-		}
+		if(xrSuggestInteractionProfileBindings(xr::instance, &suggestedBindings) != XR_SUCCESS) return false;
+		printf("Input profile loaded: %s\n", strrchr(target, '/') + 1);
+		return true;
 	};
 
 	
-	suggestBindings("/interaction_profiles/khr/simple_controller",
+	bool ok = false;
+	ok |= suggestBindings("/interaction_profiles/khr/simple_controller",
 	{
 		{ xr::actions.aimPose, "input/aim/pose" },
 		{ xr::actions.gripPose, "input/grip/pose" },
@@ -444,7 +447,7 @@ void xr::setupActions() {
 		{ xr::actions.haptic, "output/haptic" },
 	});
 	
-	suggestBindings("/interaction_profiles/valve/index_controller",
+	ok |= suggestBindings("/interaction_profiles/valve/index_controller",
 	{
 		{ xr::actions.aimPose, "input/aim/pose" },
 		{ xr::actions.gripPose, "input/grip/pose" },
@@ -462,7 +465,7 @@ void xr::setupActions() {
 		{ xr::actions.a, "input/a/click" },
 		{ xr::actions.haptic, "output/haptic" },
 	});
-	suggestBindings("/interaction_profiles/oculus/touch_controller",
+	ok |= suggestBindings("/interaction_profiles/oculus/touch_controller",
 	{
 		{ xr::actions.aimPose, "input/aim/pose" },
 		{ xr::actions.gripPose, "input/grip/pose" },
@@ -476,7 +479,7 @@ void xr::setupActions() {
 		{ xr::actions.a, "input/a/click" },
 		{ xr::actions.haptic, "output/haptic" },
 	});
-	suggestBindings("/interaction_profiles/htc/vive_controller",
+	ok |= suggestBindings("/interaction_profiles/htc/vive_controller",
 	{
 		{ xr::actions.aimPose, "input/aim/pose" },
 		{ xr::actions.gripPose, "input/grip/pose" },
@@ -489,7 +492,7 @@ void xr::setupActions() {
 		{ xr::actions.system, "input/menu/click" },
 		{ xr::actions.haptic, "output/haptic" },
 	});
-	suggestBindings("/interaction_profiles/microsoft/motion_controller"	,
+	ok |= suggestBindings("/interaction_profiles/microsoft/motion_controller"	,
 	{
 		{ xr::actions.aimPose, "input/aim/pose" },
 		{ xr::actions.gripPose, "input/grip/pose" },
@@ -505,6 +508,7 @@ void xr::setupActions() {
 		{ xr::actions.system, "input/menu/click" },
 		{ xr::actions.haptic, "output/haptic" },
 	});
+	if(!ok) printf("Error: No valid input bindings found\n");
 
 
 	// Attach action set to session
