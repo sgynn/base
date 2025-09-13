@@ -396,7 +396,7 @@ void AudioEditor::deleteItem() {
 		Object parent = getObject(m_data->getSelectedNode()->getParent());
 		if(parent.id != INVALID) {
 			Group* group = ((Group*)audio::Data::instance->lookupSound(parent.id));
-			std::remove(group->sounds.begin(), group->sounds.end(), object.id);
+			group->sounds.erase(std::remove(group->sounds.begin(), group->sounds.end(), object.id));
 			// FIXME: Keep switch indices
 		}
 	}
