@@ -168,8 +168,10 @@ void OrbitCamera::update(int mask) {
 	float distance = m_position.distance(m_target);
 
 	// Zoom input
-	int wheel = in.mouse.wheel;
-	if(wheel && (mask&CU_WHEEL)) {
+	int wheel = (mask&CU_WHEEL)? in.mouse.wheel: 0;
+	if((mask&CU_KEYS) && in.check(m_zoomIn)) wheel += 1;
+	if((mask&CU_KEYS) && in.check(m_zoomOut)) wheel -= 1;
+	if(wheel) {
 		float d = distance + m_zoomDelta;
 		while(wheel<0) { d *= 1+m_zoomFactor; wheel++; }
 		while(wheel>0) { d *= 1-m_zoomFactor; wheel--; }

@@ -23,6 +23,7 @@ namespace base {
 		/** Get zoom factor */
 		float getZoomFactor() const { return m_zoomFactor; }
 		void setZoomLimits(float min, float max);
+		void setZoomBinding(unsigned zoomIn, unsigned zoomOut) { m_zoomIn=zoomIn; m_zoomOut = zoomOut; }
 
 		/// Pan camera with click and drag
 		void enableMousePan(float d=0, const vec3& normal=vec3(0,1,0));
@@ -30,6 +31,8 @@ namespace base {
 
 		private:
 		vec3 m_target;				// Target point
+		unsigned m_zoomIn = -1;		// Key binding
+		unsigned m_zoomOut = -1;	// Key binding
 		float m_zoomMin, m_zoomMax; // Default to clip range
 		float m_zoomFactor = 0.2;	// Multiplier mouse wheel uses
 		float m_zoomAcc    = 1;		// zoom smoothing
