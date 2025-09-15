@@ -240,7 +240,8 @@ void OrbitCamera::update(int mask) {
 		vec3 dir = getPosition() - getTarget();
 		float dist = dir.normaliseWithLength();
 		dist *= 1 - in.mouse.delta.y * 0.004f;
-		m_position = m_target + dir * fclamp(dist, m_zoomMin, m_zoomMax);
+		distance = fclamp(dist, m_zoomMin, m_zoomMax);
+		m_position = m_target + dir * distance;
 	}
 
 	// Mouse Rotation input
@@ -278,7 +279,11 @@ void OrbitCamera::update(int mask) {
 			m_position = m_target + getDirection() * distance;
 		}
 
-		if(m_rotateAcc<1) m_rVelocity -= m_rVelocity * m_rotateAcc;
+		if(m_rotateAcc < 1) {
+			m_rVelocity -= m_rVelocity * m_rotateAcc;
+			if(fabs(m_rVelocity.x) < 1e-6) m_rVelocity.x = 0;
+			if(fabs(m_rVelocity.y) < 1e-6) m_rVelocity.y = 0;
+		}
 		else m_rVelocity.x = m_rVelocity.y = 0.f;
 	}
 }
