@@ -37,6 +37,7 @@ namespace base {
 		bool startsWith(const char* s) const        { return !s || strncmp(str(), s, strlen(s))==0; }
 		bool endsWith(const char* s) const          { if(!s) return true; if(!m_data) return false; int sl=strlen(s); return strncmp(str() + length() - sl, s, sl) == 0; }
 		const char* contains(const char* s) const   { if(!s) return nullptr; return strstr(str(), s); }
+		const char* contains(char c) const          { return strchr(str(), c); }
 		bool match(const char* pattern) const       { return match(str(), pattern); }
 
 		char operator[](unsigned i) const           { return m_data[i]; }
