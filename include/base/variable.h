@@ -39,6 +39,17 @@ namespace script {
 		template<typename T> T getValue() const;
 		template<typename T> bool setValue(const T&);
 		template<typename T> bool linkValue(uint t, T*& p, T& v, int flags);
+		bool linkValue(bool&,   int flags);
+		bool linkValue(float&,  int flags);
+		bool linkValue(double&, int flags);
+		bool linkValue(int&,    int flags);
+		bool linkValue(uint&,   int flags);
+		bool linkValue(vec2&,   int flags);
+		bool linkValue(vec3&,   int flags);
+		bool linkValue(vec4&,   int flags);
+		bool linkValue(char*&,  int flags);
+		bool linkValue(const char*&, int flags);
+		bool linkValue(VariableName&, int flags);
 		bool linkVector(uint type, float* value, int flags);
 		bool setType(uint type);
 
@@ -98,16 +109,6 @@ namespace script {
 		bool operator!=(const VariableName&) const;
 
 		enum LinkFlags { LINK_DEFAULT, LINK_READONLY=1, LINK_SET=2 }; // LINK_SET uses value from script
-		bool link(bool&,   int flags=0);
-		bool link(float&,  int flags=0);
-		bool link(double&, int flags=0);
-		bool link(int&,    int flags=0);
-		bool link(uint&,   int flags=0);
-		bool link(vec2&,   int flags=0);
-		bool link(vec3&,   int flags=0);
-		bool link(vec4&,   int flags=0);
-		bool link(const char*&, int flags=0);
-		bool link(VariableName&, int flags=0);
 		bool isLinked() const;
 		void unlink();							// Unlink variable
 		void lock();							// Make value read only
@@ -121,9 +122,10 @@ namespace script {
 		template<typename T> void set(const VariableName& n, const T& v) { get(n) = v; }
 		template<typename T> void set(const VariableName& n, T&& v) 	 { get(n) = std::forward<T>(v); }
 
-		template<typename T> bool link(const char* n, T& v, int f=0) { return find(n).link(v,f); } // Alternative syntax
-		template<typename T> bool link(uint n, T& v, int f) { return get(n).link(v,f); }
-		template<typename T> bool link(const VariableName& n, T& v, int f) { return get(n).link(v,f); }
+		template<typename T> bool link(T& value, int flags=0) { return linkValue(value, flags); }
+		template<typename T> bool link(const char* n, T& v, int f=0) { return find(n).linkValue(v,f); } // Alternative syntax
+		template<typename T> bool link(uint n, T& v, int f) { return get(n).linkValue(v,f); }
+		template<typename T> bool link(const VariableName& n, T& v, int f) { return get(n).linkValue(v,f); }
 
 		bool isObject() const;					// Is this variable an object
 		bool isArray() const;					// Is this variable an array

@@ -369,16 +369,17 @@ inline bool Variable::linkVector(uint type, float* v, int f) {
 	else return false;
 }
 
-bool Variable::link(bool& v, int f)   { return linkValue(BOOL,   bp, v, f); }
-bool Variable::link(int& v, int f)    { return linkValue(INT,    ip, v, f); }
-bool Variable::link(uint& v, int f)   { return linkValue(UINT,   up, v, f); }
-bool Variable::link(float& v, int f)  { return linkValue(FLOAT,  fp, v, f); }
-bool Variable::link(double& v, int f) { return linkValue(DOUBLE, dp, v, f); }
-bool Variable::link(const char*& v, int f) { return linkValue(STRING, sp, v, f); }
-bool Variable::link(vec2& v, int f)   { return linkVector(VEC2, v, f); }
-bool Variable::link(vec3& v, int f)   { return linkVector(VEC3, v, f); }
-bool Variable::link(vec4& v, int f)   { return linkVector(VEC4, v, f); }
-bool Variable::link(VariableName& n, int f) {
+bool Variable::linkValue(bool& v, int f)   { return linkValue(BOOL,   bp, v, f); }
+bool Variable::linkValue(int& v, int f)    { return linkValue(INT,    ip, v, f); }
+bool Variable::linkValue(uint& v, int f)   { return linkValue(UINT,   up, v, f); }
+bool Variable::linkValue(float& v, int f)  { return linkValue(FLOAT,  fp, v, f); }
+bool Variable::linkValue(double& v, int f) { return linkValue(DOUBLE, dp, v, f); }
+bool Variable::linkValue(char*& v, int f)  { return linkValue(STRING, sp, (const char*&)v, f); }
+bool Variable::linkValue(const char*& v, int f) { return linkValue(STRING, sp, v, f); }
+bool Variable::linkValue(vec2& v, int f)   { return linkVector(VEC2, v, f); }
+bool Variable::linkValue(vec3& v, int f)   { return linkVector(VEC3, v, f); }
+bool Variable::linkValue(vec4& v, int f)   { return linkVector(VEC4, v, f); }
+bool Variable::linkValue(VariableName& n, int f) {
 	if(!setType(NAME)) return false;
 	if(name && (f&LINK_SET)) n = *name;
 	if(name && !isLinked()) delete name;
