@@ -80,6 +80,11 @@ class NavMesh {
 	NavPoly* getClosestPolygon(const vec3& point, float max=1e37f, vec3* out=0) const;
 	int      getClosestBoundary(const vec3& point, uint polygon, float radius, vec3& out, uint* poly=0, uint* edge=0) const;
 
+	static vec3 getRandomPoint(const NavPoly* poly);
+	template<class F> const NavPoly* getRandomPolygon(const F& filter) const;
+	template<class F> const vec3 getRandomPoint(const F& filter) const { return getRandomPoint(getRandomPolygon(filter)); }
+
+
 	// Direct access for drawing
 	const NavPolyList& getMeshData() const { return m_mesh; }
 	
@@ -138,6 +143,20 @@ class NavMesh {
 inline NavMesh::EdgeIterator begin(const NavPoly* p) { return NavMesh::EdgeIterator(p, p->size-1, 0); }
 inline NavMesh::EdgeIterator end(const NavPoly* p) { return NavMesh::EdgeIterator(p, p->size, p->size); }
 
-
+template<class F>
+const NavPoly* NavMesh::getRandomPolygon(const F& filter) const {
+	float accum = 0;
+	const NavPoly* result = nullptr;
+	for(const NavPoly* p: m_mesh) {
+		float weight = filter(p);
+		if(weight <= 0) continue;
+		float area = 0;
+		for(auto& e: p) area += (e.pointA().x - e.pointB().x) * (e.pointA().z + e.pointB().z);
+		area *= weight;
+		if(randf() * (accum + area) >= accum) result = p;
+		accum += area;
+	}
+	return result;
+}
 }
 

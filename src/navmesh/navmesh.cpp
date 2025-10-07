@@ -263,6 +263,29 @@ void NavMesh::removePolygon(NavPoly* p) {
 
 // =========================================================== //
 
+vec3 NavMesh::getRandomPoint(const NavPoly* poly) {
+	// Pick a triangle in polygon
+	float accum = 0;
+	int triangle = 2;
+	for(int i=2; i<poly->size; ++i) {
+		float area = 0;
+		area += (poly->points[i-1].x - poly->points[0].x) * (poly->points[i-1].z + poly->points[0].z);
+		area += (poly->points[i].x - poly->points[i-1].x) * (poly->points[i].z + poly->points[i-1].z);
+		area += (poly->points[0].x - poly->points[i].x) * (poly->points[0].z + poly->points[i].z);
+		if(randf() * (accum + area) >= accum) triangle = i;
+		accum += area;
+	}
+	// Random point in this triangle
+	vec3 p = poly->points[0];
+	vec3 a = poly->points[triangle] - p;
+	vec3 b = poly->points[triangle - 1] - p;
+	float ra = randf(), rb = randf();
+	if(ra + rb > 1) { ra=1-ra; rb=1-rb; }
+	return p + a*ra + b*rb;
+}
+
+// =========================================================== //
+
 
 NavMesh::NavMesh(NavMesh&& o) : m_mesh(std::move(o.m_mesh)), m_newId(o.m_newId) { }
 NavMesh::NavMesh(const NavMesh& src) { *this = src; }
