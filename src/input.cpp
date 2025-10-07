@@ -284,7 +284,7 @@ void Input::bindJoystickValue(uint action, uint joystick, uint axis, float multi
 void Input::bindMouseValue(uint action, uint axis, float multiplier) {
 	bindAxisInternal(action, axis<2? 2: 3, 0, axis, multiplier);
 }
-void Input::bindButtonValue(uint action, KeyCode key, float value) {
+void Input::bind(uint action, float value, KeyCode key) {
 	bindAxisInternal(action, 4, 0, key, value);
 }
 void Input::bindButtonValue(uint action, uint joystick, uint button, float value) {

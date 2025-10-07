@@ -256,11 +256,11 @@ namespace base {
 		const char* getActionName(uint action) const;
 		void bind(uint action, KeyCode keycode);
 		void bind(uint action, MouseButton button);
+		void bind(uint action, float value, KeyCode keycode);
 		void bindJoystick(uint action, uint joystick, uint button);
 		void bindJoystick(uint action, uint joystick, uint axis, float threshold);
 		void bindJoystickValue(uint action, uint joystick, uint axis, float multiplier=1);
 		void bindButtonValue(uint action, uint joystick, uint button, float value);
-		void bindButtonValue(uint action, KeyCode keycode, float value);
 		void bindMouseValue(uint action, uint axis, float multiplier=1);
 		void unbind(uint action);
 		void unbindAll();
@@ -275,6 +275,10 @@ namespace base {
 		void bind(uint action, KeyCode keycode, A...keycodes) { bind(action, keycode); bind(action, keycodes...); }
 		template<typename...A>
 		void bind(uint action, MouseButton mouse, A...keycodes) { bind(action, mouse); bind(action, keycodes...); }
+		template<typename...A>
+		void bind(uint action, float value, KeyCode keycode, A...keycodes) { bind(action, value, keycode); bind(action, value, keycodes...); }
+
+
 		
 		/** Update must be called once per frame BEFORE window events are processed */
 		void update();
