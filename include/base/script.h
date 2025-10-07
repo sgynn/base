@@ -40,7 +40,7 @@ namespace script {
 	class Expression {
 		protected:
 		friend class Script;
-		enum Operator { NIL, SET, APPEND, OR, AND, EQ, NE, GT, GE, LT, LE, NOT, ADD, SUB, NEG, MUL, DIV, GET,GET2,CALL };
+		enum Operator { NIL, SET, SETADD, SETSUB, SETMUL, SETDIV, APPEND, OR, AND, EQ, NE, GT, GE, LT, LE, NOT, ADD, SUB, NEG, MUL, DIV, GET,GET2,CALL };
 		enum OperandType { NOTHING, NAME, COMPOUNDNAME, CONSTANT, EXPRESSION, FUNCTIONCALL };
 		struct Operand { OperandType type; union { uint var; uint* cvar; Variable* con; const Expression* expr; FunctionCall* call; }; };
 		Operand  lhs, rhs;	// Operands can be variable, constant, sub-expression
@@ -50,7 +50,8 @@ namespace script {
 		static Variable& opVariableRef(const Operand& v, Context&& context);
 		static String    opString(const Operand&);
 		static void      opDelete(Operand&);
-		static int compare(const Variable& a, const Variable& b);
+		static int       compare(const Variable& a, const Variable& b);
+		static Variable  evaluateOp(Operator op, Variable& a, Variable& b, Context&&);
 		public:
 		virtual ~Expression();
 		virtual Variable evaluate(Context&& context) const;

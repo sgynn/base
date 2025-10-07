@@ -215,6 +215,17 @@ int Expression::compare(const Variable& a, const Variable& b) {
 	}
 }
 
+inline Variable Expression::evaluateOp(Operator op, Variable& a, Variable& b, Context&& context) {
+	Expression tmp;
+	tmp.lhs.type = tmp.rhs.type = CONSTANT;
+	tmp.lhs.con = &a;
+	tmp.rhs.con = &b;
+	tmp.op = op;
+	Variable r = tmp.evaluate(fwd(context));
+	tmp.lhs.type = tmp.rhs.type = NOTHING;
+	return r;
+}
+
 Variable Expression::evaluate(Context&& context) const {
 	if(op==NIL) return opValue(lhs, fwd(context)); // Trivial case - single value
 	if(op==NOT) { Variable r; r=!(bool)opValue(rhs, fwd(context)); return r; } // simple invert
@@ -316,6 +327,18 @@ Variable Expression::evaluate(Context&& context) const {
 		break;
 	case SET:
 		r = opVariableRef(lhs, fwd(context)) = std::move(b);
+		break;
+	case SETADD:
+		r = opVariableRef(lhs, fwd(context)) = std::move(evaluateOp(ADD, a, b, fwd(context)));
+		break;
+	case SETSUB:
+		r = opVariableRef(lhs, fwd(context)) = std::move(evaluateOp(SUB, a, b, fwd(context)));
+		break;
+	case SETMUL:
+		r = opVariableRef(lhs, fwd(context)) = std::move(evaluateOp(MUL, a, b, fwd(context)));
+		break;
+	case SETDIV:
+		r = opVariableRef(lhs, fwd(context)) = std::move(evaluateOp(DIV, a, b, fwd(context)));
 		break;
 	case APPEND:
 		{
@@ -529,17 +552,20 @@ String Expression::opString(const Operand& op) {
 
 String Expression::toString() const {
 	// ToDo : Operator precidence parentheses
-	static const char* sop[] = { "", "=", "[] =",  "||", "&&", "==", "!=", ">", ">=", "<", "<=", "!", "+", "-", "-", "*", "/", "[", "." };
-	static int paren[] = { 0,1,1, 2,3,4,5,6,7,8,9,10, 11,12,13,14,15,16,16 };
-	String s = opString(lhs);
-	if(op==NOT) s = String(sop[NOT]) + s;
-	else if(op==GET) s = s + "[" + opString(rhs) + "]";
-	else if(op==CALL) s = s + rhs.call->toString();
-	else if(op) {
-		String r = opString(rhs);
-		if(lhs.type==EXPRESSION && paren[lhs.expr->op]<paren[op]) s = String("(") + s + ")";
-		if(rhs.type==EXPRESSION && paren[rhs.expr->op]<paren[op]) r = String("(") + r + ")";
-		s = s + sop[op] + r;
+	static const char* sop[] = { "", "=", "+=", "-=", "*=", "/=", "[] =",  "||", "&&", "==", "!=", ">", ">=", "<", "<=", "!", "+", "-", "-", "*", "/", "[", "." };
+	static int paren[] = { 0,1,1,1,1,1,1,  2,3,4,5,6,7,8,9,10, 11,12,13,14,15,16,16 };
+	String s;
+	if(op==NOT) s = String(sop[NOT]) + opString(rhs);
+	else {
+		s = opString(lhs);
+		if(op==GET) s = s + "[" + opString(rhs) + "]";
+		else if(op==CALL) s = s + rhs.call->toString();
+		else if(op) {
+			String r = opString(rhs);
+			if(lhs.type==EXPRESSION && paren[lhs.expr->op]<paren[op]) s = String("(") + s + ")";
+			if(rhs.type==EXPRESSION && paren[rhs.expr->op]<paren[op]) r = String("(") + r + ")";
+			s = s + sop[op] + r;
+		}
 	}
 	return s;
 }
@@ -632,19 +658,22 @@ template<typename T> inline Variable* createConstant(T value) {
 }
 
 int Script::parseOperator(const char*& s) {
+	auto next = [&s](char c, int e, int ne=0) { if(s[1]==c) return s+=2, e; else if(ne) ++s; return ne; };
+
 	switch(*s) {
-	case '!': if(s[1]=='=') return s+=2,Expression::NE; else return 0;
-	case '=': if(s[1]=='=') return s+=2,Expression::EQ; else return ++s,Expression::SET;
-	case '<': if(s[1]=='=') return s+=2,Expression::LE; else return ++s,Expression::LT;
-	case '>': if(s[1]=='=') return s+=2,Expression::GE; else return ++s,Expression::GT;
+	case '!': return next('=', Expression::NE);
+	case '=': return next('=', Expression::EQ, Expression::SET);
+	case '<': return next('=', Expression::LE, Expression::LT);
+	case '>': return next('=', Expression::GE, Expression::GT);
 
-	case '&': if(s[1]=='&') return s+=2,Expression::AND; else return 0;
-	case '|': if(s[1]=='|') return s+=2,Expression::OR;  else return 0;
+	case '&': return next('&', Expression::AND);
+	case '|': return next('|', Expression::OR);
 
-	case '+': return ++s,Expression::ADD;
-	case '-': return ++s,Expression::SUB;
-	case '*': return ++s,Expression::MUL;
-	case '/': return ++s,Expression::DIV;
+	case '+': return next('=', Expression::SETADD, Expression::ADD);
+	case '-': return next('=', Expression::SETSUB, Expression::SUB);
+	case '*': return next('=', Expression::SETMUL, Expression::MUL);
+	case '/': return next('=', Expression::SETDIV, Expression::DIV);
+
 	default:  return 0;
 	}
 }
@@ -974,7 +1003,8 @@ Expression* Script::parseExpression(const char* src, const char*& s, bool allowS
 		}
 		// Operators - the complicated one
 		else if((oper = parseOperator(s))) {
-			if(oper == Expression::SET && !(valid&SET)) return Error("Unexpected '='");
+			bool isSetOp = oper >= Expression::SET && oper <= Expression::APPEND;
+			if(isSetOp && !(valid&SET)) return Error("Unexpected '='");
 			else if(~valid&OP) return Error("Unexpected operator");
 			
 			Expression* e = new Expression();
@@ -982,7 +1012,7 @@ Expression* Script::parseExpression(const char* src, const char*& s, bool allowS
 			compoundExpression(stack, front, e, oper);
 
 			// Valid next token
-			if(oper==Expression::SET) Valid(BLK|VAL|INV|FUNC|ARRAY, OP|SUBTEXT);
+			if(oper==Expression::SET || oper==Expression::APPEND) Valid(BLK|VAL|INV|FUNC|ARRAY, OP|SUBTEXT);
 			else if(oper==Expression::ADD || oper==Expression::MUL) Valid(VAL|INV|ARRAY,ALL);
 			else Valid(VAL|INV,ALL);
 		}
