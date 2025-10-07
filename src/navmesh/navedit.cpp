@@ -255,13 +255,17 @@ void nav::updateCentre(NavPoly* p) {
 	// Centroid from triangle decomposition
 	vec3 c(0,0,0);
 	float det=0, temp=0;
+	float high = p->points[0].y, low = p->points[0].y;
 	for(int i=p->size-1, j=0; j<p->size; i=j,++j) {
 		temp = p->points[i].x * p->points[j].z - p->points[i].z * p->points[j].x;
 		temp = fabs(temp);
 		c += (p->points[i] + p->points[j]) * temp;
 		det += temp;
+		high = fmax(high, p->points[i].y);
+		low  = fmin(low, p->points[i].y);
 	}
 	p->centre = c / (det*2);
+	p->centre.y = (high+low)*0.5;
 
 	// Update extents
 	p->extents.set(0,0,0);
