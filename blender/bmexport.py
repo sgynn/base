@@ -533,13 +533,33 @@ def export_action(context, skeleton, action, name, xml):
             if keys.scale: write_keyframes(keyset, "scale", keys.scale)
 
 def optimise_keys(keys, identity, compare):
+    # keys: array of (frame, data) tuples
     if not keys: return
-    first = keys[0][1]
-    for k in keys:
-        if not compare(k[1], first):
-            return
-    if compare(first, identity): del keys[0:]
-    else: del keys[1:]
+    skip = 0;
+    count = len(keys)
+    while skip < count:
+        if compare(keys[skip][1], identity): skip +=1
+        else: break
+
+    if skip == count: # All identity - clear data
+        del keys[0:]
+        return
+    elif skip > 1: # Remove from start
+        del keys[0:skip-1]
+
+    # Remove duplicates
+    i = 2
+    while i < len(keys):
+        if compare(keys[i-2][1], keys[i-1][1]) and compare(keys[i-1][1], keys[i][1]):
+            del keys[i-1:i]
+        else:
+            i += 1
+
+    # Remove trailing duplicate
+    if len(keys) > 1 and compare(keys[-2][1], keys[-1][1]):
+        del keys[-1:]
+
+    print("Removed " + str(len(keys)-count) + " keyframes")
 
 def write_keyframes(keyset, name, data):
     node = append_element(keyset, name)
