@@ -78,6 +78,17 @@ bool SceneNode::removeFromParent() {
 	return false;
 }
 
+void SceneNode::switchParent(SceneNode* newParent) {
+	if(!m_parent) { newParent->addChild(this); return; }
+	Matrix m = getDerivedTransformUpdated();
+	newParent->addChild(this);
+	Matrix t = newParent->getDerivedTransformUpdated();
+	assert(t.isAffine());
+	Matrix inverse;
+	Matrix::inverseAffine(inverse, t);
+	setTransform(inverse * m);
+}
+
 void SceneNode::notifyAdded() {
 	m_depth = m_parent->m_depth+1;
 	m_scene = m_parent->m_scene;

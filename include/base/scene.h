@@ -35,6 +35,7 @@ namespace base {
 		void addChild(SceneNode*);
 		void addChild(SceneNode*, const vec3& pos, const Quaternion& rot={});
 		void addChild(SceneNode*, const vec3& pos, const Quaternion& rot, const vec3& scale);
+		void switchParent(SceneNode* newParent); // Keeps world position
 		bool removeChild(SceneNode*);
 		bool removeFromParent();
 		void attach(Drawable*);
