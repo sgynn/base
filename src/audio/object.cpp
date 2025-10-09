@@ -80,7 +80,7 @@ int Object::play(soundID id) {
 		case SOUND:
 			inst.sound = static_cast<const Sound*>(sound);
 			group = nullptr;
-			sound = 0;
+			sound = nullptr;
 			break;
 		case GROUP: return -2;// Should not be playing this
 		case RANDOM:
@@ -221,7 +221,7 @@ void Object::onEndEvent(const Data::EndEvent& e) {
 	if(inst.sound->targetID!=INVALID) {
 		alSourceStop(inst.source); // to be sure - possibly fixes a bug
 		Data::instance->m_mixers[ inst.sound->targetID ].removeInstance(this, e.index);
-		inst.sound = 0;
+		inst.sound = nullptr;
 		inst.id = INVALID;
 	}
 }
@@ -284,6 +284,7 @@ int Object::setVar(unsigned id, float value) {
 	setAudioVariable(variables, VariableValue{id, value});
 	// Affect any playing sounds
 	for(SoundInstance& inst: playing) {
+		if(!inst.sound) continue;
 		if(inst.sound->pitch.variable == id) alSourcef(inst.source, AL_PITCH, value);
 		if(inst.sound->gain.variable == id) {
 			Mixer& mixer = Data::instance->m_mixers[ inst.sound->targetID ];
