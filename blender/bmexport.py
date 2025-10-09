@@ -669,7 +669,8 @@ def export_custom_properties(node, obj, name=None):
         custom = []
         for key in obj.keys():
             if key not in '_RNA_UI':
-                custom.append( (key, str(obj[key])) )
+                if hasattr(obj[key], 'name'): custom.append((key, obj[key].name))
+                else: custom.append( (key, str(obj[key])) )
 
         if custom:
             if name: node = append_element(node, name)
