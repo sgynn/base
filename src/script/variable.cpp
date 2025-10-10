@@ -363,7 +363,7 @@ inline bool Variable::linkVector(uint type, float* v, int f) {
 	if(setType(type)) {
 		static const char* c[4] = {"x", "y", "z", "w" };
 		int n = type - (int)VEC2 + 2;
-		for(int i=0; i<n; ++i) get(c[i]).link(v[i], f);
+		for(int i=0; i<n; ++i) get(c[i]).linkValue(v[i], f);
 		return true;
 	}
 	else return false;

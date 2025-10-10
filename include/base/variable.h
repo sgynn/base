@@ -122,9 +122,9 @@ namespace script {
 		template<typename T> void set(const VariableName& n, const T& v) { get(n) = v; }
 		template<typename T> void set(const VariableName& n, T&& v) 	 { get(n) = std::forward<T>(v); }
 
-		template<typename T> bool link(T& value, int flags=0) { return linkValue(value, flags); }
-		template<typename T> bool link(const char* n, T& v, int f=0) { return find(n).linkValue(v,f); } // Alternative syntax
-		template<typename T> bool link(uint n, T& v, int f) { return get(n).linkValue(v,f); }
+		template<typename T> bool link(T& value, LinkFlags flags=LINK_DEFAULT) { return linkValue(value, flags); }
+		template<typename T> bool link(const char* n, T& v, LinkFlags f=LINK_DEFAULT) { return find(n).linkValue(v,f); } // Alternative syntax
+		template<typename T> bool link(uint n, T& v, LinkFlags f) { return get(n).linkValue(v,f); }
 		template<typename T> bool link(const VariableName& n, T& v, int f) { return get(n).linkValue(v,f); }
 
 		bool isObject() const;					// Is this variable an object
@@ -223,6 +223,7 @@ namespace script {
 	};
 	// Specialisation to allow ranged iterators to be on variables rather than subitems
 	template<> inline Variable::Variable(const Variable::SubItem<Variable>& v): type(0) { *this=v.value; }
+	inline Variable::LinkFlags operator|(Variable::LinkFlags a, Variable::LinkFlags b) { return (Variable::LinkFlags)((int)a | (int)b); }
 
 
 	/// Variable name with pre-looked up strings
