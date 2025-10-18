@@ -84,6 +84,7 @@ namespace base {
 	/** Intersection between a ray and an oriented bounding box
 	 */
 	BASEAPI int intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, const Quaternion& orientation, float& t);
+	BASEAPI int intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, const Matrix& transform, float& t);
 
 
 	/** Intersection of a line and a triangle

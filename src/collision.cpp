@@ -300,6 +300,12 @@ int base::intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, cons
 	return intersectRayAABB(lp, ld, vec3(), halfSize, t);
 }
 
+int base::intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, const Matrix& transform, float& t) {
+	vec3 lp = transform.untransform(p - centre);
+	vec3 ld = transform.unrotate(d);
+	return intersectRayAABB(lp, ld, vec3(), halfSize, t);
+}
+
 int base::intersectBoxes(const vec3& ac, const vec3& ae, const Quaternion& aq, const vec3& bc, const vec3& be, const Quaternion bq) {
 	// Get transform of B relative to A
 	Quaternion r = bq * aq.getInverse();
