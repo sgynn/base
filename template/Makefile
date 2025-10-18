@@ -32,7 +32,7 @@ OSDEF = -DWIN32
 exec := $(exec).exe
 release := $(release).exe
 
-ifneq ($(wildcard icon.ico), "")
+ifneq ("$(wildcard icon.ico)", "")
 objects += $(OBJDIR)/resources.res
 release_objects += $(OBJDIR)/resources.res
 endif
