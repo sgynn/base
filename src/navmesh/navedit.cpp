@@ -48,6 +48,7 @@ namespace nav {
 	int      side      (const vec3& a, const vec3& b, const vec3& p);	// Which side of line ab is point p
 	bool     isConvex  (const NavPoly* p);								// Is a polygon convex
 	bool     isConvex  (const NavPoly* p, int i);						// Is a point convex
+	bool     isAdjacent(const NavPoly* p, int a, int b);				// Are two indices adjacent
 	bool     inverted  (const NavPoly* p);								// Is a polygon inverted (winding)
 	int      inside    (const NavPoly* p, const vec2& point);			// Is a point inside a polygon (can be concave)
 	int      intersect (const NavPoly* a, const NavPoly* b);			// Do polygons intersect?
@@ -138,6 +139,13 @@ bool nav::isConvex(const NavPoly* p, int e) {
 	int a = e? e-1: p->size-1;
 	int b = e+1==p->size? 0: e+1;
 	return side(p->points[a], p->points[b], p->points[e])>0;
+}
+
+inline bool nav::isAdjacent(const NavPoly* p, int a, int b) {
+	if(abs(b - a) == 1) return true;
+	if(a == 0 && b == p->size-1) return true;
+	if(b == 0 && a == p->size-1) return true;
+	return false;
 }
 
 /** Is a point inside polygon p. polygon can be concave */
@@ -511,18 +519,21 @@ int nav::cleanPolygon(NavPoly* p) {
 		// Remove points on a straight line with matching links
 		vec2 n(p->points[k].z-p->points[i].z, p->points[i].x-p->points[k].x);
 		if(abs(dot2d(n, p->points[j] - p->points[i])) < 1e-4) {
-			if(la && lb && ((la->poly[0]==lb->poly[0] && la->poly[1]==lb->poly[1]) || (la->poly[0]==lb->poly[1] && la->poly[1]==lb->poly[0])) ) {
-				printf("Remove internal straight (%g, %g)?\n", p->points[j].x, p->points[j].z);
-				int o = la->poly[0]==p? 1: 0;
-				NavPoly* oPoly = la->poly[o];
-				int oEdge = la->edge[o];
+			if(la && lb) {
+				int oa = la->poly[0]==p? 1: 0;
+				int ob = lb->poly[0]==p? 1: 0;
+				if(la->poly[oa] == lb->poly[ob] && isAdjacent(la->poly[oa], la->edge[oa], lb->edge[ob])) {
+					printf("Remove internal straight (%g, %g)?\n", p->points[j].x, p->points[j].z);
+					NavPoly* oPoly = la->poly[oa];
+					int oEdge = la->edge[oa];
 
-				removePoint(p, j);
-				removePoint(oPoly, oEdge);
-				createLink(p, (j+p->size-1)%p->size, oPoly, (oEdge+oPoly->size-1)%oPoly->size);
-				validateLinks(p, false);
-				validateLinks(oPoly, false);
-				continue;
+					removePoint(p, j);
+					removePoint(oPoly, oEdge);
+					createLink(p, (j+p->size-1)%p->size, oPoly, (oEdge+oPoly->size-1)%oPoly->size);
+					validateLinks(p, false);
+					validateLinks(oPoly, false);
+					continue;
+				}
 			}
 			else if(!la && !lb) {
 				printf("Remove straight %d (%g,%g)\n", j, p->points[j].x, p->points[j].z);
@@ -1051,8 +1062,11 @@ int nav::construct(IList& list, PList& out, int brushType, short tag, int precid
 			}
 
 			// Mark intersection as used
-			if(cur.p[1]->typeIndex == type) cur.s |= 4;
-			if(cur.p[0]->typeIndex == type || cur.p[0]->typeIndex<0) cur.s |= 8;
+			int used = 0;
+			if(cur.p[1]->typeIndex == type) used |= 4;
+			if(cur.p[0]->typeIndex == type || cur.p[0]->typeIndex<0) used |= 8;
+			assert(used);
+			cur.s |= used;
 
 			// Determine follow action
 			FollowMode op = INVALID; 
@@ -1084,7 +1098,7 @@ int nav::construct(IList& list, PList& out, int brushType, short tag, int precid
 				linkStart[ci].index[1] = data.points.size()-1;
 				ev = -1; sv = cur.e[1] + cur.u[1];
 				for(uint i=0; i<list.size(); ++i) {
-					if(i!=ci && list[i].p[1] == cur.p[1] && (i==start || !(list[i].s&4))) {
+					if(i!=ci && list[i].p[1] == cur.p[1] && (i==start || !(list[i].s&used))) {
 						float t = list[i].e[1] + list[i].u[1];
 						if(ev<0 || (ev<sv && (t<ev || t>sv)) || (ev>sv && t>=sv && t<ev)) { ev = t; ni=i; }
 					}
@@ -1098,7 +1112,7 @@ int nav::construct(IList& list, PList& out, int brushType, short tag, int precid
 				linkStart[ci].index[0] = data.points.size()-1;
 				ev = -1; sv = cur.e[1] + cur.u[1];
 				for(uint i=0; i<list.size(); ++i) {
-					if(i!=ci && list[i].p[1] == cur.p[1] && (i==start || !(list[i].s&4))) {
+					if(i!=ci && list[i].p[1] == cur.p[1] && (i==start || !(list[i].s&used))) {
 						float t = list[i].e[1] + list[i].u[1];
 						if(ev<0 || (ev<sv && t>ev && t<=sv) || (ev>sv && (t>ev || t<sv))) { ev = t; ni=i; }
 					}
@@ -1197,6 +1211,8 @@ int nav::construct(IList& list, PList& out, int brushType, short tag, int precid
 			int a[2] = { k.index[0], k.index[1] };
 			while(true) {
 				int b[2] = { nextIndex(k.p[0], a[0]), previousIndex(k.p[1], a[1]) };
+				while(k.p[0]->points[a[0]] == k.p[0]->points[b[0]]) a[0]=b[0], b[0]=nextIndex(k.p[0], a[0]);
+				while(k.p[1]->points[a[1]] == k.p[1]->points[b[1]]) a[1]=b[1], b[1]=previousIndex(k.p[1], a[1]);
 				if(k.p[0]->points[b[0]] != k.p[1]->points[b[1]]) break;
 				createLink(k.p[0], a[0], k.p[1], b[1]);
 				a[0] = b[0];
