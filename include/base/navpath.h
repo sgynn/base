@@ -14,12 +14,15 @@ namespace base {
 	class NavFilter {
 		friend class Pathfinder;
 		uint64 m_mask;
-		inline bool hasType(int index) const { return (m_mask&(1<<index))>0; }
 		public:
 		NavFilter(uint64 m=0);
+		void addType(int typeId);
 		void addType(const char* type);
+		void removeType(int typeId);
 		void removeType(const char* type);
 		bool hasType(const char* name) const;
+
+		inline bool hasType(int id) const { return (m_mask&(1<<id))!=0; }
 
 		static const NavFilter ALL;
 		static const NavFilter NONE;
@@ -99,7 +102,7 @@ namespace base {
 		float getRadius() const { return m_radius; }
 
 		/// Movement collision, returns 0-1 multiplier of amount of movement to be used.
-		float moveCollide(const vec3& pos, const vec3& move, float radius, vec3& tangent) const;
+		float moveCollide(const vec3& pos, const vec3& move, float radius, vec3& tangent, const NavFilter& filter=NavFilter::ALL) const;
 		bool  ray(const vec3& target, const NavFilter& f=NavFilter::ALL) const;
 		bool  resolvePoint(vec3& out, const vec3& target, float radius=0, float search=10) const;
 		bool  setPositionAndResolve(const vec3& pos, float search=10);

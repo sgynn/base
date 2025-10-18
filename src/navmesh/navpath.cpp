@@ -1,6 +1,7 @@
 #include <base/navpath.h>
 #include <base/navmesh.h>
 #include <base/collision.h>
+#include <base/assert.h>
 #include <map>
 #include <algorithm>
 #include <cstdio>
@@ -22,11 +23,15 @@ float Pathfinder::s_maxRadius = 1.f;
 
 
 NavFilter::NavFilter(uint64 m) : m_mask(m) {}
-void NavFilter::addType(const char* name) {
-	m_mask |= 1<<NavMesh::getTypeID(name);
+void NavFilter::addType(const char* name) { addType(NavMesh::getTypeID(name)); }
+void NavFilter::removeType(const char* name) { removeType(NavMesh::getTypeID(name)); }
+void NavFilter::addType(int id) {
+	assert(id>=0 && id<64);
+	m_mask |= 1<<id;
 }
-void NavFilter::removeType(const char* name) {
-	m_mask &= ~(1<<NavMesh::getTypeID(name));
+void NavFilter::removeType(int id) {
+	assert(id>=0 && id<64);
+	m_mask &= ~(1<<id);
 }
 bool NavFilter::hasType(const char* name) const {
 	int type = NavMesh::getTypeID(name);
@@ -483,6 +488,7 @@ VecPair PathFollower::nextPoint() {
 	}
 	const NavPoly* poly = m_path.getNavMesh()->getPolygon(m_polygon);
 	if(!poly) { // Current polygon no longer exists
+		setPosition(m_position);
 		if(!repathAndUpdatePoly()) return m_position;
 		poly = m_path.getNavMesh()->getPolygon(m_polygon);
 	}
@@ -667,7 +673,7 @@ bool PathFollower::atGoal(float d) const {
 
 // ============================================================================================= //
 
-float PathFollower::moveCollide(const vec3& pos, const vec3& move, float radius, vec3& tangent) const {
+float PathFollower::moveCollide(const vec3& pos, const vec3& move, float radius, vec3& tangent, const NavFilter& filter) const {
 	if(move.x == 0 && move.z==0) return 1;
 	
 	// Starting navmesh face
@@ -686,8 +692,9 @@ float PathFollower::moveCollide(const vec3& pos, const vec3& move, float radius,
 		for(NavMesh::EdgeInfo& edge : poly) {
 			const vec2 a = poly->points[edge.a].xz();
 			const vec2 b = poly->points[edge.b].xz();
+			const NavPoly* next = edge.connected();
 
-			if(!edge.isConnected()) {
+			if(!next || !filter.hasType(next->typeIndex)) {
 				vec2 normal(a.y-b.y, b.x-a.x);
 				if(normal.dot(moveDirection) > -1e-3) continue; // Ignore edges facing away
 				float mod = radius / a.distance(b);
@@ -725,7 +732,6 @@ float PathFollower::moveCollide(const vec3& pos, const vec3& move, float radius,
 			}
 			else {
 				// Capsule collision with this edge to determine if we use next poly
-				const NavPoly* next = edge.connected();
 				bool alreadyCovered = false;
 				for(const NavPoly* c: polys) alreadyCovered |= next == c;
 				if(!alreadyCovered && base::closestPointBetweenLines(a.xzy(pos.y), b.xzy(pos.y), pos, pos+move, s,t) < radius*radius) {
