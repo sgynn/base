@@ -186,6 +186,9 @@ namespace script {
 
 		template<int N> static Function* parseFunction(const char* src, const char* const (&args)[N]) { return parseFunction(src, N, args); }
 		template<int N> static Function* createFunction(Expression* e, const char* const (&args)[N]) { return createFunction(e, N, args); }
+		template<class F> static Function* createFunction(const F& f) { return new CFunction<0, F>({}, f); }
+		template<class F> static Function* createFunction(const char* param, const F& f) { return new CFunction<1, F>({param}, f); }
+		template<class F, int N> static Function* createFunction(const char* (&params)[N], const F& f) { return new CFunction<N, F>(params, f); }
 
 		protected:
 		static Block*      parseBlock(const char* src, const char*& s, bool set, bool control, bool braces);
