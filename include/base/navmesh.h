@@ -82,7 +82,7 @@ class NavMesh {
 
 	static vec3 getRandomPoint(const NavPoly* poly);
 	template<class F> const NavPoly* getRandomPolygon(const F& filter) const;
-	template<class F> const vec3 getRandomPoint(const F& filter) const { return getRandomPoint(getRandomPolygon(filter)); }
+	template<class F> const vec3 getRandomPoint(const F& filter) const { if(const NavPoly* p=getRandomPolygon(filter)) return getRandomPoint(p); else return vec3(); }
 
 
 	// Direct access for drawing

@@ -269,9 +269,9 @@ vec3 NavMesh::getRandomPoint(const NavPoly* poly) {
 	int triangle = 2;
 	for(int i=2; i<poly->size; ++i) {
 		float area = 0;
-		area += (poly->points[i-1].x - poly->points[0].x) * (poly->points[i-1].z + poly->points[0].z);
-		area += (poly->points[i].x - poly->points[i-1].x) * (poly->points[i].z + poly->points[i-1].z);
-		area += (poly->points[0].x - poly->points[i].x) * (poly->points[0].z + poly->points[i].z);
+		area -= (poly->points[i-1].x - poly->points[0].x) * (poly->points[i-1].z + poly->points[0].z);
+		area -= (poly->points[i].x - poly->points[i-1].x) * (poly->points[i].z + poly->points[i-1].z);
+		area -= (poly->points[0].x - poly->points[i].x) * (poly->points[0].z + poly->points[i].z);
 		if(randf() * (accum + area) >= accum) triangle = i;
 		accum += area;
 	}
