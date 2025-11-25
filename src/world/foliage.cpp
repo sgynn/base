@@ -112,6 +112,22 @@ void FoliageLayer::regenerate() {
 	}
 }
 
+void FoliageLayer::regenerate(const vec3& centre, float radius) {
+	IndexList out;
+	m_parent->getActive(centre, m_chunkSize, radius, out);
+	for(const Index& index: out) {
+		auto i = m_chunks.find(index);
+		if(i != m_chunks.end() && i->second->state != EMPTY) {
+			detach(i->second->drawable);
+			delete i->second->drawable;
+			i->second->drawable = 0;
+			destroyChunk(*i->second);
+			i->second->state = EMPTY;
+			m_parent->queueChunk(this, i->first, i->second);
+		}
+	}
+}
+
 FoliageMap* FoliageLayer::referenceMap(FoliageMap* map) {
 	if(map) ++map->m_ref;
 	return map;
