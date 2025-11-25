@@ -138,10 +138,12 @@ namespace base {
 		void setMoveBinding(unsigned forward, unsigned back, unsigned left, unsigned right, unsigned up=-1, unsigned down=-1);
 		void setModeBinding(unsigned rotate, unsigned pan=-1, unsigned zoom=-1);
 		void setRotateBinding(unsigned yaw, unsigned pitch);
+		/** Invert mouse options */
+		void setInverted(bool invertX, bool invertY);
 
 		protected:
 		float m_moveSpeed	= 10;		// Movement speed
-		float m_rotateSpeed	= 0.004;	// Rotation speed from mouse delta
+		vec2 m_rotateSpeed	= 0.004;	// Rotation speed from mouse delta
 		float m_moveAcc		= 1.0;		// Movement acceleration for smoothing
 		float m_rotateAcc	= 1.0;		// Rotational acceleration for smoothing
 

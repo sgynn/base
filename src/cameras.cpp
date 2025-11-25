@@ -14,7 +14,8 @@ CameraBase::CameraBase(float fov, float aspect, float near, float far)
 
 void CameraBase::setSpeed(float m, float r) {
 	m_moveSpeed = m;
-	m_rotateSpeed = r;
+	m_rotateSpeed.x = r * (m_rotateSpeed.x<0? -1: 1);
+	m_rotateSpeed.y = r * (m_rotateSpeed.y<0? -1: 1);
 }
 
 void CameraBase::setSmooth(float m, float r) {
@@ -59,6 +60,11 @@ void CameraBase::setModeBinding(unsigned rotate, unsigned pan, unsigned zoom) {
 void CameraBase::setRotateBinding(unsigned yaw, unsigned pitch) {
 	m_binding.yaw = yaw;
 	m_binding.pitch = pitch;
+}
+
+void CameraBase::setInverted(bool x, bool y) {
+	m_rotateSpeed.x = fabs(m_rotateSpeed.x) * (x?-1:1);
+	m_rotateSpeed.y = fabs(m_rotateSpeed.y) * (y?-1:1);
 }
 
 
