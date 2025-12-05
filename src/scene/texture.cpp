@@ -1,14 +1,29 @@
 #include <base/opengl.h>
 #include <base/texture.h>
+#include <base/assert.h>
 #include <cstdio>
 
 using namespace base;
 
-/** Constructor */
-Texture::Texture(): m_unit(0), m_type(TEX2D), m_format(NONE), m_hasMipMaps(false), m_width(0), m_height(0), m_depth(0) {
+Texture::Format Texture::getFormat(int channels, int bits, bool real) {
+	if(channels < 1 || channels > 4) return NONE;
+	if(real) {
+		if(bits == 16) return (Format)(R16F + channels - 1);
+		if(bits == 32) return (Format)(R32F + channels - 1);
+	}
+	else {
+		if(bits ==  8) return (Format)(R8 + channels - 1);
+		if(bits == 16) return (Format)(R16 + channels - 1);
+	}
+	return NONE;
 }
 
-Texture::Texture(uint glUnit, Type type) : m_unit(glUnit), m_type(type), m_format(NONE), m_hasMipMaps(false), m_width(0), m_height(0), m_depth(0) {
+
+/** Constructor */
+Texture::Texture(): m_unit(0), m_type(TEX2D), m_format(NONE), m_width(0), m_height(0), m_depth(0) {
+}
+
+Texture::Texture(uint glUnit, Type type) : m_unit(glUnit), m_type(type), m_format(NONE), m_width(0), m_height(0), m_depth(0) {
 	bind();
 	int fmt = 0;
 	unsigned target = getTarget();
@@ -29,6 +44,7 @@ inline unsigned Texture::getTarget() const {
 /** Bind texture to active unit */
 void Texture::bind() const {
 	glBindTexture( getTarget(), m_unit );
+	GL_CHECK_ERROR;
 }
 
 /** Bind texture to specified unit */
@@ -84,6 +100,7 @@ void Texture::destroy() {
 unsigned Texture::getInternalFormat(Format f) {
 	static unsigned formats[] = {
 		0, GL_RED, GL_RG, GL_RGB, GL_RGBA,
+		GL_R16, GL_RG16, GL_RGB16, GL_RGBA16,
 		GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // BC1,2,3
 		GL_COMPRESSED_RED_RGTC1, GL_COMPRESSED_RG_RGTC2,	// BC4, BC5
 		GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F,
@@ -96,6 +113,7 @@ unsigned Texture::getInternalFormat(Format f) {
 unsigned Texture::getDataFormat(Format f) {
 	static unsigned formats[] = { 
 		0, GL_RED, GL_RG, GL_RGB, GL_RGBA,
+		GL_RED, GL_RG, GL_RGB, GL_RGBA,
 		0,0,0,0,0, // not applicable for compressed formats
 		GL_RED, GL_RG, GL_RGB, GL_RGBA,
 		GL_RED, GL_RG, GL_RGB, GL_RGBA,
@@ -107,6 +125,7 @@ unsigned Texture::getDataFormat(Format f) {
 unsigned Texture::getDataType(Format f) {
 	if(f == NONE)    return 0;
 	if(f <= RGBA8)   return GL_UNSIGNED_BYTE;
+	if(f <= RGBA16)  return GL_UNSIGNED_SHORT;
 	if(f <= BC5)     return GL_UNSIGNED_BYTE;	// Not accurate due to block compression
 	if(f <= RGBA32F) return GL_FLOAT;
 	if(f <= RGBA16F) return GL_HALF_FLOAT;
@@ -133,6 +152,10 @@ unsigned Texture::getMemorySize(Format format, int w, int h, int d) {
 	case RG8:      return w*h*d*2;
 	case RGB8:     return w*h*d*3;
 	case RGBA8:    return w*h*d*4;
+	case R16:      return w*h*d*2;
+	case RG16:     return w*h*d*4;
+	case RGB16:    return w*h*d*6;
+	case RGBA16:   return w*h*d*8;
 	case BC1:      return ((w+3)/4) * ((h+3)/4) * 8 * d;	// compressed 4 bits per pixel
 	case BC2:
 	case BC3:      return ((w+3)/4) * ((h+3)/4) * 16 * d;	// compressed 1 byte per pixel
@@ -158,32 +181,64 @@ unsigned Texture::getMemorySize(Format format, int w, int h, int d) {
 }
 
 
-/** Create basic texture */
+Texture::Texture(Type type, int width, int height, int depth,  Format format, const void*const* data, int mipmaps) : Texture() {
+	setData(type, width, height, depth, format, data, mipmaps);
+}
+
+Texture::Texture(Type type, int width, int height, int depth, Format format, const void* data, bool genmips) : Texture() {
+	setData(type, width, height, depth, format, &data, 1, genmips);
+}
+
+Texture::Texture(int w, int h, Format f, const void* data, bool genMips) : Texture(TEX2D, w, h, 1, f, data, genMips) {
+}
+
+Texture::Texture(int w, int h, int channels, const void* data, bool genMips): Texture(TEX2D, w, h, 1, getFormat(channels, 8), data, genMips) {
+}
+
+// ----------------------------------------------------------------------------------------------------- //
+
 Texture Texture::create(Type type, int width, int height, int depth,  Format format, const void*const* data, int mipmaps) {
+	return Texture(type, width, height, depth, format, data, mipmaps);
+}
+Texture Texture::create(Type type, int w, int h, int d, Format f, const void* data, bool genMips) {
+	return Texture(type, w, h, d, f, data, genMips);
+}
+Texture Texture::create(int w, int h, Format f, const void* data, bool genMips) {
+	return Texture(TEX2D, w, h, 1, f, data, genMips);
+}
+Texture Texture::create(int w, int h, int channels, const void* data, bool genMips) {
+	if(channels<1 || channels > 4) return Texture();
+	return Texture(TEX2D, w, h, 1, (Format) channels, data, genMips);
+}
+
+// ----------------------------------------------------------------------------------------------------- //
+
+bool Texture::setData(Type type, int width, int height, int depth, Format format, const void*const* data, int mipmaps, bool generateMips) {
 	// Create texture object
 	unsigned fmt = getInternalFormat(format);
 	if(fmt == 0) {
 		printf("Error: Invalid texture format %d\n", (int)format);
-		return Texture();
+		return false;
 	}
 	
-	Texture t;
-	t.m_type   = type;
-	t.m_format = format;
-	t.m_width  = width;
-	t.m_height = height;
-	t.m_depth  = depth;
-	unsigned target = t.getTarget();
+	if(m_unit && type != m_type) m_unit = 0; // Can't change target type once initialised
+	m_type   = type;
+	m_format = format;
+	m_width  = width;
+	m_height = height;
+	m_depth  = depth;
+	unsigned target = getTarget();
 	unsigned dfmt  = getDataFormat(format);
 	unsigned ftype = getDataType(format);
 
 	// Create texture
-	glGenTextures(1, &t.m_unit);
-	glBindTexture(target, t.m_unit);
+	if(m_unit == 0) glGenTextures(1, &m_unit);
+	glBindTexture(target, m_unit);
 
+	int mips = generateMips? (int)log2(width<height? width: height): mipmaps;
 	glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
-	glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, mipmaps);
-	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, mipmaps>1? GL_LINEAR_MIPMAP_LINEAR: GL_LINEAR);
+	glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, mips);
+	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, mips>1? GL_LINEAR_MIPMAP_LINEAR: GL_LINEAR);
 	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Cube maps should always be clamped to remove any seam between surfaces
@@ -219,7 +274,8 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 			if(height>1 && type != ARRAY1D) height >>= 1;
 			if(depth>1 && type != ARRAY2D)  depth >>= 1;
 		}
-	} else {
+	}
+	else {
 		for(int mip=0; mip<mipmaps; ++mip) {
 			const void* src = data? data[mip]: 0;
 			switch(type) {
@@ -244,32 +300,9 @@ Texture Texture::create(Type type, int width, int height, int depth,  Format for
 		}
 	}
 
-	return t;
+	if(generateMips) glGenerateMipmap(target);
+	return true;
 }
-
-Texture Texture::create(Type type, int w, int h, int d, Format f, const void* data, bool genmips) {
-	Texture t = create(type, w, h, d, f, &data, 1);
-	// Generate mipmaps
-	if(genmips && t.m_format==f) {
-		glTexParameteri(t.getTarget(), GL_TEXTURE_MAX_LEVEL, (int)log2(w<h? w: h));
-		glGenerateMipmap( t.getTarget() );
-		// t.generateMipMaps(format, data);	// cpu version
-	}
-	return t;
-}
-
-Texture Texture::create(int w, int h, Format f, const void* data, bool genMips) {
-	return create(TEX2D, w, h, 1, f, data, genMips);
-}
-
-Texture Texture::create(int w, int h, int channels, const void* data, bool genMips) {
-	if(channels<1 || channels > 4) return Texture();
-	return create(TEX2D, w, h, 1, (Format) channels, data, genMips);
-}
-
-
-// ----------------------------------------------------------------------------------------------------- //
-
 
 // ToDo: setPixels() functions
 

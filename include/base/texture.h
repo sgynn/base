@@ -13,6 +13,7 @@ namespace base {
 		public:
 		enum Format { NONE,
 			R8, RG8, RGB8, RGBA8,			// Standard formats
+			R16, RG16, RGB16, RGBA16,		// 16 bit formats
 			BC1, BC2, BC3, BC4, BC5,		// Block compressed formats [rgb,rgba,rgba,r,rg]
 			R32F, RG32F, RGB32F, RGBA32F,	// Float formats
 			R16F, RG16F, RGB16F, RGBA16F,	// Half float formats
@@ -22,13 +23,22 @@ namespace base {
 		enum Filter { NEAREST, BILINEAR, TRILINEAR, ANISOTROPIC };
 		enum Type   { TEX1D, TEX2D, TEX3D, CUBE, ARRAY1D, ARRAY2D };
 		enum Wrapping { REPEAT, CLAMP, BORDER };
+		static Format getFormat(int channels, int bitsPerChannel, bool real=false);
+
 		Texture();
 		explicit Texture(uint glUnit, Type type=TEX2D); // Create from existing unit
+		Texture(int width, int height, int channels, const void* data=0, bool generateMips=false);
+		Texture(int width, int height, Format format, const void* data=0, bool generateMips=false);
+		Texture(Type type, int width, int height, int depth, Format format, const void* data=0, bool generateMips=false);
+		Texture(Type type, int width, int height, int depth, Format format, const void*const* data, int layers=0);
+
 		/** Texture creation */
 		static Texture create(int width, int height, int channels, const void* data=0, bool generateMips=false);
 		static Texture create(int width, int height, Format format, const void* data=0, bool generateMips=false);
 		static Texture create(Type type, int width, int height, int depth, Format format, const void* data=0, bool generateMips=false);
 		static Texture create(Type type, int width, int height, int depth, Format format, const void*const* data, int layers=0);
+
+		bool setData(Type type, int width, int height, int depth, Format format, const void*const* data, int layers=1, bool generateMips=false);
 
 		/** Update sub image */
 		int setPixels(int width, int height, Format format, const void* data, int mipLevel=0);
@@ -72,7 +82,6 @@ namespace base {
 		unsigned m_unit;	// OpenGL texture unit
 		Type   m_type;	// Texture type
 		Format m_format;	// Internal format
-		bool m_hasMipMaps;	// Do mipmaps exist
 		int m_width, m_height, m_depth;	// Size
 		int generateMipMaps(int format, const void* data);
 		unsigned getTarget() const;

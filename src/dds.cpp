@@ -226,7 +226,7 @@ Image DDS::parse(const char* stream, unsigned length) {
 		}
 	}
 
-	return Image(mode, format, header.width, header.height, header.depth, header.mipmaps, data);
+	return Image(mode, format, header.width, header.height, header.depth? header.depth: 1, header.mipmaps, data);
 }
 
 bool DDS::save(const Image& image, const char* filename) {

@@ -103,7 +103,7 @@ class TextureLoader : public ResourceLoader<Texture> {
 	ResourceLoadProgress update() override;
 	bool isBeingLoaded(const Texture*) const override;
 	void updateT() override;
-	static Texture createTexture(const Image&);
+	static Texture* createTexture(const Image&, Texture* replace=nullptr);
 	protected:
 	struct LoadMessage { Texture* target; VirtualFileSystem::File file; Image image; };
 	std::list<LoadMessage> m_requests;
@@ -112,19 +112,14 @@ class TextureLoader : public ResourceLoader<Texture> {
 	VirtualFileSystem* m_fileSystem = nullptr;
 };
 
-Texture TextureLoader::createTexture(const Image& image) {
+Texture* TextureLoader::createTexture(const Image& image, Texture* tex) {
 	assert(image);
-	static constexpr const Texture::Format formats[] = { Texture::NONE, Texture::R8, Texture::RG8, Texture::RGB8, Texture::RGBA8, Texture::BC1, Texture::BC2, Texture::BC3, Texture::BC4, Texture::BC5 };
+	static constexpr const Texture::Format formats[] = { Texture::NONE, Texture::R8, Texture::RG8, Texture::RGB8, Texture::RGBA8, Texture::BC1, Texture::BC2, Texture::BC3, Texture::BC4, Texture::BC5, Texture::R16, Texture::R16F, Texture::R32F };
 	static constexpr const Texture::Type types[] = { Texture::TEX2D, Texture::CUBE, Texture::TEX3D, Texture::ARRAY2D };
 	bool generateMipMaps = image.getMips()==1 && image.getWidth() == image.getHeight() && image.getMode() == Image::FLAT;
-	Texture tex;
-	if(generateMipMaps) {
-		tex = Texture::create(types[image.getMode()], image.getWidth(), image.getHeight(), 1, formats[image.getFormat()], image.getData(), generateMipMaps);
-	}
-	else {
-		tex = Texture::create(types[image.getMode()], image.getWidth(), image.getHeight(), 1, formats[image.getFormat()], (void**)image.getDataPtr(), image.getMips());
-	}
-	if(image.getMips() > 1 || generateMipMaps) tex.setFilter( Texture::TRILINEAR );
+	if(!tex) tex = new Texture();
+	tex->setData(types[image.getMode()], image.getWidth(), image.getHeight(), image.getDepth(), formats[image.getFormat()], (void**)image.getDataPtr(), image.getMips(), generateMipMaps);
+	//if(image.getMips() > 1 || generateMipMaps) tex->setFilter( Texture::TRILINEAR );
 	return tex;
 }
 
@@ -136,8 +131,7 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 		int len = end-name-1;
 		if(len>0 && *end==0) {
 			hex = (hex&0xff00ff00) | ((hex>>16)&0xff) | (hex&0xff)<<16; // ABGR -> ARGB
-			Texture tex = Texture::create(Texture::TEX2D, 1, 1, 1, len>6? Texture::RGBA8: Texture::RGB8, &hex);
-			return new Texture(tex);
+			return new Texture(Texture::TEX2D, 1, 1, 1, len>6? Texture::RGBA8: Texture::RGB8, &hex);
 		}
 	}
 
@@ -158,7 +152,7 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 				return strncmp(end - n, s, n)==0;
 			};
 			uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0xff8080: 0xffffff;
-			Texture* tex = new Texture(Texture::create(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex));
+			Texture* tex = new Texture(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex);
 			MutexLock lock(resourceMutex);
 			m_requests.push_back({tex, file});
 			return tex;
@@ -175,7 +169,7 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 			File data = file.read();
 			image = DDS::parse(data, data.size());
 		}
-		if(image) return new Texture(createTexture(image));
+		if(image) return createTexture(image);
 		else printf("Resource Error: Invalid image file '%s'\n", name);
 	}
 	return nullptr;
@@ -226,7 +220,7 @@ ResourceLoadProgress TextureLoader::update() {
 	MutexLock lock(resourceMutex);
 	for(LoadMessage& msg: m_completed) {
 		printf("Finished loading %s\n", msg.file.name.str());
-		if(msg.image) *msg.target = createTexture(msg.image);
+		if(msg.image) createTexture(msg.image, msg.target);
 		else printf("Resource Error: Invalid png file '%s'\n", msg.file.name.str());
 	}
 	ResourceLoadProgress r { (uint)m_completed.size(), (uint)m_requests.size() };
@@ -890,7 +884,8 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 	float fw=0, fh=0;
 	const char* nullString = 0;
 	// This should probably be defined in texture in case of changes
-	static const char* formats[] = { "", "R8", "RG8", "RGB8", "RGBA8", "BC1", "BC2", "BC3", "BC4", "BC5",
+	static const char* formats[] = { "", "R8", "RG8", "RGB8", "RGBA8", "R16", "RG16", "RGB16", "RGBA16",
+									"BC1", "BC2", "BC3", "BC4", "BC5",
 									"R32F", "RG32F", "RGB32F", "RGBA32F", "R16F", "RG16F", "RGB16F", "RGBA16F",
 									"R11G11B10F", "R5G6B5", "D16", "D24", "D32", "D24S8" };
 
