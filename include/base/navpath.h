@@ -33,7 +33,7 @@ namespace base {
 		friend class PathFollower;
 		public:
 		struct Location { vec3 position; uint polygon=-1; };
-		Pathfinder(const NavMesh* mesh);
+		Pathfinder(const NavMesh* mesh, float radius=0);
 		PathState search(uint startPoly, uint endPoly);
 		PathState search(const vec3& start, const vec3& end);
 		PathState search(const Location& start, const Location& goal);
@@ -43,6 +43,7 @@ namespace base {
 
 		void setNavMesh(const NavMesh*);
 		void setFilter( const NavFilter& );
+		void setRadius(float r) { m_radius = r; }
 
 		bool ray(const vec3& start, const vec3& end, uint poly=~0u, const NavFilter& f=NavFilter::ALL) const;
 		float ray(const Ray& ray, float limit=1e6f, uint poly=~0u, const NavFilter& f=NavFilter::ALL) const;

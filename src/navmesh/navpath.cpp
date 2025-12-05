@@ -43,8 +43,12 @@ const NavFilter NavFilter::NONE = NavFilter();
 
 // ======================================================================= //
 
-Pathfinder::Pathfinder(const NavMesh* nav) : m_navmesh(nav), m_state(PathState::None) {
-	m_filter = NavFilter::ALL;
+Pathfinder::Pathfinder(const NavMesh* nav, float r)
+	: m_navmesh(nav)
+	, m_filter(NavFilter::ALL)
+	, m_radius(r)
+	, m_state(PathState::None)
+{
 }
 
 void Pathfinder::setNavMesh(const NavMesh* nav) {
@@ -879,8 +883,13 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 				}
 
 				bool collapsed = false;
-				if(nodes[i].index < m_path.m_path.size()) p = NavMesh::getLinkedPolygon(p, m_path.m_path[nodes[i].index].edge);
-				for(uint e = nodes[i].index + 1; e<m_path.m_path.size(); p=NavMesh::getLinkedPolygon(p, m_path.m_path[e++].edge)) {
+				if(nodes[i].index < m_path.m_path.size()) {
+					const Pathfinder::Node& pathNode = m_path.m_path[nodes[i].index];
+					if(p->id != pathNode.poly) p = getNavMesh()->getPolygon(pathNode.poly);
+					p = NavMesh::getLinkedPolygon(p, pathNode.edge);
+
+				}
+				for(uint e = nodes[i].index + 1; p && e<m_path.m_path.size(); p=NavMesh::getLinkedPolygon(p, m_path.m_path[e++].edge)) {
 					NavMesh::getEdgePoints(p, m_path.m_path[e].edge, v[0], v[1]);
 					Line r = getLine(nodes[i], {v[0], 1}, m_radius);
 					Line l = getLine(nodes[i], {v[1], -1}, m_radius);
@@ -915,6 +924,7 @@ std::vector<vec3> PathFollower::getDebugPath(bool detail) const {
 					else if(side(right, r) <= 0) { rnode = { v[0], 1, e, p }; right=r; }
 				}
 				assert(p);
+				if(!p) break;
 				if(!collapsed) {
 					Line goal = getLine(nodes[i], {m_goal, 0}, m_radius);
 					Node off = getOffPathNode(goal.b, nodes[i], goal, goal, p, -1);
