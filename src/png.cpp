@@ -257,6 +257,17 @@ Image readPNGFile(ReadFunc&& read) {
 		delete [] index;
 	}
 
+	// Seems 16bit images needs the bytes swapped
+	if(header.bitDepth == 16) {
+		int count = header.width * header.height * bitsPerPixel / 8;
+		byte tmp;
+		for(int i=0; i<count; i+=2) {
+			tmp = pixels[i];
+			pixels[i] = pixels[i+1];
+			pixels[i+1]=tmp;
+		}
+	}
+
 	if(format != Image::INVALID) return Image(format, header.width, header.height, pixels);
 	delete [] pixels;
 	return Image();
