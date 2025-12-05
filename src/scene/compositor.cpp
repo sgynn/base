@@ -652,7 +652,7 @@ void Workspace::execute(const FrameBuffer* output, const Rect& view, Scene* scen
 			if(e.buffer) tex->expose(e.id, e.buffer);
 			else if(e.texture) tex->expose(e.id, e.texture);
 		}
-		Camera* camera = m_cameras[pass.camera].camera;
+		Camera* camera = m_cameras.empty()? nullptr: m_cameras[pass.camera].camera;
 		const FrameBuffer* target = pass.target? pass.target: output;
 		Rect targetRect = pass.target? Rect(0, 0, target->width(), target->height()): view;
 

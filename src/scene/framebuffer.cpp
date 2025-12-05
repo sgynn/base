@@ -37,6 +37,9 @@ void FrameBuffer::attachTexture(Texture::Format fmt) {
 		}
 		else attachColour(fmt);
 	}
+	else {
+		printf("Error: Invalid framebuffer texture\n");
+	}
 }
 
 void FrameBuffer::attachColour(uint index, const Texture& texture) {
