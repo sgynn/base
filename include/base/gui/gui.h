@@ -289,6 +289,7 @@ class Root {
 	Widget*   getRootWidget() const { return m_root; }
 	const Point& getSize() const { return m_root->getSize(); }
 
+	void     setFocusedWidget(Widget* w);
 	Widget*  getFocusedWidget() const { return m_focus; }
 	Widget*  getWidgetUnderMouse() const { return m_mouseFocus; }
 	bool     getWheelEventConsumed() const { return m_wheelUsed; }	// Did a widget consume the last mouse wheel event

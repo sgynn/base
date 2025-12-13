@@ -194,15 +194,7 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 	
 	// Change focus
 	if(mdown && m_focus!=m_mouseFocus) {
-		if(m_mouseFocus) {
-			m_mouseFocus->setFocus();
-		}
-		else if(m_focus) {
-			Widget* last = m_focus;
-			m_focus = 0;
-			last->onLoseFocus();
-			if(last->eventLostFocus) last->eventLostFocus(last);
-		}
+		setFocusedWidget(m_mouseFocus);
 	}
 
 	// Mouse wheel
@@ -240,6 +232,41 @@ void Root::setKeyMask(KeyMask mask) {
 
 void Root::setKeyMask(bool ctrl, bool shift, bool alt, bool meta) {
 	m_keyMask = (KeyMask)((ctrl?1:0) | (shift?2:0) | (alt?4:0) | (meta?8:0));
+}
+
+void Root::setFocusedWidget(Widget* w) {
+	if(w->getRoot() != this) return;
+	if(m_focus == w) return;
+	Widget* last = m_focus;
+	m_focus = w;
+	if(last) {
+		last->onLoseFocus();
+		if(last->eventLostFocus) last->eventLostFocus(last);
+		
+		if(last->isTemplate()) {
+			Widget* p = last->m_parent;
+			while(p->isTemplate() && p->m_parent!=m_root) p = p->m_parent;
+			for(Widget* f = w; f; f=f->m_parent) if(f==p) return;
+			if(p && p->eventLostFocus) {
+				p->onLoseFocus();
+				p->eventLostFocus(last);
+			}
+		}
+	}
+	if(w) {
+		w->onGainFocus();
+		if(w->eventGainedFocus) w->eventGainedFocus(w);
+
+		if(w->isTemplate()) {
+			Widget* p = w->m_parent;
+			while(p->isTemplate() && p->m_parent!=m_root) p = p->m_parent;
+			for(Widget* f = w; f; f=f->m_parent) if(f==p) return;
+			if(p && p->eventGainedFocus) {
+				p->onGainFocus();
+				p->eventGainedFocus(w);
+			}
+		}
+	}
 }
 
 void Root::draw(const Point& viewport) const {
@@ -760,16 +787,7 @@ void Widget::raise() {
 	}
 }
 void Widget::setFocus() {
-	if(m_root && m_root->m_focus != this) {
-		Widget* last = m_root->m_focus;
-		m_root->m_focus = this;
-		if(last) {
-			last->onLoseFocus();
-			if(last->eventLostFocus) last->eventLostFocus(last);
-		}
-		onGainFocus();
-		if(eventGainedFocus) eventGainedFocus(this);
-	}
+	if(m_root && m_root->m_focus != this) m_root->setFocusedWidget(this);
 }
 bool Widget::hasFocus() const {
 	if(!m_root) return false;
