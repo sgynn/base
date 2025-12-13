@@ -235,8 +235,8 @@ void Root::setKeyMask(bool ctrl, bool shift, bool alt, bool meta) {
 }
 
 void Root::setFocusedWidget(Widget* w) {
-	if(w->getRoot() != this) return;
 	if(m_focus == w) return;
+	if(w && w->getRoot() != this) return;
 	Widget* last = m_focus;
 	m_focus = w;
 	if(last) {
