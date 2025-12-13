@@ -76,7 +76,7 @@ int Directory::clean(const char* in, char* out, int lim) {
 		else out[k++] = *c;
 	}
 	out[k]=0;
-	if(k==0) strcpy(out, ".");
+	if(k==0) strcpy(out, in[0]=='/'? "/": ".");
 	return strlen(out);
 }
 
