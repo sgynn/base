@@ -46,7 +46,7 @@ namespace world {
 	extern void storeAnimationBank(AnimationBank*, Model*);
 	extern int addAnimationsFromModel(AnimationBank* bank, Model* model, bool replaceExisting=false);
 	extern int addAnimationsFromModel(AnimationBank* bank, const char* modelFile, bool replaceExisting=false);
-	extern Model* attachModel(SceneNode* target, const char* file, AnimationController** animated=nullptr, bool moves=false, MeshFilter&& meshFilter={}, const char* overrideMaterial=nullptr, float* customData=nullptr);
+	extern Model* attachModel(SceneNode* target, const char* file, AnimationController** animated=nullptr, bool moves=false, MeshFilter&& meshFilter={}, const char* baseMaterial=nullptr, const char* overrideMaterial=nullptr, float* customData=nullptr);
 	extern Drawable* attachMesh(SceneNode* target, Mesh* mesh, const char* material = nullptr, int queue=0);
 	extern Drawable* attachMesh(SceneNode* target, Mesh* mesh, Material* material, int queue=0);
 
@@ -77,7 +77,7 @@ namespace world {
 		static int addAnimationsFromModel(AnimationBank* bank, const char* modelFile, bool replaceExisting=false) { return world::addAnimationsFromModel(bank, modelFile, replaceExisting); }
 
 		protected:
-		Model* loadModel(const char* name, AnimationController** animated, bool moves, MeshFilter&& filter={}, const char* material=0) { return attachModel(this, name, animated, moves, std::forward<MeshFilter>(filter), material, m_custom); }
+		Model* loadModel(const char* name, AnimationController** animated, bool moves, MeshFilter&& filter={}, const char* material=0) { return attachModel(this, name, animated, moves, std::forward<MeshFilter>(filter), nullptr, material, m_custom); }
 		Model* loadModel(const char* name, MeshFilter&& filter={}, const char* material=0) { return loadModel(name, nullptr, false, std::forward<MeshFilter>(filter), material); }
 
 		private:

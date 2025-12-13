@@ -199,7 +199,7 @@ Material* world::loadMaterial(const char* name, int weights, const char* base) {
 }
 
 
-Model* world::attachModel(SceneNode* node, const char* file, AnimationController** animated, bool moves, MeshFilter&& filter, const char* overrideMaterial, float* custom) {
+Model* world::attachModel(SceneNode* node, const char* file, AnimationController** animated, bool moves, MeshFilter&& filter, const char* baseMaterial,const char* overrideMaterial, float* custom) {
 	static bool init = false;
 	if(!init) {
 		base::BMLoader::registerExtension<AnimationPropertyExtension>("animation");
@@ -227,7 +227,7 @@ Model* world::attachModel(SceneNode* node, const char* file, AnimationController
 			DrawableMesh* drawable = new DrawableMesh(mesh.mesh);
 			const char* materialName = overrideMaterial? overrideMaterial: mesh.materialName;
 			int weights = animated? mesh.mesh->getWeightsPerVertex(): 0;
-			drawable->setMaterial( loadMaterial(materialName, weights) );
+			drawable->setMaterial( loadMaterial(materialName, weights, baseMaterial) );
 			drawable->setCustom(custom);
 			if(animated && weights) {
 				if(!*animated) {
