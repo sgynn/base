@@ -1392,7 +1392,6 @@ float approximateArc(const vec2& d1, const vec2& d2) {
 
 int nav::getIntersections(const NavPoly* a, const NavPoly* b, IList& list) {
 	// Get all intersections of brush with poly. a is the brush.
-	int count = 0;
 	vec3 ae, be, bd;
 	NavSect sect;
 	sect.p[0] = a;
@@ -1570,16 +1569,14 @@ int nav::getIntersections(const NavPoly* a, const NavPoly* b, IList& list) {
 						list.back().e[0] = previousIndex(a,e);
 						list.back().u[0] = 0.9999;
 						list.back().u[1] -= 1e-4;
-						++count;
 					}
 				}
 
 				list.push_back(sect);
-				++count;
 			}
 		}
 	}
-	return list.size(); //count;
+	return list.size();
 }
 
 int nav::collect(const PList& mesh, const NavPoly* brush, PList& list) {
@@ -1688,6 +1685,7 @@ void NavMesh::carve(const NavPoly& sb, int precidence, bool add) {
 	for(uint i=0; i<in.size(); ++i) {
 		if(in[i]) { getIntersections(&sb, in[i], sect); ++pc; }
 	}
+	(void)pc;
 	printf("\n%lu intersections in %d polygons\n", sect.size(), pc);
 	std::sort(sect.begin(), sect.end(), NavSectCmp(0));
 	

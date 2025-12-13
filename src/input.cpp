@@ -95,7 +95,7 @@ void Input::setKey(int code, bool down) {
 void Input::createMap() {
 	//create mapping from KeyCode to ASCII characters
 	strcpy(s_ascii[0], ".abcdefghijklmnopqrstuvwxyz01234567890123456789.............`-=.\t[]\n;'#\\,./ ........../*-+.\n");
-	strcpy(s_ascii[1], ".ABCDEFGHIJKLMNOPQRSTUVWXYZ)!\"£$%^&*(0123456789.............¬_+.\t{}\n:@~|<>? ........../*-+.\n");
+	strcpy(s_ascii[1], ".ABCDEFGHIJKLMNOPQRSTUVWXYZ)!\".$%^&*(0123456789.............¬_+.\t{}\n:@~|<>? ........../*-+.\n");
 	for(int i=0; i<128; i++) {
 		if(i==KEY_STOP || i==KEY_DEL_PAD) continue;
 		if(i>91 || s_ascii[0][i]=='.') s_ascii[0][i] = 0;

@@ -328,7 +328,7 @@ int XML::parseInternal(char* string) {
 	#define inc(c) if(*(++c)=='\n') ++line;
 	#define isSpace(c) (c==0x20 || c==0x9 || c==0xd || c==0xa ) // SPACE, TAB, CR, LF
 	#define whitespace(c)  while( isSpace(*c) ) inc(c); 
-	#define fail(error) { printf("XML Parse Error: %s [%.32s]\n", error, c); return (int)(c-string); }
+	#define fail(error) { printf("XML Parse Error: %s on line %d [%.32s]\n", error, line, c); return (int)(c-string); }
 
 	//build the tree
 	int line=0;

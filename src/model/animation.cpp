@@ -197,9 +197,9 @@ Animation* Animation::subAnimation(int start, int end) const {
 			a->addRotationKey(i, 0, q);
 		}
 		// Position
-		if(rc) {
-			out->position.insert(out->position.begin(), list->position.begin()+ri, list->position.begin()+ri+rc);
-			for(int j=0; j<rc; ++j) out->position[j].frame -= start;
+		if(pc) {
+			out->position.insert(out->position.begin(), list->position.begin()+pi, list->position.begin()+pi+pc);
+			for(int j=0; j<pc; ++j) out->position[j].frame -= start;
 		} else {
 			vec3 p;
 			getPosition(i, start, 0, p);
@@ -207,8 +207,8 @@ Animation* Animation::subAnimation(int start, int end) const {
 		}
 		// Scale
 		if(sc) {
-			out->scale.insert(out->scale.begin(), list->scale.begin()+ri, list->scale.begin()+ri+rc);
-			for(int j=0; j<rc; ++j) out->scale[j].frame -= start;
+			out->scale.insert(out->scale.begin(), list->scale.begin()+si, list->scale.begin()+si+sc);
+			for(int j=0; j<sc; ++j) out->scale[j].frame -= start;
 		} else {
 			vec3 p;
 			getScale(i, start, 0, p);

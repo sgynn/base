@@ -251,7 +251,7 @@ TiffStream* TiffStream::createStream(const char* file, int w, int h, Image::Form
 		static const int bs = 6000;
 		char buffer[bs];
 		memset(buffer, 0, bs);
-		for(dword i=0; bytes>bs; i+=bs) bytes -= fwrite(buffer, 1, bs, fp);
+		while(bytes > bs) bytes -= fwrite(buffer, 1, bs, fp);
 		if(bytes>0) fwrite(buffer, 1, bytes, fp);
 	}
 		

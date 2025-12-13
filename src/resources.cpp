@@ -336,7 +336,6 @@ Shader* ShaderLoader::create(const char* name, Manager* mgr) {
 	// Shader with no parts is valid - assembled elsewhere.
 	
 	Shader* shader = new Shader();
-	int attachments = 0;
 
 	if(name) {
 		if(strchr(name, ',')==0) {
@@ -362,7 +361,6 @@ Shader* ShaderLoader::create(const char* name, Manager* mgr) {
 					fs = new ShaderPart(FRAGMENT_SHADER, file, defines);
 					//m_partManager.add(fsKey, fs);
 					//m_partManager.add(vsKey, vs);
-					attachments += 2;
 				}
 			}
 
@@ -383,7 +381,6 @@ Shader* ShaderLoader::create(const char* name, Manager* mgr) {
 			while(partName) {
 				ShaderPart* part = m_partManager.get(partName);
 				if(part) shader->attach(part);
-				if(part) ++attachments;
 				partName = strtok(0, ",");
 			}
 			free(buffer);
