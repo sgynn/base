@@ -362,6 +362,7 @@ Widget* AssetBrowser::addAssetTile(const Asset& asset, bool folder) {
 	AssetTile* tile = m_items->createChild<AssetTile>("asset");
 	if(!tile) return nullptr;
 
+	tile->eventMouseDown.bind(this, &AssetBrowser::pressItem);
 	tile->eventMouseMove.bind(this, &AssetBrowser::dragItem);
 	tile->eventMouseUp.bind(this, &AssetBrowser::dropItem);
 	
@@ -502,28 +503,35 @@ void AssetBrowser::renameAsset(Widget* item) {
 	box->eventSubmit.bind([this, lbl](Textbox* t) {
 		const Asset& asset = cast<AssetTile>(t->getParent())->asset;
 		lbl->setVisible(true);
-		if(asset.file.inArchive()) return; // Nope
+		if(asset.file.inArchive() || !t->getText()[0]) { // Invalid rename
+			delete t;
+			return;
+		}
 
 		getFileSystem().removeFile(m_localPath + asset.file.name);
 		String file = asset.file.getFullPath();
 		const char* e = strrchr(file, '/');
 		String newFile = (e? StringView(file, e-file.str()+1): StringView()) + t->getText();
+		Resources& res = *Resources::getInstance();
 
-		FILE* fp = fopen(file, "r");
-		if(!fp) fclose(fp);
-		else {
+		if(FILE* fp = fopen(file, "r")) {
+			fclose(fp);
 			printf("Rename %s -> %s\n", file.str(), newFile.str());
 			rename(file, newFile);
-			t->removeFromParent();
-
 			getFileSystem().scanFolders();
-			refreshItems();
-			
-			// We may need to update the resource manager FIXME
-			Resources& res = *Resources::getInstance();
-			res.particles.reload(file);
-
 		}
+		else {	// Not yet saved - need to update the resource data
+			switch(asset.type) {
+			case ResourceType::Particle: res.particles.rename(asset.resource, t->getText()); break;
+			default: break; // TODO: other types ?
+			}
+		}
+
+		t->removeFromParent();
+		refreshItems();
+		
+		// We may need to update the resource manager FIXME
+		res.particles.reload(file);
 		delete t;
 	});
 	box->eventLostFocus.bind([lbl](Widget* t) {
@@ -533,15 +541,27 @@ void AssetBrowser::renameAsset(Widget* item) {
 	});
 }
 
+inline int manhattenDistance(const Point& a, const Point& b) {
+	return abs(a.x-b.x) + abs(a.y-b.y);
+}
+
+void AssetBrowser::pressItem(Widget* w, const Point& p, int b) {
+	if(b != 1) return;
+	if(m_clickCount > 0 && manhattenDistance(p, m_lastClick) >= 8) m_clickCount = 0;
+	m_lastClick = p;
+	++m_clickCount;
+}
+
 void AssetBrowser::dragItem(Widget* w, const Point& p, int b) {
 	if(b != 1) return;
+	if(abs(p.x-m_lastClick.x) + abs(p.y-m_lastClick.y) < 8) return;
 	if(!m_dragWidget) {
 		m_dragWidget = w->clone();
 		m_dragWidget->setTangible(Tangible::NONE);
 	}
 	w->getRoot()->getRootWidget()->add(m_dragWidget);
 	m_dragWidget->setPosition(w->getRoot()->getMousePos());
-	m_lastClick.set(0,0);
+	m_clickCount = 0;
 	getEditor()->cancelActiveTools(this);
 }
 
@@ -573,10 +593,9 @@ void AssetBrowser::dropItem(Widget* w, const Point& p, int b) {
 			menu.menu()->popup(w->getRoot(), w->getRoot()->getMousePos(), w);
 		}
 	}
-	else if(p == m_lastClick) {
+	else if(m_clickCount > 1 && manhattenDistance(p, m_lastClick) < 8) {
 		openAsset(w);
-		m_lastClick.set(0, 0);
+		m_clickCount = 0;
 	}
-	else m_lastClick = p;
 }
 

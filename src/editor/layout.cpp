@@ -221,6 +221,7 @@ void LayoutViewer::refresh() {
 				node->select();
 				m_tree->eventSelected(m_tree, node);
 			}
+			else m_tree->eventSelected(nullptr, nullptr);
 		}
 		m_clearFilter->setEnabled(m_filter->getText()[0]);
 		m_lastNodeCount = root->getChildCount();

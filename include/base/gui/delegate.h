@@ -233,6 +233,7 @@ class MultiDelegate<R(A...)> {
 	DelegateType* begin() const { return list; }
 	DelegateType* end() const { return list + size; }
 	int isBound() const { return size; }
+	operator bool() const { return size; }
 
 	protected:
 	DelegateType* list;

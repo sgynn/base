@@ -37,6 +37,7 @@ class AssetBrowser : public EditorComponent {
 	void renameAsset(gui::Widget*);
 	void deleteAsset(gui::Widget*);
 	void pressedCrumb(gui::Button*);
+	void pressItem(gui::Widget*, const Point&, int);
 	void dragItem(gui::Widget*, const Point&, int);
 	void dropItem(gui::Widget*, const Point&, int);
 	void addTypeFilter(const char* text, ResourceType type);
@@ -76,6 +77,7 @@ class AssetBrowser : public EditorComponent {
 	gui::Popup*  m_contextMenu = nullptr;
 	gui::Popup*  m_typeFilterList = nullptr;
 	Point m_lastClick;
+	int m_clickCount = 0;
 };
 
 

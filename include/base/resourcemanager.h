@@ -47,6 +47,7 @@ class ResourceManager : public ResourceManagerBase {
 	ResourceState  getState(const T* item) const;    /// Get teh state of a resource
 	ResourceState  getState(const char* name) const; /// Get the state of a resource
 
+	bool  rename(const char* oldName, const char* newName);
 	void  alias(const char* existing, const char* name); /// Create an alias of a resource
 	void  add(const char* name, T* item, Loader* loader=0, int ref=1); /// Add resource to manager
 	int   drop(const char* name);         /// Drop reference to resource
@@ -180,6 +181,16 @@ void ResourceManager<T>::add(const char* name, T* resource, Loader* loader, int 
 	Resource* r = new Resource{ resource, ref, loader, 0 };
 	m_resources.insert(name, r);
 	r->name = m_resources.find(name)->key;
+}
+
+template<class T>
+bool ResourceManager<T>::rename(const char* oldName, const char* newName) {
+	if(m_resources.contains(newName)) return false;
+	Resource* resource = m_resources.get(oldName, nullptr);
+	if(!resource) return false;
+	m_resources[newName] = resource;
+	m_resources.erase(oldName);
+	return true;
 }
 
 template<class T>

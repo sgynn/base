@@ -28,7 +28,8 @@ struct Point3 {
 	int x, y, z;
 	Point3() : x(0), y(0), z(0) {};
 	explicit Point3(int v) : x(v), y(v), z(v) {}
-	Point3(int x, int y, int z) : x(x), y(y), z(z) {};
+	Point3(int x, int y, int z) : x(x), y(y), z(z) {}
+	Point3(const Point& xy, int z) : x(xy.x), y(xy.y), z(z) {}
 	Point3& set(int px, int py, int pz) { x=px; y=py; z=pz; return *this; }
 	Point3 operator-() const { return Point3(-x, -y, -z); }
 	bool   operator< (const Point3& p) const { return x<p.x || (x==p.x && y<p.y) || (x==p.x && y==p.y && z<p.z); }
@@ -44,6 +45,7 @@ struct Point3 {
 	Point3 operator-(int v)  const { return Point3(x-v, y-v, z-v); }
 	operator const int*() const { return &x; }
 	operator int*() { return &x; }
+	Point xy() const { return Point(x, y); }
 };
 
 /** 2D Rectangle. Bounding shape */

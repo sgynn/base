@@ -67,6 +67,7 @@ class SceneEditor : public base::GameStateComponent {
 
 	// Handlers for opening resources for edit/preview
 	MultiDelegate<void(const Asset&, bool)> assetChanged;
+	MultiDelegate<void(base::SceneNode*, base::Drawable*)> objectSelected;
 
 	// Scene object construction - dropping files on the world - SceneNode* (const Asset&);
 	template<class F> void addConstructor(const F& lambda) { m_construct.push_back({}); m_construct.back().bind(lambda); }
@@ -162,7 +163,11 @@ class EditorComponent {
 	gui::Widget* loadUI(const char* file, const char& embed);
 	virtual bool drop(gui::Widget* target, const Point& p, const Asset&, bool apply) { return false; }
 
-	void setSelectedObject(base::SceneNode* n, base::Drawable* d=nullptr) { m_editor->m_selectedSceneNode = n; m_editor->m_selectedDrawable = d; }
+	void setSelectedObject(base::SceneNode* n, base::Drawable* d=nullptr) {
+		m_editor->m_selectedSceneNode = n;
+		m_editor->m_selectedDrawable = d;
+		if(m_editor->objectSelected) m_editor->objectSelected(n, d);
+	}
 
 	// Use these for editors that interact with the viewport. Return true to stop processing
 	virtual bool mouseEvent(const MouseEventData&) { return false; }
