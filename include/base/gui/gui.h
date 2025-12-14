@@ -173,6 +173,7 @@ class Widget {
 	void removeFromParent();
 
 	template<class T> T* createChild(const char* type, const char* name=0); // Implemented below
+	template<class T> T* createChild(const Rect& r, const char* type, const char* name=0, const char* anchor=0);
 
 	Layout* getLayout() const;
 	void setLayout(Layout*);
@@ -380,9 +381,18 @@ class Root {
 };
 
 template<class T> inline T* Widget::createChild(const char* type, const char* name) { 
-	if(!m_root) return 0; // Error
+	if(!m_root) return nullptr; // Error
 	T* w = m_root->createWidget<T>(type, name);
 	if(w) add(w);
+	return w;
+}
+template<class T> inline T* Widget::createChild(const Rect& rect, const char* type, const char* name, const char* anchor) { 
+	if(!m_root) return nullptr; // Error
+	T* w = m_root->createWidget<T>(rect, type, name);
+	if(w) {
+		add(w);
+		if(anchor) w->setAnchor(anchor);
+	}
 	return w;
 }
 

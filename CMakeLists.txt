@@ -85,6 +85,7 @@ set(gui
 	src/gui/tree.cpp
 	src/gui/widgets.cpp
 	src/gui/colourpicker.cpp
+	src/gui/filedialog.cpp
 
 	src/gui/systemfont.cpp
 	src/gui/bitmapfont.cpp
@@ -235,6 +236,7 @@ set(guiheaders
 	include/base/gui/transform.h
 	include/base/gui/widgets.h
 	include/base/gui/colourpicker.h
+	include/base/gui/filedialog.h
 	include/base/gui/menubuilder.h
 )
 
