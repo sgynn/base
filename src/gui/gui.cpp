@@ -250,7 +250,7 @@ void Root::setFocusedWidget(Widget* w) {
 			for(Widget* f = w; f; f=f->m_parent) if(f==p) return;
 			if(p && p->eventLostFocus) {
 				p->onLoseFocus();
-				p->eventLostFocus(last);
+				p->eventLostFocus(p);
 			}
 		}
 	}
@@ -264,7 +264,7 @@ void Root::setFocusedWidget(Widget* w) {
 			for(Widget* f = w; f; f=f->m_parent) if(f==p) return;
 			if(p && p->eventGainedFocus) {
 				p->onGainFocus();
-				p->eventGainedFocus(w);
+				p->eventGainedFocus(p);
 			}
 		}
 	}
