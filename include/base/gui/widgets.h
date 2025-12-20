@@ -546,8 +546,9 @@ class ScaleBox : public Widget {
 	void updateAutosize() override;
 	void setScale(float scale);
 	float getScale() const { return m_scale; }
-	protected:
 	Widget* getWidget(const Point&, int mask, bool intangible, bool templates, bool clip) override;
+	using Widget::getWidget;
+	protected:
 	void updateTransforms() override;
 	float m_scale = 1;
 };
