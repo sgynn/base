@@ -188,7 +188,7 @@ void Textbox::select(int s, int len, bool shift) {
 		m_cursor = s;
 	}
 	else {
-		if(s != m_cursor) {
+		if(s != m_cursor || len != m_selectLength) {
 			Point textSize = m_skin->getFont()->getSize(m_text, m_skin->getFontSize(), start);
 			m_selectRect.x = m_rect.x + textSize.x + m_offset.x;
 			m_selectRect.y = m_rect.y + m_offset.y;
@@ -313,7 +313,10 @@ int Textbox::indexAt(const Point& pos) const {
 	return m_length;
 }
 void Textbox::onMouseButton(const Point& p, int b, int u) {
-	if(b==1) select( indexAt(p) ), m_held=m_cursor;
+	if(b==1) {
+		m_held = indexAt(p);
+		select(m_held);
+	}
 	Widget::onMouseButton(p, b, u);
 }
 void Textbox::onMouseMove(const Point&, const Point& p, int b) {
