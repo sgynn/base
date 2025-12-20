@@ -155,6 +155,10 @@ T* ResourceManager<T>::getIfExists(const char* name) {
 	if(!name || !name[0]) return 0; // Invalid name
 	typename base::HashMap<Resource*>::iterator it = m_resources.find(name);
 	if(it==m_resources.end() || it->value->ref == FAILED) return 0;
+	if(!it->value->object) { // Exists but unloaded - load it now
+		if(it->value->loader) it->value->object = it->value->loader->create(name, this);
+		else if(m_defaultLoader) m_defaultLoader->create(name, this);
+	}
 	++it->value->ref;
 	return it->value->object;
 }
