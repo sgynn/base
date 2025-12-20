@@ -19,6 +19,8 @@ struct Point {
 	Point& operator-=(int v)      { x-=v; y-=v; return *this; }
 	Point operator+(int v)  const { return Point(x+v, y+v); }
 	Point operator-(int v)  const { return Point(x-v, y-v); }
+	Point operator>>(int s) const { return Point(x>>s, y>>s); }
+	Point operator<<(int s) const { return Point(x<<s, y<<s); }
 	operator const int*() const { return &x; }
 	operator int*() { return &x; }
 };
@@ -43,6 +45,8 @@ struct Point3 {
 	Point3& operator-=(int v)      { x-=v; y-=v; z-=v; return *this; }
 	Point3 operator+(int v)  const { return Point3(x+v, y+v, z+v); }
 	Point3 operator-(int v)  const { return Point3(x-v, y-v, z-v); }
+	Point3 operator>>(int s) const { return Point3(x>>s, y>>s, z>>s); }
+	Point3 operator<<(int s) const { return Point3(x<<s, y<<s, z<<s); }
 	operator const int*() const { return &x; }
 	operator int*() { return &x; }
 	Point xy() const { return Point(x, y); }

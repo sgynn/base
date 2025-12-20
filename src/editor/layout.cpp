@@ -353,6 +353,7 @@ void LayoutViewer::itemSelected(gui::TreeView*, gui::TreeNode* n) {
 		m_active = 0;
 		m_drawable = 0;
 		m_activeType = 0;
+		setSelectedObject(nullptr, nullptr);
 		return;
 	}
 

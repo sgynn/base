@@ -70,14 +70,23 @@ void CompositorEditor::initialise() {
 	m_copyTemplate = m_panel->getWidget("copypass");
 	m_bufferTemplate = m_panel->getWidget("buffer");
 
-
+	static auto setGraphZoom = [](ScaleBox* s, Widget* graph, float scale, const Point& focus) {
+		Transform::Pos anchor = s->getDerivedTransform().untransformf(focus);
+		s->setScale(scale);
+		Transform::Pos result = s->getDerivedTransform().untransformf(focus);
+		Point shift(result.x - anchor.x, result.y - anchor.y);
+		for(Widget* w: *graph) w->setPosition(w->getPosition() + shift);
+	};
 	graphContainer->eventMouseWheel.bind([this](Widget* w, int delta) {
 		ScaleBox* s = cast<ScaleBox>(w);
-		Transform::Pos anchor = s->getDerivedTransform().untransformf(s->getRoot()->getMousePos());
-		s->setScale(s->getScale() * (1+delta * 0.1));
-		Transform::Pos result = s->getDerivedTransform().untransformf(s->getRoot()->getMousePos());
-		Point shift(result.x - anchor.x, result.y - anchor.y);
-		for(Widget* w: *m_graphEditor) w->setPosition(w->getPosition() + shift);
+		setGraphZoom(s, m_graphEditor, s->getScale() * (1+delta * 0.1), s->getRoot()->getMousePos());
+	});
+	m_graphEditor->eventMouseMove.bind([](Widget* w, const Point& p, int b) {
+		if(b == 2) {
+			ScaleBox* s = cast<ScaleBox>(w->getParent());
+			Point focus = s->getParent()->getDerivedTransform().transform(s->getPosition() + (s->getSize()>>1));
+			setGraphZoom(s, w, s->getScale() * (1+w->getRoot()->getMouseDelta().y * 0.01), focus);
+		};
 	});
 
 	CONNECT(Listbox, "nodelist", eventMouseMove, dragCompositor);
@@ -222,7 +231,7 @@ void CompositorEditor::dragCompositor(Widget* w, const Point& pos, int b) {
 const char* CompositorEditor::getCompositorName(Compositor* c, const char* outputName) const {
 	if(c == Compositor::Output) return outputName;
 	const ListItem* item = m_nodeList->findItem(1, c);
-	return item? item->getText(): " ";
+	return item? item->getText(): c->getName();
 }
 
 void CompositorEditor::setCompositor(Compositor* c) {
@@ -679,8 +688,9 @@ bool CompositorEditor::applyGraph(CompositorGraph* graph) {
 	Point size(256, 256);
 	Workspace* current = getEditor()->getWorkspace();
 	if(current && current->getWidth() > 0) size.set(current->getWidth(), current->getHeight());
+	else size = m_panel->getRoot()->getSize();
 	Workspace* workspace = new Workspace(graph);
-	printf("[Compiling compositor graph: %s]\n", m_graphList->getSelectedItem()->getText());
+	printf("[Compiling compositor graph: %s at %dx%d]\n", m_graphList->getSelectedItem()->getText(), size.x, size.y);
 	if(workspace->compile(size.x, size.y)) {
 		printf("Compiled succesfully\n");
 		if(current) workspace->copyCameras(current);

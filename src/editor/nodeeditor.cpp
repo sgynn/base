@@ -15,6 +15,7 @@ NodeEditor::~NodeEditor() {
 
 void NodeEditor::onMouseMove(const Point& last, const Point& pos, int b) {
 	Widget::onMouseMove(last, pos, b);
+	if(b == 2) return;
 	if(b && hasFocus()) {
 		Point move = pos - last;
 		for(Widget* w: *this) {

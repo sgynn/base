@@ -207,6 +207,7 @@ namespace base {
 		static Compositor* Output;
 
 		public:
+		const char* getName() const { return m_name; }
 		int     getInput(const char*) const;
 		int     getOutput(const char* name) const;
 		Buffer* getBuffer(const char* name) const;

@@ -100,6 +100,13 @@ Widget* ModelViewer::openAsset(const Asset& asset) {
 				view.camera->update(CU_MOUSE);
 				view.workspace->execute(view.target, view.scene, view.renderer);
 			}
+			else if(b==2) { // Zoom
+				vec3 dir = view.camera->getPosition() - view.camera->getTarget();
+				float dist = dir.normaliseWithLength();
+				dist *= 1 - w->getRoot()->getMouseDelta().y * 0.004;
+				((Camera*)view.camera)->setPosition(view.camera->getTarget() + dir * dist);
+				view.workspace->execute(view.target, view.scene, view.renderer);
+			}
 			else if(b==1) { // Pan
 				vec3 t = view.camera->getTarget();
 				float scale = t.distance(view.camera->getPosition()) * 0.005;
@@ -248,6 +255,9 @@ void ModelViewer::autosizeView(const View& view) {
 	float zoom = bounds.size().length() * 0.6;
 	view.camera->setTarget(bounds.centre());
 	view.camera->setPosition(2.5,2.5,zoom);
+	if(zoom < 2) view.camera->adjustDepth(0.01, 10);
+	if(zoom < 50) view.camera->adjustDepth(0.1, 100);
+	else view.camera->adjustDepth(1, 1000);
 }
 
 void ModelViewer::applyAnimationPose(View& view, float frame) {
