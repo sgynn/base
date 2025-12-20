@@ -161,6 +161,7 @@ void Root::mouseEvent(const Point& p, int b, int w) {
 	Point last = m_mousePos;
 
 	// Remember state
+	m_mouseDelta = p - m_mousePos;
 	m_mousePos = p;
 	m_mouseState = b;
 

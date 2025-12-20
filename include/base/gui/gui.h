@@ -334,6 +334,7 @@ class Root {
 
 	// Input state - for 
 	const Point& getMousePos() const { return m_mousePos; }
+	const Point& getMouseDelta() const { return m_mouseDelta; }
 	int getMouseState() const { return m_mouseState; }
 	KeyMask getKeyMask() const { return m_keyMask; }
 
@@ -349,6 +350,7 @@ class Root {
 	
 	KeyMask m_keyMask;
 	Point   m_mousePos;
+	Point   m_mouseDelta;
 	int     m_mouseState;
 	bool    m_wheelUsed;
 	bool    m_changed;
