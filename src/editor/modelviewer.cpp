@@ -49,7 +49,7 @@ Widget* ModelViewer::openAsset(const Asset& asset) {
 	if(!asset.file) return nullptr;
 	StringView ext = strrchr(asset.file.name, '.');
 	if(ext==".bm" || ext==".obj") {
-		const char* name = asset.resource? asset.resource: asset.file.name;
+		String name = asset.resource? asset.resource: asset.file.getLocalPath();
 		Model* model = Resources::getInstance()->models.get(name);
 		if(!model) return nullptr;
 

@@ -109,7 +109,7 @@ bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset
 Widget* ParticleEditorComponent::openAsset(const Asset& asset) {
 	if(asset.type != ResourceType::Particle && !(asset.type==ResourceType::None && asset.file.name.endsWith(".pt"))) return nullptr;
 	auto& res = base::Resources::getInstance()->particles;
-	const char* name = asset.resource? asset.resource: asset.file.name;
+	String name = asset.resource? asset.resource: asset.file.getLocalPath();
 	particle::System* system = res.get(name);
 	ParticleEditor* editor = showParticleSystem(system, name);
 	return editor? editor->getPanel(): nullptr;

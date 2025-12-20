@@ -21,8 +21,8 @@ class ImageViewer : public EditorComponent {
 		if(!previewTemplate) return nullptr;
 		gui::Renderer& r = *getEditor()->getGUI()->getRenderer();
 
-		const char* name = asset.resource;
-		if(!name) name = asset.file.name;
+		base::String name = asset.resource;
+		if(!name) name = asset.file.getLocalPath();
 
 		int img = r.getImage(name);
 		if(img < 0) {

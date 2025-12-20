@@ -1,6 +1,7 @@
 #include <base/virtualfilesystem.h>
 #include <base/directory.h>
 #include <base/archive.h>
+#include <base/assert.h>
 
 using namespace base;
 
@@ -26,24 +27,42 @@ bool VirtualFileSystem::File::inArchive() const {
 	return m_fs->m_sources[m_source].archive;
 }
 
+String VirtualFileSystem::File::getLocalPath() const {
+	if(m_source<0 || !name) return nullptr;
+	if(!m_fs->m_folders[m_folder].name) return name;
+	return String::cat(m_fs->m_folders[m_folder].getLocalPath(), name);
+}
+
 String VirtualFileSystem::File::getFullPath() const {
-	if(m_source<0 || !name) return "";
+	if(m_source<0 || !name) return nullptr;
 	Source& src = m_fs->m_sources[m_source];
 	if(src.archive) {
-		if(!src.subFolder) return String::cat(src.path, ":", name);
-		return src.path +":" + src.subFolder + "/" + name;
+		if(!src.subFolder) return String::cat(src.path, ":", getLocalPath());
+		return src.path +":" + src.subFolder + "/" + getLocalPath();
 	}
 	else {
-		return String::cat(src.path, "/",  name);
+		return String::cat(src.path, "/",  getLocalPath());
 	}
 }
 
+String VirtualFileSystem::Folder::getLocalPath() const {
+	if(!name) return nullptr;
+	return String::cat(getParent().getLocalPath(), name, "/");
+}
+
+const VirtualFileSystem::Folder& VirtualFileSystem::Folder::getParent() const {
+	static const Folder null(nullptr, nullptr, -1);
+	if(m_parentFolder < 0) return null;
+	return m_fs->m_folders[m_parentFolder];
+}
+
+
 VirtualFileSystem::VirtualFileSystem() {
-	m_folders.push_back(Folder(this, ""));
+	m_folders.push_back(Folder(this, nullptr, -1));
 }
 
 const VirtualFileSystem::File& VirtualFileSystem::getFile(const char* path) const {
-	static File null(nullptr, nullptr, 0);
+	static File null(nullptr, nullptr, 0, 0);
 	int dir = 0;
 	while(path && path[0]) {
 		const char* e = strchr(path, '/');
@@ -83,10 +102,11 @@ const VirtualFileSystem::Folder& VirtualFileSystem::getFolder(const char* path) 
 			path = e + 1;
 		}
 		else { // Not found
-			static Folder null(nullptr, nullptr);
+			static Folder null(nullptr, nullptr, -1);
 			return null;
 		}
 	}
+	assert(dir < (int)m_folders.size());
 	return m_folders[dir];
 }
 
@@ -105,8 +125,8 @@ int VirtualFileSystem::getOrCreateFolder(const char* path) {
 		else {
 			int newDir = m_folders.size();
 			m_folders[dir].m_folders.push_back(newDir);
-			m_folders[dir].m_files.push_back(File(this, sub, 1<<31 | newDir));
-			m_folders.push_back(Folder(this, sub));
+			m_folders[dir].m_files.push_back(File(this, sub, dir, 1<<31 | newDir));
+			m_folders.push_back(Folder(this, sub, dir));
 			dir = newDir;
 		}
 		path = e? e + 1: nullptr;
@@ -114,7 +134,8 @@ int VirtualFileSystem::getOrCreateFolder(const char* path) {
 	return dir;
 }
 
-void VirtualFileSystem::addFile(Folder& folder, const char* name, int source) {
+void VirtualFileSystem::addFile(int folderId, const char* name, int source) {
+	Folder& folder = m_folders[folderId];
 	for(File& f: folder.m_files) {
 		if(f.name == name) {
 			f.name = name;
@@ -122,7 +143,7 @@ void VirtualFileSystem::addFile(Folder& folder, const char* name, int source) {
 			return;
 		}
 	}
-	folder.m_files.push_back(File(this, name, source));
+	folder.m_files.push_back(File(this, name, folderId, source));
 }
 
 bool VirtualFileSystem::addPath(const char* path, bool recursive, const char* target) {
@@ -135,7 +156,7 @@ bool VirtualFileSystem::addPath(const char* path, bool recursive, const char* ta
 
 	// Add files
 	for(auto& f: Directory(path)) {
-		if(f.type == Directory::FILE) addFile(m_folders[folder], f.name, source);
+		if(f.type == Directory::FILE) addFile(folder, f.name, source);
 		else if(recursive && f.name[0] != '.') {
 			addPath(String::format("%s/%s", path, f.name), true, target? String::format("%s/%s", target, f.name): f.name);
 		}
@@ -168,11 +189,11 @@ bool VirtualFileSystem::addArchive(const char* path, const char* target) {
 		// Add file
 		if(e) {
 			int folder = getOrCreateFolder(String(target) + "/" + StringView(f.name, e-f.name));
-			addFile(m_folders[folder], e+1, source);
+			addFile(folder, e+1, source);
 		}
 		else {
 			int folder = getOrCreateFolder(target);
-			addFile(m_folders[folder], f.name, source);
+			addFile(folder, f.name, source);
 		}
 	}
 	return true;
@@ -190,7 +211,7 @@ bool VirtualFileSystem::scanFolders() {
 					if(file.name == f.name) { exists=true; break; }
 				}
 				if(exists) continue;
-				addFile(m_folders[folder], f.name, i);
+				addFile(folder, f.name, i);
 				++foundNewFiles;
 			}
 			// ToDo: subfolders if recursive
@@ -234,7 +255,7 @@ const VirtualFileSystem::File& VirtualFileSystem::createTransientFile(const char
 	const char* e = strrchr(file, '/');
 	const char* filename = e? e+1: file;
 
-	m_folders[folder].m_files.push_back(File(this, filename, source));
+	m_folders[folder].m_files.push_back(File(this, filename, folder, source));
 	return m_folders[folder].m_files.back();
 }
 
