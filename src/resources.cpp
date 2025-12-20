@@ -1148,7 +1148,7 @@ void XMLResourceLoader::load(const XML& xml, const char* path, bool create) {
 			char buffer[512];
 			const char* end = strrchr(path, '/');
 			if(end) snprintf(buffer, 512, "%.*s/%s", int(end-path), path, file);
-			if((!end || !resources.loadFile(buffer)) && !resources.loadFile(file))
+			if((!end || !resources.loadFile(buffer)) && !resources.loadFile(file, create))
 				printf("Failed to load resource file %s\n", file);
 			continue;
 		}
