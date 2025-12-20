@@ -8,6 +8,7 @@
 #include <base/compositor.h>
 #include <base/renderer.h>
 #include <base/bmloader.h>
+#include <base/wavefront.h>
 #include <base/texture.h>
 #include <base/particles.h>
 #include <base/particledef.h>
@@ -487,37 +488,44 @@ Model* ModelLoader::create(const char* name, Manager* manager) {
 		printf("ModelLoader: File not found %s\n", name);
 		return 0;
 	}
-	XML xml = XML::parse(file);
-	XMLResourceLoader loader(resources);
 
-	// Materials defined here need to be loaded into the material manager somehow.
-	for(const XMLElement& e: xml.getRoot()) {
-		if(e=="material") {
-			char matName[128];
-			snprintf(matName, 128, "%s:%s", name, e.attribute("name"));
-			Material* m = loader.loadMaterial(e, matName);
-			resources->materials.add(matName, m); // ToDo: Custom loader here too, or additional file data
-		}
+	Model* model = nullptr;
+	StringView n(name);
+	if(n.endsWith(".obj")) {
+		model = Wavefront::parse(file);
 	}
-	
-	// Load model
-	Model* m = BMLoader::loadModel(xml.getRoot());
+	else { // .bm
+		XML xml = XML::parse(file);
+		XMLResourceLoader loader(resources);
 
-	if(m) printf("Loaded %s\n", name);
+		// Materials defined here need to be loaded into the material manager somehow.
+		for(const XMLElement& e: xml.getRoot()) {
+			if(e=="material") {
+				char matName[128];
+				snprintf(matName, 128, "%s:%s", name, e.attribute("name"));
+				Material* m = loader.loadMaterial(e, matName);
+				resources->materials.add(matName, m); // ToDo: Custom loader here too, or additional file data
+			}
+		}
+		
+		// Load model
+		model = BMLoader::loadModel(xml.getRoot());
+	}
+
+	if(model) printf("Loaded %s\n", name);
 	else printf("Failed to load %s\n", name);
 
 	// Create vbo's
-	if(m) {
-		for(int i=0; i<m->getMeshCount(); ++i) {
-			Mesh* mesh = m->getMesh(i);
-			if(mesh->getVertexBuffer()) mesh->getVertexBuffer()->createBuffer();
-			if(mesh->getSkinBuffer())   mesh->getSkinBuffer()->createBuffer();
-			if(mesh->getIndexBuffer())  mesh->getIndexBuffer()->createBuffer();
-			mesh->calculateBounds();
+	if(model) {
+		for(const Model::MeshInfo& m : model->meshes()) {
+			if(m.mesh->getVertexBuffer()) m.mesh->getVertexBuffer()->createBuffer();
+			if(m.mesh->getSkinBuffer())   m.mesh->getSkinBuffer()->createBuffer();
+			if(m.mesh->getIndexBuffer())  m.mesh->getIndexBuffer()->createBuffer();
+			m.mesh->calculateBounds();
 		}
 	}
 	
-	return m;
+	return model;
 }
 // ----------------------------------------------------------------------------------- //
 

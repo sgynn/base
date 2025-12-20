@@ -87,25 +87,25 @@ Model* Wavefront::parse(const char* str) {
 			s += r;
 			break;
 		
-		case 'f': // Read face
+		case 'f': // Read face: 'vertex/uv/normal' or 'vertex' or 'vertex/uv' or 'vertex//normal'
 			++s;
 			i = f.size();
 			size = Point3(vx.size()+1, vt.size()+1, vn.size()+1);
 			for(int j=0; true; ++j) {
 				s += parseSpace(s);
-				for(int k=0; k<8; ++k) {
+				for(int k=0; k<3; ++k) {
 					r = parseInt(s, ix[k]);
-					if(r==0) ix[k] = 0;
+					if(r == 0) ix[k] = 0;
 					else s += r;
-					if(ix[k]<0) ix[k] += size[k]; // negative values are relative
-					if(*s!='/') break;
+					if(ix[k] < 0) ix[k] += size[k]; // negative values are relative
+					if(*s != '/') break;
 					++s;
 				}
-				if(ix[0]==0) break;
+				if(ix[0] == 0) break;
 				// Add to face list and triangulate if nessesary
-				if(j>2) {
+				if(j > 2) {
 					f.push_back(f[i]);
-					f.push_back(f[i+1]);
+					f.push_back(f[f.size()-2]);
 				}
 				f.push_back(ix);
 			}
@@ -114,18 +114,18 @@ Model* Wavefront::parse(const char* str) {
 		case 'g':	// Groups
 			++s;
 			s += parseSpace(s);
-			r += parseDelimiter(s, '\n', group, 32);
-			for(char* c=group; *c; ++c) if(*c==' ' || *c=='\t') { *c=0; break; }
-			s += r;
+			r = parseDelimiter(s, '\n', group, 32);
 
 			// start a new mesh
 			if(!f.empty()) {
-				model->addMesh(0, buildMesh(f.size(), &f[0], &vx[0], &vt[0], &vn[0]), material);
+				model->addMesh(group, buildMesh(f.size(), f.data(), vx.data(), vt.data(), vn.data()), material);
 				f.clear();
 			}
+			for(char* c=group; *c; ++c) if(*c==' ' || *c=='\t') { *c=0; break; }
+			s += r;
 			break;
 		case 'u': // usemtl
-			r = parseKeyword(s, "usemtl", true);
+			r = parseKeyword(s, "usemtl");
 			if(r>0) {
 				r += parseSpace(s+r);
 				r += parseDelimiter(s+r, '\n', material, 32);
@@ -133,58 +133,81 @@ Model* Wavefront::parse(const char* str) {
 				s += r;
 				// Start a new mesh
 				if(!f.empty()) {
-					model->addMesh(0, buildMesh(f.size(), &f[0], &vx[0], &vt[0], &vn[0]), material);
+					model->addMesh(group, buildMesh(f.size(), f.data(), vx.data(), vt.data(), vn.data()), material);
 					f.clear();
 				}
 				break;
 			}
 		default:
-			printf("Wavefront error: invalid line '%.10s'\n", s);
-			s += parseDelimiter(s);
+			if(strncmp(s, "s ", 2)==0) s += parseDelimiter(s);
+			else if(parseKeyword(s, "mtllib")) s += parseDelimiter(s);
+			else {
+				r = parseDelimiter(s);
+				printf("Wavefront error: invalid line '%.*s'\n", r, s);
+				s += r;
+			}
 		}
 	}
 
 	// Add final mesh
-	if(!f.empty()) model->addMesh(0, buildMesh(f.size(), &f[0], &vx[0], &vt[0], &vn[0]), material);
+	if(!f.empty()) model->addMesh(group, buildMesh(f.size(), f.data(), vx.data(), vt.data(), vn.data()), material);
 
 	// Something failed
 	if(model->getMeshCount()==0) { delete model; return 0; }
 	return model;
 }
 
+template<class T>
+inline void setIndexBufferData(int size, const Point3* f, std::map<Point3, int>& map, HardwareIndexBuffer* indexBuffer) {
+	T* ix = new T[size];
+	std::map<Point3, int>::iterator it;
+	for(int i=0; i<size; ++i) {
+		it = map.find(f[i]);
+		if(it == map.end()) {
+			ix[i] = map.size();
+			map[f[i]] = ix[i];
+		}
+		else ix[i] = it->second;
+	}
+	indexBuffer->setData(ix, size, true);
+}
 
 Mesh* Wavefront::buildMesh(int size, Point3* f, vec3* vx, vec2* tx, vec3* nx) {
 	std::map<Point3, int> map;
-	std::map<Point3, int>::iterator it;
 
 	HardwareVertexBuffer* vertexBuffer = new HardwareVertexBuffer();
 	HardwareIndexBuffer* indexBuffer = new HardwareIndexBuffer();
 	
 	// Index array
-	uint16* ix = new uint16[size];
-	for(int i=0; i<size; ++i) {
-		it = map.find(f[i]);
-		if(it==map.end()) {
-			ix[i] = map.size();
-			map[f[i]] = ix[i];
-		} else ix[i] = it->second;
+	if(size < 256) {
+		indexBuffer->setIndexSize(IndexSize::I8);
+		setIndexBufferData<uint8>(size, f, map, indexBuffer);
 	}
-	indexBuffer->setData(ix, size, true);
+	else if(size < 65536) {
+		indexBuffer->setIndexSize(IndexSize::I16);
+		setIndexBufferData<uint16>(size, f, map, indexBuffer);
+	}
+	else {
+		indexBuffer->setIndexSize(IndexSize::I32);
+		setIndexBufferData<uint32>(size, f, map, indexBuffer);
+	}
 
 	// Vertex array
+	std::map<Point3, int>::iterator it;
 	vertexBuffer->attributes.add(VA_VERTEX, VA_FLOAT3);
 	if(nx) vertexBuffer->attributes.add(VA_NORMAL, VA_FLOAT3);
 	if(tx) vertexBuffer->attributes.add(VA_TEXCOORD, VA_FLOAT2);
 	int stride = vertexBuffer->attributes.calculateStride() / 4;
 	int on = 3, ot = (nx?6:3);
 	float* v = new float[ stride * map.size() ];
-	for(it=map.begin(); it!=map.end(); ++it) {
-		const Point3& d = it->first;
-		int k = it->second * stride;
-		memcpy(v+k, vx+d.x-1,  3*sizeof(float));
-		if(nx && d.z) memcpy(v+k+on, nx+d.z-1, 3*sizeof(float));
-		if(tx && d.y) memcpy(v+k+ot, tx+d.y-1, 2*sizeof(float));
+	for(const auto& i: map) {
+		const Point3& face = i.first;
+		int k = i.second * stride;
+		memcpy(v + k, vx + face.x - 1, 3*sizeof(float));
+		if(nx && face.z) memcpy(v+k+on, nx+face.z-1, 3*sizeof(float));
+		if(tx && face.y) memcpy(v+k+ot, tx+face.y-1, 2*sizeof(float));
 	}
+	vertexBuffer->setData(v, map.size(), stride * sizeof(float), true);
 
 	// Create mesh object
 	Mesh* mesh = new Mesh;
