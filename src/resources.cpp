@@ -388,16 +388,7 @@ Shader* ShaderLoader::create(const char* name, Manager* mgr) {
 		}
 	}
 
-	shader->bindAttributeLocation( "vertex",   0 );
-	shader->bindAttributeLocation( "normal",   1 );
-	shader->bindAttributeLocation( "tangent",  2 );
-	shader->bindAttributeLocation( "texCoord", 3 );
-	shader->bindAttributeLocation( "colour",   4 );
-	shader->bindAttributeLocation( "indices",  5 );
-	shader->bindAttributeLocation( "weights",  6 );
-	shader->bindOutput("buf0", 0);
-	shader->bindOutput("buf1", 1);
-
+	shader->bindDefaultAttributeLocations();
 	return shader;
 }
 

@@ -36,6 +36,12 @@ struct ObjectTraceResult { float t=-1; vec3 normal; operator bool()const{return 
 
 namespace world {
 
+	struct TexturePattern { const char* name; const char* pattern; };
+	extern struct MaterialSettingsDef {
+		const char* baseMaterial;
+		std::vector<TexturePattern> textures;
+	} MaterialSettings;
+
 
 	// Helper functions //
 	extern void addTextureSearchPattern(const char* variable, const char* pattern);

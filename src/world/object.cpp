@@ -115,6 +115,7 @@ Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, const char* material, i
 // --------------------------------------------------------------------------- //
 
 
+MaterialSettingsDef base::world::MaterialSettings = { "object.mat", {{"diffuseMap", "%.*s.png"}, {"normalMap", "%.*s_n.png"}} };
 
 static HashMap<std::vector<const char*>> textureSearchPatterns;
 void world::addTextureSearchPattern(const char* var, const char* pattern) {
@@ -161,8 +162,11 @@ Material* world::loadMaterial(const char* name, int weights, const char* base) {
 				};
 
 				if(textureSearchPatterns.empty()) {
-					findTexture("%.*s.png", "diffuseMap") || findTexture("%.*s.dds", "diffuseMap");
-					findTexture("%.*s_n.png", "normalMap") || findTexture("%.*s_n.dds", "normalMap");
+					//findTexture("%.*s.png", "diffuseMap") || findTexture("%.*s.dds", "diffuseMap");
+					//findTexture("%.*s_n.png", "normalMap") || findTexture("%.*s_n.dds", "normalMap");
+					for(const auto& m: MaterialSettings.textures) {
+						findTexture(m.pattern, m.name);
+					}
 				}
 				else for(const auto& p: textureSearchPatterns) {
 					for(const char* pattern: p.value) {
@@ -175,25 +179,50 @@ Material* world::loadMaterial(const char* name, int weights, const char* base) {
 		}
 		return mat;
 	}
-	else if(base) {
-		return loadMaterial(base, weights);
-	}
 	else {
-		if(weights==0) return res.materials.get("object.mat");
+		if(!base) base = MaterialSettings.baseMaterial;
+		Material* baseMaterial = res.materials.get(base);
+		if(weights==0 || !baseMaterial) return baseMaterial;
 		else {
 			assert(weights>0 && weights <= 4);
-			char buffer[32];
-			sprintf(buffer, "object.mat_W%d", weights);
+			char buffer[64];
+			sprintf(buffer, "%s_W%d", base, weights);
 			if(Material* mat = res.materials.getIfExists(buffer)) return mat;
-			printf("Creating base material for %d weights\n", weights);
-			Material* mat = loadMaterial(0,0,0)->clone();
+			printf("Creating %s material for %d weights\n", base, weights);
+			Material* mat = baseMaterial->clone();
 			res.materials.add(buffer, mat);
+			// add new define to shader
+			for(Pass* pass: *mat) {
+				Shader* old = pass->getShader();
+				const char* shaderName = res.shaders.getName(old);
+				const char* key = "SKINNED";
+				Shader* newShader = nullptr;
+				if(shaderName) {
+					if(strchr(shaderName, '|')) sprintf(buffer, "%s,%s %d", shaderName, key, weights);
+					else sprintf(buffer, "%s|%s %d", shaderName, key, weights);
+					newShader = res.shaders.get(buffer);
+				}
+				else { // Unnamed shader - make a copy
+					sprintf(buffer, "%s %d", key, weights);
+					newShader = new Shader();
+					for(ShaderPart* s: old->getParts()) newShader->attach(new ShaderPart(*s));
+					newShader->bindDefaultAttributeLocations();
+					newShader->define(buffer);
+				}
+				pass->getParameters().setAuto("boneMatrices", AUTO_SKIN_MATRICES);
+				pass->setShader(newShader);
+				pass->compile();
+			}
+			return mat;
+
+			/*
 			sprintf(buffer, "object.glsl|SKINNED %d", weights); // FIXME
 			Shader* newShader = res.shaders.get(buffer);
 			mat->getPass(0)->getParameters().setAuto("boneMatrices", AUTO_SKIN_MATRICES);
 			mat->getPass(0)->setShader(newShader);
 			mat->getPass(0)->compile();
 			return mat;
+			*/
 		}
 	}
 }

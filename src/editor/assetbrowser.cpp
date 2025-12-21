@@ -56,6 +56,7 @@ void AssetBrowser::initialise() {
 
 	// Default icons for matched file types
 	m_fileTypes[".bm"] = "cube";
+	m_fileTypes[".obj"] = "cube";
 	m_fileTypes[".png"] = "image";
 	m_fileTypes[".dds"] = "image";
 	m_fileTypes[".glsl"] = "page";

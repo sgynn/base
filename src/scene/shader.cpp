@@ -284,11 +284,7 @@ Shader* Shader::create(const char* vsrc, const char* fsrc, const char* def) {
 	Shader* shader = new Shader();
 	shader->attach(vs);
 	shader->attach(fs);
-	shader->bindAttributeLocation( "vertex",   0 );
-	shader->bindAttributeLocation( "normal",   1 );
-	shader->bindAttributeLocation( "tangent",  2 );
-	shader->bindAttributeLocation( "texCoord", 3 );
-	shader->bindAttributeLocation( "colour",   4 );
+	shader->bindDefaultAttributeLocations();
 	shader->compile();
 	if(!shader->isCompiled()) {
 		char buf[2048];
@@ -298,6 +294,18 @@ Shader* Shader::create(const char* vsrc, const char* fsrc, const char* def) {
 	}
 	return shader;
 
+}
+
+void Shader::bindDefaultAttributeLocations() {
+	bindAttributeLocation( "vertex",   0 );
+	bindAttributeLocation( "normal",   1 );
+	bindAttributeLocation( "tangent",  2 );
+	bindAttributeLocation( "texCoord", 3 );
+	bindAttributeLocation( "colour",   4 );
+	bindAttributeLocation( "indices",  5 );
+	bindAttributeLocation( "weights",  6 );
+	bindOutput("buf0", 0);
+	bindOutput("buf1", 1);
 }
 
 // ----------------------------------------------------------------------------------------- //

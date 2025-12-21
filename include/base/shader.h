@@ -77,6 +77,7 @@ class Shader {
 	int getLog(char* buffer, int size) const;	// Get compile log
 
 	// Attributes
+	void bindDefaultAttributeLocations();
 	void bindAttributeLocation(const char* name, int index);
 	int  getAttributeLocation(const char* name) const;
 	void setAttributePointer(int loc, int size, int type, size_t stride, AttributeMode mode, const void *pointer) const;
