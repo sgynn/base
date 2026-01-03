@@ -297,20 +297,17 @@ class Root {
 
 	// Widget creation. skin can be a skin or template name
 	template<typename T=Widget> T* createWidget(const Rect& r, const char* skin, const char* name=0) const {
-		Widget* w = createWidget(skin, T::staticName(), name);
-		if(!w) return nullptr;
-		w->setPosition(r.x, r.y);
-		w->setSize(r.width, r.height);
-		return cast<T>(w);
+		T* w = createWidget<T>(skin, name);
+		if(w) w->setRect(r);
+		return w;
 	}
 	template<typename T=Widget> T* createWidget(const float* r, const char* skin, const char* name=0) const {
-		Widget* w = createWidget(skin, T::staticName(), name);
-		if(!w) return nullptr;
-		w->setPositionFloat(r[0], r[1], r[2], r[3]);
-		return cast<T>(w);
+		T* w = createWidget<T>(skin, name);
+		if(w) w->setPositionFloat(r[0], r[1], r[2], r[3]);
+		return w;
 	}
 	template<typename T=Widget> T* createWidget(const char* skin, const char* name=0) const {
-		bool forceType = T::staticType() != Widget::staticType();
+		bool forceType = T::staticType() != Widget::staticType() && T::staticType() != Widget::staticType();
 		Widget* w = createWidget(skin, T::staticName(), name, forceType);
 		return cast<T>(w);
 	}
