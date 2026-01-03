@@ -258,6 +258,7 @@ void FileDialog::pressConfirm(Button*) {
 FileDialog* FileDialog::create(Root* gui) {
 	// Create a default layout
 	// Required templates: window, listbox, editbox, button, iconbutton
+	Root::registerClass<FileDialog>();
 	FileDialog* d = gui->createWidget<FileDialog>(Rect(100,100,500,228), "window");
 	if(!d) {
 		printf("Failed to create FileDialog: Missing template 'window'\n");
@@ -272,6 +273,7 @@ FileDialog* FileDialog::create(Root* gui) {
 	d->createChild<Textbox>(Rect(0,180,408,20), "editbox", "filename", "blr");
 	d->createChild<Button>(Rect(0,180,80,20), "button", "confirm", "br");
 	d->initialise(gui, {});
+	d->setVisible(false);
 	return d;
 }
 
