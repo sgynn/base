@@ -73,8 +73,8 @@ void ItemList::countChanged() {
 	else itemCountChanged();
 }
 void ItemList::selectionChanged() {
-	if(m_shared) for(ItemList* list : *m_shared) list->itemSelectionChanged();
-	else itemSelectionChanged();
+	if(m_shared) for(ItemList* list : *m_shared) list->itemSelectionChanged(this);
+	else itemSelectionChanged(this);
 }
 
 void ItemList::clearItems() {
@@ -472,8 +472,8 @@ void Listbox::updateCache(bool full) {
 	}
 }
 
-void Listbox::itemSelectionChanged() {
-	updateCache(false);
+void Listbox::itemSelectionChanged(ItemList* src) {
+	if(src == this) updateCache(false);
 }
 
 ListItem* Listbox::getItemAt(const Point& p) {
@@ -741,3 +741,7 @@ void Combobox::selectItem(int index, bool events) {
 	if(events && eventSelected && index>=0 && index<(int)getItemCount()) eventSelected(this, getItem(index));
 }
 
+void Combobox::clearSelection() {
+	ItemList::clearSelection();
+	m_list->clearSelection();
+}

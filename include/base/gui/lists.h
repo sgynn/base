@@ -133,7 +133,7 @@ class ItemList {
 	void initialise(const PropertyMap&);
 	void updateItemIndices(uint from=0);
 	virtual void itemCountChanged() {}
-	virtual void itemSelectionChanged() {}
+	virtual void itemSelectionChanged(ItemList* src) {}
 	
 	void addItemData(ListItem& item) {}
 	template<class T, class ...R> void addItemData(ListItem& item, const T& value,  R...more) {
@@ -184,7 +184,7 @@ class Listbox : public Widget, public ItemList {
 	void initialise(const Root*, const PropertyMap&) override;
 	void scrollChanged(Scrollbar*, int);
 	void itemCountChanged() override;
-	void itemSelectionChanged() override;
+	void itemSelectionChanged(ItemList* src) override;
 	void onMouseButton(const Point&, int, int) override;
 	bool onMouseWheel(int) override;
 	void bindEvents(Widget* itemWidget);
@@ -216,6 +216,7 @@ class Combobox : public Widget, public ItemList {
 	void setText(const char* text);
 	const char* getText() const;
 	void selectItem(int index, bool fireEvents=false);
+	void clearSelection();
 
 	public:
 	Delegate<void(Combobox*, ListItem&)>     eventSelected;
