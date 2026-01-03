@@ -144,7 +144,7 @@ void FileDialog::makeFileName() {
 		const char* e = name + sl - el - 1;
 		// Add extension
 		if(*e != '.' || strcmp(e+1, m_extension) != 0) {
-			m_filename = String::format("%s/%s.%s", dir, name, m_extension);
+			m_filename = String::format("%s/%s.%s", dir, name, m_extension.str());
 			return;
 		}
 	}
