@@ -81,7 +81,7 @@ static void readPaethFilter(byte* data, unsigned length, int depth, const byte* 
 }
 
 template<class ReadFunc>
-Image readPNGFile(ReadFunc&& read) {
+Image readPNGFile(ReadFunc&& read, bool singlePixel = false) {
 	// Check signiture
 	const byte* signiture = read(8);
 	if(memcmp(signiture, magic, 8) != 0) {
@@ -154,12 +154,13 @@ Image readPNGFile(ReadFunc&& read) {
 				break;
 			}
 			if(format == Image::INVALID) break;
+			if(singlePixel) header.width = header.height = 1;
 			rowSize = (header.width * bitsPerPixel + 7) >> 3;
 			rowBuffer = new byte[rowSize + 1];
 			pixels = new byte[rowSize * header.height];
 		}
 		else if(memcmp(chunk.type, "IDAT", 4)==0) { // Pixel data
-			if(stream.total_out) break; // Error - all IDAT blocks are handles together
+			if(stream.total_out) break; // Error - all IDAT blocks are handled together
 			bool fail = false;
 			stream.next_in = chunk.data;
 			stream.avail_in = chunk.length;
@@ -184,6 +185,7 @@ Image readPNGFile(ReadFunc&& read) {
 						fail = true;
 						break;
 					}
+					if(singlePixel) break;
 				}
 				if(fail) break;
 				
@@ -211,6 +213,23 @@ Image readPNGFile(ReadFunc&& read) {
 				paletteAlpha = new byte[chunk.length];
 				memcpy(paletteAlpha, chunk.data, chunk.length);
 			}
+		}
+		else if(memcmp(chunk.type, "bKGD", 4)==0 && singlePixel) { // Background colour
+			if(header.colourType == PNGColour::Lum || header.colourType == PNGColour::LumAlpha) { // Greyscale
+				memcpy(pixels, chunk.data, bitsPerPixel/8);
+			}
+			else if(header.colourType == PNGColour::Indexed) {
+				pixels[0] = chunk.data[0];
+			}
+			else { // RGB
+				if(header.bitDepth == 16) memcpy(pixels, chunk.data, bitsPerPixel/8);
+				else {
+					pixels[0] = chunk.data[0];
+					pixels[1] = chunk.data[2];
+					pixels[2] = chunk.data[4];
+				}
+			}
+			break;
 		}
 		else if(memcmp(chunk.type, "IEND", 4)==0) {
 			break;
@@ -305,7 +324,7 @@ Image PNG::load(const char* file) {
 	return r;
 }
 
-Image PNG::parse(const char* data, unsigned size) {
+Image PNG::parse(const char* data, unsigned size, bool singlePixel) {
 	if(size<4) return Image();
 	const byte* stream = (const byte*)data;
 	const byte* end = stream + size;
@@ -314,7 +333,7 @@ Image PNG::parse(const char* data, unsigned size) {
 		stream += len;
 		if(stream > end) return end-len; // error - end of stream
 		return r;
-	});
+	}, singlePixel);
 }
 
 bool PNG::save(const base::Image& image, const char* file) {
@@ -333,9 +352,4 @@ bool PNG::save(const base::Image& image, const char* file) {
 	mz_free(data);
 	return true;
 }
-
-// TODO:
-// - Write getBackground() function - return backgroundColour, or the first pixel (placeholder for BT stream)
-// 		dds loader needs this functionality too
-
 

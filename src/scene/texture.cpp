@@ -7,6 +7,7 @@ using namespace base;
 
 Texture::Format Texture::getFormat(int channels, int bits, bool real) {
 	if(channels < 1 || channels > 4) return NONE;
+	bits /= channels; // bits per channel
 	if(real) {
 		if(bits == 16) return (Format)(R16F + channels - 1);
 		if(bits == 32) return (Format)(R32F + channels - 1);

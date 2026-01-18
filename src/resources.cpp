@@ -152,8 +152,17 @@ Texture* TextureLoader::create(const char* name, Manager* manager) {
 				if(separator != '.' && separator != '-' && separator != '_' && separator != ' ') return false;
 				return strncmp(end - n, s, n)==0;
 			};
-			uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0xff8080: 0xffffff;
-			Texture* tex = new Texture(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex);
+			
+			Texture* tex = nullptr;
+			if(ext==".png") {
+				File data = file.read();
+				Image pixel = PNG::parse(data, data.size(), true);
+				if(pixel) tex = createTexture(pixel);
+			}
+			if(!tex) {
+				uint hex = suffix("n", 1) || suffix("norm", 4) || suffix("normal", 6)? 0xff8080: 0xffffff;
+				tex = new Texture(Texture::TEX2D, 1, 1, 1, Texture::RGB8, &hex);
+			}
 			MutexLock lock(resourceMutex);
 			m_requests.push_back({tex, file});
 			return tex;
