@@ -149,7 +149,7 @@ void FileDialog::makeFileName() {
 		}
 	}
 	// Extension already there
-	m_filename = String::format(m_filename, "%s/%s", dir, name);
+	m_filename = String::format("%s/%s", dir, name);
 }
 
 void FileDialog::showOpen() {
