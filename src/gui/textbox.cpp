@@ -30,6 +30,7 @@ void Textbox::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("password")) m_password = p["password"][0];
 	if(p.contains("suffix")) setSuffix(p["suffix"]);
 	if(p.contains("hint")) setHint(p["hint"]);
+	p.readValue("submit", m_submitAction);
 	if(m_skin) m_offset = m_skin->getState(0).textPos;
 	m_selectRect.position() = getPosition() + m_offset;
 }
@@ -253,7 +254,7 @@ void Textbox::onLoseFocus() {
 
 void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 	if(code == base::KEY_ENTER && !m_multiline) {
-		if(m_submitAction == ClearFocus) getRoot()->getRootWidget()->setFocus(); 
+		if(m_submitAction != KeepFocus) getRoot()->getRootWidget()->setFocus(); 
 		if(eventSubmit) eventSubmit(this);
 	}
 	else if(code == base::KEY_LEFT)  select(m_cursor-1, 0, mask==KeyMask::Shift);

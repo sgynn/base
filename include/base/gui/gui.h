@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cmath>
 #include <typeinfo>
+#include <type_traits>
 
 class Matrix;
 namespace base { class XMLElement; }
@@ -51,6 +52,12 @@ class PropertyMap : public base::HashMap<const char*> {
 	bool readValue(const char* key, bool& value) const  { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
 	bool readValue(const char* key, uint& value) const  { if(const char* s=get(key,0)) { char*e; if(s[0]=='#') value = strtoul(s+1, &e, 16); else value = strtoul(s,&e,10); return true; } return false; }
 	bool readValue(const char* key, int& value) const   { if(const char* s=get(key,0)) { value = atoi(s); return true; } return false; }
+
+	template<typename T>
+	bool readValue(const char* key, T& value) const {
+		//static_assert(std::is_same_v<std::underlying_type_t<T>, int>);
+		return readValue(key, *(std::underlying_type_t<T>*)&value);
+	}
 
 	template<typename T> 
 	T getValue(const char* key, T fallback={}) const { readValue(key, fallback); return fallback; }
