@@ -100,15 +100,16 @@ AnimationKey getIdleAnimation(Model* model) {
 	return AnimationKey();
 }
 
-Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, Material* material, int queue) {
+Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, Material* material, int queue, float* customData) {
 	DrawableMesh* d = new DrawableMesh(mesh, material);
 	node->attach(d);
 	d->setRenderQueue(queue);
+	if(customData) d->setCustom(customData);
 	return d;
 }
 
-Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, const char* material, int queue) {
-	return attachMesh(node, mesh, loadMaterial(material), queue);
+Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, const char* material, int queue, float* customData) {
+	return attachMesh(node, mesh, loadMaterial(material), queue, customData);
 }
 
 
