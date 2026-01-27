@@ -99,8 +99,8 @@ class FoliageLayer : protected base::SceneNode {
 	typedef Point Index;
 	typedef std::vector<Index> IndexList;
 	enum ChunkState { EMPTY, GENERATING, GENERATED, COMPLETE };
-	struct Geometry { base::Mesh* mesh; base::HardwareVertexBuffer* instances; size_t count; };
-	struct Chunk { base::DrawableMesh* drawable; Geometry geometry; ChunkState state; bool active; };
+	struct Geometry { base::Mesh* mesh = nullptr; base::HardwareVertexBuffer* instances = nullptr; size_t count = 0; };
+	struct Chunk { base::DrawableMesh* drawable = nullptr; Geometry geometry, swap; ChunkState state = EMPTY; bool active = false; };
 	std::map<Index, Chunk*> m_chunks;
 
 	protected:
@@ -110,7 +110,7 @@ class FoliageLayer : protected base::SceneNode {
 	int generatePoints(const Index& index, int count, vec3* corners, const vec3& up, PointList& out) const;
 	int generatePoints(const Index& index, PointList& points, vec3& up) const;
 	virtual Geometry generateGeometry(const Point&) const = 0;
-	virtual void destroyChunk(Chunk&) const {};
+	virtual void destroyGeometry(Geometry&) const {};
 	void regenerateChunk(const Index&, Chunk&);
 	bool deleteChunk(Chunk*);
 	void deleteMap(FoliageMap*&);
@@ -133,6 +133,7 @@ class FoliageInstanceLayer : public FoliageLayer {
 	void restoreItem(const FoliageItemRef& item);
 	protected:
 	virtual Geometry generateGeometry(const Index& page) const override;
+	virtual void destroyGeometry(Geometry&) const override;
 	protected:
 	base::Mesh* m_mesh;
 	Rangef              m_alignRange; // RELATIVE: lerp range between normal and up vector, ABSOLUTE: lerp between sideways and up.
@@ -151,7 +152,7 @@ class GrassLayer : public FoliageLayer {
 	void setScaleMap(FoliageMap* map, float low=0, float high=1);
 	protected:
 	virtual Geometry generateGeometry(const Index& page) const override;
-	virtual void destroyChunk(Chunk&) const override;
+	virtual void destroyGeometry(Geometry&) const override;
 	protected:
 	vec2        m_size;
 	int         m_tiles;

@@ -102,11 +102,6 @@ void FoliageLayer::clear() {
 void FoliageLayer::regenerate() {
 	for(auto& i:m_chunks) {
 		if(i.second->state != EMPTY) {
-			detach(i.second->drawable);
-			delete i.second->drawable;
-			i.second->drawable = 0;
-			destroyChunk(*i.second);
-			i.second->state = EMPTY;
 			m_parent->queueChunk(this, i.first, i.second);
 		}
 	}
@@ -118,11 +113,6 @@ void FoliageLayer::regenerate(const vec3& centre, float radius) {
 	for(const Index& index: out) {
 		auto i = m_chunks.find(index);
 		if(i != m_chunks.end() && i->second->state != EMPTY) {
-			detach(i->second->drawable);
-			delete i->second->drawable;
-			i->second->drawable = 0;
-			destroyChunk(*i->second);
-			i->second->state = EMPTY;
 			m_parent->queueChunk(this, i->first, i->second);
 		}
 	}
@@ -132,6 +122,7 @@ FoliageMap* FoliageLayer::referenceMap(FoliageMap* map) {
 	if(map) ++map->m_ref;
 	return map;
 }
+
 void FoliageLayer::deleteMap(FoliageMap*& map) {
 	if(map && --map->m_ref<=0) delete map;
 	map = 0;
@@ -266,27 +257,42 @@ void FoliageLayer::update(const vec3& context) {
 	for(Index& index: active) {
 		auto c = m_chunks.find(index);
 		if(c == m_chunks.end()) {
-			Chunk* chunk = new Chunk{0, Geometry{0,0,0}, EMPTY, false};
+			Chunk* chunk = new Chunk();
 			c = m_chunks.insert( std::make_pair(index, chunk) ).first;
 			m_parent->queueChunk(this, index, chunk);
 		}
-		c->second->active = true;
+		Chunk& chunk = *c->second;
+		chunk.active = true;
 		// Completed
-		if(c->second->state == GENERATED) {
-			c->second->state = COMPLETE;
-			Geometry& g = c->second->geometry;
+		if(chunk.state == GENERATED) {
+			if(!m_parent->m_mutex.tryLock()) continue;
+			Geometry g = chunk.swap;
+			chunk.swap = {};
+			m_parent->m_mutex.unlock();
+
 			if(g.mesh) {
 				g.mesh->getVertexBuffer()->createBuffer();
 				g.mesh->getIndexBuffer()->createBuffer();
-				DrawableMesh* d = c->second->drawable = new DrawableMesh(g.mesh, m_material);
+				if(chunk.drawable) chunk.drawable->setMesh(g.mesh);
+				else {
+					chunk.drawable = new DrawableMesh(g.mesh, m_material);
+					attach(chunk.drawable);
+				}
 
 				if(g.instances) {
 					g.instances->createBuffer();
-					d->setInstanceBuffer(g.instances);
-					d->setInstanceCount(g.count);
+					chunk.drawable->setInstanceBuffer(g.instances);
+					chunk.drawable->setInstanceCount(g.count);
 				}
-				attach(d);
 			}
+			else {
+				detach(chunk.drawable);
+				delete chunk.drawable;
+				chunk.drawable = nullptr;
+			}
+			destroyGeometry(chunk.geometry);
+			chunk.geometry = g;
+			chunk.state = COMPLETE;
 		}
 	}
 	// delete inactive chunks
@@ -303,7 +309,8 @@ void FoliageLayer::update(const vec3& context) {
 bool FoliageLayer::deleteChunk(Chunk* chunk) {
 	if(m_parent->cancelChunk(chunk)) {
 		delete chunk->drawable;
-		destroyChunk(*chunk);
+		destroyGeometry(chunk->geometry);
+		destroyGeometry(chunk->swap);
 		delete chunk;
 		return true;
 	}
@@ -420,6 +427,14 @@ const std::vector<FoliageItemRef> FoliageInstanceLayer::getItems(const vec3& poi
 }
 
 
+void FoliageInstanceLayer::destroyGeometry(Geometry& geometry) const {
+	if(geometry.mesh) {
+		delete geometry.instances;
+		geometry.mesh = nullptr;
+		geometry.instances = nullptr;
+		geometry.count = 0;
+	}
+}
 
 
 // ===================================================================================================== //
@@ -513,10 +528,11 @@ FoliageLayer::Geometry GrassLayer::generateGeometry(const Index& index) const {
 	return Geometry{ mesh, nullptr, 0 };
 }
 
-void GrassLayer::destroyChunk(Chunk& chunk) const {
-	if(chunk.geometry.mesh) {
-		delete chunk.geometry.mesh;
-		chunk.geometry.mesh = 0;
+void GrassLayer::destroyGeometry(Geometry& geometry) const {
+	if(geometry.mesh) {
+		delete geometry.mesh;
+		geometry.mesh = nullptr;
+		geometry.count = 0;
 	}
 }
 
@@ -563,7 +579,7 @@ void FoliageSystem::update(const vec3& context) {
 	// Single thread version
 	if(!m_threads) {
 		for(int i=0; i<10 && !m_queue.empty(); ++i) {
-			m_queue.back().chunk->geometry = m_queue.back().layer->generateGeometry(m_queue.back().index);
+			m_queue.back().chunk->swap = m_queue.back().layer->generateGeometry(m_queue.back().index);
 			m_queue.back().chunk->state = FoliageLayer::GENERATED;
 			m_queue.pop_back();
 		}
@@ -576,10 +592,10 @@ void FoliageSystem::update(const vec3& context) {
 // ----------------------------------------------------------------------------------------------------- //
 
 void FoliageSystem::queueChunk(FoliageLayer* layer, const Index& index, FoliageLayer::Chunk* chunk) {
-	MutexLock scopedLock(m_mutex);
 	static vec3 corners[5];
 	getCorners(index, layer->m_chunkSize, corners, corners[4]);
 	vec3 centre = (corners[0] + corners[2]) * 0.5;
+	MutexLock scopedLock(m_mutex);
 	m_queue.push_back( GenChunk { layer, index, chunk, centre } );
 	m_sorted = false;
 }
@@ -610,8 +626,13 @@ void FoliageSystem::threadFunc(int index) {
 
 		// Generate this chunk
 		if(current.chunk) {
-			current.chunk->geometry = current.layer->generateGeometry(current.index);
+			FoliageLayer::Geometry g = current.layer->generateGeometry(current.index);
+				
+			m_mutex.lock();
+			current.layer->destroyGeometry(current.chunk->swap);
+			current.chunk->swap = g;
 			current.chunk->state = FoliageLayer::GENERATED;
+			m_mutex.unlock();
 		}
 		else Thread::sleep(1);
 	}
