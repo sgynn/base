@@ -124,10 +124,23 @@ void FontLoader::addImage(int w, int h, const unsigned char* pixels) {
 		m_font->m_textureSize.set(w, h);
 	}
 	else {
-		// Resize image
-		// copy old data
-		// set new data
-		// move glyph rects
+		Point size = m_font->m_textureSize;
+		unsigned char* existing = new unsigned char[size.x * size.y * 4];
+		glBindTexture(GL_TEXTURE_2D, m_font->m_texture);
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, existing);
+		// Rellocate image
+		Point ns(std::max(w, size.x), size.y + h);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ns.x, ns.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, GL_RGBA, GL_UNSIGNED_BYTE, existing);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, size.y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		m_font->m_textureSize = ns;
+		
+		// Shift glyphs
+		for(Font::GlyphRange& range: m_face->groups) {
+			for(Rect& r: range.glyphs) {
+				r.y += size.y;
+			}
+		}
 	}
 }
 
