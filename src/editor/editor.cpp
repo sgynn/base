@@ -20,6 +20,7 @@
 #include <base/game.h>
 #include <base/input.h>
 #include <base/opengl.h>
+#include <base/shader.h>
 #include <base/png.h>
 #include <cstdio>
 
@@ -333,7 +334,10 @@ SceneEditor::TraceResult SceneEditor::trace(const Point& pos) {
 		else {
 			// Render drawables to selection buffer
 			for(auto& d: n->attachments()) {
-				if(d->getMaterial() && !d->getMaterial()->getPass(0)->state.depthWrite) continue;
+				if(!d->getMaterial()) continue;
+				Pass* pass = d->getMaterial()->getPass(0);
+				if(!pass || !pass->getShader() || !pass->getShader()->isCompiled()) continue;
+				if(!pass->state.depthWrite) continue;
 
 				items.push_back({n, d});
 				glStencilFunc(GL_ALWAYS, items.size()&0xff, 0xff);
