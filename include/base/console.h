@@ -125,8 +125,6 @@ class Console {
 //// Inlines ////
 inline bool        Console::isVisible() const     { return m_height>0; }
 inline void        Console::setVisible(bool v)  { v? show(): hide(); }
-inline void        Console::show()              { m_sliding = 1; }
-inline void        Console::hide()              { m_sliding = -1; }
 
 inline script::Variable&  Console::root() { return m_root; }
 inline script::Variable&  Console::get(const char* name) { return m_root.find(name); }

@@ -8,7 +8,7 @@ namespace base {
 
 class ConsoleComponent : public GameStateComponent {
 	public:
-	ConsoleComponent(const script::Variable& root, gui::Font* font) : GameStateComponent(-90, 90, PERSISTENT) {
+	ConsoleComponent(const script::Variable& root, gui::Font* font=nullptr) : GameStateComponent(-90, 90, PERSISTENT) {
 		m_console = new Console(font, Point(FrameBuffer::Screen.width(), 400));
 		if(root.isObject()) m_console->root() = root;
 	}

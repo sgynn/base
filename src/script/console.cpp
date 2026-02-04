@@ -109,6 +109,14 @@ void Console::print(const char* s) {
 }
 
 
+void Console::show() {
+	m_sliding = 1;
+	if(!m_font) m_font = new gui::Font("helvetica", 24);
+}
+void Console::hide() {
+	m_sliding = -1;
+}
+
 
 void Console::update() {
 	// Update buffer
