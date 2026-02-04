@@ -12,7 +12,7 @@ class CompositorGraph;
 
 class SceneComponent : public base::GameStateComponent {
 	public:
-	SceneComponent(Scene* scene, Camera* camera, CompositorGraph* graph=0);
+	SceneComponent(Scene* scene, Camera* camera, CompositorGraph* graph=0, bool updateCamera=false);
 	~SceneComponent();
 	void update() override;
 	void draw() override;
@@ -21,14 +21,15 @@ class SceneComponent : public base::GameStateComponent {
 	Workspace*& getWorkspace() { return m_workspace; }
 	Renderer* getRenderer() { return m_renderer; }
 	Scene* getScene() { return m_scene; }
-	void setCamera(Camera* cam, bool update=true);
+	void setCamera(Camera* cam);
+	void setCamera(Camera* cam, bool update);
 	static int translateCameraUpdateFlags(int componentFlags);
 	private:
 	Scene*     m_scene;
 	Workspace* m_workspace;
 	Renderer*  m_renderer;
 	Camera*    m_camera;
-	bool       m_updateCamera = false;
+	bool       m_updateCamera;
 	float      m_time = 0;
 };
 

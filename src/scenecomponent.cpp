@@ -10,7 +10,13 @@
 
 using namespace base;
 
-SceneComponent::SceneComponent(Scene* scene, Camera* camera, CompositorGraph* graph) : GameStateComponent(80), m_scene(scene), m_workspace(0), m_camera(camera) {
+SceneComponent::SceneComponent(Scene* scene, Camera* camera, CompositorGraph* graph, bool updateCamera)
+	: GameStateComponent(80)
+	, m_scene(scene)
+	, m_workspace(0)
+	, m_camera(camera)
+	, m_updateCamera(updateCamera && dynamic_cast<CameraBase*>(camera))
+{
 	m_renderer = new Renderer;
 	DebugGeometryManager::getInstance()->initialise(scene, 10, false);
 	setCompositor(graph);
@@ -53,6 +59,11 @@ void SceneComponent::resized(const Point& s) {
 		printf("Window resized to %dx%d - rebuilding compositor targets\n", s.x, s.y);
 		m_workspace->compile(s.x, s.y);
 	}
+}
+
+void SceneComponent::setCamera(Camera* cam) {
+	m_camera = cam;
+	m_workspace->setCamera(cam);
 }
 
 void SceneComponent::setCamera(Camera* cam, bool update) {
