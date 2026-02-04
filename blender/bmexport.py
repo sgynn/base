@@ -474,14 +474,14 @@ def export_animations(context, config, skeleton, xml):
 def same(a,b): return abs(a-b)<0.00001
 
 def export_action(context, skeleton, action, name, xml):
-    print("Context", context.mode, context.active_object.name);
+    #print("Context", context.mode, context.active_object.name);
     skeleton.animation_data.action = None
     bpy.ops.pose.user_transforms_clear(False)
     skeleton.animation_data.action = action
+    skeleton.animation_data.action_slot = action.slots[0] # Blender 4.4+ now has slots. Who knows
 
     mrot = Matrix.Rotation(radians(-90), 4, 'X') # Up axis fix
     qrot = mrot.to_quaternion()
-    print(action.name)
 
     bpy.ops.pose.select_all(action='SELECT')
     bpy.ops.pose.transforms_clear()
@@ -493,7 +493,12 @@ def export_action(context, skeleton, action, name, xml):
             hasLocation = any('location' in channel.data_path for channel in group.channels)
             hasRotation = any('rotation' in channel.data_path for channel in group.channels)
             hasScale    = any('scale' in channel.data_path for channel in group.channels)
-            data.append( (bone, KeySet(bone.name, hasLocation, hasRotation, hasScale)) )
+            if hasLocation or hasRotation or hasScale:
+                data.append( (bone, KeySet(bone.name, hasLocation, hasRotation, hasScale)) )
+
+    if not data:
+        print(action.name + ' has no animation data')
+        return
 
     #  Get key data
     start, end = action.frame_range
@@ -517,6 +522,8 @@ def export_action(context, skeleton, action, name, xml):
         optimise_keys(keys.position, (0,0,0),   lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]))
         optimise_keys(keys.rotation, (1,0,0,0), lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]) and same(a[3],b[3]))
         optimise_keys(keys.scale,    (1,1,1),   lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]))
+
+    print(action.name + ': ' + str(length) + ' frames, ' + str(len(data)) + ' bones')
 
     # Write xml
     anim = append_element(xml.firstChild, "animation")
