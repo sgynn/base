@@ -116,12 +116,31 @@ Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, const char* material, i
 // --------------------------------------------------------------------------- //
 
 
-MaterialSettingsDef base::world::MaterialSettings = { "object.mat", {{"diffuseMap", "%.*s.png"}, {"normalMap", "%.*s_n.png"}} };
+MaterialSettingsDef base::world::MaterialSettings = {
+	{{"object.mat", nullptr, 0}},
+	{{"diffuseMap", "%.*s.png"}, {"normalMap", "%.*s_n.png"}} 
+};
 
-static HashMap<std::vector<const char*>> textureSearchPatterns;
+void world::addBaseMaterial(const char* mat, const char* pattern, int queue) {
+	if(pattern && strcmp(pattern, "*")==0) pattern = nullptr;
+	for(auto& i: MaterialSettings.materials) {
+		if(i.pattern == pattern || (i.pattern && pattern && strcmp(i.pattern, pattern)==0)) {
+			i.file = mat;
+			return;
+		}
+	}
+	MaterialSettings.materials.push_back({mat, pattern, queue});
+}
+
 void world::addTextureSearchPattern(const char* var, const char* pattern) {
-	assert(strstr(pattern, "%*s")); // Texture search pattern must be of the form "%*s_suffix.png"
-	textureSearchPatterns[var].push_back(pattern);
+	assert(strstr(pattern, "%.*s")); // Texture search pattern must be of the form "%.*s_suffix.png"
+	for(auto& i: MaterialSettings.textures) {
+		if(strcmp(i.pattern, pattern)==0) {
+			i.name = var;
+			return;
+		}
+	}
+	MaterialSettings.textures.push_back({var, pattern});
 }
 
 Material* world::loadMaterial(const char* name, int weights, const char* base) {
@@ -140,7 +159,10 @@ Material* world::loadMaterial(const char* name, int weights, const char* base) {
 		}
 
 		if(!mat) {
-			mat = loadMaterial(base, weights)->clone();
+			if(!base) for(const auto& p: MaterialSettings.materials) {
+				if(!p.pattern || String::match(name, p.pattern)) base = p.file;
+			}
+			mat = loadMaterial(nullptr, weights, base)->clone();
 			assert(mat);
 			res.materials.add(matName, mat);
 
@@ -162,17 +184,10 @@ Material* world::loadMaterial(const char* name, int weights, const char* base) {
 					return tex;
 				};
 
-				if(textureSearchPatterns.empty()) {
-					//findTexture("%.*s.png", "diffuseMap") || findTexture("%.*s.dds", "diffuseMap");
-					//findTexture("%.*s_n.png", "normalMap") || findTexture("%.*s_n.dds", "normalMap");
-					for(const auto& m: MaterialSettings.textures) {
-						findTexture(m.pattern, m.name);
-					}
-				}
-				else for(const auto& p: textureSearchPatterns) {
-					for(const char* pattern: p.value) {
-						if(findTexture(pattern, p.key)) break;
-					}
+				//findTexture("%.*s.png", "diffuseMap") || findTexture("%.*s.dds", "diffuseMap");
+				//findTexture("%.*s_n.png", "normalMap") || findTexture("%.*s_n.dds", "normalMap");
+				for(const auto& m: MaterialSettings.textures) {
+					findTexture(m.pattern, m.name);
 				}
 			}
 
@@ -181,7 +196,7 @@ Material* world::loadMaterial(const char* name, int weights, const char* base) {
 		return mat;
 	}
 	else {
-		if(!base) base = MaterialSettings.baseMaterial;
+		if(!base) base = MaterialSettings.materials[0].file;
 		Material* baseMaterial = res.materials.get(base);
 		if(weights==0 || !baseMaterial) return baseMaterial;
 		else {
@@ -215,15 +230,6 @@ Material* world::loadMaterial(const char* name, int weights, const char* base) {
 				pass->compile();
 			}
 			return mat;
-
-			/*
-			sprintf(buffer, "object.glsl|SKINNED %d", weights); // FIXME
-			Shader* newShader = res.shaders.get(buffer);
-			mat->getPass(0)->getParameters().setAuto("boneMatrices", AUTO_SKIN_MATRICES);
-			mat->getPass(0)->setShader(newShader);
-			mat->getPass(0)->compile();
-			return mat;
-			*/
 		}
 	}
 }
@@ -268,6 +274,9 @@ Model* world::attachModel(SceneNode* node, const char* file, AnimationController
 					}
 				}
 				drawable->setupSkinData((*animated)->getSkeleton());
+			}
+			for(const auto& m: MaterialSettings.materials) {
+				if(!m.pattern || String::match(materialName, m.pattern)) drawable->setRenderQueue(m.queue);
 			}
 			node->attach(drawable);
 		}

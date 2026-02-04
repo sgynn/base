@@ -37,13 +37,15 @@ struct ObjectTraceResult { float t=-1; vec3 normal; operator bool()const{return 
 namespace world {
 
 	struct TexturePattern { const char* name; const char* pattern; };
+	struct BaseMaterialEntry { const char* file; const char* pattern; int queue; };
 	extern struct MaterialSettingsDef {
-		const char* baseMaterial;
+		std::vector<BaseMaterialEntry> materials;
 		std::vector<TexturePattern> textures;
 	} MaterialSettings;
 
 
 	// Helper functions //
+	extern void addBaseMaterial(const char* filename, const char* pattern=nullptr, int renderQueue=0);
 	extern void addTextureSearchPattern(const char* variable, const char* pattern);
 	extern Material* loadMaterial(const char* name, int weights=0, const char* base=0);
 	inline Material* loadMaterial(const char* name, const char* base) { return loadMaterial(name, 0, base); }
