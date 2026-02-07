@@ -103,6 +103,7 @@ set(audio
 	src/audio/loader.cpp
 	src/audio/object.cpp
 	src/audio/source.cpp
+	src/audio/log.cpp
 )
 
 set(particles
