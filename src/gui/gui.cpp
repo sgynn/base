@@ -119,7 +119,7 @@ Widget* Root::createWidget(const char* skin, const char* type, const char* name,
 		return 0;
 	}
 	w->m_name = name;
-	w->m_states &= ~0x20;	// Not template
+	w->m_isTemplate = 0; // not a template
 	return w;
 }
 
@@ -287,7 +287,7 @@ void Root::draw(const Matrix& transform, Widget* widget, bool depth) const {
 
 void Root::startAnimator(Animator* a) {
 	assert(a->getWidget()->getRoot() == this); // Must be in root
-	a->getWidget()->m_states |= 0x800; // HasAnimator bit
+	a->getWidget()->m_hasAnimatior = 1;
 	m_animators.push_back(a);
 }
 
@@ -302,7 +302,7 @@ void Root::updateAnimators(float time) {
 
 			bool remain = false;
 			for(const Animator* a: m_animators) if(a->getWidget() == target) remain = true;
-			if(!remain) target->m_states &= ~0x800;
+			if(!remain) target->m_hasAnimatior = 0;
 		}
 	}
 }
@@ -316,7 +316,7 @@ void Root::deleteAnimators(Widget* target) {
 		}
 		else ++it;
 	}
-	target->m_states &= ~0x800;
+	target->m_hasAnimatior = 0;
 }
 
 // ------------- //
@@ -413,7 +413,14 @@ Widget* Widget::clone(const char* newType) const {
 		w->m_relative = new float[4];
 		memcpy(w->m_relative, m_relative, 4*sizeof(float));
 	}
-	w->m_states = m_states;
+	w->m_visible = m_visible;
+	w->m_enabled = m_enabled;
+	w->m_tangible = m_tangible;
+	w->m_selected = m_selected;
+	w->m_isTemplate = m_isTemplate;
+	w->m_inheritState = m_inheritState;
+	w->m_autosize = m_autosize;
+	w->m_overrideColour = m_overrideColour;
 	w->m_colour = m_colour;
 	w->m_parent = 0;
 	w->m_root = 0;
@@ -441,14 +448,23 @@ Widget::Widget()
 	, m_skin(nullptr)
 	, m_colour(-1)
 	, m_anchor(0)
+	, m_skipTemplate(0)
 	, m_layout(nullptr)
 	, m_relative(0)
-	, m_states(0xf)
-	, m_skipTemplate(0)
 	, m_parent(nullptr)
 	, m_root(nullptr)
 {
 	m_client = this;
+	m_visible = 1;
+	m_enabled = 1;
+	m_tangible = 3;
+	m_selected = 0;
+	m_isTemplate = 0;
+	m_inheritState = 0;
+	m_autosize = 0;
+	m_overrideColour = 0;
+	m_layoutPaused = 0;
+	m_hasAnimatior = 0;
 	#ifdef WIDGET_LEAK_CHECK
 	s_widgetLeakList.insert(this);
 	#endif
@@ -688,7 +704,7 @@ void Widget::notifyChange() {
 
 void Widget::setVisible(bool v) { 
 	if(v == isVisible()) return;
-	m_states = v? m_states|1: m_states&~1;
+	m_visible = v;
 	notifyChange();
 	if(Widget* p = getParent()) p->onChildChanged(this);
 	// Clear focus if hidden
@@ -697,34 +713,34 @@ void Widget::setVisible(bool v) {
 	}
 }
 
-void Widget::setEnabled(bool v) { m_states = v? m_states|2: m_states&~2; }
-void Widget::setTangible(Tangible t) { m_states = (m_states&~0xc) | ((int)t << 2); }
-void Widget::setSelected(bool v) { m_states = v? m_states|0x10: m_states&~0x10; }
-void Widget::setInheritState(bool v) { m_states = v? m_states|0x40: m_states&~0x40; }
-void Widget::setAsTemplate() { m_states |= 0x20; }
+void Widget::setEnabled(bool v) { m_enabled = v; }
+void Widget::setTangible(Tangible t) { m_tangible = (char)t; }
+void Widget::setSelected(bool v) { m_selected = v; }
+void Widget::setInheritState(bool v) { m_inheritState = v; }
+void Widget::setAsTemplate() { m_isTemplate = 1; }
 void Widget::setAutosize(bool v) {
-	m_states = v? m_states|0x80: m_states&~0x80;
+	m_autosize = v;
 	if(v && !isLayoutPaused()) {
 		updateAutosize();
 		if(getAnchor()==0x33 && getParent()) getParent()->onChildChanged(this);
 	}
 }
 
-Tangible Widget::getTangible() const { return (Tangible)(m_states>>2 & 3); }
+Tangible Widget::getTangible() const { return (Tangible)m_tangible; }
 bool Widget::isTangible() const {
-	if(~m_states&4) return false; // Not SELF
+	if(~m_tangible&1) return false; // Not SELF
 	for(Widget* p=m_parent; p; p=p->m_parent) {
-		if(~p->m_states&8) return false; // CHILDREN
+		if(~p->m_tangible&2) return false; // CHILDREN
 	}
 	return true;
 }
 
-bool Widget::isVisible() const { return m_states&1; }
-bool Widget::isEnabled() const { return m_states&2; }
-bool Widget::isSelected() const { return m_states&0x10; }
-bool Widget::isTemplate() const { return m_states&0x20; }
+bool Widget::isVisible() const { return m_visible; }
+bool Widget::isEnabled() const { return m_enabled; }
+bool Widget::isSelected() const { return m_selected; }
+bool Widget::isTemplate() const { return m_isTemplate; }
 bool Widget::isParentEnabled() const { return !m_parent || (m_parent->isEnabled() && m_parent->isParentEnabled()); }
-bool Widget::isAutosize() const { return m_states&0x80; }
+bool Widget::isAutosize() const { return m_autosize; }
 
 void Widget::setAnchor(int a) {
 	m_anchor = a;
@@ -817,7 +833,7 @@ bool Widget::hasMouseFocus() const {
 }
 
 bool Widget::hasAnimator() const {
-	return m_states & 0x800;
+	return m_hasAnimatior;
 }
 
 Widget* Widget::getWidget(size_t index) const {
@@ -835,14 +851,14 @@ Widget* Widget::getWidget(const Point& p, int typeMask, bool tg, bool tm, bool c
 		if(child->isVisible() && (tg || child->getTangible()!=Tangible::NONE)) {
 			Point local = p - clientOffset - child->m_rect.position();
 			if(child->contains(local)) {
-				if(tg || (child->m_states&8)) {
+				if(tg || (child->m_tangible&2)) {
 					Widget* w = child->getWidget(local, typeMask, tg, tm, false);
 					if(w) return w;
 				}
 
 				// Filtering
 				if(child->isTemplate() && !tm) continue;
-				if(!(child->m_states&4) && !tg) continue;
+				if(!(child->m_tangible&1) && !tg) continue;
 				if(typeMask!=Widget::staticType() && !child->isType(typeMask)) continue;
 				return child;
 			}
@@ -972,7 +988,7 @@ void Widget::setRoot(Root* r) {
 		if(added) r->m_widgets[m_name] = this;
 	}
 
-	if(m_root && (m_states&0x800)) m_root->deleteAnimators(this);
+	if(m_root && m_hasAnimatior) m_root->deleteAnimators(this);
 
 	m_root = r;
 	if(added) onAdded();
@@ -1042,10 +1058,10 @@ void Widget::refreshLayout() {
 	resumeLayout(false);
 }
 
-bool Widget::isLayoutPaused() const { return m_states & 0x400; }
-void Widget::pauseLayout() { m_states |= 0x400; }
+bool Widget::isLayoutPaused() const { return m_layoutPaused; }
+void Widget::pauseLayout() { m_layoutPaused=1; }
 void Widget::resumeLayout(bool update) {
-	m_states &= ~0x400;
+	m_layoutPaused = 0;
 	if(update) refreshLayout();
 }
 
@@ -1087,7 +1103,7 @@ void Widget::setSkin(Skin* s) {
 }
 
 int Widget::getState() const {
-	if(m_states&0x40 && m_parent) return m_parent->getState();
+	if(m_inheritState && m_parent) return m_parent->getState();
 	int state = 0; // calculate state
 	if(!isEnabled() || !isParentEnabled()) state = 3;
 	else if(m_root && m_root->m_mouseFocus==this) {
@@ -1102,9 +1118,9 @@ int Widget::getState() const {
 	return state;
 }
 
-unsigned Widget::deriveColour(unsigned base, unsigned custom, short flags) {
-	unsigned result = (flags&0x100? custom: base) & 0xffffff;
-	result |= (flags&0x200? custom: base) & 0xff000000;
+unsigned Widget::deriveColour(unsigned base, unsigned custom, char overrideFlag) {
+	unsigned result = (overrideFlag&0x1? custom: base) & 0xffffff;
+	result |= (overrideFlag&0x2? custom: base) & 0xff000000;
 	return result;
 }
 
@@ -1115,7 +1131,7 @@ void Widget::draw() const {
 }
 void Widget::drawSkin() const {
 	if(m_skin && m_skin->getImage()>=0) {
-		unsigned colour = deriveColour(m_skin->getState(getState()).backColour, m_colour, m_states);
+		unsigned colour = deriveColour(m_skin->getState(getState()).backColour, m_colour, m_overrideColour);
 		m_root->getRenderer()->drawSkin(m_skin, m_rect, colour, getState());
 	}
 }

@@ -314,7 +314,7 @@ Widget* Root::load(const XMLElement& xmlRoot, Widget* root, LoadFlags flags) {
 			Widget* w = loadWidget(*i, true);
 			if(w) {
 				if(w->getName()) {
-					w->m_states &= ~0x20; // Clear template flag on root widget
+					w->m_isTemplate = 0; // Clear template flag on root widget
 					if(m_templates.contains(w->m_name.str())) {
 						printf("Replacing template %s\n", w->m_name.str());
 						delete m_templates[w->m_name.str()];
@@ -388,9 +388,6 @@ Widget* Root::loadWidget(const base::XMLElement& e, bool isTemplate) const {
 			Skin* s = getSkin(skin);
 			if(s) w->setSkin(s);
 		}
-
-		if(isTemplate) w->m_states |= 0x20;
-		else w->m_states &= ~0x20;
 	}
 	else {
 		// Create new widget
@@ -399,13 +396,13 @@ Widget* Root::loadWidget(const base::XMLElement& e, bool isTemplate) const {
 		if(invalidType) printf("Error: Widget type %s not registered. Using %s as fallback\n", type, "Widget");
 		if(invalidType) w = new Widget();
 		else w = s_constuct[type]();
-		if(isTemplate) w->m_states |= 0x20;
 		w->m_rect = r;
 		w->m_skin = s;
 	}
 
 	// Set name
 	w->m_name = e.attribute("name");
+	w->m_isTemplate = isTemplate;
 
 	// Anchor property
 	const char* anchor = e.attribute("anchor", empty);

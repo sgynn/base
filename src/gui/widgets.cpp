@@ -22,7 +22,7 @@ inline unsigned parseColour(const PropertyMap& p, const char* key, unsigned d=0x
 
 
 Label::Label(const char* c) : m_caption(c), m_fontSize(0), m_fontAlign(0), m_wordWrap(0) {
-	m_states = 0x3; // intangible
+	setTangible(Tangible::NONE);
 	m_rect.set(0,0,32, 16);
 }
 Label::Label(const char* c, Font* font, int size) : Label(c) {
@@ -166,7 +166,7 @@ void Label::draw() const {
 		static Skin tempSkin(1);
 		int align = m_fontAlign? m_fontAlign: m_skin? m_skin->getFontAlign(): 0;
 		int size = m_fontSize? m_fontSize: m_skin? m_skin->getFontSize(): 16;
-		unsigned colour = deriveColour(s.foreColour, m_colour, m_states);
+		unsigned colour = deriveColour(s.foreColour, m_colour, m_overrideColour);
 		if(m_lines.empty()) {
 			tempSkin.setFont(font, size, align);
 			tempSkin.getState(0).foreColour = colour;
@@ -314,7 +314,7 @@ void Image::draw() const {
 		if(m_skin) {
 			const Skin::State& state = m_skin->getState(stateIndex);
 			r.position() += state.textPos;
-			colour = deriveColour(state.foreColour, m_colour, m_states);
+			colour = deriveColour(state.foreColour, m_colour, m_overrideColour);
 		}
 		if(m_group) m_root->getRenderer()->drawIcon(m_group, m_image, r, m_angle, colour);
 		else m_root->getRenderer()->drawImage(m_image, r, m_angle, colour, (m_colour>>24)/255.0);
@@ -855,7 +855,7 @@ void Scrollbar::moveBlock(Widget* c, const Point& p, int b) {
 // ===================================================================================== //
 
 Scrollpane::Scrollpane() : m_alwaysShowScrollbars(true), m_useFullSize(true), m_vScroll(0), m_hScroll(0) {
-	m_states |= 0x80; // turn on autosize by default
+	m_autosize = 1; // turn on autosize by default
 }
 void Scrollpane::initialise(const Root*, const PropertyMap& p) {
 	if(p.contains("showscrollbars")) m_alwaysShowScrollbars = atoi(p["showscrollbars"]);

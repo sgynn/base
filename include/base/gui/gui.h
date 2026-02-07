@@ -110,13 +110,13 @@ class Widget {
 	bool isRelative() const;			// Do we use relative positioning
 
 	// Widget colour. Note: ARGB==0 to use skin default
-	void     setColourARGB(unsigned argb)         { m_colour=argb; m_states|=0x300; }
+	void     setColourARGB(unsigned argb)         { m_colour=argb; m_overrideColour=3; }
 	int      getColour() const                    { return m_colour&0xffffff; }
 	unsigned getColourARGB() const                { return m_colour; }
-	void     setColour(unsigned rgb, float a=1.0) { m_colour=rgb; setAlpha(a); m_states|=0x100; }
+	void     setColour(unsigned rgb, float a=1.0) { m_colour=rgb; setAlpha(a); m_overrideColour=3; }
 	void     setColour(float r, float g, float b, float a=1.0) { setColour((int(r*255)&0xff)<<16 | (int(g*255)&0xff)<<8 | (int(b*255)&0xff), a); }
-	void     resetColour()                        { m_colour = 0xffffffff; m_states &= ~0x300; }
-	void     setAlpha(float a)                    { a=a>0?a<1?a:1:0; m_colour = (m_colour&0xffffff) | int(a*255)<<24; m_states|=0x200; }
+	void     resetColour()                        { m_colour = 0xffffffff; m_overrideColour=0; }
+	void     setAlpha(float a)                    { a=a>0?a<1?a:1:0; m_colour = (m_colour&0xffffff) | int(a*255)<<24; m_overrideColour|=2; }
 	float    getAlpha() const                     { return (m_colour>>24)/255.0; }
 
 	const char* getToolTip() const { return m_tip; }
@@ -211,10 +211,20 @@ class Widget {
 	Skin*    m_skin;			// Skin - used for rendering
 	unsigned m_colour;			// Widget colour ARGB
 	char     m_anchor;			// { Left, Right, Middle, Both} { Top, Bottom, Centre, Both }
+	char     m_visible:1;
+	char     m_enabled:1;
+	char     m_tangible:2;
+	char     m_selected:1;
+	char     m_isTemplate:1;
+	char     m_inheritState:1;
+	char     m_autosize:1;
+	char     m_overrideColour:2; // rgb, alpha
+	char     m_layoutPaused:1;
+	char     m_hasAnimatior:1;
+
+	char     m_skipTemplate;	// Templates in client widget to skip
 	Layout*  m_layout;			// Automatic layouts
 	float*   m_relative;		// alternative coordinates as multiple of parent
-	short    m_states;			// Visible, Enabled, Tangible[2],  Selected, Template, InheritState, Autosize,  OverrideColour[2], LayoutPaused, HasAnimator
-	char     m_skipTemplate;	// Templates in client widget to skip
 	Widget*  m_parent;			// Parent widget
 	Widget*  m_client;			// Client widget
 	Root*    m_root;			// Gui manager class
@@ -249,7 +259,7 @@ class Widget {
 	virtual void copyData(const Widget* from) {}	// Copy any properties on cloning. Called before initialise
 	virtual void updateTransforms();
 	inline bool contains(const Point& local) const { return local.x>=0 && local.y>=0 && local.x<=m_rect.width && local.y<=m_rect.height; }
-	static unsigned deriveColour(unsigned base, unsigned custom, short flags);
+	static unsigned deriveColour(unsigned base, unsigned custom, char overrideFlag);
 
 	Widget* findChildWidget(const char*) const;
 	Widget* findTemplateWidget(const char*) const;
