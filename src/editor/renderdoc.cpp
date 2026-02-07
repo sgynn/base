@@ -8,6 +8,8 @@
 #include "/opt/renderdoc_1.27/include/renderdoc_app.h"
 #define APIPATH "/opt/renderdoc_1.27/"
 
+static AutoComponent<RenderDoc> autoAddRenderdocComponent;
+
 void editor::RenderDoc::initialise() {
 	static RENDERDOC_API_1_6_0 *api = NULL;
 

@@ -32,6 +32,7 @@ using namespace gui;
 using namespace editor;
 using script::Variable;
 
+static AutoComponent<ParticleEditorComponent> autoAddParticleEditor;
 
 // Graph nodes
 namespace editor {

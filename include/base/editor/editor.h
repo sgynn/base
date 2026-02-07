@@ -76,18 +76,10 @@ class SceneEditor : public base::GameStateComponent {
 
 	bool addEmbeddedPNGImage(const char* name, const char& bin, unsigned length);
 
-	private:
-	using CreateList = std::vector<EditorComponent*(*)()>;
-	template<class ...R> struct Adder;
-	template<class E, class ...R> struct Adder<E, R...> { static void add(CreateList& list) { Adder<E>::add(list); Adder<R...>::add(list); } };
-	template<class E> struct Adder<E> { static void add(CreateList& list) { list.push_back([]()->EditorComponent*{return new E;}); } };
 	public:
-	// Initialise with editor->setup<editor::LayoutEditor, editor::CompositorEditor, editor::AudioEditor>();
-	template<class ...R> void add() {
-		//m_creation.push_back([]()->EditorComponent*{ return new E(); });
-		//if constexpr(sizeof...(R)) add<R...>(); // Requires c++17, and avoids the template nonsense above
-		Adder<R...>::add(m_creation);
-	}
+	using CreateList = std::vector<EditorComponent*(*)()>;
+	static CreateList& getClassList() { static CreateList list; return list; }
+	template<class T> static void addClass() { getClassList().push_back([]()->EditorComponent*{ return new T(); }); }
 
 	template<class T> T* getComponent() {
 		for(EditorComponent* c: m_components) if(T* r=dynamic_cast<T*>(c)) return r;
@@ -121,7 +113,6 @@ class SceneEditor : public base::GameStateComponent {
 	base::Drawable* m_selectedDrawable = nullptr;
 	base::VirtualFileSystem* m_filesystem = nullptr;
 	std::vector<EditorComponent*> m_components;
-	std::vector<EditorComponent*(*)()> m_creation;
 	std::vector<Delegate<base::SceneNode*(const Asset&)>> m_construct;
 };
 
@@ -176,6 +167,11 @@ class EditorComponent {
 	void promoteEventHandler(); // Make sure this editor handles events first
 };
 
+template<class T>
+class AutoComponent {
+	public:
+	AutoComponent() { SceneEditor::addClass<T>(); }
+};
 
 }
 

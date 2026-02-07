@@ -34,7 +34,12 @@ BINDATA(editor_icons,  EDITOR_DATA "/editoricons.png")
 
 SceneEditor::SceneEditor() : GameStateComponent(-50, 80, PERSISTENT) {
 	m_toggleKey = KEY_F12;
-	add<LayoutViewer, CompositorEditor, AssetBrowser, ParticleEditorComponent, RenderDoc>();
+	CreateList tmp = getClassList();
+	getClassList().clear();
+	addClass<LayoutViewer>();
+	addClass<CompositorEditor>();
+	addClass<AssetBrowser>();
+	for(auto& i: tmp) getClassList().push_back(i);
 }
 
 SceneEditor::~SceneEditor() {
@@ -61,14 +66,14 @@ void SceneEditor::initialiseComponents() {
 	addEmbeddedPNGImage("data/editor/editoricons.png", editor_icons, editor_icons_len);
 	if(m_gui->load("data/editor/editor.xml") || m_gui->parse(&editor_gui)) {
 		m_toolTip.tip = m_gui->getWidget("tooltip");
-		for(auto& create: m_creation) {
+		for(auto& create: getClassList()) {
 			EditorComponent* component = create();
 			m_components.push_back(component);
 			component->m_editor = this;
 			component->initialise();
 		}
 	}
-	m_creation.clear();
+	getClassList().clear();
 	printf("--------------------\n");
 }
 
