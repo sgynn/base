@@ -211,16 +211,16 @@ class Widget {
 	Skin*    m_skin;			// Skin - used for rendering
 	unsigned m_colour;			// Widget colour ARGB
 	char     m_anchor;			// { Left, Right, Middle, Both} { Top, Bottom, Centre, Both }
-	char     m_visible:1;
-	char     m_enabled:1;
-	char     m_tangible:2;
-	char     m_selected:1;
-	char     m_isTemplate:1;
-	char     m_inheritState:1;
-	char     m_autosize:1;
-	char     m_overrideColour:2; // rgb, alpha
-	char     m_layoutPaused:1;
-	char     m_hasAnimatior:1;
+	unsigned m_visible:1;
+	unsigned m_enabled:1;
+	unsigned m_tangible:2;
+	unsigned m_selected:1;
+	unsigned m_isTemplate:1;
+	unsigned m_inheritState:1;
+	unsigned m_autosize:1;
+	unsigned m_overrideColour:2; // rgb, alpha
+	unsigned m_layoutPaused:1;
+	unsigned m_hasAnimatior:1;
 
 	char     m_skipTemplate;	// Templates in client widget to skip
 	Layout*  m_layout;			// Automatic layouts

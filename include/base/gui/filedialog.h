@@ -46,7 +46,7 @@ namespace gui {
 		float m_lastClick; 				// Time of last click to detect double clicking - shoule be in base or gui
 
 		protected:
-		void initialise(const gui::Root*, const gui::PropertyMap&);
+		void initialise(const gui::Root*, const gui::PropertyMap&) override;
 		gui::Listbox* m_list = nullptr;
 		gui::Textbox* m_dir = nullptr;
 		gui::Textbox* m_file = nullptr;
