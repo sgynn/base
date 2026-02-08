@@ -470,7 +470,8 @@ void Instance::updateT(int thread, int count, float time, const Matrix& view) {
 }
 
 Particle& Instance::allocate(const Emitter* emitter) {
-	if(m_count == m_pool.size()) return m_pool[0];
+	static Particle bad;
+	if(m_count == m_pool.size()) return bad;
 	EmitterInstance& data = m_emitters[emitter->m_index];
 
 	if((int)data.particles.size() >= emitter->limit) return m_pool[0];
@@ -499,7 +500,7 @@ Particle& Instance::allocate(const Emitter* emitter) {
 		}
 	}
 	*/
-	return m_pool[0]; // should never get here
+	return bad; // should never get here
 }
 
 void Instance::freeParticle(Particle& p) {
