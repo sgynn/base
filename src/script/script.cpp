@@ -366,6 +366,7 @@ Variable Expression::evaluate(Context&& context) const {
 
 	case GET: // rhs is subtext of lhs - string, or integer if array : lhs[rhs]
 		if(a.isArray() && b.isNumber()) r = a.get_const((int)b);
+		else if(b.isName()) r = a.get_const(b.operator VariableName());
 		else r = a.find_const( b.toString() );
 		break;
 	case GET2: // rhs must be var or cvar: lhs.rhs
@@ -625,6 +626,7 @@ namespace script {
 				if(v) v[t] = *s;
 				++s; ++t;
 			}
+			if(v) v[t] = 0;
 			return t;
 
 		} else return 0;
