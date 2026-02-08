@@ -15,13 +15,18 @@ NodeEditor::~NodeEditor() {
 
 void NodeEditor::onMouseMove(const Point& last, const Point& pos, int b) {
 	Widget::onMouseMove(last, pos, b);
-	if(b == 2) return;
-	if(b && hasFocus()) {
+	if((b&m_mousePanButtonMask) && hasFocus()) {
+		m_boxStart = m_boxEnd = Point();
 		Point move = pos - last;
 		for(Widget* w: *this) {
 			w->setPosition(w->getPosition() + move);
 		}
 	}
+	if(b==1 && (m_boxStart.x || m_boxStart.y || m_boxEnd != m_boxStart)) {
+		m_boxEnd = pos;
+		return;
+	}
+
 	// Get link under mouse
 	m_overLink = 0;
 	if(!b && !m_dragLink) for(Widget* w: *this) {
@@ -34,8 +39,14 @@ void NodeEditor::onMouseMove(const Point& last, const Point& pos, int b) {
 }
 void NodeEditor::onMouseButton(const Point& pos, int d, int u) {
 	Widget::onMouseButton(pos, d, u);
-	if(d==1) for(Widget* w: *this) w->setSelected(false);
 	if(d==4 && m_overLink) unlink(const_cast<Link*>(m_overLink));
+	if(d==1) m_boxStart = m_boxEnd = pos;
+	if(u&1) {
+		Rect r(m_boxStart, 0, 0);
+		r.include(m_boxEnd);
+		m_boxStart = m_boxEnd = Point();
+		for(Widget* w: *this) w->setSelected(r.intersects(w->getRect()));
+	}
 }
 
 void NodeEditor::onKey(int code, wchar_t chr, KeyMask mask) {
@@ -139,6 +150,12 @@ void NodeEditor::draw() const {
 
 	// Draw nodes
 	drawChildren();
+
+	// Selection box
+	if(m_boxStart != m_boxEnd) {
+		Point line[5] = { m_boxStart, {m_boxStart.x, m_boxEnd.y}, m_boxEnd, {m_boxEnd.x, m_boxStart.y}, m_boxStart};
+		m_root->getRenderer()->drawLineStrip(5, line, 1, Point());
+	}
 }
 
 bool NodeEditor::overLink(const Link& link, const Point& pos, float distance) const {

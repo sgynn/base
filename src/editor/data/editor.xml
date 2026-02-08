@@ -17,7 +17,7 @@
 	<genimage radius="6" name="nodetitle" core="2 2" line="1">
 		<corner style="round" name="tl"/>
 		<corner style="round" name="tr"/>
-		<state back="#ffb0b0b0" name="normal" line="#ffb0b0b0"/>
+		<state back="#ffb0b0b0" name="normal" line="#00b0b0b0"/>
 	</genimage>
 	<genimage radius="4" name="tooltip" core="1 1" line="1">
 		<corner style="round" name="tl"/>
@@ -43,6 +43,13 @@
 		<corner style="round" name="bl"/>
 		<corner style="round" name="br"/>
 		<state back="#80b0b0b0" name="normal" line="#ffb0b0b0"/>
+	</genimage>
+	<genimage radius="6" name="nodesel" core="2 2" line="1">
+		<corner style="round" name="tl"/>
+		<corner style="round" name="tr"/>
+		<corner style="round" name="bl"/>
+		<corner style="round" name="br"/>
+		<state back="#00ffffff" name="normal" line="#ffffffff"/>
 	</genimage>
 	<genimage radius="3" name="button" core="2 2" line="1">
 		<corner style="round" name="tl"/>
@@ -97,6 +104,12 @@
 		<font name="helvetica" size="16"/>
 		<image file="graph"/>
 		<state border="7 7 7 7" coord="0 0 14 14" name="normal"/>
+	</skin>
+	<skin name="nodesel">
+		<font align="middlecentre" name="helvetica" size="16"/>
+		<image file="nodesel"/>
+		<state border="7 7 7 7" coord="0 0 14 14" backcolour="#00ffffff" name="normal"/>
+		<state backcolour="#ffffff" name="selected normal"/>
 	</skin>
 	<skin name="nodebar">
 		<font align="middlecentre" name="helvetica" size="16"/>
@@ -218,15 +231,16 @@
 	<template name="vsplit" class="SplitPane" rect="0 0 100 100" skin="none" orientation="vertical" category="Containers">
 		<widget name="_sash" skin="button" rect="0 46 100 2" anchor="lr"/>
 	</template>
-
-	<template colour="#80ff80" class="Widget" layout="VerticalLayout" template="frame" rect="480 816 59 27" skin="nodeback" name="graphnode" autosize="1">
-		<widget colour="#80ff80" tangible="0" rect="0 0 59 19" template="button" skin="nodebar" name="_text" caption=" Emitter " autosize="1" anchor="lr"/>
-		<widget anchor="lr" class="Widget" layout="HorizontalLayout" tangible="2" template="frame" rect="0 19 59 4" skin="none" autosize="1">
-			<widget anchor="t" class="Widget" tangible="2" template="frame" rect="0 0 0 0" skin="none" name="_in" autosize="1"/>
-			<widget anchor="lrt" class="Widget" tangible="0" template="frame" rect="0 0 59 4" skin="none"/>
-			<widget anchor="t" class="Widget" tangible="2" template="frame" rect="59 0 0 0" skin="none" name="_out" autosize="1"/>
+	<template anchor="lt" class="Widget" colour="#74ff00" rect="48 36 45 27" skin="nodeback" name="graphnode" autosize="1">
+		<widget inheritstate="1" class="Widget" anchor="lt" layout="VerticalLayout" rect="0 0 45 27" autosize="1" skin="nodesel" tangible="2">
+			<widget anchor="lrt" autosize="1" colour="#74ff00" rect="0 0 45 19" template="button" skin="nodebar" name="_text" caption=" Node " tangible="0"/>
+			<widget anchor="lrt" class="Widget" layout="HorizontalLayout" autosize="1" template="frame" rect="0 19 45 4" skin="none" tangible="2">
+				<widget anchor="lt" class="Widget" layout="VerticalLayout" autosize="1" template="frame" rect="0 0 0 0" skin="none" name="_in" tangible="2"/>
+				<widget anchor="lrt" class="Widget" tangible="0" template="frame" rect="0 0 45 4" skin="none"/>
+				<widget anchor="lt" class="Widget" layout="VerticalLayout" autosize="1" template="frame" rect="45 0 0 0" skin="none" name="_out" tangible="2"/>
+			</widget>
+			<widget anchor="lrt" class="Widget" tangible="2" template="frame" rect="0 23 45 4" skin="none"/>
 		</widget>
-		<widget anchor="lr" class="Widget" tangible="2" template="frame" rect="0 23 59 4" skin="none"/>
 	</template>
 	<template class="CollapsePane" rect="0 0 100 100" name="category" skin="none" category="Containers">
 		<widget anchor="tlr" template="button" rect="0 0 100 20" name="_header"/>

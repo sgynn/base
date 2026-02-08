@@ -34,6 +34,7 @@ class NodeEditor : public gui::Widget {
 	~NodeEditor();
 	virtual void draw() const override;
 	public:
+	void setMousePanButtonMask(int mask) { m_mousePanButtonMask = mask; }
 	void setConnectorIconSet(gui::IconList*);
 	void setConnectorType(unsigned type, int icon=0, unsigned colour=0xffffffff, unsigned validMask=0u);
 	static int areNodesConnected(const Node* a, const Node* b, unsigned connectorMask=~0u, unsigned limit=999);
@@ -66,6 +67,9 @@ class NodeEditor : public gui::Widget {
 	gui::IconList* m_connectorIcons = 0;
 	struct ConnectorType { int icon; unsigned colour; unsigned validMask; };
 	std::vector<ConnectorType> m_connectorTypes;
+	int m_mousePanButtonMask = 4; // Right mouse button
+	Point m_boxStart;
+	Point m_boxEnd;
 };
 
 
