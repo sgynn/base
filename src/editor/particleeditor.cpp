@@ -1033,7 +1033,7 @@ void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item
 			case particle::PropertyType::Gradient:
 			{
 				GradientBox* w = new GradientBox();
-				w->setAnchor("lr");
+				w->setAnchor("lrtb");
 				row->add(w);
 				w->gradient = particle::loadGradient(var);
 				w->resetRange();
