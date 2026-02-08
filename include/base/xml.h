@@ -63,7 +63,7 @@ class XMLElement {
 	void setAttribute(const char* name, const char* value);
 	void setAttribute(const char* name, double value);
 	void setAttribute(const char* name, float value);
-	void setAttribute(const char* name, int value, bool hex=false);
+	void setAttribute(const char* name, int value, bool hex=false, int pad=0);
 	/** Attribute iteration */
 	const base::HashMap<XMLAttribute>& attributes() const { return m_attributes; }
 	/** Add a child element */

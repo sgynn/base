@@ -138,9 +138,10 @@ void XMLElement::setAttribute(const char* name, float v) {
 	char s[16]; sprintf(s, "%g", v);
 	setAttribute(name, s);
 }
-void XMLElement::setAttribute(const char* name, int v, bool hex) {
+void XMLElement::setAttribute(const char* name, int v, bool hex, int pad) {
 	assert(m_type == XML::TAG);
-	char s[16]; sprintf(s, hex? "#%x": "%d", v);
+	char s[16];
+	sprintf(s, hex? "#%0*x": "%0*d", pad, v);
 	setAttribute(name, s);
 }
 void XMLElement::setText(const char* s) {
