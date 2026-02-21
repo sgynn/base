@@ -157,13 +157,14 @@ void ParticleEditorComponent::saveAll() {
 		if(e->isModified()) {
 			const char* name = res.particles.getName(e->getParticleSystem());
 			if(name) {
-				const base::VirtualFileSystem::File& file = res.getFileSystem().getFile(name);
-				e->save(e->getParticleSystem(), file.getFullPath());
-				printf("Saved %s\n", file.getFullPath().str());
-				e->m_modified = false;
-				getEditor()->assetChanged(Asset{ResourceType::Particle, name, file}, false);
+				if(const base::VirtualFileSystem::File& file = res.getFileSystem().getFile(name)) {
+					e->save(e->getParticleSystem(), file.getFullPath());
+					printf("Saved %s\n", file.getFullPath().str());
+					e->m_modified = false;
+					getEditor()->assetChanged(Asset{ResourceType::Particle, name, file}, false);
+				}
 			}
-			else printf("Error: Particle system not in resourve manager\n");
+			else printf("Error: Particle system not in resource manager\n");
 		}
 	}
 }
