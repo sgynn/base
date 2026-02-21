@@ -247,11 +247,19 @@ namespace script {
 		bool operator!=(const VariableName&) const;
 		bool operator==(uint name) const;
 		bool operator!=(uint name) const;
-		operator bool() const;
-		size_t size() const { return parts.size(); }
-		uint operator[](size_t i) const { return parts[i]; }
+		operator bool() const { return count; }
+		size_t size() const { return count; }
+		bool empty() const { return count==0; }
+		uint operator[](size_t i) const;
+		const uint* begin() const;
+		const uint* end() const;
 		protected:
-		std::vector<uint> parts;
+		static constexpr uint sharedSize = sizeof(uint*) / sizeof(uint);
+		union {
+			uint* parts;
+			uint shared[sharedSize];
+		};
+		unsigned char count;
 	};
 
 

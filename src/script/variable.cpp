@@ -40,42 +40,87 @@ uint Variable::lookupName_const(const char* name) {
 
 // ------------------------------------------------ //
 
-VariableName::VariableName(const char* name) {
+VariableName::VariableName(const char* name) : count(0) {
 	if(name && name[0]) {
+		uint num = 1;
+		const char* n = name-1;
+		while((n = strchr(n+1, '.'))) ++num;
+		uint* p = num>sharedSize? new uint[num]: &shared[0];
+		if(num>sharedSize) parts = p;
+
 		char* tmp = strdup(name);
-		char* n = strtok(tmp, ".");
+		n = strtok(tmp, ".");
 		while(n) {
-			parts.push_back(Variable::lookupName(n));
+			if(n[0]) p[count++] = Variable::lookupName(n);
 			n = strtok(NULL, ".");
 		}
 		free(tmp);
 	}
 }
 String VariableName::toString() const {
-	if(parts.empty()) return String();
-	String s = Variable::lookupName(parts[0]);
-	for(uint i=1; i<parts.size(); ++i) s = s + "." + Variable::lookupName(parts[i]);
-	return s;
+	if(!count) return String();
+	String out;
+	bool first = true;
+	for(int i : *this) {
+		if(first) first = false;
+		else out += ".";
+		out += Variable::lookupName(i);
+	}
+	return out;
 }
-VariableName::operator bool() const {
-	return !parts.empty();
-}
+const uint* VariableName::begin() const { return count > sharedSize? parts: &shared[0]; }
+const uint* VariableName::end() const { return begin() + count; }
 bool VariableName::operator==(const VariableName& o) const {
-	if(parts.size()!=o.parts.size()) return false;
-	for(uint i=0; i<parts.size(); ++i) if(parts[i] != o.parts[i]) return false;
+	if(count != o.count) return false;
+	const uint* a = begin();
+	const uint* b = o.begin();
+	while(a!=end()) {
+		if(*a++ != *b++) return false;
+	}
 	return true;
 }
-bool VariableName::operator!=(const VariableName& o) const {
-	return !(*this == o);
-}
-bool VariableName::operator==(uint id) const { return parts.size()==1 && parts[0] == id; }
-bool VariableName::operator!=(uint id) const { return parts.size()!=1 || parts[0] != id; }
+bool VariableName::operator!=(const VariableName& o) const { return !(*this == o); }
+bool VariableName::operator==(uint id) const { return count==1 && *begin() == id; }
+bool VariableName::operator!=(uint id) const { return count!=1 || *begin() != id; }
 
-VariableName& VariableName::operator+=(uint id) { parts.push_back(id); return *this; }
-VariableName& VariableName::operator+=(const char* name) { parts.push_back(Variable::lookupName(name)); return *this; }
-VariableName& VariableName::operator+=(const VariableName& name) { parts.insert(parts.end(), name.parts.begin(), name.parts.end()); return *this; }
+uint VariableName::operator[](size_t i) const {
+	return count > sharedSize? parts[i]: shared[i];
+}
+
+VariableName& VariableName::operator+=(uint id) {
+	if(count<=sharedSize) shared[count++] = id;
+	else {
+		int i = -1;
+		uint* p = new uint[count+1];
+		for(uint v:*this) p[++i] = v;
+		if(count>sharedSize) delete [] parts;
+		parts = p;
+		++count;
+	}
+	return *this;
+}
+VariableName& VariableName::operator+=(const VariableName& name) {
+	if(name.count==0) return *this;
+	uint s = count + name.count;
+	if(s<=sharedSize) {
+		uint* o = &shared[count];
+		for(uint v : name) { *o = v; ++o; }
+	}
+	else {
+		int i = -1;
+		uint* p = new uint[s];
+		for(uint v:*this) p[++i] = v;
+		for(uint v:name) p[++i] = v;
+		if(count>sharedSize) delete [] parts;
+		parts = p;
+	}
+	count = s;
+	return *this;
+}
+
+VariableName& VariableName::operator+=(const char* name) { operator+=(Variable::lookupName(name)); return *this; }
 VariableName VariableName::operator+(uint id) const { VariableName n=*this; n += id; return n; }
-VariableName VariableName::operator+(const char* name) const { VariableName n=*this; n += name; return n; }
+VariableName VariableName::operator+(const char* name) const { return operator+(Variable::lookupName(name)); }
 VariableName VariableName::operator+(const VariableName& name) const { VariableName n=*this; n += name; return n; }
 namespace script {
 	VariableName operator+(uint id, const VariableName& name) { VariableName n; n += id; n += name; return n; }
@@ -611,19 +656,19 @@ Variable& Variable::find(const char* name) {
 }
 
 Variable& Variable::get(const VariableName& name) {
-	if(name.parts.empty()) return nullVar;
+	if(name.empty()) return nullVar;
 	Variable* var = this;
-	for(uint i: name.parts) {
+	for(uint i: name) {
 		if(var->type & EXPLICIT) var = &var->get_const(i);
 		else var = &var->get(i);
 	}
 	return *var;
 }
 Variable& Variable::get(const VariableName& name) const {
-	if(name.parts.empty()) return nullVar;
-	Variable* var = &get(name.parts[0]);
-	for(uint i=1; i<name.parts.size(); ++i) var = &var->get_const(name.parts[i]);
-	return *var;
+	if(name.empty()) return nullVar;
+	const Variable* var = this;
+	for(uint i: name) var = &var->get_const(i);
+	return *const_cast<Variable*>(var);
 }
 
 // ------------------------------------------------------------- //
