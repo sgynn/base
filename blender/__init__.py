@@ -163,6 +163,11 @@ class ExportBaseLib(bpy.types.Operator):
         default=True)
 
 
+    export_file_per_object: BoolProperty(
+        name="File Per Object",
+        description="Export each mesh object into a separate file: objectname.bm\nFile path is a prefix.",
+        default=False)
+
 
     def draw(self, context):
         is_file_browser = context.space_data.type == 'FILE_BROWSER'
@@ -170,6 +175,8 @@ class ExportBaseLib(bpy.types.Operator):
         if is_file_browser:
             sel = layout.box()
             sel.prop(self, 'export_group')
+        else:
+            layout.prop(self, 'export_file_per_object')
 
 
         mesh_header, mesh_panel = layout.panel("base_export_mesh", default_closed=False)

@@ -721,6 +721,13 @@ def export(context, config):
             operator.report({'ERROR'}, "Collection '%s' was not found" % collection)
             return {'CANCELLED'}
 
+        if config.export_file_per_object:
+            for o in exportList:
+                if o.type == 'MESH':
+                    export_objects(context, config, [o], config.filepath + o.name + '.bm')
+            return
+
+
     elif config.export_group == "SELECTED":
         exportList = list(context.selected_objects)
     elif config.export_group == "HEIRACHY":
@@ -741,6 +748,10 @@ def export(context, config):
     elif config.export_group == "ALL":
         exportList = list(context.view_layer.objects)
 
+    export_objects(context, config, exportList, config.filepath)
+
+
+def export_objects(context, config, exportList, filepath):
     # Linked skeleton
     exportAnimation = config.export_animations != "NONE"
     if config.export_skeletons or exportAnimation:
@@ -791,9 +802,9 @@ def export(context, config):
         export_scene(exportList, config, xml)
 
     # save
-    print("Saving to", config.filepath)
+    print("Saving to", filepath)
     s = xml.toprettyxml('  ')
-    f = open(config.filepath, "w")
+    f = open(filepath, "w")
     f.write( xml.toprettyxml('\t') )
     f.close()
 
