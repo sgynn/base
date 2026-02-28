@@ -127,6 +127,7 @@ inline int Animation::getValue( std::vector< Keyframe<N> >& keys, float frame, i
 		memcpy(value, keys[0].data, N*sizeof(float));
 	} else {
 		// Get nearest keyframes
+		if(hint > count) hint = count; // validate hint
 		if((hint<count && keys[hint].frame<frame) || (hint>0 && keys[hint-1].frame>frame)) {
 			if(frame>=keys[count-1].frame) hint=count;
 			else for(int i=0; i<count; ++i) if(keys[i].frame>frame) { hint = i; break; }
