@@ -40,7 +40,6 @@ class AnimationPropertyExtension : public base::ModelExtension {
 	AnimationType type;
 };
 
-
 void world::storeAnimationBank(AnimationBank* bank, Model* model) {
 	if(model->getExtension<AnimationBankExtension>()) printf("Error: Model already contains an animation bank\n");
 	model->addExtension(new AnimationBankExtension(bank));
@@ -294,6 +293,7 @@ WorldObjectBase::~WorldObjectBase() {
 
 void WorldObjectBase::setUpdate(bool u) {
 	if(m_world && u != m_hasUpdate) {
+		if(m_world->hasDeleteMessage(this)) return;
 		if(u) m_world->m_messages.push_back({ObjectWorldBase::Message::StartUpdate, this});
 		else  m_world->m_messages.push_back({ObjectWorldBase::Message::StopUpdate,  this});
 	}

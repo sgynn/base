@@ -36,6 +36,7 @@ namespace world {
 		SceneNode* getSceneNode() { return m_sceneNode; }
 		void addObject(WorldObjectBase*);
 		void removeObject(WorldObjectBase*, bool destroy=true);
+		bool hasDeleteMessage(WorldObjectBase*) const;
 		bool processMessages();
 		size_t getObjectCount() const { return m_objects.size(); }
 

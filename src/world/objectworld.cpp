@@ -15,11 +15,17 @@ void ObjectWorldBase::initialise(base::SceneNode* scene, Camera* camera) {
 	m_camera = camera;
 }
 
+bool ObjectWorldBase::hasDeleteMessage(WorldObjectBase* o) const {
+	for(const MessageData& m: m_messages) if(m.object==o && m.type==Message::Delete) return true;
+	return false;
+}
+
 void ObjectWorldBase::addObject(WorldObjectBase* o) {
 	m_messages.push_back({Message::Add, o});
 }
 
 void ObjectWorldBase::removeObject(WorldObjectBase* o, bool del) {
+	if(hasDeleteMessage(o)) return;
 	m_messages.push_back({del? Message::Delete: Message::Remove, o});
 }
 
