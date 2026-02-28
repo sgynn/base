@@ -15,6 +15,7 @@ class ParticleEditor;
 
 class ParticleEditorComponent : public EditorComponent {
 	public:
+	~ParticleEditorComponent();
 	void initialise() override;
 	void setParticleManager(particle::Manager*);
 	ParticleEditor* showParticleSystem(particle::System*, const char* name=0);

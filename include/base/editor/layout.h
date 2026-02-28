@@ -41,9 +41,12 @@ class LayoutViewer : public EditorComponent {
 	SceneNodeType* getType(base::SceneNode*) const;
 	DrawableType*  getType(base::Drawable*) const;
 	private:
-	static std::vector<SceneNodeType*> s_nodeTypes;
-	static std::vector<DrawableType*> s_drawableTypes;
-
+	struct RegisteredTypes {
+		std::vector<SceneNodeType*> nodes;
+		std::vector<DrawableType*> drawables;
+		~RegisteredTypes();
+	};
+	static RegisteredTypes s_types;
 
 	private:
 	bool mouseEvent(const MouseEventData&) final;

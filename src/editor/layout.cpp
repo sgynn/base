@@ -25,8 +25,11 @@ using base::DrawableMesh;
 using namespace gui;
 using namespace editor;
 
-std::vector<SceneNodeType*> LayoutViewer::s_nodeTypes;
-std::vector<DrawableType*> LayoutViewer::s_drawableTypes;
+LayoutViewer::RegisteredTypes LayoutViewer::s_types;
+LayoutViewer::RegisteredTypes::~RegisteredTypes() {
+	for(SceneNodeType* t: nodes) delete t;
+	for(DrawableType* t: drawables) delete t;
+}
 
 struct ItemData {
 	SceneNode* node = 0;
@@ -90,9 +93,9 @@ void LayoutViewer::initialise() {
 	static bool typesInitialised = false;
 	if(!typesInitialised) {
 		typesInitialised = true;
-		s_nodeTypes.push_back(new SceneNodeType());
-		s_drawableTypes.push_back(new DrawableMeshType());
-		s_drawableTypes.push_back(new DrawableType());
+		s_types.nodes.push_back(new SceneNodeType());
+		s_types.drawables.push_back(new DrawableMeshType());
+		s_types.drawables.push_back(new DrawableType());
 	}
 }
 
@@ -102,17 +105,17 @@ LayoutViewer::~LayoutViewer() {
 }
 
 void LayoutViewer::registerType(SceneNodeType* type) {
-	s_nodeTypes.insert(s_nodeTypes.begin(), type);
+	s_types.nodes.insert(s_types.nodes.begin(), type);
 }
 void LayoutViewer::registerType(DrawableType* type) {
-	s_drawableTypes.insert(s_drawableTypes.begin(), type);
+	s_types.drawables.insert(s_types.drawables.begin(), type);
 }
 SceneNodeType* LayoutViewer::getType(SceneNode* value) const {
-	for(SceneNodeType* type: s_nodeTypes) if(type->match(value)) return type;
+	for(SceneNodeType* type: s_types.nodes) if(type->match(value)) return type;
 	return 0;
 }
 DrawableType* LayoutViewer::getType(Drawable* value) const {
-	for(DrawableType* type: s_drawableTypes) if(type->match(value)) return type;
+	for(DrawableType* type: s_types.drawables) if(type->match(value)) return type;
 	return 0;
 }
 

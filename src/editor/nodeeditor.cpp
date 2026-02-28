@@ -11,6 +11,20 @@ NodeEditor::NodeEditor() {
 }
 
 NodeEditor::~NodeEditor() {
+	// Delete all the links without triggering events
+	for(Widget* w: *this) {
+		if(Node* node = cast<Node>(w)) {
+			for(Link* link: node->m_links) {
+				if(link->b == node) continue;
+				std::vector<Link*>& list = link->b->m_links;
+				for(size_t i=0; i<list.size(); ++i) {
+					if(link==list[i]) { list[i] = list.back(); list.pop_back(); break; }
+				}
+				delete link;
+			}
+			node->m_links.clear();
+		}
+	}
 }
 
 void NodeEditor::onMouseMove(const Point& last, const Point& pos, int b) {
@@ -262,6 +276,7 @@ void NodeEditor::unlink(Link* link) {
 			if(list[i] == item) {
 				list[i] = list.back();
 				list.pop_back();
+				break;
 			}
 		}
 	};

@@ -65,6 +65,10 @@ class ParticleNode : public nodegraph::Node {
 
 // ================================================================================================ //
 
+ParticleEditorComponent::~ParticleEditorComponent() {
+	for(ParticleEditor* e: m_editors) delete e;
+}
+
 void ParticleEditorComponent::initialise() {
 	Root::registerClass<ParticleNode>();
 	Root::registerClass<GradientBox>();
@@ -365,6 +369,7 @@ ParticleEditor::~ParticleEditor() {
 	m_gradientEditor->setVisible(false);
 	m_panel->removeFromParent();
 	delete m_panel;
+	delete m_modePopup;
 	for(size_t i=0; i<m_parent->m_editors.size(); ++i) {
 		if(m_parent->m_editors[i] == this) {
 			m_parent->m_editors[i] = m_parent->m_editors.back();
