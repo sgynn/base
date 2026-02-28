@@ -558,7 +558,7 @@ Material::~Material() {
 }
 Material* Material::clone() const {
 	Material* m = new Material();
-	for(int i=0; i<size(); ++i) m->addPass( m_passes[i]->clone(m) );
+	for(int i=0; i<size(); ++i) m->addPass(m_passes[i]);
 	return m;
 }
 

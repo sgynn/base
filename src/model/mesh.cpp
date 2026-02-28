@@ -31,9 +31,9 @@ Mesh::Mesh(Mesh&& m) : m_ref(0), m_polygonMode(m.m_polygonMode) {
 }
 
 Mesh::~Mesh() {
-	if(m_vertexBuffer) m_vertexBuffer->dropReference();
-	if(m_skinBuffer)   m_skinBuffer->dropReference();
-	if(m_indexBuffer)  m_indexBuffer->dropReference();
+	if(m_vertexBuffer && m_vertexBuffer->dropReference()==0) delete m_vertexBuffer;
+	if(m_skinBuffer && m_skinBuffer->dropReference()==0) delete m_skinBuffer;
+	if(m_indexBuffer && m_indexBuffer->dropReference()==0) delete m_indexBuffer;
 	for(int i=0; i<m_skinCount; ++i) if(m_skinNames[i]) free(m_skinNames[i]);
 	if(m_skinNames) delete [] m_skinNames;
 	delete [] m_morphs;

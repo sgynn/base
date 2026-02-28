@@ -18,6 +18,7 @@ AutoVariableSource::AutoVariableSource()
 	setCustom(0);
 }
 AutoVariableSource::~AutoVariableSource() {
+	delete [] m_skinMatrixVector;
 }
 
 const char* AutoVariableSource::getString(int key) const { return getKeyString(key); }

@@ -6,7 +6,9 @@
 using namespace base;
 
 INIFile::INIFile() { }
-INIFile::~INIFile() { }
+INIFile::~INIFile() {
+	for(auto i: m_sections) delete i.value;
+}
 
 /** Section pointer */
 INIFile::Section* INIFile::section(const char* name) {
