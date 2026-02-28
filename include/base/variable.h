@@ -73,7 +73,7 @@ namespace script {
 		//Variable& operator=(Variable&&) noexcept;		// Move operator disabled as it breaks LINKs
 		Variable copy(uint depth) const;		// Make a deep copy
 
-		template<typename T>Variable(T v): type(0) { *this=v; }
+		template<typename T>Variable(T v): type(0) { operator=(v); }
 
 		operator bool() const;
 		operator float() const;					// Get value as float

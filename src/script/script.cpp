@@ -5,6 +5,8 @@
 
 #define NAME_LIMIT 64
 
+namespace script { extern Variable nullVar; }
+
 using namespace script;
 
 Context::Context(const Variable& top) : front(0), signal(NONE), writeFlags(0), writeMask(1) {
@@ -157,11 +159,11 @@ Variable& Expression::opVariableRef(const Operand& o, Context&& context) {
 	switch(o.type) {
 	case NAME:  // name = ?
 		v = &context.getw(o.var);
-		if(!v->isValid()) v = &context.set(o.var, Variable());
+		if(!v->isValid()) v = &context.set(o.var, nullVar);
 		return *v;
 	case COMPOUNDNAME: // name.name = ?
 		v = &context.getw(o.cvar[0]);
-		if(!v->isValid()) return context.set(o.cvar, Variable()); // New variable
+		if(!v->isValid()) return context.set(o.cvar, nullVar); // New variable
 		for(uint* n=o.cvar+1; *n!=~0u; ++n) {
 			if(v->isExplicit() && n[1]!=~0u) v = &v->get_const(*n);
 			else v = &v->get(*n);
@@ -193,7 +195,7 @@ Variable& Expression::opVariableRef(const Operand& o, Context&& context) {
 	default: break;
 	}
 	assert(false); // Error: should be valid
-	return Variable().get_const(-1); // nullVar
+	return nullVar;
 }
 
 template<typename T> inline int compareT(T x, T y) { return x<y? -1: x>y? 1: 0; }
@@ -520,7 +522,7 @@ String FunctionCall::toString() const {
 	return s + ")";
 }
 Variable FunctionCall::call(Function* func, Context&& context) const {
-	if(!func) return Variable().get_const(-1); // return invalid if not a function
+	if(!func) return nullVar; // return invalid if not a function
 	Variable params;
 	for(int i=0; i<argc && i<func->argc; ++i) params.set( func->argn[i], argv[i]->evaluate(fwd(context)) );
 	context.push(params);

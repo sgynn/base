@@ -154,7 +154,7 @@ Variable& Variable::operator=(Variable&& v) noexcept {
 }*/
 
 //// Duplication ////
-Variable::Variable(const Variable& v) : type(0) { *this = v; }
+Variable::Variable(const Variable& v) : type(0) { operator=(v); }
 const Variable& Variable::operator=(const Variable& v) {
 	if(this==&v) return v;
 	if(isConst()) return *this;
@@ -175,8 +175,9 @@ const Variable& Variable::operator=(const Variable& v) {
 				_set(i.id, i.value);
 			}
 		}
-		else if(type==STRING)		  s  = strdup(v.type&LINK?*v.sp:v.s);
-		else if(type==(LINK|STRING)) *sp = strdup(v.type&LINK?*v.sp:v.s);
+		else if((type&0xf) == STRING) {
+			operator=(v.type&LINK? *v.sp: v.s);
+		}
 		else if((type&0xf)==DOUBLE) {	// The only 64bit value
 			if(type&LINK) *dp = v.type&LINK? *v.dp: v.d;
 			else            d = v.type&LINK? *v.dp: v.d;
@@ -611,7 +612,7 @@ Variable& Variable::get(uint id) {
 		return obj->items[id];
 	}
 	else if(contains(id)) return obj->items[ obj->lookup[id] ];
-	else if(setType(OBJECT)) return _set(id, Variable());
+	else if(setType(OBJECT)) return _set(id, nullVar);
 	else return nullVar;
 }
 
