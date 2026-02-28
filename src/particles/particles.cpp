@@ -348,7 +348,10 @@ Instance::Instance(System* sys)
 
 Instance::~Instance() {
 	if(m_manager) m_manager->remove(this);
-	for(RenderInstance& r: m_renderers) delete [] r.head;
+	for(RenderInstance& r: m_renderers) {
+		delete [] r.data;
+		delete [] r.head;
+	}
 	delete [] m_triggered;
 	delete [] m_destroy;
 }

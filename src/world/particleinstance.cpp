@@ -33,7 +33,7 @@ void ParticleInstance::initialise() {
 }
 
 void* ParticleInstance::createDrawable(const RenderData* data) {
-	TagData* tag = new TagData{0,0,0,0,0};
+	TagData* tag = new TagData{0,0,0,0,0,0};
 	tag->buffer = new HardwareVertexBuffer();
 	tag->buffer->attributes = data->getVertexAttributes();
 	tag->buffer->setData(nullptr, 0, tag->buffer->attributes.getStride(), false); // set stride
@@ -52,15 +52,15 @@ void* ParticleInstance::createDrawable(const RenderData* data) {
 		else printf("Failed to load mesh '%s'\n", data->getInstancedMesh());
 	}
 	else {
-		Mesh* mesh = new Mesh();
-		mesh->setVertexBuffer(tag->buffer);
-		tag->drawable = new DrawableMesh(mesh);
+		tag->mesh = new Mesh();
+		tag->mesh->setVertexBuffer(tag->buffer);
+		tag->drawable = new DrawableMesh(tag->mesh);
 		tag->drawable->setRenderQueue(m_renderQueue);
 		tag->instanced = false;
 		switch(data->getDataType()) {
-		case RenderData::QUADS: mesh->setPolygonMode(PolygonMode::QUADS); break;
-		case RenderData::STRIP: mesh->setPolygonMode(PolygonMode::TRIANGLE_STRIP); break;
-		case RenderData::POINTS: mesh->setPolygonMode(PolygonMode::POINTS); break;
+		case RenderData::QUADS: tag->mesh->setPolygonMode(PolygonMode::QUADS); break;
+		case RenderData::STRIP: tag->mesh->setPolygonMode(PolygonMode::TRIANGLE_STRIP); break;
+		case RenderData::POINTS: tag->mesh->setPolygonMode(PolygonMode::POINTS); break;
 		default: break;
 		}
 	}
@@ -95,7 +95,9 @@ void ParticleInstance::destroyDrawables() {
 	for(RenderInstance& r : m_renderers) {
 		if(TagData* a = (TagData*)r.drawable) {
 			if(a->instanced) delete a->buffer;
+			else delete a->mesh;
 			r.drawable = 0;
+			delete a;
 		}
 	}
 	deleteAttachments();

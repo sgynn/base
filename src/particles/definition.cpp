@@ -10,6 +10,16 @@ base::HashMap<Definition<RenderData>*> particle::s_renderDataFactory;
 base::HashMap<Definition<Affector>*> particle::s_affectorFactory;
 base::HashMap<Definition<Emitter>*> particle::s_emitterFactory;
 base::HashMap<Definition<Event>*> particle::s_eventFactory;
+struct ParticleDefinitionCleanup {
+	Definition<Event>* commonEventDef = nullptr;
+	~ParticleDefinitionCleanup() {
+		for(auto i: particle::s_renderDataFactory) delete i.value;
+		for(auto i: particle::s_affectorFactory) delete i.value;
+		for(auto i: particle::s_emitterFactory) delete i.value;
+		for(auto i: particle::s_eventFactory) delete i.value;
+		delete commonEventDef;
+	}
+} autoCleanup;
 
 class ParticleSystemLoader {
 	enum Type { EMITTER, AFFECTOR, RENDERER, EVENT };
@@ -208,6 +218,7 @@ void particle::registerInternalStructures() {
 
 	{
 	auto eventDef = new Definition<Event>(); // common event properties
+	autoCleanup.commonEventDef = eventDef;
 	AddBasicProperty(Event, Event, eventDef, "enabled", startEnabled, Bool);
 	AddEnumProperty(Event, Event, eventDef, Event::Effect, effect, "Trigger", "Enable", "Disable", "Toggle");
 

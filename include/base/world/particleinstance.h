@@ -6,10 +6,11 @@ namespace base {
 	class DrawableMesh;
 	class HardwareVertexBuffer;
 	class SceneNode;
+	class Mesh;
 
 	class ParticleInstance : public particle::Instance, public SceneNode {
 		private:
-		struct TagData { DrawableMesh* drawable; HardwareVertexBuffer* buffer; int stride; bool instanced; bool empty; };
+		struct TagData { DrawableMesh* drawable; HardwareVertexBuffer* buffer; Mesh* mesh; int stride; bool instanced; bool empty; };
 		int m_renderQueue;
 		public:
 		ParticleInstance(particle::Manager* m, particle::System* system, const char* name=nullptr, int queue=10);
