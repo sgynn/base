@@ -147,7 +147,7 @@ void DebugGeometryManager::update(bool paused) {
 		switch(it->first->m_mode) {
 		case SDG_APPEND:
 		case SDG_FRAME: it->first->flush();	break;
-		case SDG_UNPAUSED: if(!paused) it->first->flush(); break;
+		case SDG_UNPAUSED: if(!paused || !it->first->m_buffer->empty()) it->first->flush(); break;
 		case SDG_FRAME_IF_DATA: if(!it->first->m_buffer->empty()) it->first->flush();	break;
 		default: break;
 		}
