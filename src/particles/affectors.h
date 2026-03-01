@@ -9,7 +9,7 @@ class LinearForce : public Affector {
 		float age = i.getTime() - p.spawnTime;
 		p.velocity.x += force.x.getValue(age) * time / p.mass;
 		p.velocity.y += force.y.getValue(age) * time / p.mass;
-		p.velocity.x += force.z.getValue(age) * time / p.mass;
+		p.velocity.z += force.z.getValue(age) * time / p.mass;
 	}
 	public:
 	struct { Value x,y,z; } force;
@@ -30,7 +30,7 @@ class SetVelocity : public Affector {
 		float age = i.getTime() - p.spawnTime;
 		p.velocity.x = velocity.x.getValue(age);
 		p.velocity.y = velocity.y.getValue(age);
-		p.velocity.x = velocity.z.getValue(age);
+		p.velocity.z = velocity.z.getValue(age);
 	}
 	public:
 	struct { Value x,y,z; } velocity;
