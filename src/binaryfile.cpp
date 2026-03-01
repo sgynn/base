@@ -21,7 +21,7 @@ BinaryFileWriter::~BinaryFileWriter() {
 
 void BinaryFileWriter::startBlock(BlockType type) {
 	// Block size does not include block header
-	if(type==0) throw new std::invalid_argument("Invalid block id");
+	if(type==0) throw new std::invalid_argument("Invalid block id 0");
 	int zero = 0;
 	fwrite(&type, sizeof(type), 1, m_file);
 	fwrite(&zero, 4, 1, m_file);
@@ -82,22 +82,13 @@ BinaryFileReader::~BinaryFileReader() {
 	if(m_file) fclose(m_file);
 }
 
-bool BinaryFileReader::valid() {
+bool BinaryFileReader::valid() const {
 	if(!m_file || feof(m_file)) return false;
 	if(m_blockStack.empty()) return true;
 	return ftell(m_file) < (int)m_blockStack.back().end;
 }
 
-int BinaryFileReader::nextBlock(bool subBlock) {
-	// Are we inside a block - skip to end
-	if(!m_blockStack.empty()) {
-		size_t pos = ftell(m_file);
-		size_t end = m_blockStack.back().end;
-		if(pos>=end && subBlock) return 0;
-		if(pos!=end && !subBlock) fseek(m_file, end, SEEK_SET);
-		if(!subBlock) m_blockStack.pop_back();
-	}
-
+int BinaryFileReader::startBlock() {
 	unsigned int length = 0;
 	int type = fgetc(m_file);
 	fread(&length, 4, 1, m_file);
@@ -107,7 +98,7 @@ int BinaryFileReader::nextBlock(bool subBlock) {
 	return type;
 }
 
-void BinaryFileReader::endBlock(int type) {
+void BinaryFileReader::exitBlock(int type) {
 	// allow exiting multiple blocks, 0=current 
 	if(m_blockStack.empty()) return;
 	if(type && currentBlock() != type) {
@@ -124,8 +115,17 @@ void BinaryFileReader::endBlock(int type) {
 	m_blockStack.pop_back();
 }
 
+void BinaryFileReader::exitAllBlocks() {
+	if(m_blockStack.empty()) return;
+	exitBlock(rootBlock());
+}
+
 int BinaryFileReader::currentBlock() const {
 	return m_blockStack.empty()? 0: m_blockStack.back().type;
+}
+
+int BinaryFileReader::rootBlock() const {
+	return m_blockStack.empty()? 0: m_blockStack[0].type;
 }
 
 bool BinaryFileReader::insideBlock(int type) const {

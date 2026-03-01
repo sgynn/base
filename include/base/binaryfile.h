@@ -13,6 +13,8 @@ class BinaryFileWriter {
 	operator bool() const { return m_file; }
 	void startBlock(BlockType type);
 	void endBlock(BlockType type);
+	template<typename T> void startBlock(T type) { startBlock((BlockType)type); } // for enums
+	template<typename T> void endBlock(T type) { endBlock((BlockType)type); }
 	void writeString(const char* s, int length);
 	void write(const char* s);
 	void write(const base::String& s);
@@ -38,11 +40,13 @@ class BinaryFileReader {
 	BinaryFileReader(BinaryFileReader&) = delete;
 	~BinaryFileReader();
 	operator bool() const { return m_file; }
-	bool valid();
-	int nextBlock(bool subBlock=false);
+	bool valid() const;
+	int startBlock(); // Enters a block. Returns 0 if invalid
 	int currentBlock() const;
+	int rootBlock() const;
+	void exitBlock(int block);
+	void exitAllBlocks();
 	bool insideBlock(int type) const;
-	void endBlock(int id=0);
 	bool readString(char* s, int limit);
 	bool read(base::String& string);
 	bool read(bool& b) { b=get<char>(); return 1; }
@@ -65,26 +69,3 @@ class BinaryFileReader {
 };
 }
 
-
-
-/*
- *  2
- *  ---
- *  ---
- *  4
- *  ---
- *  --
- *  ---
- *  5
- *  ---
- *    6
- *    --
- *    7
- *    ---
- *  9
- *  ---
- *  ---
- *
- *
- *
- */
