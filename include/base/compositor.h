@@ -138,15 +138,6 @@ namespace base {
 		int           mOverrideFlags = 0; // What material element to override
 		RenderQueueMode mOverrideQueueMode = (RenderQueueMode)3; // Renderable Sorting
 	};
-	/// Copy a texture
-	class CompositorPassCopy final : public CompositorPass {
-		public:
-		CompositorPassCopy(const char* source, int index=0);
-		void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const override;
-		protected:
-		size_t mSource;
-		int    mSourceIndex;
-	};
 
 	// ===================================================================================================== //
 
@@ -158,12 +149,14 @@ namespace base {
 
 		using Format = Texture::Format;
 		static constexpr char DepthIndex = -1;
+		enum class Part : char { Default, Depth, Colour0, Colour1, Colour2, Colour3 };
+		static Part colourPart(int index) { return (Part)((int)Part::Colour0 + index); }
 
 		// Buffer attachments can be a format, or a texture from graph input
 		struct BufferAttachment {
 			Format format = Format::NONE;
 			char* input = nullptr;
-			char part = 0;
+			Part part = Part::Default;
 		};
 
 		// Frame buffer definition
@@ -177,8 +170,8 @@ namespace base {
 			base::Texture* texture; // use this instead - read only
 		};
 
-		// Inputs and outputs
-		struct Connector { char* name; char* buffer; char part; };
+		// Inputs and outputs - Note: 'part' is only used for outputs
+		struct Connector { char* name; char* buffer; Part part; };
 		struct Pass { char* target; CompositorPass* pass; };
 
 
@@ -201,7 +194,7 @@ namespace base {
 		Buffer* addTexture(const char* name, base::Texture*);
 
 		void addInput(const char* name, const char* buffer=0);
-		void addOutput(const char* name, const char* buffer=0);
+		void addOutput(const char* name, const char* buffer=0, Part part=Part::Default);
 
 		// Special output compositor defines screen (or whatever target)
 		static Compositor* Output;
@@ -227,7 +220,7 @@ namespace base {
 		private:
 		friend class Workspace;
 		friend class CompositorGraph;
-		void addConnector(std::vector<Connector>& list, const char* name, const char* buffer);
+		void addConnector(std::vector<Connector>& list, const char* name, const char* buffer, Part part);
 		void removeConnector(std::vector<Connector>& list, int index);
 		std::vector<Pass>      m_passes;
 		std::vector<Buffer*>   m_buffers;
@@ -249,8 +242,6 @@ namespace base {
 		void link(Compositor*, Compositor*);
 		void link(Compositor*, Compositor*, const char*);
 		void link(Compositor*, Compositor*, const char*, const char*);
-		void unlink(Compositor*, const char* key);
-		void unlink(Compositor*);
 
 		Compositor* getCompositor(size_t key) const;
 		size_t      add(Compositor*);
@@ -338,15 +329,16 @@ namespace base {
 		static CompositorTextures* getInstance();
 		~CompositorTextures();
 		public:
-		const base::Texture* get(const char* name, int index=0);// Get texture to attach to a material. use index -1 for depth
-		const base::Texture* get(size_t id, int index=0);		// Get texture to attach to a material. use index -1 for depth
+		const base::Texture* get(const char* name, Compositor::Part part=Compositor::Part::Default);// Get texture to attach to a material. use index -1 for depth
+		const base::Texture* get(size_t id, Compositor::Part part=Compositor::Part::Default);		// Get texture to attach to a material. use index -1 for depth
 		size_t getId(const char* name);							// Get compositor id from name
 		void   expose(size_t cid, base::FrameBuffer* buffer);	// Expose a compositor
 		void   expose(size_t cid, const base::Texture* texture);		// Expose a texture thrugh alias
 		void   conceal(size_t cid);								// Conceal a compositor
 		void   reset();											// clear active compositors
 		protected:
-		struct CTexture { base::Texture* texture; int index; CTexture* next; };
+		
+		struct CTexture { base::Texture* texture; Compositor::Part part; CTexture* next; };
 		std::vector<CTexture*> m_textures;
 		NameLookup m_names;
 	};

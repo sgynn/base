@@ -289,18 +289,6 @@ void CompositorPassScene::execute(const FrameBuffer* target, const Rect& view, R
 	state.setMaterialTechnique((int)0);
 }
 
-// ================================================================================ //
-
-CompositorPassCopy::CompositorPassCopy(const char* src, int index) : mSource(0), mSourceIndex(index) {
-}
-void CompositorPassCopy::execute(const FrameBuffer* target, const Rect& view, Renderer* r, Camera*, Scene*) const {
-	const Texture* src = CompositorTextures::getInstance()->get(mSource, mSourceIndex);
-	if(!src) return;
-	if(target->texture().getFormat() != src->getFormat()) return;
-	// ??
-	//glCopyTexImage2D( tgt.unit(), 0, Texture::getInternalFormat(tgt.getFormat(), 0,0,tgt.width(), tgt.height(), 0);
-}
-
 
 // ================================================================================ //
 
@@ -322,37 +310,47 @@ CompositorTextures::~CompositorTextures() {
 size_t CompositorTextures::getId(const char* name) {
 	return m_names.get(name);
 }
-const Texture* CompositorTextures::get(const char* name, int index) {
-	return get( getId(name), index);
+const Texture* CompositorTextures::get(const char* name, Compositor::Part part) {
+	return get( getId(name), part);
 }
-const Texture* CompositorTextures::get(size_t id, int index) {
-	if(m_textures.size() <= id) m_textures.resize(id+1, 0);
+const Texture* CompositorTextures::get(size_t id, Compositor::Part part) {
+	if(part == Compositor::Part::Default) part = Compositor::Part::Colour0;
+	while(m_textures.size() <= id) m_textures.push_back(nullptr);
 	for(CTexture* t = m_textures[id]; t; t=t->next) {
-		if(t->index == index) return t->texture;
+		if(t->part == part) return t->texture;
 	}
 	// New one
 	CTexture* t = new CTexture;
-	t->index = index;
-	t->texture = new Texture;
+	t->part = part;
+	t->texture = new Texture();
 	t->next = m_textures[id];
 	m_textures[id] = t;
 	return t->texture;
 }
 void CompositorTextures::expose(size_t id, FrameBuffer* buffer) {
+	using Part = Compositor::Part;
 	if(id < m_textures.size()) {
 		for(CTexture* t = m_textures[id]; t; t=t->next) {
-			if(t->index<0) *t->texture = buffer->depthTexture();
-			else *t->texture = buffer->texture(t->index);
-			if(!t->texture->unit()) {
-				printf("Error: Compositor exposed texture not part of framebuffer %s:%c\n", m_names.name(id), t->index<0? 'd': t->index+'0');
+			switch(t->part) {
+			case Part::Depth: *t->texture = buffer->depthTexture(); break;
+			case Part::Default:
+			case Part::Colour0: *t->texture = buffer->texture(0); break;
+			case Part::Colour1: *t->texture = buffer->texture(1); break;
+			case Part::Colour2: *t->texture = buffer->texture(2); break;
+			case Part::Colour3: *t->texture = buffer->texture(3); break;
 			}
+			//if(!t->texture->unit()) {
+			//	const char* partNames[] = { "", ":Depth", ":Colour0", ":Colour1", ":Colour2", ":Colour3" };
+			//	printf("Error: Compositor exposed texture not part of framebuffer %s%s\n", m_names.name(id), partNames[(int)t->part]);
+			//}
 		}
 	}
 }
 void CompositorTextures::expose(size_t id, const Texture* texture) {
+	using Part = Compositor::Part;
 	if(id < m_textures.size()) {
 		for(CTexture* t = m_textures[id]; t; t=t->next) {
-			if(t->index==0) *t->texture = *texture;
+			if(t->part == Part::Default || t->part == Part::Colour0) *t->texture = *texture;
 		}
 	}
 }
@@ -442,9 +440,9 @@ Compositor::Buffer* Compositor::addTexture(const char* name, Texture* texture) {
 	buf->texture = texture;
 	return buf;
 }
-void Compositor::addInput(const char* name, const char* buffer) { addConnector(m_inputs, name, buffer); }
-void Compositor::addOutput(const char* name, const char* buffer) { addConnector(m_outputs, name, buffer); }
-void Compositor::addConnector(std::vector<Connector>& list, const char* name, const char* buffer) {
+void Compositor::addInput(const char* name, const char* buffer) { addConnector(m_inputs, name, buffer, Part::Default); }
+void Compositor::addOutput(const char* name, const char* buffer, Part part) { addConnector(m_outputs, name, buffer, part); }
+void Compositor::addConnector(std::vector<Connector>& list, const char* name, const char* buffer, Part part) {
 	for(Connector& c: list) {
 		if(strcmp(c.name, name)==0) {
 			printf("Warning: Compositor '%s' already has connector '%s'\n", m_name, name);
@@ -452,20 +450,10 @@ void Compositor::addConnector(std::vector<Connector>& list, const char* name, co
 		}
 	}
 	Connector c;
-	c.part = 0;
+	c.part = part;
 	c.name = strdup(name);
 	if(name==buffer || !buffer) c.buffer = c.name;
-	else {
-		const char* split = strchr(buffer, ':');
-		if(!split) c.buffer = strdup(buffer);
-		else {
-			c.buffer = strdup(buffer);
-			c.buffer[split-buffer] = 0;
-			if(strcmp(split, ":depth")==0) c.part = 1;
-			else if(split[1]>='0' && split[1]<='9') c.part = atoi(split+1) + 2;
-			if(c.part==0 || c.part>5) printf("Error: Invalid connector subscript '%s'\n", split+1);
-		}
-	}
+	else c.buffer = strdup(buffer);
 	list.push_back(c);
 }
 
@@ -705,6 +693,7 @@ const FrameBuffer* Workspace::getBuffer(const char* compositor, const char* name
 
 
 bool Workspace::compile(int w, int h) {
+	using Part = Compositor::Part;
 	if(!m_graph) {
 		printf("Error: No compositor data\n");
 		return false;
@@ -719,11 +708,12 @@ bool Workspace::compile(int w, int h) {
 	struct LinkBuffer {
 		Compositor::Buffer* buffer = 0;
 		FrameBuffer* frameBuffer = 0;
+		Part part = Part::Default;
 	};
 	struct CLink {
 		size_t from; int out;		// Compositor index and output index this link came from
 		LinkBuffer* data = 0;		// Data being passed over link
-		char part = 0; 				// 0=framebuffer, 1=depth, 2-5=colour
+		Part part = Part::Default;	// Buffer subset
 		bool used = true;			// Is this link actually used
 		bool processed = false;		// Processing flag
 	};
@@ -782,10 +772,10 @@ bool Workspace::compile(int w, int h) {
 		for(size_t i=0; i<c.inputs.size(); ++i) {
 			if(c.inputs[i] >= 0) {
 				CLink& link = links[c.inputs[i]];
-				int b = c.compositor->m_inputs[i].part;
-				int a = compositors[link.from].compositor->m_outputs[link.out].part;
-				if(a&&b) printf("Error: Invalid compositor input %s:%s\n", c.compositor->m_name, c.compositor->m_inputs[i].name);
-				else link.part = a? a: b;
+				Part b = c.compositor->m_inputs[i].part;
+				Part a = compositors[link.from].compositor->m_outputs[link.out].part;
+				if(a!=Part::Default && b!=Part::Default) printf("Error: Invalid compositor input %s:%s\n", c.compositor->m_name, c.compositor->m_inputs[i].name);
+				else link.part = a!=Part::Default? a: b;
 			}
 		}
 	}
@@ -817,10 +807,10 @@ bool Workspace::compile(int w, int h) {
 	if(compositors[link.from].outputs.size() == 1)
 		openList.insert( link.from );
 
-	// Non-connected compositiors - these will be skipped
+	// Other compositors with no output connections - these will be skipped
 	for(size_t i=0; i<compositors.size(); ++i) {
 		if(i!=outputIndex && compositors[i].outputs.empty()) {
-			compositors[i].used = i!=outputIndex;
+			compositors[i].used = false;
 			openList.insert(i);
 		}
 	}
@@ -836,7 +826,7 @@ bool Workspace::compile(int w, int h) {
 			&& a->texture == b->texture;
 	};
 	auto getConnectorByBufferName = [](std::vector<Compositor::Connector>& list, const char* buffer) {
-		for(size_t i=0; i<list.size(); ++i) if(list[i].part==0 && strcmp(list[i].buffer, buffer)==0) return(int)i;
+		for(size_t i=0; i<list.size(); ++i) if(list[i].part==Part::Default && strcmp(list[i].buffer, buffer)==0) return(int)i;
 		return -1;
 	};
 	auto createFrameBuffer = [w, h, &links](const Compositor::Buffer* buffer, const CInfo& info) {
@@ -853,7 +843,7 @@ bool Workspace::compile(int w, int h) {
 			if(linkData->buffer && linkData->buffer->texture) return linkData->buffer->texture;
 			if(!linkData->frameBuffer) return nullptr; // No framebuffer
 			const FrameBuffer* b = linkData->frameBuffer;
-			const Texture& result = data.part==Compositor::DepthIndex? b->depthTexture(): b->texture(data.part);
+			const Texture& result = data.part==Part::Depth? b->depthTexture(): b->texture((int)data.part - (int)Part::Colour0);
 			if(result.getFormat() == Texture::NONE) return nullptr; // Slot not set
 			else return &result;
 		};
@@ -876,6 +866,7 @@ bool Workspace::compile(int w, int h) {
 	};
 
 
+	// Build ordered list - in reverse
 	const size_t nope = -1;
 	while(!openList.empty()) {
 		// Select a compositor with all outputs linked
@@ -885,10 +876,9 @@ bool Workspace::compile(int w, int h) {
 			bool complete = true;
 			CInfo& info = compositors[o];
 			for(int l : info.outputs) {
-				if(l>=0) {
-					if(!links[l].processed) complete = false;
-					if(links[l].used) used = true;
-				}
+				if(l < 0) continue; // Output not connected
+				if(!links[l].processed) complete = false;
+				if(links[l].used) used = true;
 			}
 			if(complete && !used) compositors[o].used = false;
 			if(complete && (c==nope || info.order > compositors[c].order)) c = o;
@@ -905,17 +895,16 @@ bool Workspace::compile(int w, int h) {
 		openList.erase(c);
 		CInfo& info = compositors[c];
 		for(int i: info.inputs) {
-			if(i>=0) {
-				links[i].processed = true;
-				openList.insert(links[i].from);
-				links[i].used = info.used;
-			}
+			if(i < 0) continue; // Not connected
+			links[i].processed = true;
+			openList.insert(links[i].from);
+			links[i].used = info.used;
 		}
 
 		if(!info.used) continue;
 		reverseList.push_back(c);
 
-		// Get all connected links by buffer name:w
+		// Get all connected links by buffer name
 		struct LinkMap { const char* name; std::vector<int> links; };
 		std::vector<LinkMap> buffers;
 		auto addLinkToMap = [&](const char* buffer, int link) {
@@ -939,7 +928,7 @@ bool Workspace::compile(int w, int h) {
 					return false;
 				}
 			}
-			// Get from compositior buffers
+			// Get from compositor buffers
 			if(Compositor::Buffer* buf = info.compositor->getBuffer(buffer.name)) {
 				if(!data) data = allocateLinkBuffer(buf);
 				else if(!data->buffer) data->buffer = buf;
@@ -950,7 +939,13 @@ bool Workspace::compile(int w, int h) {
 			}
 			// Set all to this
 			if(!data) data = allocateLinkBuffer();
-			for(int i: buffer.links) links[i].data = data;
+			for(int i: buffer.links) {
+				LinkBuffer* existingData = links[i].data;
+				if(existingData && existingData != data) {
+					for(CLink& l: links) if(l.data==existingData) l.data = data;
+				}
+				else links[i].data = data;
+			}
 		}
 	}
 
@@ -990,7 +985,7 @@ bool Workspace::compile(int w, int h) {
 			FrameBuffer* target = 0;
 			if(linkIndex != nope) {
 				CLink& link = links[linkIndex];
-				if(link.data->buffer->texture || link.part) {
+				if(link.data->buffer->texture || link.part!=Part::Default) {
 					printf("Error: Compositor target %s is read only in %s\n", link.data->buffer->name, info.compositor->m_name);
 					continue;
 				}
@@ -1052,8 +1047,8 @@ bool Workspace::compile(int w, int h) {
 				CLink& link = links[info.inputs[i]];
 				size_t id = CompositorTextures::getInstance()->getId( info.compositor->m_inputs[i].buffer );
 				if(link.data->buffer->texture) setExpose(id, 0, link.data->buffer->texture);
-				else if(link.part==1) setExpose(id, 0, &link.data->frameBuffer->depthTexture());
-				else if(link.part>1) setExpose(id, 0, &link.data->frameBuffer->texture(link.part-2));
+				else if(link.part==Part::Depth) setExpose(id, 0, &link.data->frameBuffer->depthTexture());
+				else if(link.part>=Part::Colour0) setExpose(id, 0, &link.data->frameBuffer->texture((int)link.part-(int)Part::Colour0));
 				else setExpose(id, link.data->frameBuffer, 0);
 			}
 		}

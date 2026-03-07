@@ -45,6 +45,7 @@ void ResourceManagerBase::error(const char* msg, const char* name) const {
 class XMLResourceLoader {
 	Resources& resources;
 	public:
+	struct BufferPart { const char* name; Compositor::Part part; };
 	XMLResourceLoader(Resources* r) : resources(*r) {}
 	Shader*          loadShader(const XMLElement&);
 	void             loadMaterialPass(const XMLElement&, Pass* pass);
@@ -52,6 +53,7 @@ class XMLResourceLoader {
 	ShaderVars*      loadShaderVars(const XMLElement&);
 	Compositor*      loadCompositor(const XMLElement&);
 	CompositorGraph* loadGraph(const XMLElement&);
+	static BufferPart parseBufferPart(const char* name);
 	void load(const XML&, const char* path=0, bool create=true);
 	template<class R> R* loadResource(const XMLElement&);
 };
@@ -714,9 +716,17 @@ void XMLResourceLoader::loadMaterialPass(const XMLElement& e, Pass* pass) {
 			const char* name = i.attribute("name");
 			const char* buffer = i.attribute("buffer", nullString);
 			if(buffer) {
-				int mrt = i.attribute("index", 0);
-				if(mrt==0 && i.attribute("index")[0]=='d') mrt = -1;
-				pass->setTexture(name, CompositorTextures::getInstance()->get(buffer, mrt));
+				BufferPart part = parseBufferPart(buffer);
+				// Deprecated - load legacy buffer index
+				if(const char* ix = i.attribute("index", nullString)) {
+					if(strcmp(ix, "depth")==0) part.part = Compositor::Part::Depth;
+					else if(strcmp(ix, "0")==0) part.part = Compositor::Part::Colour0;
+					else if(strcmp(ix, "1")==0) part.part = Compositor::Part::Colour1;
+					else if(strcmp(ix, "2")==0) part.part = Compositor::Part::Colour2;
+					else if(strcmp(ix, "3")==0) part.part = Compositor::Part::Colour3;
+					else printf("Invalid buffer index %s\n", ix);
+				}
+				pass->setTexture(name, CompositorTextures::getInstance()->get(part.name, part.part));
 			}
 			else {
 				Texture* tex = resources.textures.get(i.attribute("file"));
@@ -884,6 +894,24 @@ class CompositorResourceResolver : public MaterialResolver {
 	ShaderVars* resolveVariables(const char* name) { return m_resources.shaderVars.get(name); }
 };
 
+XMLResourceLoader::BufferPart XMLResourceLoader::parseBufferPart(const char* name) {
+	if(const char* split = strchr(name, ':')) {
+		StringView f = split;
+		Compositor::Part part = Compositor::Part::Default;
+		if(f == ":depth" || f==":d") part = Compositor::Part::Depth;
+		else if(f == ":0") part = Compositor::Part::Colour0;
+		else if(f == ":1") part = Compositor::Part::Colour1;
+		else if(f == ":2") part = Compositor::Part::Colour2;
+		else if(f == ":3") part = Compositor::Part::Colour3;
+		else printf("Error: Invalid invalid part '%s'\n", split);
+		static char temp[128];
+		strncpy(temp, name, split-name);
+		temp[split-name] = 0;
+		return { temp, part };
+	}
+	return { name, Compositor::Part::Default };
+}
+
 Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 	int iw=0, ih=0;
 	float fw=0, fh=0;
@@ -894,7 +922,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 									"R32F", "RG32F", "RGB32F", "RGBA32F", "R16F", "RG16F", "RGB16F", "RGBA16F",
 									"R11G11B10F", "R5G6B5", "D16", "D24", "D32", "D24S8" };
 
-
+	
 	Compositor* c = new Compositor(e.attribute("name"));
 	for(const XMLElement& i: e) {
 		if(i=="buffer") {
@@ -917,18 +945,9 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				if(f) slot.format = f;
 				else if(value[0]) { // buffer:part
 					slot.format = Texture::NONE;
-					const char* split = strchr(value, ':');
-					if(split) {
-						if(split == value) return;
-						if(strcmp(split+1, "depth")==0 || strcmp(split+1, "d")==0) slot.part = -1;
-						else if(split[1]>='0' && split[1]<='3' && split[2]==0) slot.part = split[1] - '0';
-						else return; // invalid
-					}
-					else split = value + strlen(value);
-					int len = split - value;
-					slot.input = new char[len+1];
-					strncpy(slot.input, value, len);
-					slot.input[len] = 0;
+					BufferPart buffer = parseBufferPart(value);
+					slot.input = strdup(buffer.name);
+					slot.part = buffer.part;
 				}
 			};
 
@@ -1009,9 +1028,8 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 						const char* name = t.attribute("name");
 						const char* buffer = t.attribute("buffer", nullString);
 						if(buffer) {
-							int mrt = t.attribute("index", 0);
-							if(mrt==0 && t.attribute("index")[0]=='d') mrt = -1;
-							pass->setTexture(name, CompositorTextures::getInstance()->get(buffer, mrt), false);
+							BufferPart part = parseBufferPart(buffer);
+							pass->setTexture(name, CompositorTextures::getInstance()->get(part.name, part.part), false);
 						}
 						else {
 							buffer = t.attribute("file");
@@ -1035,9 +1053,6 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				clear->setColour(3, i.attribute("buffer3", colour));
 				c->addPass(target, clear);
 			}
-			else if(strcmp(type, "copy")==0) {
-				c->addPass(target, new CompositorPassCopy(i.attribute("source")));
-			}
 			else {
 				printf("Invalid compositor pass type '%s' in %s\n", type, e.attribute("name"));
 			}
@@ -1053,8 +1068,9 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 			const char* buffer = i.attribute("buffer");
 			const char* name = i.attribute("name", buffer);
 			if(!buffer[0]) buffer = name;
-			if(!buffer[0]) printf("Compositor %s output has no buffer\n", e.attribute("name"));
-			c->addOutput(name, buffer);
+			BufferPart part = parseBufferPart(buffer);
+			if(!part.name[0]) printf("Compositor %s output has no buffer\n", e.attribute("name"));
+			else c->addOutput(name, part.name, part.part);
 		}
 	}
 	return c;
