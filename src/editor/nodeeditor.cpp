@@ -42,13 +42,20 @@ void NodeEditor::onMouseMove(const Point& last, const Point& pos, int b) {
 	}
 
 	// Get link under mouse
-	m_overLink = 0;
-	if(!b && !m_dragLink) for(Widget* w: *this) {
-		if(Node* n = cast<Node>(w)) {
-			for(const Link& link: n->getLinks(OUTPUT)) {
-				if(overLink(link,  pos, 10)) { m_overLink = &link; break; }
+	if(!b && !m_dragLink) {
+		const Link* over = nullptr;
+		for(Widget* w: *this) {
+			if(Node* n = cast<Node>(w)) {
+				for(const Link& link: n->getLinks(OUTPUT)) {
+					if(overLink(link,  pos, 10)) {
+						over = &link;
+						break;
+					}
+				}
 			}
 		}
+		if(over != m_overLink && eventHover) eventHover(over);
+		m_overLink = over;
 	}
 }
 void NodeEditor::onMouseButton(const Point& pos, int d, int u) {
@@ -412,6 +419,13 @@ const char* Node::getConnectorName(ConnectorMode mode, unsigned index) const {
 unsigned Node::getConnectorType(ConnectorMode mode, unsigned index) const {
 	const std::vector<Connector>& list = mode? m_outputs: m_inputs;
 	return list[index].type;
+}
+int Node::getConnectorIndex(ConnectorMode mode, const char* name) const {
+	const std::vector<Connector>& list = mode? m_outputs: m_inputs;
+	for(size_t i=0; i<list.size(); ++i) {
+		if(list[i].widget->getName() == name) return (int)i;
+	}
+	return -1;
 }
 
 bool Node::editConnector(ConnectorMode mode, unsigned index, const char* name, unsigned type, bool single) {

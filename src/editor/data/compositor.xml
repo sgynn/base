@@ -131,5 +131,6 @@
 				</widget>
 			</widget>
 		</widget>
+		<widget name="linkpreview" rect="800 600 150 150" anchor="br" tangible="0" autosize="1" layout="HorizontalLayout" skin="none"/>
 	</widget>
 </gui>

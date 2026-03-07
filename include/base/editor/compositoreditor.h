@@ -4,7 +4,7 @@
 #include <base/gui/widgets.h>
 #include <base/gui/lists.h>
 
-namespace nodegraph { class NodeEditor; class Node; }
+namespace nodegraph { class NodeEditor; class Node; struct Link; }
 namespace base { class Compositor; class CompositorGraph; class CompositorPass; class Workspace; }
 
 namespace editor {
@@ -83,23 +83,34 @@ class CompositorEditor : public EditorComponent {
 
 	template<class F> void eachActiveNode(F&& func);
 
-	protected:
-	gui::Widget* m_panel = 0;
-	base::CompositorGraph* m_graph = 0;
-	base::Compositor* m_compositor = 0;
-	gui::Listbox* m_graphList = 0;
-	gui::Listbox* m_nodeList = 0;
-	int m_compositorIndex = 0;
-	nodegraph::NodeEditor* m_graphEditor = 0;
-	gui::Popup* m_passTypePopup = 0;
-	gui::ItemList* m_targets = 0;
-	gui::ItemList* m_formats = 0;
+	private:
+	void onLinkHover(const nodegraph::Link*);
+	void injectPreview(int size, float aspect, int mrtMask, bool output);
+	void removePreview(bool rebuild=true);
 
-	gui::Widget* m_sceneTemplate = 0;
-	gui::Widget* m_clearTemplate = 0;
-	gui::Widget* m_quadTemplate = 0;
-	gui::Widget* m_copyTemplate = 0;
-	gui::Widget* m_bufferTemplate = 0;
+	protected:
+	gui::Widget* m_panel = nullptr;
+	base::CompositorGraph* m_graph = nullptr;
+	base::Compositor* m_compositor = nullptr;
+	gui::Listbox* m_graphList = nullptr;
+	gui::Listbox* m_nodeList = nullptr;
+	int m_compositorIndex = 0;
+	nodegraph::NodeEditor* m_graphEditor = nullptr;
+	gui::Popup* m_passTypePopup = nullptr;
+	gui::ItemList* m_targets = nullptr;
+	gui::ItemList* m_formats = nullptr;
+
+	base::Compositor* m_preview = nullptr;
+	base::Compositor* m_previewOutputFix = nullptr;
+	const nodegraph::Link* m_previewLink = nullptr;
+	bool m_keepLinkPreview = false;
+
+	gui::Widget* m_sceneTemplate = nullptr;
+	gui::Widget* m_clearTemplate = nullptr;
+	gui::Widget* m_quadTemplate = nullptr;
+	gui::Widget* m_copyTemplate = nullptr;
+	gui::Widget* m_bufferTemplate = nullptr;
+	gui::Widget* m_previewPanel = nullptr;
 };
 
 }

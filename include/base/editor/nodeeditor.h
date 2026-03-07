@@ -38,6 +38,7 @@ class NodeEditor : public gui::Widget {
 	void setConnectorIconSet(gui::IconList*);
 	void setConnectorType(unsigned type, int icon=0, unsigned colour=0xffffffff, unsigned validMask=0u);
 	static int areNodesConnected(const Node* a, const Node* b, unsigned connectorMask=~0u, unsigned limit=999);
+	const Link* getHoveredLink() const { return m_overLink; }
 
 	public:
 	bool link(Node* a, int out, Node* b, int in);
@@ -48,6 +49,7 @@ class NodeEditor : public gui::Widget {
 	Delegate<void(NodeEditor*)> eventChanged;	// Called whenever the graph is modified
 	Delegate<void(const Link&)> eventLinked;	
 	Delegate<void(const Link&)> eventUnlinked;
+	Delegate<void(const Link*)> eventHover;	// Mouse over a link. Null when mouse exits
 
 	protected:
 	void drawCurve(const Point* bezier, unsigned colour, float width=1, int n=32) const;
@@ -94,6 +96,7 @@ class Node : public gui::Button {
 	int getInputCount() const { return m_inputs.size(); }
 	int getOutputCount() const { return m_outputs.size(); }
 	int getConnectorCount(ConnectorMode mode) const;
+	int getConnectorIndex(ConnectorMode mode, const char* name) const;
 	const char* getConnectorName(ConnectorMode mode, unsigned index) const;
 	unsigned getConnectorType(ConnectorMode mode, unsigned index) const;
 	void forceStartDrag();

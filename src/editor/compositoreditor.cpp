@@ -1,10 +1,13 @@
 #include <base/editor/compositoreditor.h>
 #include <base/editor/nodeeditor.h>
 #include <base/gui/colourpicker.h>
+#include <base/gui/renderer.h>
+#include <base/framebuffer.h>
 #include <base/compositor.h>
 #include <base/material.h>
 #include <base/resources.h>
 #include <base/texture.h>
+#include <base/shader.h>
 #include <base/xml.h>
 #include <algorithm>
 #include <cstdio>
@@ -63,6 +66,7 @@ void CompositorEditor::initialise() {
 	graphContainer->add(m_graphEditor);
 	m_graphEditor->setAnchor("tlrb");
 	m_graphEditor->eventChanged.bind(this, &CompositorEditor::graphChanged);
+	m_previewPanel = m_panel->getWidget("linkpreview");
 
 	m_sceneTemplate = m_panel->getWidget("scenepass");
 	m_clearTemplate = m_panel->getWidget("clearpass");
@@ -85,9 +89,22 @@ void CompositorEditor::initialise() {
 		if(b == 2) {
 			ScaleBox* s = cast<ScaleBox>(w->getParent());
 			Point focus = s->getParent()->getDerivedTransform().transform(s->getPosition() + (s->getSize()>>1));
-			setGraphZoom(s, w, s->getScale() * (1+w->getRoot()->getMouseDelta().y * 0.01), focus);
+			setGraphZoom(s, w, s->getScale() * (1+w->getRoot()->getMouseDelta().y * -0.01), focus);
 		};
 	});
+	m_graphEditor->eventMouseDown.bind([this](Widget* w, const Point& p, int b) {
+		if(b == 1) {
+			m_keepLinkPreview = m_graphEditor->getHoveredLink();
+			if(!m_keepLinkPreview) removePreview();
+			else if(m_graphEditor->getHoveredLink() != m_previewLink) {
+				m_keepLinkPreview = false;
+				onLinkHover(m_graphEditor->getHoveredLink());
+				m_keepLinkPreview = true;
+			}
+		}
+	});
+	m_graphEditor->eventHover.bind(this, &CompositorEditor::onLinkHover);
+	m_previewPanel->setVisible(false);
 
 	CONNECT(Listbox, "nodelist", eventMouseMove, dragCompositor);
 	CONNECT(Listbox, "nodelist", eventSelected, selectCompositor);
@@ -101,7 +118,6 @@ void CompositorEditor::initialise() {
 	CONNECT(Button, "newscene", eventPressed, addScenePass);
 	CONNECT(Button, "newquad", eventPressed,  addQuadPass);
 	CONNECT(Button, "newclear", eventPressed, addClearPass);
-	CONNECT(Button, "newcopy", eventPressed,  addCopyPass);
 
 	CONNECT_SUB(Button, "inputs", "add", eventPressed, addConnector, 0, w, "input");
 	CONNECT_SUB(Button, "outputs", "add", eventPressed, addConnector, 1, w, "output");
@@ -505,7 +521,6 @@ void CompositorEditor::addPass(Button* b) {
 void CompositorEditor::addQuadPass(Button*)  { addPass("quadpass",  new CompositorPassQuad()); }
 void CompositorEditor::addScenePass(Button*) { addPass("scenepass", new CompositorPassScene(0, 10)); }
 void CompositorEditor::addClearPass(Button*) { addPass("clearpass", new CompositorPassClear()); }
-void CompositorEditor::addCopyPass(Button*)  { addPass("copypass",  new CompositorPassCopy(0)); }
 void CompositorEditor::addPass(const char* widget, CompositorPass* pass) {
 	Widget* w = m_panel->getWidget(widget)->clone();
 	w->getWidget<Button>("remove")->eventPressed.bind(this, &CompositorEditor::removePass);
@@ -646,7 +661,8 @@ void CompositorEditor::selectNode(Button* b) {
 
 // ---------------------------------------------------------------------- //
 
-void CompositorEditor::graphChanged(nodegraph::NodeEditor*) {
+void CompositorEditor::graphChanged(nodegraph::NodeEditor* source) {
+	if(source) removePreview(false);
 	CompositorGraph* graph = buildGraph();
 	applyGraph(graph);
 
@@ -670,14 +686,32 @@ CompositorGraph* CompositorEditor::buildGraph() const {
 			nodes.push_back(node);
 		}
 	}
-
 	for(CompositorNode* n: nodes) graph->add(n->getCompositor());
+
+	int preview = nodes.size();
+	int previewOut = nodes.size()+1;
+	if(m_previewLink && m_preview) graph->add(m_preview);
+	if(m_previewLink && m_previewOutputFix) graph->add(m_previewOutputFix);
 
 	using namespace nodegraph;
 	auto id = [](Node* n) { return cast<CompositorNode>(n)->getAlias(); };
 	for(CompositorNode* n: nodes) {
 		for(const Link& link: n->getLinks(OUTPUT)) {
-			graph->link(id(link.a), id(link.b), link.a->getConnectorName(OUTPUT,link.ia), link.b->getConnectorName(INPUT,link.ib));
+			if(m_preview && &link == m_previewLink) {
+				graph->link(id(link.a), preview, link.a->getConnectorName(OUTPUT,link.ia), "o");
+				if(m_previewOutputFix && id(link.b)==0) {
+					graph->link(preview, previewOut);
+					graph->link(previewOut, 0);
+				}
+				else graph->link(preview, id(link.b), "o", link.b->getConnectorName(INPUT,link.ib));
+			}
+			else if(m_previewLink && m_previewOutputFix && id(link.b) == 0) {
+				graph->link(id(link.a), previewOut, link.a->getConnectorName(OUTPUT,link.ia), "o");
+				graph->link(previewOut, 0);
+			}
+			else {
+				graph->link(id(link.a), id(link.b), link.a->getConnectorName(OUTPUT,link.ia), link.b->getConnectorName(INPUT,link.ib));
+			}
 		}
 	}
 
@@ -751,5 +785,188 @@ void CompositorEditor::exportGraph(CompositorGraph* graph) const {
 	XML xml;
 	xml.setRoot(g);
 	printf("%s", xml.toString());
+}
+
+
+// =============================================== //
+
+struct LinkBuffer {
+	const Compositor::Buffer* buffer;
+	const Compositor* source;
+	bool isOutput=false;
+	Compositor::Part part=Compositor::Part::Default;
+	operator bool() const { return buffer; }
+};
+static LinkBuffer getLinkBuffer(const nodegraph::Link& link, bool forward, Workspace* ws) {
+	CompositorNode* node = static_cast<CompositorNode*>(forward? link.b: link.a);
+	Compositor* c = node->getCompositor();
+	const Compositor::Connector& connector = forward? c->getInputs()[link.ib]: c->getOutputs()[link.ia];
+	// Does this connect to a buffer ?
+	if(const Compositor::Buffer* buf = c->getBuffer(connector.buffer)) return { buf, c, false, connector.part };
+	
+	// Output node ?
+	if(c == Compositor::Output) {
+		static Compositor::Buffer outputBuffer;
+		strcpy(outputBuffer.name, "Output");
+		outputBuffer.width = ws->getWidth();
+		outputBuffer.height = ws->getHeight();
+		outputBuffer.colour[0] = { Texture::Format::RGB8 };
+		outputBuffer.depth = { Texture::Format::D24S8 };
+		return { &outputBuffer, c, true };
+	}
+
+	// Continue search
+	for(auto& i: c->getInputs()) {
+		if(strcmp(i.buffer, connector.buffer)==0) {
+			int index = node->getConnectorIndex(nodegraph::INPUT, i.name);
+			for(auto& l: node->getLinks(nodegraph::INPUT, index)) {
+				if(&l == &link) continue;
+				if(LinkBuffer buf = getLinkBuffer(l, false, ws)) return buf;
+			}
+		}
+	}
+	for(auto& i: c->getOutputs()) {
+		if(strcmp(i.buffer, connector.buffer)==0) {
+			int index = node->getConnectorIndex(nodegraph::OUTPUT, i.name);
+			for(auto& l: node->getLinks(nodegraph::OUTPUT, index)) {
+				if(&l == &link) continue;
+				if(LinkBuffer buf = getLinkBuffer(l, true, ws)) return buf;
+			}
+		}
+	}
+	return {nullptr, nullptr};
+}
+
+void CompositorEditor::onLinkHover(const nodegraph::Link* link) {
+	Workspace* ws = getEditor()->getWorkspace();
+	if(m_keepLinkPreview) return;
+	if(!ws->isCompiled()) return;
+	if(link == nullptr) removePreview();
+	else {
+		m_previewLink = link;
+		LinkBuffer b = getLinkBuffer(*link, false, ws);
+		if(!b.buffer) b = getLinkBuffer(*link, true, ws);
+		if(b.buffer) {
+			printf("Buffer: %s %dx%d\n", b.buffer->name, b.buffer->width, b.buffer->height);
+		}
+		else printf("No buffer found\n");
+		
+		int mask = 0;
+		if(!b.buffer) return;
+		else if(b.buffer->texture) mask=4;
+		else {
+			auto exists = [](const Compositor::BufferAttachment& a) { return a.format != Texture::NONE || a.input; };
+			if(exists(b.buffer->depth)) mask |= 2;
+			if(exists(b.buffer->colour[0])) mask |= 4;
+			if(exists(b.buffer->colour[1])) mask |= 8;
+			if(exists(b.buffer->colour[2])) mask |= 16;
+			if(exists(b.buffer->colour[3])) mask |= 32;
+		}
+		float aspect = 1;
+		if(b.buffer->relativeWidth>0) {
+			const FrameBuffer* buf = ws->getBuffer(b.source->getName(), b.buffer->name);
+			if(buf) aspect = (float)buf->width() / buf->height();
+		}
+		else if(b.buffer->width>0) aspect = (float)b.buffer->width / b.buffer->height;
+		injectPreview(128, aspect, mask, b.isOutput);
+	}
+}
+
+static const char* simpleCopyShader = R"--(#version 330
+#pragma vertex_shader
+in vec2 vertex;
+in vec2 texCoord;
+out vec2 coord;
+void main() {
+	gl_Position = vec4(vertex, 0.0, 1.0);
+	#ifdef FLIP
+	coord = vec2(texCoord.x, 1.0-texCoord.y);
+	#else
+	coord = texCoord;
+	#endif
+}
+#pragma fragment_shader
+in vec2 coord;
+out vec4 fragment;
+uniform sampler2D source;
+void main() { fragment = texture(source, coord).rgba; }
+)--";
+
+void CompositorEditor::injectPreview(int size, float aspect, int mrtMask, bool output) {
+	// Pass - needs a quad pass that copies the input.
+	enum Copy { OUT, DEPTH, C0, C1, C2, C3 };
+	static Material copyMat[6];
+	if(!copyMat[0].size()) {
+		auto setupMaterial = [](Material& m, Compositor::Part part, Shader* shader) {
+			Pass* pass = m.addPass();
+			pass->setShader(shader);
+			pass->setTexture("source", CompositorTextures::getInstance()->get("o", part));
+		};
+		Shader* straight = Shader::create(simpleCopyShader, simpleCopyShader);
+		Shader* flipped  = Shader::create(simpleCopyShader, simpleCopyShader, "FLIP");
+		setupMaterial(copyMat[OUT], Compositor::Part::Default, straight);
+		setupMaterial(copyMat[DEPTH], Compositor::Part::Depth, flipped);
+		setupMaterial(copyMat[C0], Compositor::Part::Colour0, flipped);
+		setupMaterial(copyMat[C1], Compositor::Part::Colour1, flipped);
+		setupMaterial(copyMat[C2], Compositor::Part::Colour2, flipped);
+		setupMaterial(copyMat[C3], Compositor::Part::Colour3, flipped);
+	}
+
+	// Need an additional step to duplicate the output as the screen can't be used as an input
+	if(output) {
+		m_previewOutputFix = new Compositor("EditorPreviewOutputBuffer");
+		m_previewOutputFix->addInput("o");
+		m_previewOutputFix->addOutput("out");
+		m_previewOutputFix->addBuffer("o", 1.f, 1.f, Texture::RGBA8, Texture::D24S8);
+		m_previewOutputFix->addPass("out", new CompositorPassQuad(&copyMat[OUT]));
+	}
+
+	m_preview = new Compositor("EditorPreview");
+	m_preview->addInput("o");
+	m_preview->addOutput("o");
+	int width = (int)(size * aspect) & 0xfffe;
+	for(int i=0; i<6; ++i) {
+		if(~mrtMask & 1<<i) continue;
+		CompositorPassQuad* quadPass = new CompositorPassQuad(&copyMat[i]);
+		String name = String::format("preview%d", i);
+		m_preview->addPass(name, quadPass);
+		m_preview->addBuffer(name, width, size, Texture::RGBA8);
+	}
+	graphChanged(nullptr);
+
+	// Extract preview buffers
+	gui::Renderer* r = m_panel->getRoot()->getRenderer();
+	m_previewPanel->deleteChildWidgets();
+	m_previewPanel->setVisible(true);
+	for(int i=0; i<6; ++i) {
+		if(~mrtMask & 1<<i) continue;
+		String name = String::format("preview%d", i);
+		const FrameBuffer* out = getEditor()->getWorkspace()->getBuffer(m_preview->getName(), name);
+		if(!out) continue;
+		int img = r->getImage(name);
+		if(img<0) img = r->addImage(name, out->width(), out->height(), out->texture().unit());
+		else r->replaceImage(img, out->width(), out->height(), out->texture().unit());
+		// Craete image
+		gui::Image* image = new gui::Image();
+		image->setImage(img);
+		image->setSize(out->getSize());
+		m_previewPanel->add(image);
+	}
+}
+
+void CompositorEditor::removePreview(bool rebuild) {
+	if(!m_preview) return;
+	// If replacement compositor failed to compile these may still be in use
+	const CompositorGraph* graph = getEditor()->getWorkspace()->getGraph();
+	if(graph->find(m_preview) < 0) { 
+		delete m_preview;
+		delete m_previewOutputFix;
+		m_preview = nullptr;
+		m_previewOutputFix = nullptr;
+	}
+	m_previewLink = nullptr;
+	m_keepLinkPreview = false;
+	m_previewPanel->setVisible(false);
+	if(rebuild) graphChanged(nullptr);
 }
 

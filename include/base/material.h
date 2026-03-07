@@ -190,6 +190,8 @@ namespace base {
 		public:
 		Material();
 		~Material();
+		Material(const Material& m) = delete;
+		Material(Material&&) = default;
 		Material* clone() const;
 
 		Pass* getPass(int index) const;
