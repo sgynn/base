@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(basecode)
 
+include(CheckIncludeFile)
+
+
 set(src
 	src/archive.cpp
 	src/binaryfile.cpp
@@ -51,10 +54,6 @@ set(src
 	src/model/skeleton.cpp
 	src/model/wavefront.cpp
 
-	src/vr/directx-interop.cpp
-	src/vr/fliptarget.cpp
-	src/vr/openxr.cpp
-
 	src/navmesh/navdrawable.cpp
 	src/navmesh/navedit.cpp
 	src/navmesh/navmesh.cpp
@@ -71,6 +70,16 @@ set(src
 	src/world/infoplate.cpp
 	src/world/floatingtext.cpp
 )
+
+check_include_file("openxr/openxr.h" OPENXR)
+if(OPENXR)
+	set(vr
+		src/vr/directx-interop.cpp
+		src/vr/fliptarget.cpp
+		src/vr/openxr.cpp
+	)
+endif()
+
 
 set(gui
 	src/gui/font.cpp
@@ -280,7 +289,7 @@ if(${Freetype_FOUND})
 	set(FREETYPE "-DFREETYPE")
 endif()
 
-add_library(base STATIC ${src} ${gui} ${script} ${audio} ${particles} ${headers} ${guiheaders} ${worldheaders} ${editor} ${editorheaders} )
+add_library(base STATIC ${src} ${gui} ${script} ${audio} ${particles} ${vr} ${headers} ${guiheaders} ${worldheaders} ${editor} ${editorheaders} )
 include_directories(include)
 include_directories(${FREETYPE_INCLUDE_DIRS})
 
