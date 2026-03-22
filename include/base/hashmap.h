@@ -177,6 +177,7 @@ template<typename T> void base::HashMap<T>::erase(const char* key) {
 			unsigned t = index(m_data[j]->key, m_capacity);
 			if(t!=j) m_data[t] = m_data[j], m_data[j] = 0;
 		}
+		--m_size;
 	}
 	validate();
 }
