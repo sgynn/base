@@ -59,6 +59,10 @@ inline Colour&  Colour::fromRGB(unsigned c) { r=((c&0xff0000)>>16)/255.0f; g=((c
 inline Colour&  Colour::fromARGB(unsigned c) { fromRGB(c); a=((c&0xff000000)>>24)/255.0f; return *this; }
 inline Colour&  Colour::fromHSV(const HSV& c, float a) { fromHSV(c.hue, c.saturation, c.value, a); return *this; }
 
+inline Colour operator*(const Colour& c, float m) { return Colour(c.r*m, c.g*m, c.b*m, c.a); }
+inline Colour operator*(float m, const Colour& c) { return Colour(c.r*m, c.g*m, c.b*m, c.a); }
+inline Colour operator*(const Colour& a, const Colour& b) { return Colour(a.r*b.r, a.g*b.g, a.b*b.b, a.a*b.a); }
+
 inline Colour lerp(const Colour& a, const Colour& b, float t) { 
 	return Colour(a.r+(b.r-a.r)*t, a.g+(b.g-a.g)*t, a.b+(b.b-a.b)*t, a.a+(b.a-a.a)*t);
 }

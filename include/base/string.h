@@ -40,6 +40,8 @@ namespace base {
 		const char* contains(char c) const          { return strchr(str(), c); }
 		bool match(const char* pattern) const       { return match(str(), pattern); }
 
+		const char* begin() const                   { return m_data; }
+		const char* end() const                     { return m_data+length(); }
 		char operator[](unsigned i) const           { return m_data[i]; }
 		char& operator[](unsigned i)                { return m_data[i]; }
 		String& operator+=(const char* s)           { if(s&&s[0]) *this = *this + s; return *this; }
@@ -208,6 +210,8 @@ namespace base {
 		}
 		bool match(const char* pattern)				{ return String::match(m_data? m_data: "", pattern, m_length); }
 
+		const char* begin() const                   { return m_data; }
+		const char* end() const                     { return m_data+m_length; }
 		char operator[](unsigned i) const           { return m_data[i]; }
 		String operator+(const char* s) const       { return String::cat(m_data, m_length, s, s?strlen(s):0); }
 		String operator+(const StringView& s) const { return String::cat(m_data, m_length, s.m_data, s.m_length); }
