@@ -143,21 +143,27 @@ Variable::~Variable() {
 //// Move constructor - needs noexcept to be used in vector resize ////
 Variable::Variable(Variable&& v) noexcept : type(v.type) {
 	obj = v.obj;
-	v.obj = 0;
-	v.type = -1u; // Flag invalid
+	v.obj = nullptr;
+	v.type = 0;
 }
-/*
+
 Variable& Variable::operator=(Variable&& v) noexcept {
-	std::swap(obj, v.obj);
-	std::swap(type, v.type);
+	// May cause problems. sorting a vector of Variable needs this (horticulture).
+	// This breaks setting linked variables, so that one needs the other operator
+	if(type&LINK) setValue(v);
+	else {
+		std::swap(obj, v.obj);
+		std::swap(type, v.type);
+	}
 	return *this;
-}*/
+}
 
 //// Duplication ////
-Variable::Variable(const Variable& v) : type(0) { operator=(v); }
-const Variable& Variable::operator=(const Variable& v) {
-	if(this==&v) return v;
-	if(isConst()) return *this;
+Variable::Variable(const Variable& v) : type(0) { setValue(v); }
+const Variable& Variable::operator=(const Variable& v) { setValue(v); return *this; }
+void Variable::setValue(const Variable& v) {
+	if(this==&v) return;
+	if(isConst()) return;
 	assert(v.type !=-1u); // Invalid variable pointer due to a move, likely vector resize
 	// Take a reference to the object to avoid deleting what we are setting it to
 	Object* tmp = isObject() || isArray() || isVector()? obj: nullptr;
@@ -220,7 +226,6 @@ const Variable& Variable::operator=(const Variable& v) {
 	if(v.type & EXPLICIT) type |= EXPLICIT;
 
 	if(tmp && --tmp->ref==0) delete tmp;
-	return *this;
 }
 
 Variable Variable::copy(uint depth) const {

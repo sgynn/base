@@ -52,6 +52,7 @@ namespace script {
 		bool linkValue(VariableName&, int flags);
 		bool linkVector(uint type, float* value, int flags);
 		bool setType(uint type);
+		void setValue(const Variable& value);
 
 		/// Object functions
 		int  _contains(uint id) const;
@@ -70,7 +71,7 @@ namespace script {
 		Variable(const Variable&);				// Copy constructor
 		Variable(Variable&&) noexcept;					// Move constructor
 		const Variable& operator=(const Variable&);
-		//Variable& operator=(Variable&&) noexcept;		// Move operator disabled as it breaks LINKs
+		Variable& operator=(Variable&&) noexcept;		// Move operator breaks LINKs ??
 		Variable copy(uint depth) const;		// Make a deep copy
 
 		template<typename T>Variable(T v): type(0) { operator=(v); }
