@@ -6,5 +6,6 @@ namespace editor {
 class RenderDoc : public EditorComponent {
 	public:
 	void initialise() override;
+	void update() override;
 };
 }

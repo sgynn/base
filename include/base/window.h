@@ -64,6 +64,9 @@ namespace base {
 		virtual void setCursor(unsigned c) = 0;
 		virtual void createCursor(unsigned c, const char* image, int w, int h, int x=0, int y=0) = 0; // ARGB image
 
+		virtual void* getDevice() const = 0; // HGLRC/GLXContext/...
+		virtual void* getHandle() const = 0; // HWND/GLXDrawable/...
+
 		protected:
 		void notifyResize(const Point& newSize);
 		void notifyFocus(bool hasFocus);

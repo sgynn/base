@@ -15,6 +15,7 @@ namespace base {
 		void setIcon() override;
 		void setPosition(int x, int y) override;
 		void setSize(int w, int h) override;
+		bool setMode(WindowMode mode) override;
 		bool setVSync(bool) override;
 
 		bool created() const { return m_hWnd!=0; }

@@ -40,6 +40,9 @@ namespace base {
 		int getXScreen() const       { return m_screen; }
 		const GLXFBConfig& getFBConfig() const { return m_fbConfig; }
 
+		void* getDevice() const override { return m_context; }
+		void* getHandle() const override;
+
 		protected:
 		Display*             m_display;
 		XVisualInfo*         m_visual;

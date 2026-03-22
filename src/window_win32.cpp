@@ -273,6 +273,31 @@ void Win32Window::setSize(int w, int h) {
 	}
 }
 
+bool Win32Window::setMode(WindowMode mode) {
+	if(m_windowMode == mode) return true;
+	if(!created()) {
+		m_windowMode = mode;
+		return true;
+	}
+
+	// Switching from borderless to windowed should be easy
+	// switching to exclusive probably requires recreating the context ?
+	
+	if(m_windowMode == WindowMode::Window) m_windowSize = m_size;
+	if(mode == WindowMode::Borderless) {
+		m_size = getScreenResolution();
+		RECT rect = { 0, 0, m_size.x, m_size.y };
+		AdjustWindowRectEx(&rect, WS_VISIBLE, false, 0);
+	}
+	else if(mode == WindowMode::Window) {
+		RECT rect = { 0, 0, m_windowSize.x, m_windowSize.y };
+		AdjustWindowRectEx(&rect, WS_VISIBLE|WS_CAPTION|WS_TILED, false, 0);
+	}
+	m_windowMode = mode;
+	return true;
+}
+
+
 bool Win32Window::setVSync(bool on) {
 	return wglSwapIntervalEXT(on? 1: 0);
 }

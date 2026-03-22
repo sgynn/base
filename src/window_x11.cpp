@@ -162,6 +162,11 @@ void X11Window::destroyWindow() {
 	m_window = 0;
 }
 
+void* X11Window::getHandle() const {
+	GLXDrawable d = glXGetCurrentDrawable();
+	return (void*)(size_t)d;
+}
+
 // =================================================================================================== //
 
 const Point& X11Window::getScreenResolution() {
