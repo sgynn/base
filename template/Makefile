@@ -99,29 +99,25 @@ webgl/:
 
 $(OBJDIR)/%.o: %.cpp $(headers)
 	@echo $<
+	@mkdir -p $(@D)
 	@$(CXX) $(CFLAGS) -c $< -o $@ 2>&1 | $(SED)
 
 $(OBJDIR)/release/%.o: %.cpp $(headers)
 	@echo $<
+	@mkdir -p $(@D)
 	@$(CXX) $(CFLAGS) -c $< -o $@ 2>&1 | $(SED)
 
 $(OBJDIR)/em/%.o: %.cpp $(headers)
 	@echo $<
+	@mkdir -p $(@D)
 	@em++ $(CFLAGS) -c $< -o $@ 2>&1 | $(SED)
 
 $(OBJDIR)/resources.res : icon.ico
-	echo "APPICON ICON icon.ico" > $(OBJDIR)/res.rc
-	cp icon.ico $(OBJDIR)
-	x86_64-w64-mingw32-windres $(OBJDIR)/res.rc -O coff -o $(OBJDIR)/resources.res
+	@mkdir -p $(@D)
+	@echo "APPICON ICON icon.ico" > $(OBJDIR)/res.rc
+	@cp icon.ico $(OBJDIR)
+	@x86_64-w64-mingw32-windres $(OBJDIR)/res.rc -O coff -o $(OBJDIR)/resources.res
 
-$(OBJDIR)/release/%/: %
-	@mkdir -p $@
-$(OBJDIR)/em/%/: %
-	@mkdir -p $@
-$(OBJDIR)/%/: %
-	@mkdir -p $@
-$(OBJDIR)/:
-	@mkdir -p $(OBJDIR)
 
 clean:
 	rm -f *~ */*~ $(exec) $(release).exe $(release)
