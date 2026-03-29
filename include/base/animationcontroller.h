@@ -46,6 +46,14 @@ enum class ActionMode {
 	ReverseHold	// Reverse at >1.0, End at 0.0
 };
 
+struct ActionBlend {
+	ActionBlend(bool blend) { duration = blend? -1: 0; }
+	ActionBlend(float time) { duration = time; }
+	ActionBlend(float time, float wait) { duration=time; threshold=wait; }
+	float duration = 0;		// Action fade in time. -1 for default value
+	float threshold = 0;	// Fade threshold before action starts playing
+};
+
 
 /// Animations and metadata
 class AnimationBank {
@@ -97,12 +105,12 @@ class AnimationController {
 	void setAnimationBank(AnimationBank*);
 	AnimationBank* getAnimations() const { return m_bank; }
 	base::Skeleton* getSkeleton() const;
-	void setFadeTime(float time);
+	void setFadeTime(float time); // default 0.3
 
 	void setGroup(int group);
 	void setIdle(const AnimationKey&);								// Set idle action (loop)
 	void playMove(float speed);										// Play move animation. select based on speed from valid group
-	void playAction(const AnimationKey&, ActionMode mode=ActionMode::Hold, float speed=1.0, bool blend=true);	// Play an action
+	void playAction(const AnimationKey&, ActionMode mode=ActionMode::Hold, float speed=1.0, ActionBlend fade=true);	// Play an action
 	void endAction();												// End current action
 	void clear();													// Immediatly terminate all actions
 
@@ -159,7 +167,9 @@ class AnimationController {
 	int m_actionTrack;		// Track playing active action
 	int m_overrideStart;	// override animations must be after action tracks
 	int m_lastAction;		// Keep action track until it fades out
-	float m_fadeTime;		// Tiime to fade between animations
+	float m_fadeTime;		// Time to fade between animations
+	ActionBlend m_fade;		// Fade mode for the active action
+	float m_actionSpeed;	// Speed of active action - used for fade threshold
 
 	int  m_rootBone;		// Bone used for root motion
 	vec3 m_lastPosition;	// Previous root position for calculating deltas

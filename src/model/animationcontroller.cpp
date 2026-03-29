@@ -207,7 +207,7 @@ const AnimationBank::AnimationInfo* AnimationBank::getAnimation(float speed, int
 AnimationController::AnimationController()
 	: m_state(0), m_bank(0), m_rootMotion(true), m_group(0),  m_moveSpeed(0)
 	, m_idleTrack(-1), m_actionTrack(-1), m_overrideStart(2), m_lastAction(-1)
-	, m_fadeTime(0.3), m_rootBone(0)
+	, m_fadeTime(0.3), m_fade(true), m_actionSpeed(1), m_rootBone(0)
 {
 }
 
@@ -296,6 +296,7 @@ void AnimationController::playMove(float speed) {
 		if(m_actionTrack>=0 && m_meta[m_actionTrack].type == MOVEMENT) {
 			//printf("Stop movement\n");
 			m_actionTrack = -1;
+			m_fade = true;
 		}
 	}
 	else if(m_actionTrack<0 || m_state->getAnimation(m_actionTrack)!=a->animation) {
@@ -333,7 +334,7 @@ void AnimationController::playMove(float speed) {
 	}
 }
 
-void AnimationController::playAction(const AnimationKey& key, ActionMode mode, float speed, bool blend) {
+void AnimationController::playAction(const AnimationKey& key, ActionMode mode, float speed, ActionBlend blend) {
 	const AnimationBank::AnimationInfo* a = m_bank->getAnimation(key, m_group);
 	if(key && !a) printf("Missing animation %s\n", key.getName());
 	if(a && mode==ActionMode::End && a->animation->getLength()==1) printf("Warning: Trying to play single frame action %s with ActionMode::End\n", a->animation->getName());
@@ -346,10 +347,12 @@ void AnimationController::playAction(const AnimationKey& key, ActionMode mode, f
 		m_moveSpeed = 0;
 	}
 	else {
-		float weight = blend? 0: 1;
+		float weight = blend.duration==0? 1: 0;
 		m_actionTrack = allocateActionTrack();
-		m_state->play(a->animation, speed, AnimationBlend::Add, weight, mode==ActionMode::Loop, -1, m_actionTrack);
+		m_actionSpeed = speed;
+		m_state->play(a->animation, blend.threshold>0? 0: speed, AnimationBlend::Add, weight, mode==ActionMode::Loop, -1, m_actionTrack);
 		m_lastAction = m_actionTrack;
+		m_fade = blend;
 		setMeta(m_actionTrack, a, ACTION, mode);
 		//printf("Start action %s %d\n", a->animation->getName(), m_actionTrack);
 		if(speed < 0) m_state->setFrameNormalised(1, m_actionTrack); // start at end if reversed
@@ -360,8 +363,10 @@ void AnimationController::playAction(const AnimationKey& key, ActionMode mode, f
 }
 
 void AnimationController::endAction() {
-	if(m_actionTrack>=0 && m_meta[m_actionTrack].type != MOVEMENT)
+	if(m_actionTrack>=0 && m_meta[m_actionTrack].type != MOVEMENT) {
 		m_actionTrack = -1;
+		m_fade = false;
+	}
 }
 
 void AnimationController::clear() {
@@ -431,7 +436,10 @@ void AnimationController::setWeight(float w) {
 	if(getState() == ActionState::Action) m_state->setWeight(w, m_actionTrack);
 }
 void AnimationController::setSpeed(float s) {
-	if(getState() == ActionState::Action) m_state->setSpeed(s, m_actionTrack);
+	if(getState() == ActionState::Action) {
+		m_actionSpeed = s;
+		m_state->setSpeed(s, m_actionTrack);
+	}
 }
 
 // -------------------------------- //
@@ -549,7 +557,6 @@ bool AnimationController::currentActionAffectsBone(unsigned index) const {
 // -------------------------------- //
 
 void AnimationController::update(float time, bool finalise) {
-	const float fade = time / m_fadeTime;
 	m_state->update(time, false);	// Advance animations
 
 
@@ -580,7 +587,9 @@ void AnimationController::update(float time, bool finalise) {
 	int endSignal = 0;
 	int primary = m_actionTrack>=0? m_actionTrack: m_idleTrack;
 	if(primary >= 0) {
+		float fade = time / (m_fade.duration>0? m_fade.duration: m_fadeTime);
 		float w = m_state->getWeight(primary) + fade;
+		if(m_fade.threshold && w >= m_fade.threshold) m_state->setSpeed(primary, m_actionSpeed);
 		if(w > 1) w = 1;
 		m_state->setWeight(w, primary);
 
@@ -609,6 +618,7 @@ void AnimationController::update(float time, bool finalise) {
 	}
 
 	// Fade override tracks
+	const float fade = time / m_fadeTime;
 	for(int i=m_state->getNextTrack(endSignal-1); i>=0; i=m_state->getNextTrack(i)) {
 		if(m_meta[i].type == OVERRIDE_IN) m_state->fadeIn(fade, i);
 		else if(m_meta[i].type == OVERRIDE_OUT) m_state->fadeOut(fade, i);
