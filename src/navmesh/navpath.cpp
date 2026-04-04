@@ -395,7 +395,7 @@ void PathFollower::setPosition(const vec3& p) {
 		poly = m_path.m_navmesh->getClosestPolygon(p, m_search, &close);
 	}
 	m_polygon = poly? poly->id: NavPoly::Invalid;
-	if(m_polygon==NavPoly::Invalid) printf("Error: Position not on navmesh\n");
+	if(m_polygon==NavPoly::Invalid) { /*printf("Error: Position not on navmesh\n"); */ }
 	else if(getState() == PathState::Success) repath();
 }
 
