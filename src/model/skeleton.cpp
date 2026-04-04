@@ -279,6 +279,7 @@ bool Skeleton::applyBonePose(Bone* b, const Animation* anim, int keyset, float f
 				lerp(pos, b->m_position, pos, weight);
 				lerp(scl, b->m_scale, scl, weight);
 			} else {	// SET - scale new values
+				if(rot.w < 0) rot.invert();
 				slerp(rot, m_rest->rot[index], rot, weight);
 				lerp(scl, m_rest->scale[index], scl, weight);
 				pos *= weight;
