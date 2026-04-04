@@ -589,7 +589,7 @@ void AnimationController::update(float time, bool finalise) {
 	if(primary >= 0) {
 		float fade = time / (m_fade.duration>0? m_fade.duration: m_fadeTime);
 		float w = m_state->getWeight(primary) + fade;
-		if(m_fade.threshold && w >= m_fade.threshold) m_state->setSpeed(primary, m_actionSpeed);
+		if(m_fade.threshold && w >= m_fade.threshold) m_state->setSpeed(m_actionSpeed, primary);
 		if(w > 1) w = 1;
 		m_state->setWeight(w, primary);
 
