@@ -5,6 +5,7 @@ import bpy
 import bmesh
 import mathutils
 import bpy_extras.io_utils
+from idprop.types import IDPropertyArray
 
 from xml.dom.minidom import Document
 from mathutils import Matrix
@@ -486,10 +487,15 @@ def export_action(context, skeleton, action, name, xml):
     bpy.ops.pose.select_all(action='SELECT')
     bpy.ops.pose.transforms_clear()
 
+
+    #Blender 4.4+ made this mode complicated
+    # groups = action.groups
+    groups = action.layers[0].strips[0].channelbag(action.slots[0]).groups
+
     data = []
     for bone in skeleton.pose.bones:
-        if bone.name in action.groups.keys():
-            group = action.groups[bone.name]
+        if bone.name in groups.keys():
+            group = groups[bone.name]
             hasLocation = any('location' in channel.data_path for channel in group.channels)
             hasRotation = any('rotation' in channel.data_path for channel in group.channels)
             hasScale    = any('scale' in channel.data_path for channel in group.channels)
@@ -566,7 +572,7 @@ def optimise_keys(keys, identity, compare):
     if len(keys) > 1 and compare(keys[-2][1], keys[-1][1]):
         del keys[-1:]
 
-    print("Removed " + str(len(keys)-count) + " keyframes")
+    #print("Removed " + str(len(keys)-count) + " keyframes")
 
 def write_keyframes(keyset, name, data):
     node = append_element(keyset, name)
@@ -697,11 +703,14 @@ def export_custom_properties(node, obj, name=None):
         for key in obj.keys():
             if key not in '_RNA_UI':
                 if hasattr(obj[key], 'name'): custom.append((key, obj[key].name))
-                else: custom.append( (key, str(obj[key])) )
+                else: custom.append( (key, obj[key]) )
 
         if custom:
             if name: node = append_element(node, name)
-            for p in custom: node.setAttribute(p[0], p[1]);
+            for p in custom:
+                if type(p[1]) is IDPropertyArray:
+                    node.setAttribute(p[0], ' '.join(str(i) for i in p[1].to_list()))
+                else: node.setAttribute(p[0], str(p[1]));
 
 
 # -------------------------------------------------------------------------- #
