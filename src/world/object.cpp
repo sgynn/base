@@ -35,8 +35,22 @@ class AnimationPropertyExtension : public base::ModelExtension {
 		if(strcmp(typeName, "move")==0) type = Move;
 		else if(strcmp(typeName, "idle")==0) type = Idle;
 		else type = Action;
+
+		const char* groupList = props.attribute("groups");
+		if(groupList[0]) {
+			// Assume integers for now
+			groups = 0;
+			char* e = nullptr;
+			while(groupList[0]) {
+				int g = strtol(groupList, &e, 10);
+				if(e==groupList) break;
+				groups |= 1<<g;
+				groupList = e;
+			}
+		}
 	}
 	char name[64];
+	uint groups = -1u;
 	AnimationType type;
 };
 
@@ -69,19 +83,21 @@ int world::addAnimationsFromModel(AnimationBank* bank, Model* model, bool replac
 	std::set<AnimationKey> added;
 	for(size_t i=0; i<model->getAnimationCount(); ++i) {
 		Animation* a = model->getAnimation(i);
+		uint groups = -1u;
 		AnimationPropertyExtension::AnimationType type = AnimationPropertyExtension::Action;
 		for(ModelExtension* e: model->getExtensions()) {
 			if(AnimationPropertyExtension* prop = e->as<AnimationPropertyExtension>()) {
 				if(strcmp(prop->name, a->getName())==0) {
 					type = prop->type;
+					groups = prop->groups;
 					break;
 				}
 			}
 		}
 		AnimationKey name = a->getName();
 		if(replace && added.insert(name).second) bank->remove(name);
-		bank->add(name, a, ~0u, 1, type == AnimationPropertyExtension::Move);
-		if(type == AnimationPropertyExtension::Idle) bank->add("Idle", a);
+		bank->add(name, a, groups, 1, type == AnimationPropertyExtension::Move);
+		if(type == AnimationPropertyExtension::Idle) bank->add("Idle", a, groups);
 	}
 	return model->getAnimationCount();
 }
