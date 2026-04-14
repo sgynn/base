@@ -76,12 +76,13 @@ namespace base {
 		VecPair(const vec3& p) : first(p), second(p) {}
 		VecPair(const vec3& a,const vec3& b) : first(a), second(b){}
 		operator vec3&() { return first; }
+		vec3 operator-(const vec3& o) const { return first - o; }
 	};
 
 	/** Path follower class*/
 	class PathFollower {
 		public:
-		PathFollower(const NavMesh* nav = nullptr);
+		PathFollower(const NavMesh* nav = nullptr, float radius=0);
 		void        setNavMesh(const NavMesh*);
 		void        setSearchRadius(float r);	// Set radius for finding polygons
 		void        setRadius(float r);			// Set character radius

@@ -325,7 +325,7 @@ const NavPoly* Pathfinder::resolvePoint(vec3& pt, float r, float search, int ite
 
 // =====================================================================================i================ //
 
-PathFollower::PathFollower(const NavMesh* nav) : m_path(nav), m_pathIndex(0), m_polygon(NavPoly::Invalid), m_goalPoly(NavPoly::Invalid), m_radius(0) {
+PathFollower::PathFollower(const NavMesh* nav, float radius) : m_path(nav, radius), m_pathIndex(0), m_polygon(NavPoly::Invalid), m_goalPoly(NavPoly::Invalid), m_radius(radius) {
 }
 
 void PathFollower::setNavMesh(const NavMesh* nav) {

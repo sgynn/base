@@ -51,7 +51,7 @@ namespace nav {
 	bool     isAdjacent(const NavPoly* p, int a, int b);				// Are two indices adjacent
 	bool     inverted  (const NavPoly* p);								// Is a polygon inverted (winding)
 	int      inside    (const NavPoly* p, const vec2& point);			// Is a point inside a polygon (can be concave)
-	int      intersect (const NavPoly* a, const NavPoly* b);			// Do polygons intersect?
+	int      intersect (const NavPoly* a, const NavPoly* b, float s=0);	// Do polygons intersect?
 	int      insideConvex (const NavPoly* p, const vec2& point);		// Is a point inside a convex polygon
 	void     updateCentre (NavPoly* p);									// Calculate polygon centre point
 
@@ -84,7 +84,7 @@ namespace nav {
 	int      testSplit(const NavPoly* p, int a, const vec3& target);			// Is vector p[a]-target within the polygon
 	bool     isVectorInsidePoint(const NavPoly* p, int b, const vec3& target);	// Support function for testSplit - is vector p[b]->target within the point
 
-	int      collect    (const PList& mesh, const NavPoly* brush, PList& out);	// Get all polygons in mesh that intersect brush
+	int      collect    (const PList& mesh, const NavPoly* brush, float stepHeight, PList& out); // Get all polygons in mesh that intersect brush
 	int      expand     (PList& list, int mask);								// Expand selection along links
 	int		 getIntersections (const NavPoly* b, const NavPoly* p, IList& out);	// Get all intersections
 
@@ -94,6 +94,7 @@ namespace nav {
 	
 	inline bool eq(float a, float b, float epsilon=EPSILON) { return fabs(a-b)<epsilon; }
 	inline bool eq(const vec3& a, const vec3& b, float epsilon=EPSILON) { return a.distance2(b) < epsilon; }
+	inline bool eq2d(const vec3& a, const vec3& b, float epsilon=EPSILON) { return powf(a.x-b.x,2)+powf(a.z-b.z,2) < epsilon; }
 	inline bool eqSplit(const vec3& a, const vec3& b, float h=EPSILON, float epsilon=EPSILON) { return fabs(a.x-b.x)<epsilon && fabs(a.z-b.z)<epsilon && fabs(a.y-b.y)<h; }
 	inline int previousIndex(const NavPoly* p, int i) { return (i-1+p->size) % p->size; }
 	inline int nextIndex(const NavPoly* p, int i) { return (i+1) % p->size; }
@@ -102,7 +103,7 @@ namespace nav {
 
 	bool validateLinks(const NavPoly* poly, bool removeInvalid);
 	void validateAllLinks(const NavPolyList& mesh);
-	bool logPolygon(const NavMesh* mesh, const NavPoly& p, int precidence, bool add, bool clean=false);	// Log polygon to file to load in test debugger
+	bool logPolygon(const NavMesh* mesh, const NavPoly& p, int precidence, bool add, float stepHeight, bool clean=false);	// Log polygon to file to load in test debugger
 
 	inline float dot2d(const vec3& a, const vec3& b) { return a.x*b.x + a.z*b.z; }
 	inline float dot2d(const vec3& a, const vec2& b) { return a.x*b.x + a.z*b.y; }
@@ -191,7 +192,7 @@ int nav::insideConvex(const NavPoly* poly, const vec2& p) {
 
 
 /** Do two polygons intersect - maybe use GJK intersection */
-int nav::intersect(const NavPoly* a, const NavPoly* b) {
+int nav::intersect(const NavPoly* a, const NavPoly* b, float stepHeight) {
 	static constexpr float low = 1e-4, high=1-1e-4;
 
 	auto checkSpike = [a,b](float t, int i, int j, int u, int v) {
@@ -210,12 +211,18 @@ int nav::intersect(const NavPoly* a, const NavPoly* b) {
 
 	float s,t;
 	bool touch = false; // touches via a spike, but not connected
+	stepHeight += 0.1;
 	for(int i=a->size-1,j=0; j<a->size; i=j, ++j) {
 		for(int u=b->size-1, v=0; v<b->size; u=v, ++v) {
-			bool eiv = eqSplit(a->points[i], b->points[v], 0.1);
-			bool eju = eqSplit(a->points[j], b->points[u], 0.1);
+			bool eiv = eqSplit(a->points[i], b->points[v], stepHeight);
+			bool eju = eqSplit(a->points[j], b->points[u], stepHeight);
 			if(eiv && eju) return 4; // Connected
 			if(eiv || eju) touch = true;
+
+			bool eiu = eqSplit(a->points[i], b->points[u], stepHeight);
+			bool ejv = eqSplit(a->points[j], b->points[v], stepHeight);
+			if(eiu || ejv) continue; // Handled in another iteration
+
 
 			if(nav::intersectLines(a->points[i], a->points[j], b->points[u], b->points[v], s, t)) {
 				if(s>0 && s<1 && t>0 && t<1) {
@@ -1399,18 +1406,18 @@ int nav::getIntersections(const NavPoly* a, const NavPoly* b, IList& list) {
 	for(int i=a->size-1,j=0; j<a->size; i=j, ++j) {
 		for(int u=b->size-1, v=0; v<b->size; u=v, ++v) {
 			// Points the same
-			bool iu = eq(a->points[i], b->points[u]);
-			bool iv = eq(a->points[i], b->points[v]);
-			bool ju = eq(a->points[j], b->points[u]);
-			bool jv = eq(a->points[j], b->points[v]);
+			bool iu = eq2d(a->points[i], b->points[u]);
+			bool iv = eq2d(a->points[i], b->points[v]);
+			bool ju = eq2d(a->points[j], b->points[u]);
+			bool jv = eq2d(a->points[j], b->points[v]);
 			if(iu || iv || ju || jv) {
 				// Need third point
 				int k = (j+1)%a->size;
 				int w = (v+1)%b->size;
 					
-				bool ku = eq(a->points[k], b->points[u]);
-				bool iw = eq(a->points[i], b->points[w]);
-				bool kw = eq(a->points[k], b->points[w]);
+				bool ku = eq2d(a->points[k], b->points[u]);
+				bool iw = eq2d(a->points[i], b->points[w]);
+				bool kw = eq2d(a->points[k], b->points[w]);
 
 				// Matching edge
 				if(jv && (ku != iw || iu != kw)) {
@@ -1492,8 +1499,8 @@ int nav::getIntersections(const NavPoly* a, const NavPoly* b, IList& list) {
 				// Detect coincident lines - for floating point error
 				vec3 an(a->points[i].z-a->points[j].z, 0, a->points[j].x-a->points[i].x);
 				an.normalise();
-				if( fabs(an.dot(b->points[u] - a->points[i])) < 1e-2 && 
-					fabs(an.dot(b->points[v] - a->points[i])) < 1e-2) continue;
+				if( fabs(dot2d(an, b->points[u] - a->points[i])) < 1e-2 && 
+					fabs(dot2d(an, b->points[v] - a->points[i])) < 1e-2) continue;
 
 
 				bd = b->points[v] - b->points[u];
@@ -1579,12 +1586,13 @@ int nav::getIntersections(const NavPoly* a, const NavPoly* b, IList& list) {
 	return list.size();
 }
 
-int nav::collect(const PList& mesh, const NavPoly* brush, PList& list) {
+int nav::collect(const PList& mesh, const NavPoly* brush, float stepHeight, PList& list) {
 	// Get brush aabb - probably cant rely on its own data
 	BoundingBox bounds(brush->points[0]);
 	for(int i=1; i<brush->size; ++i) bounds.include(brush->points[i]);
 	vec3 c = bounds.centre();
 	vec3 e = c - bounds.min + 1e-4;
+	e.y += stepHeight;
 	PList touching;
 
 	// Collect affected polygons : todo spacial optimisation
@@ -1594,7 +1602,7 @@ int nav::collect(const PList& mesh, const NavPoly* brush, PList& list) {
 		if(fabs(d.y) > e.y+poly->extents.y) continue;
 		if(fabs(d.z) > e.z+poly->extents.z) continue;
 
-		switch(intersect(poly, brush)) {
+		switch(intersect(poly, brush, stepHeight)) {
 		default: assert(false);
 		case 0: break; // Not intersecting
 		case 1: case 2: case 3: case 4:
@@ -1652,21 +1660,21 @@ int nav::expand(PList& list, int mask) {
 
 //// //// //// ////  Navmesh Edit functions - Entry point   //// //// //// ////
 
-void NavMesh::carve(const NavPoly& sb, bool add) {
+void NavMesh::carve(const NavPoly& sb, bool add, float stepHeight) {
 	int p = (uint)sb.typeIndex<s_typeOrder.size()? s_typeOrder[sb.typeIndex]: 0;
-	carve(sb, p, add);
+	carve(sb, p, add, stepHeight);
 }
 
-void NavMesh::carve(const NavPoly& sb, int precidence, bool add) {
+void NavMesh::carve(const NavPoly& sb, int precidence, bool add, float stepHeight) {
 	if(sb.size < 3) return; // Invalid polygon
 
 	#ifndef DEBUGGER
-	logPolygon(this, sb, precidence, add, m_mesh.empty());
+	logPolygon(this, sb, precidence, add, stepHeight, m_mesh.empty());
 	#endif
 
 	printf("-------------------------\nCarve: %s\n", add?"Add":"Remove");
 	PList in, out;
-	collect(m_mesh, &sb, in);
+	collect(m_mesh, &sb, stepHeight, in);
 	printf("Collect %lu\n", in.size());
 
 	// Remove input polygons from world
@@ -1689,9 +1697,12 @@ void NavMesh::carve(const NavPoly& sb, int precidence, bool add) {
 	printf("\n%lu intersections in %d polygons\n", sect.size(), pc);
 	std::sort(sect.begin(), sect.end(), NavSectCmp(0));
 	
+	#if DEBUGGER
+	auto pindex = [&in](const NavPoly* p) { int r=0; for(NavPoly* i: in) if(p==i) return r; else if(i) ++r; return -1; };
 	for(size_t i=0; i<sect.size(); ++i) {
-		printf("%d: (%f, %f) %d  - %f, %f\n", (int)i, sect[i].point.x, sect[i].point.z, sect[i].s, sect[i].e[0]+sect[i].u[0], sect[i].e[1]+sect[i].u[1]);
+		printf("%d: (%f, %f) %d.%d  - %f, %f\n", (int)i, sect[i].point.x, sect[i].point.z, pindex(sect[i].p[1]), sect[i].s, sect[i].e[0]+sect[i].u[0], sect[i].e[1]+sect[i].u[1]);
 	}
+	#endif
 
 
 	if(debugFlags&2) {	// MERGE ONLY
@@ -1875,7 +1886,7 @@ void nav::validateAllLinks(const NavPolyList& mesh) {
 
 
 
-bool nav::logPolygon(const NavMesh* mesh, const NavPoly& p, int precidence, bool add, bool clean) {
+bool nav::logPolygon(const NavMesh* mesh, const NavPoly& p, int precidence, bool add, float stepHeight, bool clean) {
 	static std::vector<const NavMesh*> meshes;
 	size_t index;
 	for(index=0; index<meshes.size(); ++index) if(meshes[index] == mesh) break;
@@ -1888,8 +1899,8 @@ bool nav::logPolygon(const NavMesh* mesh, const NavPoly& p, int precidence, bool
 		fp = fopen(logFile, clean? "w": "a");
 	}
 	if(!fp) return false;
-	if(add) fprintf(fp, "ADD %s %d [", NavMesh::getTypeName(p.typeIndex), precidence);
-	else fprintf(fp, "DEL %d [", precidence);
+	if(add) fprintf(fp, "ADD %s %d %g [", NavMesh::getTypeName(p.typeIndex), precidence, stepHeight);
+	else fprintf(fp, "DEL %d %g [", precidence, stepHeight);
 	
 	fwrite(&p.size, 4, 1, fp);
 	fwrite(p.points, p.size, sizeof(vec3), fp);

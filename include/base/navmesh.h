@@ -83,6 +83,7 @@ class NavMesh {
 	static vec3 getRandomPoint(const NavPoly* poly);
 	template<class F> const NavPoly* getRandomPolygon(const F& filter) const;
 	template<class F> const vec3 getRandomPoint(const F& filter) const { if(const NavPoly* p=getRandomPolygon(filter)) return getRandomPoint(p); else return vec3(); }
+	vec3 getRandomPoint() const { return getRandomPoint([](const NavPoly*){return 1.f;}); }
 
 
 	// Direct access for drawing
@@ -91,8 +92,8 @@ class NavMesh {
 	// Editing
 	void clear();
 	void changeType(const NavPoly* p, const char* type);
-	void carve(const NavPoly& p, bool add=true);
-	void carve(const NavPoly& p, int precidence, bool add=true);
+	void carve(const NavPoly& p, bool add=true, float stepHeight=0);
+	void carve(const NavPoly& p, int precidence, bool add=true, float stepHeight=0);
 
 	NavPoly* addPolygon(const NavPoly& p);	/// Add unchecked polygon to the mesh
 
