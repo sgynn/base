@@ -12,9 +12,7 @@ OSDEF = -DLINUX
 headers = $(wildcard src/*.h src/*/*.h)
 sources = $(wildcard src/*.cpp src/*/*.cpp)
 objects = $(addprefix $(OBJDIR)/, $(sources:.cpp=.o))
-dirs    = $(sort $(dir $(objects)))
 release_objects= $(addprefix $(OBJDIR)/release/, $(sources:.cpp=.o))
-release_dirs   = $(sort $(dir $(release_objects)))
 data = $(wildcard data/*)
 baselib = /usr/lib64/libbase.a
 
@@ -59,7 +57,6 @@ EMSDK := /opt/emsdk
 EM_CONFIG := /opt/emsdk/.emscripten
 EMSDK_NODE = /opt/emsdk/node/14.15.5_64bit/bin/node
 em_objects = $(addprefix $(OBJDIR)/em/, $(sources:.cpp=.o))
-em_dirs   = $(sort $(dir $(em_objects)))
 em_data = $(addprefix --preload-file , $(shell find -L data/ -type d))
 
 
@@ -72,14 +69,14 @@ CFLAGS += -DAUDIO
 all: $(exec)
 
 $(exec): CFLAGS += -DDEBUG $(OSDEF)
-$(exec): $(dirs) $(objects) $(baselib) Makefile
+$(exec): $(objects) $(baselib) Makefile
 	@echo -e "\033[34;1m[ Linking ]\033[0m"
 	@echo $(CXX) -o $(exec) $(objects) $(CFLAGS) $(LDFLAGS)
 	@$(CXX) -o $(exec) $(objects) $(CFLAGS) $(LDFLAGS) 2>&1 | $(SED2)
 
 
 $(release): CFLAGS += -O2 $(OSDEF)
-$(release): $(release_dirs) $(release_objects) $(baselib) Makefile
+$(release): $(release_objects) $(baselib) Makefile
 	@echo -e "\033[34;1m[ Linking ]\033[0m"
 	@echo $(CXX) -o $(release) $(release_objects) $(CFLAGS) $(LDFLAGS)
 	@$(CXX) -o $(release) $(release_objects) $(CFLAGS) $(LDFLAGS) 2>&1 | $(SED2)
@@ -87,10 +84,10 @@ $(release): $(release_dirs) $(release_objects) $(baselib) Makefile
 
 webgl/index.js: PATH := ${EM}:${PATH}
 webgl/index.js: CFLAGS += -DEMSCRIPTEN
-webgl/index.js: $(em_dirs) $(em_objects) $(data) Makefile
+webgl/index.js: webgl/index.html $(em_objects) $(data) Makefile
 	em++ -o webgl/index.js -lbase $(em_objects) $(CFLAGS) $(EMOptions) $(em_data)
-webgl/:
-	mkdir webgl
+webgl/index.html:
+	mkdir -p webgl
 	cp ~/projects/library/base/web-template.html webgl/index.html
 	sed -i "s/\$$title/${releasedir}/" webgl/index.html
 
@@ -146,7 +143,7 @@ upload: $(releasedir).zip
 upload-web: webgl/index.js
 	rsync -r webgl/ draknek.org:/home/samgynn/sam.draknek.org/files/$(releasedir)/
 
-web: webgl/ webgl/index.js html5.zip
+web: webgl/index.js html5.zip
 
 html5.zip: webgl/index.js
 	@echo -e '\e[1;34mCreating zip file for ludum dare embedded upload\e[0m'
