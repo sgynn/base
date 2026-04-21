@@ -204,8 +204,9 @@ namespace base {
 		bool endsWith(const char* s) const          { if(!s) return true; size_t l=strlen(s); return l<m_length && strncmp(m_data + m_length - l, s, l) == 0; }
 		const char* contains(const char* s) const   {
 			if(!s || !s[0] || m_length==0) return nullptr;
-			const char* end = m_data + m_length - strlen(s);
-			for(const char* c = m_data; c<=end; ++c) if(strcmp(c, s)==0) return c;
+			int n = strlen(s);
+			const char* end = m_data + m_length - n;
+			for(const char* c = m_data; c<=end; ++c) if(strncmp(c, s, n)==0) return c;
 			return nullptr;
 		}
 		bool match(const char* pattern)				{ return String::match(m_data? m_data: "", pattern, m_length); }
