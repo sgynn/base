@@ -127,7 +127,6 @@ void Textbox::insertText(const char* t) {
 	int lastBit = m_length - end;
 	if(m_buffer < start + s + lastBit + 1) {
 		m_buffer = start + s + lastBit + 16;
-		printf("Resize buffer %d\n", m_buffer);
 		char* n = new char[m_buffer];
 		if(m_cursor>0) memcpy(n, m_text, start);
 		if(s>0)        memcpy(n+m_cursor, t, s);
@@ -166,10 +165,11 @@ void Textbox::select(int s, int len, bool shift) {
 		m_selection = 0;
 	}
 
-	auto getTextSize = [this](const char* s, int len) { return m_skin->getFont()->getSize(s, m_skin->getFontSize(), len).x; };
+	bool valid = m_skin && m_skin->getFont();
+	auto getTextSize = [this, valid](const char* s, int len) { return valid? m_skin->getFont()->getSize(s, m_skin->getFontSize(), len).x: 0; };
 	int start = len<0? s+len: s;
 	if(m_multiline) {
-		int lineHeight = m_skin->getFont()->getLineHeight(m_skin->getFontSize());
+		int lineHeight = valid? m_skin->getFont()->getLineHeight(m_skin->getFontSize()): 1;
 		int startLine=0, endLine=0;
 		int end = start + abs(len);
 		for(size_t i=0; i<m_lines.size(); ++i) {
@@ -190,8 +190,8 @@ void Textbox::select(int s, int len, bool shift) {
 	}
 	else {
 		if(s != m_cursor || len != m_selectLength) {
-			Point textSize = m_skin->getFont()->getSize(m_text, m_skin->getFontSize(), start);
-			m_selectRect.x = m_rect.x + textSize.x + m_offset.x;
+			int textSize = getTextSize(m_text, start);
+			m_selectRect.x = m_rect.x + textSize + m_offset.x;
 			m_selectRect.y = m_rect.y + m_offset.y;
 			m_cursor = s;
 		}
@@ -297,6 +297,7 @@ void Textbox::onKey(int code, wchar_t chr, KeyMask mask) {
 	}
 }
 int Textbox::indexAt(const Point& pos) const {
+	if(!m_skin || !m_skin->getFont()) return 0;
 	int px = pos.x - m_offset.x;
 	int start = 0;
 	if(m_multiline && !m_lines.empty()) {
@@ -337,6 +338,8 @@ inline void Textbox::drawText(Point& p, const char* t, uint len, uint col) const
 void Textbox::draw() const {
 	if(!isVisible()) return;
 	m_root->getRenderer()->drawSkin(m_skin, m_rect, m_colour, getState());
+	if(!m_skin || !m_skin->getFont()) return;
+
 	// Selection - do we change text colour too?
 	m_root->getRenderer()->push(m_rect);
 	if(m_selectLength!=0) {
