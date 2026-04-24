@@ -405,7 +405,7 @@ def export_animations(context, config, skeleton, xml):
     if skeleton.animation_data:
         actions = []
         if skeleton.animation_data.action:
-            actions.append( (skeleton.animation_data.action, "Action") )
+            actions.append( (skeleton.animation_data.action, skeleton.animation_data.action_slot, skeleton.animation_data.action.name) )
 
         # Modifier types to disable
         disableModifiers = [ 'TRIANGULATE', 'SUBSURF', 'DISPLACE', 'DECIMATE' ]
@@ -422,13 +422,14 @@ def export_animations(context, config, skeleton, xml):
                 for strip in track.strips.values():
                     if strip.action and strip.action not in actions:
                         name = strip.name if mode == "STRIP" else track.name if mode == "TRACK" else strip.action.name
-                        actions.append((strip.action, name))
+                        actions.append((strip.action, strip.action_slot, name))
 
         if actions:
             active = context.view_layer.objects.active
             frame = context.scene.frame_current
             context.scene.tool_settings.use_keyframe_insert_auto = False # this really messes things up if left on
             last = skeleton.animation_data.action
+            slot = skeleton.animation_data.action_slot
             context.view_layer.objects.active = skeleton
             bpy.ops.object.mode_set(mode='POSE')
 
@@ -450,13 +451,14 @@ def export_animations(context, config, skeleton, xml):
 
             # Export actions
             for action in actions:
-                export_action(context, skeleton, action[0], action[1], xml)
+                export_action(context, skeleton, action[0], action[1], action[2], xml)
 
             # Restore
             end_progress(context);
             for m in modifiers: m.show_viewport = True
             context.view_layer.objects.active = active
             skeleton.animation_data.action = last
+            if last: skeleton.animation_data.action_slot = slot
             for track, data in restore.items():
                 track.mute = data[0]
                 track.is_solo = data[1]
@@ -474,12 +476,12 @@ def export_animations(context, config, skeleton, xml):
 
 def same(a,b): return abs(a-b)<0.00001
 
-def export_action(context, skeleton, action, name, xml):
+def export_action(context, skeleton, action, slot, name, xml):
     #print("Context", context.mode, context.active_object.name);
     skeleton.animation_data.action = None
     bpy.ops.pose.user_transforms_clear(False)
     skeleton.animation_data.action = action
-    skeleton.animation_data.action_slot = action.slots[0] # Blender 4.4+ now has slots. Who knows
+    skeleton.animation_data.action_slot = slot
 
     mrot = Matrix.Rotation(radians(-90), 4, 'X') # Up axis fix
     qrot = mrot.to_quaternion()
@@ -487,10 +489,9 @@ def export_action(context, skeleton, action, name, xml):
     bpy.ops.pose.select_all(action='SELECT')
     bpy.ops.pose.transforms_clear()
 
-
     #Blender 4.4+ made this mode complicated
     # groups = action.groups
-    groups = action.layers[0].strips[0].channelbag(action.slots[0]).groups
+    groups = action.layers[0].strips[0].channelbag(slot).groups
 
     data = []
     for bone in skeleton.pose.bones:
@@ -529,7 +530,7 @@ def export_action(context, skeleton, action, name, xml):
         optimise_keys(keys.rotation, (1,0,0,0), lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]) and same(a[3],b[3]))
         optimise_keys(keys.scale,    (1,1,1),   lambda a,b: same(a[0],b[0]) and same(a[1],b[1]) and same(a[2],b[2]))
 
-    print(action.name + ': ' + str(length) + ' frames, ' + str(len(data)) + ' bones')
+    print(action.name + "|" + slot.name_display + ': ' + str(length) + ' frames, ' + str(len(data)) + ' bones')
 
     # Write xml
     anim = append_element(xml.firstChild, "animation")
