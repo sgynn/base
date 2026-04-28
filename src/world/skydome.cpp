@@ -162,7 +162,8 @@ SkyDome::SkyDome(float radius, bool stars, int res, int queue) {
 	
 	createMesh(res*2, res, radius);
 
-	Material* skyMat = Resources::getInstance()->materials.getIfExists("SkyDome");
+	Resources* resources = Resources::getInstance();
+	Material* skyMat = resources? resources->materials.getIfExists("SkyDome"): nullptr;
 	if(!skyMat) {
 		skyMat = new Material;
 		Pass* pass = skyMat->addPass();
@@ -182,7 +183,7 @@ SkyDome::SkyDome(float radius, bool stars, int res, int queue) {
 		params.set("mie",        0.001f);
 
 		pass->compile();
-		Resources::getInstance()->materials.add("SkyDome", skyMat);
+		if(resources) resources->materials.add("SkyDome", skyMat);
 	}
 	setMaterial(skyMat);
 
