@@ -337,6 +337,12 @@ FoliageLayer::Geometry FoliageInstanceLayer::generateGeometry(const Index& index
 	static const vec3 unitY(0,1,0);
 	Quaternion q, a, rot = Quaternion::arc(unitY, up);
 
+	static std::set<uint16> emptyList;
+	auto removedData = m_removedItems.find(index);
+	const std::set<uint16>& removed = removedData == m_removedItems.end()? emptyList: removedData->second;
+	auto removedIter = removed.begin();
+	size_t item=-1, nextRemoved = removed.empty()? points.size(): *removedIter;
+
 	RNG rng(0);
 	float* data = new float[ points.size() * 8 ]; // Instance buffer data
 	float* vx = data;
@@ -353,6 +359,13 @@ FoliageLayer::Geometry FoliageInstanceLayer::generateGeometry(const Index& index
 		}
 		q *= a;
 
+		if(++item == nextRemoved) {
+			rng.rand(); // replace scale below
+			++removedIter;
+			nextRemoved = removedIter==removed.end()? -1: *removedIter;
+			continue;
+		}
+
 		memcpy(vx+0, point.position, sizeof(vec3));
 		vx[3] = rng.randf(m_scaleRange);
 		vx[4] = q.x;
@@ -363,34 +376,50 @@ FoliageLayer::Geometry FoliageInstanceLayer::generateGeometry(const Index& index
 	}
 
 	// Create instance buffer
+	size_t actualCount = (vx - data) / 8;
 	HardwareVertexBuffer* buffer = new HardwareVertexBuffer();
-	buffer->setData(data, points.size(), 32, true);
+	buffer->setData(data, actualCount, 32, true);
 	buffer->attributes.add(base::VA_CUSTOM, base::VA_FLOAT4, 0, "loc", 1);
 	buffer->attributes.add(base::VA_CUSTOM, base::VA_FLOAT4, 16, "rot", 1);
 
-	return Geometry{m_mesh, buffer, points.size()};
+	return Geometry{m_mesh, buffer, actualCount};
 }
 
 // ----------------------------------------------------------------------------------------------------- //
 
-void FoliageInstanceLayer::removeItem(const FoliageItemRef& ref) {
-	m_removedItems[ref.cell].push_back(ref.index);
+bool FoliageInstanceLayer::removeItem(const FoliageItemRef& ref) {
+	std::set<uint16>& cell = m_removedItems[ref.cell];
+	if(!cell.insert(ref.index).second) return false;
+
 	// flag changed
+	auto i = m_chunks.find(ref.cell);
+	if(i != m_chunks.end() && i->second->state != EMPTY) {
+		m_parent->queueChunk(this, i->first, i->second);
+	}
+	return true;
 }
-void FoliageInstanceLayer::removeItems(const Point& cell, const std::vector<uint16>& indices) {
-	std::vector<uint16>& rm = m_removedItems[cell];
-	rm.insert(rm.end(), indices.begin(), indices.end());
+size_t FoliageInstanceLayer::removeItems(const Point& cell, const std::vector<uint16>& indices) {
+	std::set<uint16>& rm = m_removedItems[cell];
+	size_t count = 0;
+	for(uint16 i:indices) if(rm.insert(i).second) ++count;
+	if(count == 0) return 0;;
+
 	// flag changed
+	auto i = m_chunks.find(cell);
+	if(i != m_chunks.end() && i->second->state != EMPTY) {
+		m_parent->queueChunk(this, i->first, i->second);
+	}
+	return count;
 }
 void FoliageInstanceLayer::restoreItem(const FoliageItemRef& ref) {
 	auto it = m_removedItems.find(ref.cell);
 	if(it == m_removedItems.end()) return;
-	for(size_t i=0; i<it->second.size(); ++i) {
-		if(it->second[i] == ref.index) {
-			it->second.erase(it->second.begin() + i);
-			// flag changed
-			break;
-		}
+	if(it->second.erase(ref.index)==0) return;
+
+	// flag changed
+	auto i = m_chunks.find(ref.cell);
+	if(i != m_chunks.end() && i->second->state != EMPTY) {
+		m_parent->queueChunk(this, i->first, i->second);
 	}
 }
 
@@ -399,15 +428,22 @@ const std::vector<FoliageItemRef> FoliageInstanceLayer::getItems(const vec3& poi
 	IndexList cells;
 	PointList points;
 	vec3 up;
+	const float radiusSquared = radius * radius;
 	m_parent->getActive(point, m_chunkSize, radius, cells);
+	const std::set<uint16> empty;
 	for(const Index& cellIndex: cells) {
 		auto it = m_chunks.find(cellIndex);
+		auto rit = m_removedItems.find(cellIndex);
+		const std::set<uint16>& removed = rit==m_removedItems.end()? empty: rit->second;
+		auto rm = removed.begin();
 		if(it!=m_chunks.end() && it->second->state == COMPLETE) {
+			uint16 index = 0;
 			result.reserve(result.size() + it->second->geometry.count);
-			for(size_t i=0; i<it->second->geometry.count; ++i) {
+			for(size_t i=0; i<it->second->geometry.count; ++i, ++index) {
+				while(rm!=removed.end() && index == *rm) { ++index; ++rm; }
 				const float* vx = it->second->geometry.instances->getVertex(i);
-				result.push_back({cellIndex, (uint16)i, vx, vx[3]});
-				// FIXME: adjust index for removed items
+				if(point.distance2(vx) > radiusSquared) continue;
+				result.push_back({cellIndex, index, vx, vx[3]});
 			}
 		}
 		else if(includeUnloaded) {
@@ -419,6 +455,8 @@ const std::vector<FoliageItemRef> FoliageInstanceLayer::getItems(const vec3& poi
 				rng.rand();
 				if(m_alignMode >= ABSOLUTE) rng.randf();
 				float scale = rng.randf(m_scaleRange);
+				if(rm!=removed.end() && i == *rm) { ++rm; continue; }
+				if(point.distance2(points[i].position) > radiusSquared) continue;
 				result.push_back({cellIndex, (uint16)i, points[i].position, scale});
 			}
 		}

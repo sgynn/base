@@ -7,6 +7,7 @@
 #include <base/thread.h>
 #include <base/scene.h>
 #include <vector>
+#include <set>
 #include <map>
 
 // Windows being infuriating again. ToDo: perhaps use an enum class.
@@ -128,8 +129,8 @@ class FoliageInstanceLayer : public FoliageLayer {
 
 	// Allow removing individual items - chopping down trees etc
 	const std::vector<FoliageItemRef> getItems(const vec3& point, float radius, bool includeUnloaded) const;
-	void removeItems(const Point& cell, const std::vector<uint16>& indices);
-	void removeItem(const FoliageItemRef& item);
+	size_t removeItems(const Point& cell, const std::vector<uint16>& indices);
+	bool removeItem(const FoliageItemRef& item);
 	void restoreItem(const FoliageItemRef& item);
 	protected:
 	virtual Geometry generateGeometry(const Index& page) const override;
@@ -139,7 +140,7 @@ class FoliageInstanceLayer : public FoliageLayer {
 	Rangef              m_alignRange; // RELATIVE: lerp range between normal and up vector, ABSOLUTE: lerp between sideways and up.
 	OrientaionMode      m_alignMode;
 
-	std::map<Index, std::vector<uint16>> m_removedItems; // vector should be sorted
+	std::map<Index, std::set<uint16>> m_removedItems; // sorted list
 };
 
 // -------------------------------------------------------------------------------------- //
