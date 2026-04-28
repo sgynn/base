@@ -129,18 +129,17 @@ Layout* Root::createLayout(const char* name, int m, int s) {
 	else return 0;
 }
 
-void setTemplateFlag(Widget* w) {
-	w->setAsTemplate();
-	for(int i=0; i<w->getWidgetCount(); ++i) {
-		setTemplateFlag(w->getWidget(i));
-	}
-}
 void Root::createTemplate(const char* name, Widget* w, const char* type) {
 	addTemplate(name, w->clone(type));
 }
 void Root::addTemplate(const char* name, Widget* w) {
-	// Recursively set template flag
-	setTemplateFlag(w);
+	// Recursively set template flag on all widgets
+	auto recurse = [](Widget* w, auto& recurse)->void {
+		w->setAsTemplate();
+		for(Widget* c: w->m_children) recurse(c, recurse);
+	};
+	recurse(w, recurse);
+
 	w->m_skipTemplate = w->m_children.size();
 	w->m_client->m_skipTemplate = w->m_client->m_children.size();
 	Widget* old = m_templates.get(name, 0);
@@ -834,6 +833,14 @@ bool Widget::hasMouseFocus() const {
 
 bool Widget::hasAnimator() const {
 	return m_hasAnimatior;
+}
+
+bool Widget::hasChild(const Widget* w) const {
+	while(w) {
+		w = w->m_parent;
+		if(w == this) return true;
+	}
+	return false;
 }
 
 Widget* Widget::getWidget(size_t index) const {

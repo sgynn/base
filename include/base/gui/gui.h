@@ -154,6 +154,7 @@ class Widget {
 	template<class W=Widget> W* getTemplateWidget(const char* name) const {
 		Widget* w = findTemplateWidget(name); return cast<W>(w);
 	}
+	bool hasChild(const Widget* w) const; // Is w an indirect child widget
 	std::vector<Widget*>::iterator begin() const { return m_client->m_children.begin() + m_client->m_skipTemplate; }
 	std::vector<Widget*>::iterator end() const   { return m_client->m_children.end(); }
 
