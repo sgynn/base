@@ -80,6 +80,7 @@ void InfoPlateManager::setVisible(bool vis) {
 }
 
 InfoPlate* InfoPlateManager::create(const char* type, float range, float scale) {
+	if(!getRoot()) printf("Error: InfoPlateManager not added to gui root\n");
 	Widget* widget = createChild<Widget>(type);
 	if(!widget) {
 		printf("Error: No widget type '%s' for InfoPlate\n", type);
