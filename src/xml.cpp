@@ -262,6 +262,8 @@ const char* XML::toString() const {
 			p += sprintf(s+p, "<%s", e->name());
 			// Attributes
 			for(const auto& i: e->m_attributes) {
+				n = strlen(i.value) + 8;
+				if(len < p+n) expand(p+n-len+256);
 				p += sprintf(s+p, " %s=\"%s\"", i.key, (const char*)i.value);
 			}
 			// Children?
