@@ -42,8 +42,8 @@ namespace gui {
 		String m_filter;				// File filter
 		String m_extension;				// Default file extension
 		std::vector<String> m_history;	// Dialog history
-		uint  m_historyIndex;			// Position in history list of current directory (for forward)
-		float m_lastClick; 				// Time of last click to detect double clicking - shoule be in base or gui
+		uint  m_historyIndex = 0;		// Position in history list of current directory (for forward)
+		float m_lastClick = 0;			// Time of last click to detect double clicking - shoule be in base or gui
 
 		protected:
 		void initialise(const gui::Root*, const gui::PropertyMap&) override;
