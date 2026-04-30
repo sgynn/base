@@ -1,7 +1,5 @@
 #pragma once
 
-/** general math header - goes in base directory... */
-
 #include <math.h>
 
 typedef unsigned long long  uint64;
