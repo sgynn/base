@@ -101,7 +101,7 @@ class FoliageLayer : protected base::SceneNode {
 	typedef std::vector<Index> IndexList;
 	enum ChunkState { EMPTY, GENERATING, GENERATED, COMPLETE };
 	struct Geometry { base::Mesh* mesh = nullptr; base::HardwareVertexBuffer* instances = nullptr; size_t count = 0; };
-	struct Chunk { base::DrawableMesh* drawable = nullptr; Geometry geometry, swap; ChunkState state = EMPTY; bool active = false; };
+	struct Chunk { base::DrawableMesh* drawable = nullptr; Geometry geometry, swap; ChunkState state = EMPTY; bool queued=false; bool active = false; };
 	std::map<Index, Chunk*> m_chunks;
 
 	protected:
@@ -132,9 +132,11 @@ class FoliageInstanceLayer : public FoliageLayer {
 	size_t removeItems(const Point& cell, const std::vector<uint16>& indices);
 	bool removeItem(const FoliageItemRef& item);
 	void restoreItem(const FoliageItemRef& item);
+	void restoreAllItems();
 	protected:
 	virtual Geometry generateGeometry(const Index& page) const override;
 	virtual void destroyGeometry(Geometry&) const override;
+	void regenerateCell(Index);
 	protected:
 	base::Mesh* m_mesh;
 	Rangef              m_alignRange; // RELATIVE: lerp range between normal and up vector, ABSOLUTE: lerp between sideways and up.

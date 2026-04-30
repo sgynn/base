@@ -299,8 +299,8 @@ void FoliageLayer::update(const vec3& context) {
 	for(auto i=m_chunks.begin(); i!=m_chunks.end();) {
 		if(!i->second->active) {
 			if(i->second->drawable) detach(i->second->drawable);
-			deleteChunk(i->second);
-			i = m_chunks.erase(i);
+			if(deleteChunk(i->second)) i = m_chunks.erase(i);
+			else ++i;
 		}
 		else ++i;
 	}
@@ -387,15 +387,16 @@ FoliageLayer::Geometry FoliageInstanceLayer::generateGeometry(const Index& index
 
 // ----------------------------------------------------------------------------------------------------- //
 
+void FoliageInstanceLayer::regenerateCell(Index cell) {
+	auto i = m_chunks.find(cell);
+	if(i != m_chunks.end() && !i->second->queued) {
+		m_parent->queueChunk(this, i->first, i->second);
+	}
+}
 bool FoliageInstanceLayer::removeItem(const FoliageItemRef& ref) {
 	std::set<uint16>& cell = m_removedItems[ref.cell];
 	if(!cell.insert(ref.index).second) return false;
-
-	// flag changed
-	auto i = m_chunks.find(ref.cell);
-	if(i != m_chunks.end() && i->second->state != EMPTY) {
-		m_parent->queueChunk(this, i->first, i->second);
-	}
+	regenerateCell(ref.cell);
 	return true;
 }
 size_t FoliageInstanceLayer::removeItems(const Point& cell, const std::vector<uint16>& indices) {
@@ -403,24 +404,18 @@ size_t FoliageInstanceLayer::removeItems(const Point& cell, const std::vector<ui
 	size_t count = 0;
 	for(uint16 i:indices) if(rm.insert(i).second) ++count;
 	if(count == 0) return 0;;
-
-	// flag changed
-	auto i = m_chunks.find(cell);
-	if(i != m_chunks.end() && i->second->state != EMPTY) {
-		m_parent->queueChunk(this, i->first, i->second);
-	}
+	regenerateCell(cell);
 	return count;
 }
 void FoliageInstanceLayer::restoreItem(const FoliageItemRef& ref) {
 	auto it = m_removedItems.find(ref.cell);
 	if(it == m_removedItems.end()) return;
 	if(it->second.erase(ref.index)==0) return;
-
-	// flag changed
-	auto i = m_chunks.find(ref.cell);
-	if(i != m_chunks.end() && i->second->state != EMPTY) {
-		m_parent->queueChunk(this, i->first, i->second);
-	}
+	regenerateCell(ref.cell);
+}
+void FoliageInstanceLayer::restoreAllItems() {
+	for(auto& i: m_removedItems) regenerateCell(i.first);
+	m_removedItems.clear();
 }
 
 const std::vector<FoliageItemRef> FoliageInstanceLayer::getItems(const vec3& point, float radius, bool includeUnloaded) const {
@@ -619,6 +614,7 @@ void FoliageSystem::update(const vec3& context) {
 		for(int i=0; i<10 && !m_queue.empty(); ++i) {
 			m_queue.back().chunk->swap = m_queue.back().layer->generateGeometry(m_queue.back().index);
 			m_queue.back().chunk->state = FoliageLayer::GENERATED;
+			m_queue.back().chunk->queued = false;
 			m_queue.pop_back();
 		}
 	}
@@ -635,16 +631,18 @@ void FoliageSystem::queueChunk(FoliageLayer* layer, const Index& index, FoliageL
 	vec3 centre = (corners[0] + corners[2]) * 0.5;
 	MutexLock scopedLock(m_mutex);
 	m_queue.push_back( GenChunk { layer, index, chunk, centre } );
+	chunk->queued = true;
 	m_sorted = false;
 }
 bool FoliageSystem::cancelChunk(FoliageLayer::Chunk* chunk) {
-	if(chunk->state > FoliageLayer::GENERATING) return true;
 	if(chunk->state == FoliageLayer::GENERATING) return false;
+	if(!chunk->queued) return true;
 	MutexLock scopedLock(m_mutex);
 	for(size_t i=0; i<m_queue.size(); ++i) {
 		if(m_queue[i].chunk == chunk) {
 			m_queue[i] = m_queue.back();
 			m_queue.pop_back();
+			chunk->queued = false;
 			return true;
 		}
 	}
@@ -659,6 +657,7 @@ void FoliageSystem::threadFunc(int index) {
 			current = m_queue.back();
 			m_queue.pop_back();
 			current.chunk->state = FoliageLayer::GENERATING;
+			current.chunk->queued = false;
 		}
 		m_mutex.unlock();
 
