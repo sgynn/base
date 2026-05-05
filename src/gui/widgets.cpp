@@ -421,6 +421,14 @@ void Checkbox::setIcon(IconList* list, const char* checked, const char* unchecke
 		m_checkedIcon = list->getIconIndex(checked);
 		m_uncheckedIcon = list->getIconIndex(unchecked);
 	}
+	else if(getRoot()) {
+		Renderer* r = getRoot()->getRenderer();
+		m_checkedIcon = r->getImage(checked);
+		m_uncheckedIcon = r->getImage(unchecked);
+		if(m_checkedIcon < 0) m_checkedIcon = r->addImage(checked);
+		if(m_uncheckedIcon < 0) m_uncheckedIcon = r->addImage(unchecked);
+	}
+	else printf("Error: Can't set groupless icons by name without root\n");
 	Button::setIcon(list, isSelected()? checked: unchecked);
 }
 
