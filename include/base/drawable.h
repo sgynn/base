@@ -33,7 +33,7 @@ namespace base {
 
 		virtual void setMaterial(Material* m) { m_material=m; }
 		Material* getMaterial() const { return m_material; }
-		void setCustom(float* data) { m_custom = data; }
+		void setCustom(const float* data) { m_custom = data; }
 		const float* getCustom() const { return m_custom; }
 
 		const BoundingBox& getBounds() const { return m_bounds; }
@@ -53,7 +53,7 @@ namespace base {
 
 		// Drawables are sorted by materials for optimisation
 		Material*   m_material = nullptr;
-		float*      m_custom   = nullptr;
+		const float*m_custom   = nullptr;
 		int         m_queue    = 0;
 		unsigned    m_binding  = 0;	// vaobj
 	};
