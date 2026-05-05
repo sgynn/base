@@ -732,9 +732,11 @@ def export(context, config):
             return {'CANCELLED'}
 
         if config.export_file_per_object:
+            prefix = str(config.filepath)
+            if prefix.endswith('.bm'): prefix = prefix[0:-3] # strip .bm extension
             for o in exportList:
                 if o.type == 'MESH':
-                    export_objects(context, config, [o], config.filepath + o.name + '.bm')
+                    export_objects(context, config, [o], prefix + o.name + '.bm')
             return
 
 
