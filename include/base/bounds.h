@@ -81,6 +81,7 @@ class BoundingBox {
 	vec3 clamp(const vec3&) const;					/// Clamp a vector inside box
 
 	vec3 getCorner(int) const;						/// Get box corner
+	float getVolume() const;
 };
 
 
@@ -120,6 +121,7 @@ class BoundingBox2D {
 	bool isValid() const;							/// Is the box valid? min <= max
 	bool isEmpty() const;							/// Is the box empty? min = max
 	vec2 clamp(const vec2&) const;					/// Clamp a point inside the box
+	float getArea() const;
 };
 
 
@@ -231,6 +233,9 @@ inline vec3 BoundingBox::getCorner(int i) const {
 	const vec3* v = &min;
 	return vec3(v[i&1].x, v[i>>1&1].y, v[i>>2&1].z);
 }
+inline float BoundingBox::getVolume() const {
+	return (max.x-min.x) * (max.y-min.y) * (max.z - min.z);
+}
 
 
 // 2D version
@@ -280,6 +285,9 @@ inline vec2 BoundingBox2D::clamp(const vec2& p) const {
 	if     (r.y < min.y) r.y = min.y;
 	else if(r.y > max.y) r.y = max.y;
 	return r;
+}
+inline float BoundingBox2D::getArea() const {
+	return (max.x-min.x) * (max.y-min.y);
 }
 
 
