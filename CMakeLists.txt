@@ -95,6 +95,7 @@ set(gui
 	src/gui/widgets.cpp
 	src/gui/colourpicker.cpp
 	src/gui/filedialog.cpp
+	src/gui/selectionbox.cpp
 
 	src/gui/systemfont.cpp
 	src/gui/bitmapfont.cpp
@@ -182,6 +183,7 @@ set(headers
 	include/base/parse.h
 	include/base/particledef.h
 	include/base/particles.h
+	include/base/planevolume.h
 	include/base/png.h
 	include/base/point.h
 	include/base/primitives.h
@@ -248,6 +250,7 @@ set(guiheaders
 	include/base/gui/colourpicker.h
 	include/base/gui/filedialog.h
 	include/base/gui/menubuilder.h
+	include/base/gui/selectionbox.h
 )
 
 set(editorheaders
