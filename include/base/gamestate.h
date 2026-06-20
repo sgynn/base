@@ -112,6 +112,10 @@ class GameStateManager {
 		bool running() const { return m_currentState || m_nextState; }
 		
 		void quit();
+
+		// Allow initial persistent states before anything is created
+		static std::vector<GameStateComponent*>& getPersistentComponents() { static std::vector<GameStateComponent*> s; return s; }
+		static void addPersistentComponent(GameStateComponent* component);
 		
 	private:
 		GameState* m_currentState;

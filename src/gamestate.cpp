@@ -74,6 +74,11 @@ GameState* GameState::previousState() const {
 GameStateManager::GameStateManager() : m_currentState(0), m_nextState(0), m_prevState(0){}
 GameStateManager::~GameStateManager() {}
 
+void GameStateManager::addPersistentComponent(GameStateComponent* component) {
+	if(Game::getState()) Game::getState()->addComponent(component);
+	else getPersistentComponents().push_back(component);
+}
+
 void GameStateManager::update() {
 	if(m_nextState != m_currentState) {
 		if(m_prevState && m_prevState!=m_currentState && m_prevState!=m_nextState) {
@@ -84,8 +89,14 @@ void GameStateManager::update() {
 			for(GameStateComponent* c: m_currentState->m_updateComponents) c->end();
 		}
 		if(m_nextState) {
-			if(m_currentState) for(GameStateComponent* c: m_currentState->m_updateComponents) {
-				if(c->getMode() == GameStateComponent::PERSISTENT) m_nextState->addComponent(c);
+			if(m_currentState) {
+				for(GameStateComponent* c: m_currentState->m_updateComponents) {
+					if(c->getMode() == GameStateComponent::PERSISTENT) m_nextState->addComponent(c);
+				}
+				for(GameStateComponent* c: getPersistentComponents()) {
+					m_nextState->addComponent(c);
+				}
+				getPersistentComponents().clear();
 			}
 			for(GameStateComponent* c: m_nextState->m_updateComponents) c->begin();
 		}
