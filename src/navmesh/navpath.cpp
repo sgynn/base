@@ -484,7 +484,8 @@ VecPair PathFollower::nextPoint() {
 
 	auto repathAndUpdatePoly = [this]() {
 		if(repath() != PathState::Success) return false;
-		m_polygon = m_path.m_path[0].poly; // May have changed
+		if(m_path.m_path.empty()) m_polygon = m_goalPoly;
+		else m_polygon = m_path.m_path[0].poly; // May have changed
 		return true;
 	};
 	if(m_pathIndex < end && m_path.m_path[m_pathIndex].poly != m_polygon) { //not on path
