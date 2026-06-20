@@ -127,6 +127,27 @@ Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, const char* material, i
 	return attachMesh(node, mesh, loadMaterial(material), queue, customData);
 }
 
+int world::attachMeshes(SceneNode* target, Model* model, const char* meshName, const char* materialOverride, int queue, float* customData) {
+	int result = 0;
+	for(const auto& m: model->meshes()) {
+		if(strcmp(m.name, meshName)!=0) continue;
+		const char* mat = materialOverride? materialOverride: m.materialName;
+		int renderQueue = getRenderQueueForMaterial(mat, queue);
+		DrawableMesh* drawable = new DrawableMesh(m.mesh, loadMaterial(mat));
+		drawable->setRenderQueue(renderQueue);
+		target->attach(drawable);
+		++result;
+	}
+	return result;
+}
+
+int world::getRenderQueueForMaterial(const char* materialName, int fallback) {
+	for(const auto& m: MaterialSettings.materials) {
+		if(!m.pattern || String::match(materialName, m.pattern)) fallback = m.queue;
+	}
+	return fallback;
+}
+
 
 // --------------------------------------------------------------------------- //
 
@@ -290,9 +311,7 @@ Model* world::attachModel(SceneNode* node, const char* file, AnimationController
 				}
 				drawable->setupSkinData((*animated)->getSkeleton());
 			}
-			for(const auto& m: MaterialSettings.materials) {
-				if(!m.pattern || String::match(materialName, m.pattern)) drawable->setRenderQueue(m.queue);
-			}
+			drawable->setRenderQueue(getRenderQueueForMaterial(materialName));
 			node->attach(drawable);
 		}
 	}

@@ -57,6 +57,8 @@ namespace world {
 	extern Model* attachModel(SceneNode* target, const char* file, AnimationController** animated=nullptr, bool moves=false, MeshFilter&& meshFilter={}, const char* baseMaterial=nullptr, const char* overrideMaterial=nullptr, float* customData=nullptr);
 	extern Drawable* attachMesh(SceneNode* target, Mesh* mesh, const char* material = nullptr, int queue=0, float* customData=nullptr);
 	extern Drawable* attachMesh(SceneNode* target, Mesh* mesh, Material* material, int queue=0, float* customData=nullptr);
+	extern int attachMeshes(SceneNode* target, Model* model, const char* meshName, const char* materialOverride=nullptr, int queue=-1, float* customData=nullptr);
+	extern int getRenderQueueForMaterial(const char* material, int fallback=0);
 
 	class ObjectWorldBase;
 	class WorldObjectBase : public SceneNode {
