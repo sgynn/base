@@ -31,9 +31,9 @@ bl_info = {
 
 # Support reloading package
 if "bpy" in locals():
-    import imp
+    import importlib
     if "bmexport" in locals():
-        imp.reload(bmexport)
+        importlib.reload(bmexport)
 
 
 import bpy
