@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<compositors>
+
+	<shared name="postprocessing">
+		<variable name="viewport" type="auto" value="viewport_size"/>
+		<variable name="viewMatrix" type="auto" value="view_matrix"/>
+		<variable name="inverseView" type="auto" value="inverse_view_matrix"/>
+		<variable name="inverseProjection" type="auto" value="inverse_projection_matrix"/>
+		<variable name="projection" type="auto" value="projection_matrix"/>
+		<variable name="invTransform" type="auto" value="inverse_viewprojection_matrix"/>
+		<variable name="farClip" type="auto" value="far_clip"/>
+		<variable name="ssao_radius" type="float" value="0.3"/>
+		<variable name="ssao_strength" type="float" value="1"/>
+		<variable name="ssao_filter" type="vec2" value="0.5 0.5" old="0.1"/>
+	</shared>
+
+	<compositor name="ssao">
+		<pass type="quad" target="out" shader="ssao.frag">
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="normalMap" buffer="gbuffer" index="1"/>
+			<texture name="noise" file="noise.png"/>
+			<blend mode="multiply"/>
+			<shared name="postprocessing"/>
+		</pass>
+		<input buffer="out"/>
+		<input buffer="gbuffer"/>
+		<output buffer="out"/>
+	</compositor>
+
+	<compositor name="ssao2">
+		<pass type="quad" target="out" shader="ssao2.frag">
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="normalMap" buffer="gbuffer" index="1"/>
+			<texture name="noise" file="noise.png"/>
+			<shared name="postprocessing"/>
+			<blend mode="multiply"/>
+
+			<variable name="random_size" type="float" value="10"/>
+			<variable name="g_sample_rad" type="float" value="0.3"/>
+			<variable name="g_intensity" type="float" value="1"/>
+			<variable name="g_scale" type="float" value="0.1"/>
+			<variable name="g_bias" type="float" value="0.6"/>
+		</pass>
+		<input buffer="out"/>
+		<input buffer="gbuffer"/>
+		<output buffer="out"/>
+	</compositor>
+
+	<compositor name="edge">
+		<pass type="quad" target="out" shader="edgefinder.frag">
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="normalMap" buffer="gbuffer" index="1"/>
+			<shared name="postprocessing"/>
+			<blend mode="multiply"/>
+		</pass>
+		<input buffer="out"/>
+		<input buffer="gbuffer"/>
+		<output buffer="out"/>
+	</compositor>
+
+	<compositor name="blurLum">
+		<buffer name="out" format="R8"/>
+		<buffer name="temp" format="R8"/>
+		<pass type="quad" target="temp" shader="blur.frag">
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="aoMap" buffer="out"/>
+			<variable name="axis" type="vec2" value="1 0"/>
+			<variable name="radius" type="float" value="12"/>
+			<variable name="falloff" type="float" value="0.0"/>
+			<variable name="sharpness" type="float" value="0.0"/>
+			<shared name="postprocessing"/>
+		</pass>
+		<pass type="quad" target="out" shader="blur.frag">
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="aoMap" buffer="temp"/>
+			<variable name="axis" type="vec2" value="0 1"/>
+			<variable name="radius" type="float" value="12"/>
+			<variable name="falloff" type="float" value="0.0"/>
+			<variable name="sharpness" type="float" value="0.0"/>
+			<shared name="postprocessing"/>
+		</pass>
+		<input buffer="out"/>
+		<input buffer="gbuffer"/>
+		<output buffer="out"/>
+	</compositor>
+
+	<compositor name="blurContext">
+		<buffer name="out" format="R8"/>
+		<buffer name="temp" format="R8"/>
+		<pass type="quad" target="temp" shader="blur_context.frag">
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="normalMap" buffer="gbuffer" index="1"/>
+			<texture name="aoMap" buffer="out"/>
+			<variable name="axis" type="vec2" value="1 0"/>
+			<variable name="radius" type="float" value="12"/>
+			<variable name="falloff" type="float" value="0.0"/>
+			<variable name="sharpness" type="float" value="0.0"/>
+			<shared name="postprocessing"/>
+		</pass>
+		<pass type="quad" target="out" shader="blur_context.frag">
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="normalMap" buffer="gbuffer" index="1"/>
+			<texture name="aoMap" buffer="temp"/>
+			<variable name="axis" type="vec2" value="0 1"/>
+			<variable name="radius" type="float" value="12"/>
+			<variable name="falloff" type="float" value="0.0"/>
+			<variable name="sharpness" type="float" value="0.0"/>
+			<shared name="postprocessing"/>
+		</pass>
+		<input buffer="out"/>
+		<input buffer="gbuffer"/>
+		<output buffer="out"/>
+	</compositor>
+
+	
+
+	<compositor name="ssr">
+		<buffer name="in" format="RGBA8"/>
+		<pass type="quad" target="out" shader="ssr.frag">
+			<texture name="screen" buffer="in"/>
+			<texture name="depthMap" buffer="gbuffer" index="depth"/>
+			<texture name="normalMap" buffer="gbuffer" index="1"/>
+			<texture name="colourMap" buffer="gbuffer" index="0"/>
+			<shared name="postprocessing"/>
+		</pass>
+		<input buffer="in"/>
+		<input buffer="gbuffer"/>
+		<output buffer="out"/>
+	</compositor>
+
+	<compositor name="lut">
+		<buffer name="in" format="RGBA8"/>
+		<pass type="quad" target="out" shader="lut.frag">
+			<texture name="source" buffer="in"/>
+			<texture name="lut" file="lut1.png"/>
+			<state depth="always"/>
+		</pass>
+		<input buffer="in"/>
+		<output buffer="out"/>
+	</compositor>
+
+
+	<!-- Distance fog -->
+	<compositor name="fog">
+		<pass target="main" type="quad" shader="fog.frag">
+			<texture name="bufferD" buffer="gbuffer" index="depth"/>
+			<variable type="auto" name="inverseView" value="inverse_view_matrix"/>
+			<variable type="auto" name="proj" value="projection_matrix"/>
+			<shared name="constants"/>
+			<blend mode="alpha"/>
+		</pass>
+		<input buffer="gbuffer"/>
+		<input buffer="main"/>
+		<output buffer="main"/>
+	</compositor>
+
+
+</compositors>
+

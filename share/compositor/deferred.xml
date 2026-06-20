@@ -1,0 +1,196 @@
+<?xml version="1.0"?>
+<compositors>
+
+	<!-- object materials can extend this to add textures -->
+	<material name="deferred1">
+		<shader file="deferred.glsl"/>
+		<variable type="auto" name="transform" value="modelviewprojection_matrix"/>
+	</material>
+
+	<material name="light1">
+		<shader file="light.glsl"/>
+		<blend mode="add"/>
+		<state depth="always" depthWrite="0"/>
+		<texture name="bufferD" buffer="gbuffer" index="depth"/>
+		<texture name="buffer0" buffer="gbuffer" index="0"/>
+		<texture name="buffer1" buffer="gbuffer" index="1"/>
+		<variable type="auto" name="transform" value="modelviewprojection_matrix"/>
+		<variable type="auto" name="inverseView" value="inverse_view_matrix"/>
+		<variable type="auto" name="proj" value="projection_matrix"/>
+		<variable type='auto' name='viewport' value='viewport_size'/>
+		<variable type='vec3' name='colour' value='1 1 1'/>
+	</material>
+
+	<!--=================== Compositors ======================-->
+
+	<compositor name="copy">
+		<pass target="output" type="quad" shader="copy.frag">
+			<texture name="source" buffer="input"/>
+		</pass>
+		<input name="in" buffer="input"/>
+		<output name="out" buffer="output"/>
+	</compositor>
+
+	<compositor name="multiply">
+		<pass target="main" type="quad" shader="copy.frag" defines="SWIZZLE=rrra">
+			<texture name="source" buffer="multiply"/>
+			<blend mode="multiply"/>
+		</pass>
+		<input name="main"/>
+		<input name="multiply"/>
+		<output name="main"/>
+	</compositor>
+
+	<compositor name="split">
+		<input buffer="gbuffer"/>
+		<output name="depth" buffer="gbuffer:depth"/>
+		<output name="albedo" buffer="gbuffer:0"/>
+		<output name="normal" buffer="gbuffer:1"/>
+	</compositor>
+
+	<compositor name="passthrough">
+		<input buffer="pass"/>
+		<output buffer="pass"/>
+	</compositor>
+
+	<compositor name="white">
+		<texture name="white" source="#ffffff"/>
+		<output buffer="white"/>
+	</compositor>
+
+	<compositor name="debug">
+		<pass target="main" type="scene" first="10" last="10"/>
+		<input buffer="main"/>
+		<output buffer="main"/>
+	</compositor>
+
+	<compositor name="copydepth">
+		<pass target="main" type="quad" shader="copydepth.frag">
+			<texture name="source" buffer="depth" index="depth"/>
+			<state depth="always" colour="none"/>
+		</pass>
+		<input buffer="main"/>
+		<input buffer="depth"/>
+		<output buffer="main"/>
+	</compositor>
+
+	<compositor name="deferred">
+		<buffer name="gbuffer" size="1.0" depth="D24S8" slot0="RGBA8" slot1="RGBA8"/>
+		<pass target="gbuffer" type="clear" colour="1" depth="1"/>
+		<pass target="gbuffer" type="scene" first="0" last="4"/>
+		<output buffer="gbuffer"/>
+	</compositor>
+
+	<compositor name="deferredLights">
+		<pass target="main" type="clear" colour="1" depth="1"/>
+		<!-- GBuffer resolve -->
+		<pass target="main" type="quad" shader="resolve.frag">
+			<texture name="bufferD" buffer="gbuffer" index="depth"/>
+			<texture name="buffer0" buffer="gbuffer" index="0"/>
+			<texture name="buffer1" buffer="gbuffer" index="1"/>
+			<shared name="constants"/>
+			<blend mode="none"/>
+		</pass>
+		<!-- Sky Sphere -->
+		<pass target="main" type="scene" queue="8"/> 
+		<!-- Transparent effects -->
+		<pass target="main" type="scene" queue="5" sort="front-to-back"/> 
+		<!-- Lights -->
+		<pass target="main" type="scene" queue="16"/>
+		<input buffer="gbuffer"/>
+		<output buffer="main"/>
+	</compositor>
+
+
+	<compositor name="HDRAdapt">
+		<buffer name="input" size="1.0" format="R11G11B10F" depth="D24S8"/>
+		<buffer name="lum128" size="128" format="R32F"/>
+		<buffer name="lum64" size="64" format="R32F"/>
+		<buffer name="lum16" size="16" format="R32F"/>
+		<buffer name="lum4" size="4" format="R32F"/>
+		<buffer name="lum1" size="1" format="R32F"/>
+		<buffer name="adapt" size="1" format="R32F"/>
+		<buffer name="last" size="1" format="R32F"/>
+
+		<pass target="lum128" type="quad" shader="luminance2.frag">
+			<texture name="source" buffer="input"/>
+			<texture name="base" buffer="last"/>
+		</pass>
+		<pass target="lum64" type="quad" shader="downsample3.frag">
+			<texture name="source" buffer="lum128"/>
+		</pass>
+		<pass target="lum16" type="quad" shader="downsample3.frag">
+			<texture name="source" buffer="lum64"/>
+		</pass>
+		<pass target="lum4" type="quad" shader="downsample3.frag">
+			<texture name="source" buffer="lum16"/>
+		</pass>
+		<pass target="lum1" type="quad" shader="downsample3.frag">
+			<texture name="source" buffer="lum4"/>
+		</pass>
+
+		<pass target="adapt" type="quad" shader="adapt.frag">
+			<texture name="luminance" buffer="lum1"/>
+			<texture name="last" buffer="last"/>
+			<variable name="frameTime" type="auto" value="frame_time"/>
+			<shared name="constants"/>
+		</pass>
+		<!--pass target="last" type="copy" source="adapt"/-->
+		<pass target="last" type="quad" shader="copy.frag">
+			<texture name="source" buffer="adapt"/>
+		</pass>
+
+		<input buffer="input"/>
+		<output buffer="adapt"/>
+	</compositor>
+
+
+	<!--
+	<compositor name="HDRBloom">
+		<buffer name="bright" size="0.5" format="R11G11B10F"/>
+		<buffer name="bloom" size="0.5" format="R11G11B10F"/>
+		<pass target="bright" type="quad" material="brightPass">
+			<texture name="input" buffer="input"/>
+			<texture name="adapt" buffer="adapt"/>
+		</pass>
+		<pass target="bloom" type="quad" material="bloomBlur">
+			<texture name="input" buffer="bright"/>
+		</pass>
+		<input buffer="input"/>
+		<input buffer="adapt"/>
+		<output buffer="bloom"/>
+	</compositor>
+	-->
+
+	<compositor name="HDRCombine">
+		<buffer name="hdr" size="1.0" format="R11G11B10F" depth="D24S8"/>
+		<pass target="output" type="clear" colour="1"/>
+		<pass target="output" type="quad" shader="composite.frag">
+			<texture name="hdr" buffer="hdr"/>
+			<texture name="adapt" buffer="adapt"/>
+			<texture name="bloom" buffer="bloom"/>
+		</pass>
+		<input buffer="hdr"/>
+		<input buffer="adapt"/>
+		<input buffer="bloom"/>
+		<output buffer="output"/>
+	</compositor>
+
+
+	<!-- Simple lighting for portaits -->
+	<compositor name="portrait">
+		<pass target="main" type="clear" colour="0" depth="1"/>
+		<pass target="main" type="quad" shader="resolve.frag">
+			<texture name="bufferD" buffer="gbuffer" index="depth"/>
+			<texture name="buffer0" buffer="gbuffer" index="0"/>
+			<texture name="buffer1" buffer="gbuffer" index="1"/>
+			<!--variable type="auto" name="inverseView" value="inverse_view_matrix"/-->
+			<!--variable type="auto" name="proj" value="projection_matrix"/-->
+			<shared name="constants"/>
+			<blend mode="none"/>
+		</pass>
+		<input buffer="gbuffer"/>
+		<output buffer="main"/>
+	</compositor>
+
+</compositors>
