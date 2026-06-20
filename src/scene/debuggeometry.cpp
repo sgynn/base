@@ -321,6 +321,10 @@ void DebugGeometry::axis(const Matrix& m, float s) {
 
 
 void DebugGeometry::circle(const vec3& p, const vec3& axis, float r, int seg, int c) {
+	circle(p, axis, r, 1e8f, seg, c);
+}
+
+void DebugGeometry::circle(const vec3& p, const vec3& axis, float r, float angle, int seg, int c) {
 	assert(seg<1024);
 	if(seg >= 1024) seg = 32; // Probbaly mixed up parameters
 	DebugGeometryVertex v;
@@ -334,6 +338,12 @@ void DebugGeometry::circle(const vec3& p, const vec3& axis, float r, int seg, in
 	for(int i=1; i<=seg; ++i) {
 		m_buffer->push_back(v);
 		v.pos = p + x * sin(i*step)  + y * cos(i*step);
+		m_buffer->push_back(v);
+	}
+	if(angle!=1e8f) {
+		v.pos = p;
+		m_buffer->push_back(v);
+		v.pos = p + x * sin(angle) + y * cos(angle);
 		m_buffer->push_back(v);
 	}
 }
