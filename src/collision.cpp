@@ -5,13 +5,16 @@ using namespace base;
 #define EPSILON 0.001
 #define clamp(v,min,max)	((v)<min?min:(v)>max?max:v)
 /** Closest point on a line to a point */
-vec3 base::closestPointOnLine(const vec3& point, const vec3& a, const vec3& b) {
-	vec3 d = b-a;
+template<class T>
+inline T closestPointOnLineT(const T& point, const T& a, const T& b) {
+	T d = b-a;
 	float t = d.dot(point-a) / d.dot(d);
 	if(t<0) t=0;
 	if(t>1) t=1;
 	return a + d*t;
 }
+vec2 base::closestPointOnLine(const vec2& point, const vec2& a, const vec2& b) { return closestPointOnLineT(point, a, b); }
+vec3 base::closestPointOnLine(const vec3& point, const vec3& a, const vec3& b) { return closestPointOnLineT(point, a, b); }
 
 /** Closest point between lines */
 float base::closestPointBetweenLines(const vec3& a1, const vec3& b1, const vec3& a2, const vec3& b2, vec3& p1, vec3& p2) {
@@ -235,6 +238,10 @@ int base::intersectLines(const vec2& as, const vec2& ae, const vec2& bs, const v
 	t1 = (bd.y*(as.x-bs.x) - bd.x*(as.y-bs.y)) /-d;
 	t2 = (ad.y*(bs.x-as.x) - ad.x*(bs.y-as.y)) / d;
 	return t1>=0 && t1<=1 && t2>=0 && t2<=1 ? 1: 0;
+}
+int base::intersectLines(const vec2& as, const vec2& ae, const vec2& bs, const vec2& be) {
+	float u, v;
+	return intersectLines(as, ae, bs, be, u, v);
 }
 
 

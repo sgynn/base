@@ -16,6 +16,7 @@ namespace base {
 	 * @return Closest point
 	 * */
 	BASEAPI vec3 closestPointOnLine(const vec3& point, const vec3& p, const vec3& q);
+	BASEAPI vec2 closestPointOnLine(const vec2& point, const vec2& p, const vec2& q);
 
 	/** Get the point where a pait=r of 3D lines are closest
 	 * @param p0 Start of first line
@@ -113,6 +114,7 @@ namespace base {
 	 */
 	BASEAPI int intersectLines(const vec2& p0, const vec2& q0, const vec2& p1, const vec2& q1, vec2& out);
 	BASEAPI int intersectLines(const vec2& p0, const vec2& q0, const vec2& p1, const vec2& q1, float& u, float& v);
+	BASEAPI int intersectLines(const vec2& p0, const vec2& q0, const vec2& p1, const vec2& q1);
 
 
 	/** Detect whether oriented boxes are colliding
