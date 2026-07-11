@@ -68,7 +68,11 @@ void Joystick::setEnabled(bool e) {
 // ================================================================= //
 
 void Input::updateJoysticks() {
-	for(Joystick* j: m_joysticks) if(j && j->m_enabled) j->update();
+	for(Joystick* j: m_joysticks) {
+		if(j && j->m_enabled) {
+			if(!j->update()) removeJoystick(j);
+		}
+	}
 }
 Joystick& Input::joystick(uint i) const {
 	if(i<m_joysticks.size() && m_joysticks[i]) return *m_joysticks[i];
@@ -78,6 +82,14 @@ Joystick& Input::joystick(uint i) const {
 
 int Input::addJoystick(Joystick* j, int forceId) {
 	if(forceId < 0) {
+		// Reuse id of any disconnected devices
+		for(size_t i=0; i<m_joysticks.size(); ++i) {
+			if(!m_joysticks[i]) {
+				m_joysticks[i] = j;
+				j->m_index = i;
+				return i;
+			}
+		}
 		j->m_index = m_joysticks.size();
 		m_joysticks.push_back(j);
 	}
@@ -90,10 +102,23 @@ int Input::addJoystick(Joystick* j, int forceId) {
 	return j->m_index;
 }
 
+void Input::removeJoystick(Joystick* j) {
+	if(!j || m_joysticks[j->m_index] != j) return;
+	printf("Joystick %s Disconnected\n", j->m_name);
+	m_joysticks[j->m_index] = nullptr;
+	delete j;
+}
+
+bool Input::joystickHasBeenAdded(int deviceIndex) const {
+	for(Joystick* j: m_joysticks) if(j && j->m_deviceIndex == deviceIndex) return true;
+	return false;
+}
+
 // ================================================================= //
 
 
 #ifdef LINUX
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -121,9 +146,10 @@ int Input::initialiseJoysticks(bool startEnabled) {
 	unsigned int absBit[40];
 	unsigned int values[5];
 	char filename[64];
-	
+
 	// Scan
 	for(int i=0; i<32; ++i) {
+		if(joystickHasBeenAdded(i)) continue;
 		sprintf(filename, "/dev/input/event%d", i);
 		js = open(filename, O_RDONLY);
 		if(js < 0) continue;
@@ -151,6 +177,7 @@ int Input::initialiseJoysticks(bool startEnabled) {
 			Joystick* joy = new Joystick(axes, btn);
 			joy->m_enabled = startEnabled;
 			joy->m_file = js;
+			joy->m_deviceIndex = i;
 			joy->m_keyMap = btnMap;
 			joy->m_absMap = absMap;
 			ioctl(js, EVIOCGNAME(sizeof(joy->m_name)), joy->m_name);
@@ -199,6 +226,8 @@ bool Joystick::update() {
 			}
 		}
 	}
+	// Disconnected ?
+	if(errno != EWOULDBLOCK) return false;
 	m_changed = lastb ^ m_buttons;
 	m_created = true;
 	return true;
@@ -218,6 +247,7 @@ int Input::initialiseJoysticks(bool startEnabled) {
 	MMRESULT  result;
 	int max = joyGetNumDevs();
 	for(int i=JOYSTICKID1; i<max; ++i) {
+		if(joystickHasBeenAdded(i)) continue;
 		joyInfo.dwSize = sizeof(joyInfo);
 		joyInfo.dwFlags = JOY_RETURNALL;
 		result = joyGetPosEx(i, &joyInfo);
@@ -227,6 +257,7 @@ int Input::initialiseJoysticks(bool startEnabled) {
 				// valid
 				Joystick* joy = new Joystick(joyCaps.wNumAxes, joyCaps.wNumButtons);
 				joy->m_file = i;
+				joy->m_deviceIndex = i;
 				joy->m_enabled = startEnabled;
 				strcpy(joy->m_name, joyCaps.szPname);
 				int axes = joyCaps.wNumAxes;
@@ -250,7 +281,9 @@ bool Joystick::update() {
 	JOYINFOEX info;
 	info.dwSize = sizeof(info);
 	info.dwFlags = JOY_RETURNALL | JOY_RETURNPOVCTS;
-	joyGetPosEx(m_file, &info);
+	MMRESULT r = joyGetPosEx(m_file, &info);
+	if(r != JOYERR_NOERROR) return false;
+
 	const DWORD returnFlags[6] = { JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, JOY_RETURNU, JOY_RETURNR, JOY_RETURNV };
 	for(size_t i=0; i<m_numAxes; ++i) {
 		if(info.dwFlags & returnFlags[i]) {
@@ -282,14 +315,14 @@ int Input::initialiseJoysticks(bool startEnabled) {
 	if(emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS) return 0;
 	int num = emscripten_get_num_gamepads();
 	printf("Detected %d joysticks\n", num);
-	for(Joystick* joy: m_joysticks) delete joy;
-	m_joysticks.clear();
 	EmscriptenGamepadEvent state;
 	for(int i=0; i<num; ++i) {
+		if(joystickHasBeenAdded(i)) continue;
 		if(emscripten_get_gamepad_status(i, &state) == EMSCRIPTEN_RESULT_SUCCESS) {
 			printf("Detected controller: %s (%d axes, %d buttons)\n", state.id, state.numAxes, state.numButtons);
 			Joystick* joy = new Joystick(state.numAxes, state.numButtons);
 			joy->m_enabled = startEnabled;
+			joy->m_deviceIndex = i;
 			joy->m_file = i;
 			joy->setDeadzone(0.3);
 			addJoystick(joy);

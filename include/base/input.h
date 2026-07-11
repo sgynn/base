@@ -194,6 +194,7 @@ namespace base {
 		virtual bool update();
 		protected:
 		uint  m_index;
+		char  m_deviceIndex;
 		char m_name[128];
 		bool m_enabled;
 		// State
@@ -249,6 +250,7 @@ namespace base {
 		/** Initialise joysticks - returns number found */
 		int initialiseJoysticks(bool startEnabled=true);
 		int addJoystick(Joystick*, int forceId=-1);
+		void removeJoystick(Joystick*);
 
 		/// Binding
 		uint getAction(const char* name);	// Will create it if it does not exist
@@ -300,6 +302,7 @@ namespace base {
 
 		// Joysticks
 		std::vector<Joystick*> m_joysticks;
+		bool joystickHasBeenAdded(int deviceIndex) const;
 		void updateJoysticks();
 		
 		//set method from system events - needs converting to wgd keycodes
