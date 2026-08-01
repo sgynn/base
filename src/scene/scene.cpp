@@ -140,6 +140,7 @@ void SceneNode::deleteAttachments(bool recurse) {
 void SceneNode::deleteChildren(bool attachments) {
 	if(attachments) deleteAttachments(true);
 	for(SceneNode* n: m_children) {
+		n->notifyRemoved();
 		n->m_parent = 0; // to not invalidate iterator
 		delete n;
 	}
