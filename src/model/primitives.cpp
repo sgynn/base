@@ -33,19 +33,19 @@ static Mesh* createMesh(int vsize, float* vx, int isize, uint16* ix, PolygonMode
 inline void set(float* d, const vec3& v) { d[0]=v.x; d[1]=v.y; d[2]=v.z; };
 
 // ----------------------------------------------------------------------------- //
-Mesh* createPlane(const vec2& size) {
+Mesh* createPlane(const vec2& size, const vec2& uv) {
 	vec2 s = size/2;
 	float* vx = new float[44] {
-		-s.x, 0, -s.y,   0,1,0,   1,0,0,  0,0,
-		 s.x, 0, -s.y,   0,1,0,   1,0,0,  1,0,
-		-s.x, 0,  s.y,   0,1,0,   1,0,0,  0,1,
-		 s.x, 0,  s.y,   0,1,0,   1,0,0,  1,1,
+		-s.x, 0, -s.y,   0,1,0,   1,0,0,  0,   0,
+		 s.x, 0, -s.y,   0,1,0,   1,0,0,  uv.x,0,
+		-s.x, 0,  s.y,   0,1,0,   1,0,0,  0,   uv.y,
+		 s.x, 0,  s.y,   0,1,0,   1,0,0,  uv.x,uv.y,
 	};
 	uint16* ix = new uint16[6] { 0,2,1, 1,2,3 };
 	return createMesh(4, vx, 6, ix);
 }
 // ----------------------------------------------------------------------------- //
-Mesh* createPlane(const vec2& size, int divisions) {
+Mesh* createPlane(const vec2& size, int divisions, const vec2& uv) {
 	++divisions;
 	vec2 a = -size / 2;
 	vec2 step = size / divisions;
@@ -64,8 +64,8 @@ Mesh* createPlane(const vec2& size, int divisions) {
 			v[6] = 1;
 			v[7] = 0;
 			v[8] = 0;
-			v[9] = x * uvStep;
-			v[10] = y * uvStep;
+			v[9] = x * uvStep * uv.x;
+			v[10] = y * uvStep * uv.y;
 		}
 	}
 	uint16* ix = new uint16[divisions * divisions * 6];
