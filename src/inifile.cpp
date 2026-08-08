@@ -118,7 +118,7 @@ INIFile INIFile::parse(const char* data) {
 						value.m_source = (char*)malloc(e-c+2);
 						strncpy(value.m_source, c, e-c+1);
 						value.m_source[e-c+1] = 0;
-						s->set(buffer, value);
+						s->add(buffer, value);
 						c = e;
 					}
 				} else printf("INI Warning: found '=' with no name\n");
@@ -164,7 +164,8 @@ void INIFile::Section::add(const char* key, const Value& value) {
 		m_map.insert(key, m_values.size());
 		key = m_map.find(key)->key;
 	}
-	m_values.push_back(KeyValue{item->key, value});
+	else key = item->key;
+	m_values.push_back(KeyValue{key, value});
 }
 const INIFile::Value& INIFile::Section::get(const char* c) const {
 	int index = m_map.get(c, -1);
