@@ -37,7 +37,7 @@ namespace base {
 		const Quaternion& getOrientation() const;				// Get the relative orientation as a quaternion
 		const Matrix&     getTransformation() const;			// Get the local transformation of the bone
 		const Matrix&     getAbsoluteTransformation() const;	// *Deprecated - derived position and rotation
-		const Matrix&     getDerivedTranform() const { return m_combined; }
+		const Matrix&     getDerivedTransform() const { return m_combined; }
 		const vec3&       getDerivedScale() const { return m_combinedScale; } // Get derived scale
 		vec3              getDerivedPosition() const { return vec3(&m_combined[12]); }
 
