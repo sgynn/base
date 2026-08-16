@@ -20,6 +20,7 @@ class SceneComponent : public base::GameStateComponent {
 	bool setCompositor(base::CompositorGraph* graph);
 	Workspace*& getWorkspace() { return m_workspace; }
 	Renderer* getRenderer() { return m_renderer; }
+	Camera* getCamera() { return m_camera; }
 	Scene* getScene() { return m_scene; }
 	void setCamera(Camera* cam);
 	void setCamera(Camera* cam, bool update);
