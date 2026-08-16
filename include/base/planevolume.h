@@ -14,6 +14,8 @@ namespace base {
 		Plane(const vec3& norm, float offset) : normal(norm.normalised()), d(offset) { }
 		Plane(const vec3& norm, const vec3& point) : normal(norm.normalised()), d(normal.dot(point)) { }
 		Plane(const vec3& a, const vec3& b, const vec3& c) : normal((c-a).cross(b-a).normalise()), d(normal.dot(a)) {}
+		Plane flipped() const { return Plane(-normal, -d); }
+		void flip() { d = -d; normal = -normal; }
 
 		Side test(const vec3& point) const;								// Point
 		Side test(const vec3& centre, float radius) const;				// Sphere
@@ -25,6 +27,7 @@ namespace base {
 	/** Plane bounded volume */
 	class PlaneVolume {
 		public:
+		bool empty() const											{ return m_planes.empty(); }
 		int getSize() const											{ return m_planes.size(); }
 		const Plane& getPlane(int index) const 						{ return m_planes[index]; }
 		void addPlane(const Plane& plane)							{ m_planes.push_back(plane); }
@@ -33,8 +36,9 @@ namespace base {
 		void addPlane(const vec3& a, const vec3& b, const vec3& c)	{ addPlane(Plane(a,b,c)); }
 		void clear()												{ m_planes.clear(); }
 
-		bool isValid() const;
-		void addPoint(const vec3& point);
+		static PlaneVolume build(const vec3* points, int size);
+		std::vector<vec3> getEdges() const;
+		std::vector<vec3> getPoints() const;
 
 		std::vector<Plane>::const_iterator begin() const { return m_planes.begin(); }
 		std::vector<Plane>::const_iterator end() const { return m_planes.end(); }
@@ -46,7 +50,7 @@ namespace base {
 		Plane::Side test(const BoundingBox& box) const;						// Collide AABB
 		Plane::Side test(const Plane& plane) const;
 		bool trace(const Ray& ray, float& t) const;
-		bool trace(const Ray& ray, float radius, float& t) const;
+		//bool trace(const Ray& ray, float radius, float& t) const;
 
 		protected:
 		std::vector<Plane> m_planes;
@@ -61,16 +65,8 @@ namespace base {
 			return side;
 		}
 
-		bool getIntersetionPoint(int a, int b, int c, vec3& point) const {
-			vec3 u = m_planes[b].normal.cross(m_planes[c].normal);
-			float denom = u.dot(m_planes[a].normal);
-			if(fabs(denom) < 1e-4) return false; // no intersections
-			point = (m_planes[a].d * u + m_planes[a].normal.cross(m_planes[b].d * m_planes[c].normal - m_planes[c].d * m_planes[b].normal)) / denom;
-			for(const Plane& p: m_planes) if(p.test(point) == Plane::Outside) return false;
-			return true;
-		}
+		bool getIntersetionPoint(int ia, int ib, int ic, vec3& out) const;
 	};
-
 
 
 	inline Plane::Side Plane::test(const vec3& p) const {
@@ -138,11 +134,12 @@ namespace base {
 		float value;
 		bool hit = false;
 		for(const Plane& p: m_planes) {
+			if(ray.direction.dot(p.normal) < 0) continue;
 			if(!p.trace(ray, value) || value>t) continue;
 			vec3 point = ray.point(value);
 			for(const Plane& o: m_planes) {
 				if(&o==&p) continue;
-				if(o.test(point) == Plane::Outside) goto nope;
+				if(o.test(point, 1e-3) == Plane::Outside) goto nope;
 			}
 			t = value;
 			hit = true;

@@ -21,6 +21,7 @@ set(src
 	src/input.cpp
 	src/joystick.cpp
 	src/opengl.cpp
+	src/planevolume.cpp
 	src/png.cpp
 	src/resources.cpp
 	src/scenecomponent.cpp
