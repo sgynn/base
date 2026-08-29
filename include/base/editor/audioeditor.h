@@ -62,5 +62,6 @@ class AudioEditor : public EditorComponent {
 	char m_playing = 0;
 	int m_loadMessage = 0;
 };
+REGISTER_EDITOR_COMPONENT(AudioEditor);
 }
 

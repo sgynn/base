@@ -77,9 +77,13 @@ class SceneEditor : public base::GameStateComponent {
 	bool addEmbeddedPNGImage(const char* name, const char& bin, unsigned length);
 
 	public:
-	using CreateList = std::vector<EditorComponent*(*)()>;
+	struct CreateListItem { const char* key; EditorComponent*(*create)(); };
+	using CreateList = std::vector<CreateListItem>;
 	static CreateList& getClassList() { static CreateList list; return list; }
-	template<class T> static void addClass() { getClassList().push_back([]()->EditorComponent*{ return new T(); }); }
+	template<class T> static void addClass(const char* key) { 
+		for(const CreateListItem& i: getClassList()) if(strcmp(i.key, key) == 0) return;
+		getClassList().push_back({key, []()->EditorComponent*{ return new T(); }});
+	}
 
 	template<class T> T* getComponent() {
 		for(EditorComponent* c: m_components) if(T* r=dynamic_cast<T*>(c)) return r;
@@ -170,8 +174,9 @@ class EditorComponent {
 template<class T>
 class AutoComponent {
 	public:
-	AutoComponent() { SceneEditor::addClass<T>(); }
+	AutoComponent(const char* key) { SceneEditor::addClass<T>(key); }
 };
+#define REGISTER_EDITOR_COMPONENT(Type) static AutoComponent<Type> autoTypeRegister_##Type(#Type);
 
 }
 

@@ -33,6 +33,7 @@ class ParticleEditorComponent : public EditorComponent {
 	std::vector<ParticleEditor*> m_editors;
 	friend class ParticleEditor;
 };
+REGISTER_EDITOR_COMPONENT(ParticleEditorComponent);
 
 
 

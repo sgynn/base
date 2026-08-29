@@ -8,4 +8,5 @@ class RenderDoc : public EditorComponent {
 	void initialise() override;
 	void update() override;
 };
+REGISTER_EDITOR_COMPONENT(RenderDoc);
 }

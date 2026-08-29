@@ -36,9 +36,9 @@ SceneEditor::SceneEditor() : GameStateComponent(-50, 80, PERSISTENT) {
 	m_toggleKey = KEY_F12;
 	CreateList tmp = getClassList();
 	getClassList().clear();
-	addClass<LayoutViewer>();
-	addClass<CompositorEditor>();
-	addClass<AssetBrowser>();
+	addClass<LayoutViewer>("LayoutViewer");
+	addClass<CompositorEditor>("CompositorEditor");
+	addClass<AssetBrowser>("AssetBrowser");
 	for(auto& i: tmp) getClassList().push_back(i);
 }
 
@@ -66,8 +66,9 @@ void SceneEditor::initialiseComponents() {
 	addEmbeddedPNGImage("data/editor/editoricons.png", editor_icons, editor_icons_len);
 	if(m_gui->load("data/editor/editor.xml") || m_gui->parse(&editor_gui)) {
 		m_toolTip.tip = m_gui->getWidget("tooltip");
-		for(auto& create: getClassList()) {
-			EditorComponent* component = create();
+		for(auto& editorClass: getClassList()) {
+			printf("[Creating editor component %s]\n", editorClass.key);
+			EditorComponent* component = editorClass.create();
 			m_components.push_back(component);
 			component->m_editor = this;
 			component->initialise();

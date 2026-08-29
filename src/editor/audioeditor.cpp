@@ -19,9 +19,6 @@ using namespace editor;
 using namespace gui;
 using namespace audio;
 
-static AutoComponent<AudioEditor> audioAutoComponent;
-
-
 class VariableWidget : public Widget {
 	WIDGET_TYPE(VariableWidget)
 	void initialise(const Root*, const PropertyMap&) override {

@@ -3,10 +3,13 @@
 #include <base/window.h>
 #include <base/game.h>
 
+#if defined(LINUX) || defined(WIN32)
+
 #ifdef LINUX
 #include <base/window_x11.h>
 #include <dlfcn.h>
 #endif
+
 #ifdef WIN32
 #include <base/window_win32.h>
 #endif
@@ -15,7 +18,6 @@
 #include "/opt/renderdoc_1.39/include/renderdoc_app.h"
 #define APIPATH "/opt/renderdoc_1.39/"
 
-static editor::AutoComponent<editor::RenderDoc> autoAddRenderdocComponent;
 static RENDERDOC_API_1_6_0 *api = NULL;
 static int state = 0;
 
@@ -114,4 +116,6 @@ void editor::RenderDoc::update() {
 		state = 0;
 	}
 }
+
+#endif
 
