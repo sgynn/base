@@ -137,6 +137,7 @@ set(editor
 	src/editor/modelviewer.cpp
 	src/editor/nodeeditor.cpp
 	src/editor/particleeditor.cpp
+	src/editor/performance.cpp
 	src/editor/renderdoc.cpp
 )
 
@@ -188,6 +189,7 @@ set(headers
 	include/base/png.h
 	include/base/point.h
 	include/base/primitives.h
+	include/base/profiler.h
 	include/base/quaternion.h
 	include/base/random.h
 	include/base/renderer.h
@@ -266,6 +268,7 @@ set(editorheaders
 	include/base/editor/layout.h
 	include/base/editor/nodeeditor.h
 	include/base/editor/particleeditor.h
+	include/base/editor/performance.h
 	include/base/editor/renderdoc.h
 	include/base/editor/resources.h
 )

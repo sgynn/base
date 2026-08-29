@@ -1,4 +1,5 @@
 #pragma once
+#define BASE_SCENE_COMPONENT
 
 #include <base/gamestate.h>
 #include <base/scene.h>

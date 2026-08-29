@@ -149,6 +149,7 @@
 		<icon rect="32 48 16 16" name="scene"/>
 		<icon rect="48 48 16 16" name="renderdoc"/>
 		<icon rect="0 32 16 16" name="audio"/>
+		<icon rect="16 32 16 16" name="performance"/>
 	</iconlist>
 	<!--Templates-->
 	<template rect="0 0 100 100" name="frame" skin="panel" category="Containers"/>
