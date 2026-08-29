@@ -130,7 +130,7 @@ Drawable* world::attachMesh(SceneNode* node, Mesh* mesh, const char* material, i
 int world::attachMeshes(SceneNode* target, Model* model, const char* meshName, const char* materialOverride, int queue, float* customData) {
 	int result = 0;
 	for(const auto& m: model->meshes()) {
-		if(strcmp(m.name, meshName)!=0) continue;
+		if(meshName && strcmp(m.name, meshName)!=0) continue;
 		const char* mat = materialOverride? materialOverride: m.materialName;
 		int renderQueue = getRenderQueueForMaterial(mat, queue);
 		DrawableMesh* drawable = new DrawableMesh(m.mesh, loadMaterial(mat));
