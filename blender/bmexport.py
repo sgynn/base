@@ -265,7 +265,19 @@ def process_weights(v, limit, normalise):
 
 def export_merged_meshes(obj, exportList, config, xml):
     bm = bmesh.new()
+    # Output uses the transform of the active object
     local = obj.matrix_world.inverted()
+
+    # If saving a collection, output uses the collection offset instead
+    if config.collection:
+        collection = bpy.data.collections.get((config.collection, None))
+        if collection:
+            local = Matrix.Identity(4)
+            local.translation = -collection.instance_offset
+
+    materials = []
+
+
     for object in exportList:
         if object.type == 'MESH':
             o = object
@@ -282,12 +294,20 @@ def export_merged_meshes(obj, exportList, config, xml):
                 m.flip_normals()
             bm.from_mesh(m)
             o.to_mesh_clear()
-            # FIXME: Materials on merged mesh are missing
+
+            # Materials. What if they are different?
+            materials.extend([None] * (len(o.data.materials) - len(materials)))
+            for i, mat in enumerate(o.data.materials):
+                if materials[i] and mat != materials[i]: print("Material mismatch")
+                if mat: materials[i] = mat
         
     mesh = bpy.data.meshes.new('TempCombinedMesh')
     bm.to_mesh(mesh)
     mesh.update()
     bm.free()
+
+    for m in materials:
+        mesh.materials.append(m)
 
     meshes = construct_export_meshes(obj, mesh, config)
     write_meshes(obj, config, xml, meshes)
