@@ -80,10 +80,13 @@ namespace world {
 
 		using TraceResult = TraceResultT<ObjectType>;
 		TraceResult trace(const Ray& ray, float radius=0, float limit=1e8f) const { return trace(-1, ray, radius, limit); }
-		TraceResult trace(TraceGroupMask mask, const Ray& ray, float radius=0, float limit=1e8f) const {
+		TraceResult trace(TraceGroupMask mask, const Ray& ray, float radius=0, float limit=1e8f) const { return trace(mask, ray, radius, limit, [](ObjectType*) { return true; }); }
+		template<class Filter>
+		TraceResult trace(TraceGroupMask mask, const Ray& ray, float radius, float limit, const Filter& filter) const {
 			TraceResult result;
 			if(traceCustom(mask, ray, radius, limit, result)) limit = result.distance;
 			for(ObjectType* o: *this) {
+				if(!filter(o)) continue;
 				if(traceObject(o, mask, ray, radius, limit, result.distance, result.normal)) {
 					result.object = o;
 					limit = result.distance;
