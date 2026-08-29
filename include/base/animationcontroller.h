@@ -144,7 +144,8 @@ class AnimationController {
 	bool currentActionAffectsBone(base::Bone*) const;
 	bool currentActionAffectsBone(unsigned boneIndex) const;
 
-	float deriveMoveSpeed() const;
+	float getTargetMoveSpeed() const { return m_moveSpeed; }
+	float deriveMoveSpeed() const; // Actual move speed from move animation weights
 
 	protected:
 	enum MetaType { IDLE, ACTION, MOVEMENT, OVERRIDE, OVERRIDE_IN, OVERRIDE_OUT };
