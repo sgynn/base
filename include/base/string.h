@@ -49,6 +49,7 @@ namespace base {
 		String operator+(const char* s) const       { return cat(m_data, length(), s, s?strlen(s):0); }
 		String operator+(const String& s) const     { return cat(m_data, length(), s, s.length()); }
 		friend String operator+(const char* a, const String& s) { return cat(a, a?strlen(a):0, s, s.length()); }
+		StringList split(const char* sep, bool keepEmpty=false, const char* trim=" ") const { return std::move(split(str(), sep, keepEmpty, trim)); }
 
 		String& toUpper() {
 			if(m_data) for(char* c=m_data; *c; ++c) if(*c>96) *c &= 0xdf;
