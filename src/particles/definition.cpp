@@ -6,10 +6,18 @@
 using namespace particle;
 using script::Variable;
 
-base::HashMap<Definition<RenderData>*> particle::s_renderDataFactory;
-base::HashMap<Definition<Affector>*> particle::s_affectorFactory;
-base::HashMap<Definition<Emitter>*> particle::s_emitterFactory;
-base::HashMap<Definition<Event>*> particle::s_eventFactory;
+namespace particle {
+	base::HashMap<Definition<RenderData>*> s_renderDataFactory;
+	base::HashMap<Definition<Affector>*> s_affectorFactory;
+	base::HashMap<Definition<Emitter>*> s_emitterFactory;
+	base::HashMap<Definition<Event>*> s_eventFactory;
+	template<> base::HashMap<Definition<RenderData>*>& getDefinitionMap<RenderData>() { return s_renderDataFactory; }
+	template<> base::HashMap<Definition<Affector>*>& getDefinitionMap<Affector>() { return s_affectorFactory; }
+	template<> base::HashMap<Definition<Emitter>*>& getDefinitionMap<Emitter>() { return s_emitterFactory; }
+	template<> base::HashMap<Definition<Event>*>& getDefinitionMap<Event>() { return s_eventFactory; }
+}
+
+
 struct ParticleDefinitionCleanup {
 	Definition<Event>* commonEventDef = nullptr;
 	~ParticleDefinitionCleanup() {

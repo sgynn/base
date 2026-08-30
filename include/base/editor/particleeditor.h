@@ -20,6 +20,8 @@ class ParticleEditorComponent : public EditorComponent {
 	void setParticleManager(particle::Manager*);
 	ParticleEditor* showParticleSystem(particle::System*, const char* name=0);
 	particle::Manager* getParticleManager() { return m_manager; }
+	const std::vector<ParticleEditor*>& getEditorWindows() const { return m_editors; }
+	void closeEditorWindows();
 	void saveAll();
 	public:
 	void assetCreationActions(AssetCreationBuilder&) override;
@@ -76,7 +78,7 @@ class ParticleEditor {
 	void createNodeFromDrag(gui::Widget* w, const Point& pos, int b);
 	ParticleNode* createGraphNode(NodeType type, const char* className, particle::Object* data);
 	void selectNode(gui::Button*);
-	template<class T> void createPropertiesPanel(particle::Definition<T>* def, T* item);
+	template<class T> void createPropertiesPanel(const char* typeName, T* item);
 	void propertyModeChanged(gui::Button*);
 	void showGradientEditor(editor::GradientBox* target);
 	void applyGradient();

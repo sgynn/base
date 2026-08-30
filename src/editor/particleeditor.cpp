@@ -64,7 +64,7 @@ class ParticleNode : public nodegraph::Node {
 // ================================================================================================ //
 
 ParticleEditorComponent::~ParticleEditorComponent() {
-	for(ParticleEditor* e: m_editors) delete e;
+	closeEditorWindows();
 }
 
 void ParticleEditorComponent::initialise() {
@@ -85,6 +85,13 @@ void ParticleEditorComponent::assetCreationActions(AssetCreationBuilder& data) {
 			asset.resource = String::format("particles_%d.pt", ++uniqueIndex);
 		}
 		particle::System* sys = new particle::System();
+		particle::Emitter* emitter = particle::create<particle::Emitter>("PointEmitter");
+		particle::RenderData* r = particle::create<particle::RenderData>("SpriteRenderer");
+		emitter->setRenderer(r);
+		sys->addEmitter(emitter);
+		sys->addRenderer(r);
+		
+
 		base::Resources::getInstance()->particles.add(asset.resource, sys);
 		return asset;
 	});
@@ -107,6 +114,10 @@ bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset
 	});
 
 	return true;
+}
+
+void ParticleEditorComponent::closeEditorWindows() {
+	for(ParticleEditor* e: m_editors) delete e;
 }
 
 Widget* ParticleEditorComponent::openAsset(const Asset& asset) {
@@ -206,6 +217,7 @@ ParticleEditor::ParticleEditor(ParticleEditorComponent* parent, particle::System
 	, m_manager(parent->getParticleManager())
 	, m_system(sys)
 {
+	using namespace particle;
 	auto insertItemSorted = [](Listbox* list, const char* item, NodeType type) {
 		for(uint i=0; i<list->getItemCount(); ++i) {
 			if(list->getItem(i).getValue(1, type) != type) continue;
@@ -220,14 +232,14 @@ ParticleEditor::ParticleEditor(ParticleEditorComponent* parent, particle::System
 
 	// Populate types
 	Listbox* affectors = m_panel->getWidget<Listbox>("affectors");
-	for(auto& i: particle::s_affectorFactory) if(i.value->create) insertItemSorted(affectors, i.value->type, AffectorNode);
+	for(auto& i: getDefinitionMap<Affector>()) if(i.value->create) insertItemSorted(affectors, i.value->type, AffectorNode);
 
 	Listbox* emitters = m_panel->getWidget<Listbox>("emitters");
-	for(auto& i: particle::s_emitterFactory) if(i.value->create) insertItemSorted(emitters, i.value->type, EmitterNode);
+	for(auto& i: getDefinitionMap<Emitter>()) if(i.value->create) insertItemSorted(emitters, i.value->type, EmitterNode);
 
 	Listbox* renderers = m_panel->getWidget<Listbox>("renderers");
-	for(auto& i: particle::s_renderDataFactory) if(i.value->create) insertItemSorted(renderers, i.value->type, RenderDataNode);
-	for(auto& i: particle::s_eventFactory) if(i.value->create) insertItemSorted(renderers, i.value->type, EventNode);
+	for(auto& i: getDefinitionMap<RenderData>()) if(i.value->create) insertItemSorted(renderers, i.value->type, RenderDataNode);
+	for(auto& i: getDefinitionMap<Event>()) if(i.value->create) insertItemSorted(renderers, i.value->type, EventNode);
 
 	// Set up node graph
 	Widget* graphContainer = m_panel->getWidget("graph");
@@ -404,45 +416,41 @@ bool ParticleEditor::drop(Widget* w, const Point& p, const Asset& asset, bool ap
 
 
 template<class T>
-static const char* getParticleClassName(T* object) {
+static const char* getParticleClassName(const T* object) {
 	static std::map<size_t, const char*> typeMap;
 	if(typeMap.empty()) {
-		for(auto& i: particle::s_emitterFactory) {
-			if(!i.value->create) continue;
-			auto* o = i.value->create();
-			typeMap[typeid(*o).hash_code()] = i.key;
-			delete o;
-		}
-		for(auto& i: particle::s_affectorFactory) {
-			if(!i.value->create) continue;
-			auto* o = i.value->create();
-			typeMap[typeid(*o).hash_code()] = i.key;
-			delete o;
-		}
-		for(auto& i: particle::s_renderDataFactory) {
+		for(auto& i: particle::getDefinitionMap<T>()) {
 			if(!i.value->create) continue;
 			auto* o = i.value->create();
 			typeMap[typeid(*o).hash_code()] = i.key;
 			delete o;
 		}
 	}
-	// Events are all one class so typeMap wont work
-	if(particle::Event* e = dynamic_cast<particle::Event*>((particle::Object*)object)) {
-		static const char* eventTypes[4] = {0,0,0,0};
-		if(!eventTypes[0]) {
-			for(auto& e: particle::s_eventFactory) {
-				particle::Event* tmp = e.value->create();
-				eventTypes[(int)tmp->getType()] = e.key;
-				delete tmp;
-			}
-		}
-		const char* typeName = eventTypes[(int)e->getType()];
-		return typeName? typeName: "Event";
-	}
-
 	size_t id = typeid(*object).hash_code();
 	auto it = typeMap.find(id);
 	return it!=typeMap.end()? it->second: "";
+}
+template<> const char* getParticleClassName<particle::Event>(const particle::Event* e) {
+	// Events are all one class so typeMap wont work
+	static const char* eventTypes[4] = {0,0,0,0};
+	if(!eventTypes[0]) {
+		for(auto& e: particle::getDefinitionMap<particle::Event>()) {
+			particle::Event* tmp = e.value->create();
+			eventTypes[(int)tmp->getType()] = e.key;
+			delete tmp;
+		}
+	}
+	const char* typeName = eventTypes[(int)e->getType()];
+	return typeName? typeName: "Event";
+}
+template<> const char* getParticleClassName<particle::Object>(const particle::Object* o) {
+	using namespace particle;
+	if(const RenderData* e = dynamic_cast<const RenderData*>(o)) return getParticleClassName(e);
+	if(const Affector* e = dynamic_cast<const Affector*>(o)) return getParticleClassName(e);
+	if(const Emitter* e = dynamic_cast<const Emitter*>(o)) return getParticleClassName(e);
+	if(const Event* e = dynamic_cast<const Event*>(o)) return getParticleClassName(e);
+	assert(false);
+	return "Object";
 }
 
 void ParticleEditor::setParticleSystem(particle::System* system, const char* title) {
@@ -519,6 +527,7 @@ void ParticleEditor::createOrLinkNode(ParticleNode* from, particle::Object* to, 
 
 
 void ParticleEditor::createNodeFromDrag(Widget* w, const Point& mpos, int b) {
+	using namespace particle;
 	if(m_graph && w && b==1 && cast<Listbox>(w)->getSelectedIndex()>=0) {
 		Point pos = mpos +  w->getAbsolutePosition();
 		if(m_graph->getAbsoluteRect().contains(pos)) {
@@ -526,12 +535,12 @@ void ParticleEditor::createNodeFromDrag(Widget* w, const Point& mpos, int b) {
 			const ListItem& item = *cast<Listbox>(w)->getSelectedItem();
 			const char* className = item;
 			NodeType type = item.findValue(SystemNode);
-			particle::Object* object = 0;
+			Object* object = 0;
 			switch(type) {
-			case RenderDataNode: object = particle::s_renderDataFactory[className]->create(); break;
-			case AffectorNode: object = particle::s_affectorFactory[className]->create(); break;
-			case EmitterNode: object = particle::s_emitterFactory[className]->create(); break;
-			case EventNode: object = particle::s_eventFactory[className]->create(); break;
+			case RenderDataNode: object = create<RenderData>(className); break;
+			case AffectorNode: object = create<Affector>(className); break;
+			case EmitterNode: object = create<Emitter>(className); break;
+			case EventNode: object = create<Event>(className); break;
 			case SystemNode: break;
 			}
 			if(object) {
@@ -839,7 +848,8 @@ void refreshMaterial(particle::Manager* m, particle::RenderData* item) {
 }
 
 template<class T>
-void ParticleEditor::createPropertiesPanel(particle::Definition<T>* def, T* item) {
+void ParticleEditor::createPropertiesPanel(const char* typeName, T* item) {
+	particle::Definition<T>* def = particle::getDefinitionMap<T>().get(typeName, nullptr);
 	Widget* panel = m_panel->getWidget("properties");
 	panel->deleteChildWidgets();
 	panel->pauseLayout();
@@ -1083,10 +1093,10 @@ void ParticleEditor::selectNode(Button* b) {
 
 	// Create properties panel
 	switch(node->getNodeType()) {
-	case EmitterNode: createPropertiesPanel(particle::s_emitterFactory[name], (particle::Emitter*)data); break;
-	case AffectorNode: createPropertiesPanel(particle::s_affectorFactory[name], (particle::Affector*)data); break;
-	case RenderDataNode: createPropertiesPanel(particle::s_renderDataFactory[name], (particle::RenderData*)data); break;
-	case EventNode: createPropertiesPanel(particle::s_eventFactory[name], (particle::Event*)data); break;
+	case EmitterNode: createPropertiesPanel(name, (particle::Emitter*)data); break;
+	case AffectorNode: createPropertiesPanel(name, (particle::Affector*)data); break;
+	case RenderDataNode: createPropertiesPanel(name, (particle::RenderData*)data); break;
+	case EventNode: createPropertiesPanel(name, (particle::Event*)data); break;
 	case SystemNode: break;
 	}
 	
@@ -1097,15 +1107,9 @@ void ParticleEditor::selectNode(Button* b) {
 
 // ===================================================================================================== //
 
-template<class T> const base::HashMap<particle::Definition<T>*>& getFactory();
-template<> const base::HashMap<particle::Definition<particle::RenderData>*>& getFactory<particle::RenderData>() { return particle::s_renderDataFactory; }
-template<> const base::HashMap<particle::Definition<particle::Affector>*>& getFactory<particle::Affector>() { return particle::s_affectorFactory; }
-template<> const base::HashMap<particle::Definition<particle::Emitter>*>& getFactory<particle::Emitter>() { return particle::s_emitterFactory; }
-template<> const base::HashMap<particle::Definition<particle::Event>*>& getFactory<particle::Event>() { return particle::s_eventFactory; }
-
 template<class T> void saveProperties(FILE* fp, const T* data, int indent) {
 	const char* type = getParticleClassName(data);
-	particle::Definition<T>* def = getFactory<T>().get(type, 0);
+	particle::Definition<T>* def = particle::getDefinitionMap<T>().get(type, nullptr);
 	static const char* tabs = "\t\t\t\t\t";
 	fprintf(fp, "%.*stype = \"%s\"\n", indent, tabs, type);
 	while(def) {

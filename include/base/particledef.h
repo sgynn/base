@@ -29,33 +29,33 @@ namespace particle {
 	template<class T>
 	struct Definition {
 		std::vector<Property<T>> properties;
-		Definition* parent = 0;
-		const char* type = 0;
-		T*(*create)() = 0;
+		Definition* parent = nullptr;
+		const char* type = nullptr;
+		T*(*create)() = nullptr;
 	};
+	template<class T> base::HashMap<Definition<T>*>& getDefinitionMap();
 
-
-	extern base::HashMap<Definition<RenderData>*> s_renderDataFactory;
-	extern base::HashMap<Definition<Affector>*> s_affectorFactory;
-	extern base::HashMap<Definition<Emitter>*> s_emitterFactory;
-	extern base::HashMap<Definition<Event>*> s_eventFactory;
-
-	// createAffectorDefinition<Affector, WindAffector>(s_affectorFactory, "WindAffector", "Affector");
-	template<class T, class E> Definition<T>* createDefinition(base::HashMap<Definition<T>*>& factory, const char* name, const char* parent=0) {
-		Definition<T>* def = factory[name] = new Definition<T>();
-		def->parent = parent? factory.get(parent, 0): 0;
+	// createDefinition<Affector, WindAffector>("WindAffector", "Affector");
+	template<class T, class E> Definition<T>* createDefinition(const char* name, const char* parent=0) {
+		Definition<T>* def = getDefinitionMap<T>()[name] = new Definition<T>();
+		def->parent = parent? getDefinitionMap<T>().get(parent, nullptr): nullptr;
 		def->type = name;
 		def->create = []()->T*{ return new E(); };
 		return def;
 	}
+	
+	template<class T> T* create(const char* name) {
+		Definition<T>* def = getDefinitionMap<T>().get(name, nullptr);
+		return def? def->create(): nullptr;
+	}
 };
 
 #define CreateAffectorDefinition(Type, Parent) \
-	particle::createDefinition<Affector, Type>(s_affectorFactory, #Type, #Parent);
+	particle::createDefinition<Affector, Type>(#Type, #Parent);
 #define CreateEmitterDefinition(Type, Parent) \
-	particle::createDefinition<Emitter, Type>(s_emitterFactory, #Type, #Parent);
+	particle::createDefinition<Emitter, Type>(#Type, #Parent);
 #define CreateRenderDataDefinition(Type, Parent) \
-	particle::createDefinition<RenderData, Type>(s_renderDataFactory, #Type, #Parent);
+	particle::createDefinition<RenderData, Type>(#Type, #Parent);
 
 // Property is a Value type
 #define AddValuePropertyN(Base, Type, def, key, var) \
