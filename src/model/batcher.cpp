@@ -45,6 +45,8 @@ Mesh* Batcher::build(Mesh* out) const {
 	char* iData = new char[iCount * indexStride[(int)indexType]];
 	char* dst = iData;
 	uint32 offset = 0;
+	float paddingSrc[4] = {0,0,0,1};
+	char* padding = (char*)paddingSrc;
 
 	// Potential for multithreaded build with thread pool
 
@@ -54,7 +56,6 @@ Mesh* Batcher::build(Mesh* out) const {
 		for(const Attribute& a: attributes) {
 			int size = HardwareVertexBuffer::getDataSize(a.type);
 			char* vx = vData + offset * stride;
-
 			if(a.semantic==VA_CUSTOM) { // Should use the custom key
 				for(int i=0; i<count; ++i) {
 					memcpy(vx + i*stride + a.offset, item.custom, size);
@@ -63,16 +64,19 @@ Mesh* Batcher::build(Mesh* out) const {
 			else {
 				int srcStride = item.mesh->getVertexBuffer()->getStride();
 				Attribute& srcAttrib = item.mesh->getVertexBuffer()->attributes.get(a.semantic);
+				int pad = HardwareVertexBuffer::getDataSize(srcAttrib.type) - size;
+				if(pad<0) { size+=pad; pad=0; }
 				vec3 temp;
 				for(int i=0; i<count; ++i) {
 					void* data = item.mesh->getVertexBuffer()->getData<char>() + i*srcStride + srcAttrib.offset;
 					switch(a.semantic) {
 					case VA_VERTEX: temp = item.transform * *reinterpret_cast<vec3*>(data); data=temp; break;
 					case VA_NORMAL:
-					case VA_TANGENT:temp = item.transform.rotate(*reinterpret_cast<vec3*>(data)); data=temp; break;
+					case VA_TANGENT: temp = item.transform.rotate(*reinterpret_cast<vec3*>(data)); data = temp; break;
 					default: break;
 					}
 					memcpy(vx + i*stride + a.offset, data, size);
+					if(pad) memcpy(vx + i*stride + a.offset + size, padding+size, pad);
 				}
 			}
 		}
@@ -113,11 +117,11 @@ Mesh* Batcher::build(Mesh* out) const {
 		out = new Mesh();
 		out->setIndexBuffer(new HardwareIndexBuffer(indexType));
 		out->setVertexBuffer(new HardwareVertexBuffer());
-		out->getVertexBuffer()->attributes = attributes;
 		out->getVertexBuffer()->createBuffer();
 		out->getIndexBuffer()->createBuffer();
 	}
 
+	out->getVertexBuffer()->attributes = attributes;
 	out->getVertexBuffer()->setData(vData, vCount, stride, true);
 	out->getIndexBuffer()->setData(iData, iCount * indexStride[(int)indexType], true);
 	out->getIndexBuffer()->setIndexSize(indexType);
