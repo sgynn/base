@@ -319,7 +319,7 @@ def export_mesh(obj, config, xml):
     write_meshes(obj, config, xml, meshes)
 
 def write_meshes(obj, config, xml, meshes):
-    name = obj.name if modified(obj,config) else obj.data.name
+    name = obj.name if modified(obj,config) or not obj.data else obj.data.name
     for m in meshes:
         mesh = append_element(xml.firstChild, "mesh")
         mesh.setAttribute("name", name)                 #NOTE: duplicate name if mesh is split by material
@@ -719,7 +719,7 @@ def write_object(node, obj, config, offset, skipTransform):
 
 
 def export_custom_properties(node, obj, name=None):
-    if len(obj.keys()) > 0:
+    if obj and len(obj.keys()) > 0:
         custom = []
         for key in obj.keys():
             if key not in '_RNA_UI':
