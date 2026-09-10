@@ -117,6 +117,10 @@ void Console::hide() {
 	m_sliding = -1;
 }
 
+bool Console::hasFocus() const {
+	return m_height > 0 && m_sliding >= 0;
+}
+
 
 void Console::update() {
 	// Update buffer
@@ -139,7 +143,7 @@ void Console::update() {
 	}
 
 	// Does the console get input
-	if(!m_height || m_sliding<0) return;
+	if(!hasFocus()) return;
 	Input* in  = Game::input();
 	int    len = strlen(m_buffer);
 	const int limit = sizeof(m_buffer);

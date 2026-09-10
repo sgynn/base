@@ -20,7 +20,7 @@ class ConsoleComponent : public GameStateComponent {
 	}
 	void update() override {
 		m_console->update();
-		if(m_console->isVisible()) setComponentFlags(BLOCK_KEYS | BLOCK_GRAB);
+		if(m_console->hasFocus()) setComponentFlags(BLOCK_KEYS | BLOCK_GRAB);
 	}
 	void draw() override {
 		m_console->draw();

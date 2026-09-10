@@ -26,6 +26,7 @@ class Console {
 	void setColours(const Colour& text, const Colour& back);
 	void setFont(const gui::Font*, int size=12);
 
+	bool hasFocus() const;				/// Console currently accepting key input
 	bool isVisible() const;				/// Is the console visible?
 	void setVisible(bool v);			/// Show/hide the console
 	void show(); 						/// Show the console 
