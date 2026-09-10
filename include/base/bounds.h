@@ -20,7 +20,7 @@ class RangeT {
 	bool contains(const T& value) const;			/// Does this range contain a value
 	bool contains(const RangeT<T>& value) const;	/// Does this range fully contain another range
 	bool intersects(const RangeT<T>& value) const;	/// Does this range intersect a range
-	void include(const RangeT<T>& value) const;		/// Expand range to include another range
+	void include(const RangeT<T>& value);			/// Expand range to include another range
 	void include(const T& value);					/// Expand the range to include value
 	void expand(const T& value);					/// Expand the range by value in both directions
 	T    clamp(const T& v) const;					/// Clamp a value within this range
@@ -159,8 +159,8 @@ template<typename T> void RangeT<T>::set(T a, T b)  { min = a; max = b; }
 template<typename T> bool RangeT<T>::contains(const T& v) const           { return v>=min && v<=max; }
 template<typename T> bool RangeT<T>::contains(const RangeT<T>& v) const   { return v.min>=min && v.max<=max; }
 template<typename T> bool RangeT<T>::intersects(const RangeT<T>& v) const { return v.max>=min && v.min<=max; }
-template<typename T> void RangeT<T>::include(const RangeT<T>& v) const     { if(v.min<min) min=v.min; if(v.max>max) max=v.max; }
-template<typename T> void RangeT<T>::include(const T& v)                   { if(v<min) min=v; if(v>max) max=v;  }
+template<typename T> void RangeT<T>::include(const RangeT<T>& v)          { if(v.min<min) min=v.min; if(v.max>max) max=v.max; }
+template<typename T> void RangeT<T>::include(const T& v)                  { if(v<min) min=v; if(v>max) max=v;  }
 template<typename T> void RangeT<T>::expand(const T& v)                   { min -= v; max += v;  }
 template<typename T> T    RangeT<T>::clamp(const T& v)  const  { return v<min? min: v>max? max: v; }
 template<typename T> T    RangeT<T>::wrap(const T& v)  const   { return  v - floor((v-min)/(max-min))*(max-min); }
