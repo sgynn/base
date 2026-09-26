@@ -125,6 +125,7 @@ class NavMesh {
 		NavLink* link() { return poly.links[a]; }
 		const NavLink* link() const { return poly.links[a]; }
 		bool isConnected() const { return poly.links[a]; }
+		const NavPoly* connected() const { if(const NavLink* l=link()) return l->poly[l->poly[0]==&poly?1:0]; return nullptr;  }
 		NavPoly* connected() { if(NavLink* l=link()) return l->poly[l->poly[0]==&poly?1:0]; return nullptr;  }
 		uint oppositeEdge() const { return NavMesh::getLinkedEdge(&poly, a); }
 		vec3 direction() const { return poly.points[b] - poly.points[a]; }

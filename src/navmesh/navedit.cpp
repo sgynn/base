@@ -342,25 +342,27 @@ void nav::calculateTraversal(const NavPoly* poly, float maxRadius) {
 	if(!poly) return;
 	poly->traversal.clear();
 	maxRadius *= maxRadius;
-	auto processPoly = [](const NavPoly* poly, const NavPoly* look, uint64 skipMask, const vec2& from, float limit, const auto& recurse)->bool {
-		for(NavMesh::EdgeInfo& e: look) {
-			if(skipMask & (1<<e.a)) continue;
-			vec2 ea = e.pointA().xz();
-			vec2 ed = e.pointB().xz() - ea;
-			float t = ed.dot(from - ea) / ed.dot(ed);
-			if(t>0 && t<1) {
-				vec2 p = ea + ed * t;
-				float dist = p.distance2(from);
-				if(dist < limit) {
-					if(e.link()) recurse(poly, e.connected(), 1ull<<e.oppositeEdge(), from, limit, recurse);
-					else {
-						vec2 normal(p.y-from.y, from.x-p.x);
-						poly->traversal.push_back({sqrt(dist), normal, normal.dot(from)});
+	auto testEdge = [&](const NavPoly* poly, const NavMesh::EdgeInfo& edge, const vec2& from, float limit, const auto& resurse)->void {
+		vec2 ea = edge.pointA().xz();
+		vec2 ed = edge.pointB().xz() - ea;
+		float t = ed.dot(from - ea) / ed.dot(ed);
+		if(t>1e-6 && t<0.99999) {
+			vec2 p = ea + ed * t;
+			float dist = p.distance2(from);
+			if(dist < limit) {
+				if(const NavPoly* next = edge.connected()) {
+					uint skipEdge = edge.oppositeEdge();
+					for(NavMesh::EdgeInfo& ne: next) {
+						if(ne.a == skipEdge) continue;
+						resurse(poly, ne, from, limit, resurse);
 					}
+				}
+				else {
+					vec2 normal(p.y-from.y, from.x-p.x);
+					poly->traversal.push_back({sqrt(dist), normal, normal.dot(from)});
 				}
 			}
 		}
-		return false;
 	};
 	// FIXME- this only adds them to this polygon if they cross into another
 	
@@ -372,18 +374,17 @@ void nav::calculateTraversal(const NavPoly* poly, float maxRadius) {
 
 		// Closest edge to edge.a
 		for(NavMesh::EdgeInfo& e: poly) {
-			uint64 skip = 1ull<<e.a | 1ull<<((e.a - 1 + poly->size) % poly->size);
-			processPoly(poly, poly, skip, a, width2, processPoly);
+			if(e.a==edge.a || e.b == edge.a) continue;
+			testEdge(poly, e, a, width2, testEdge);
 		}
 		
 		// closest edge to edge.b
 		for(NavMesh::EdgeInfo& e: poly) {
-			uint64 skip = 1ull<<e.a | 1ull<<e.b;
-			processPoly(poly, poly, skip, b, width2, processPoly);
+			if(e.a==edge.b || e.b == edge.b) continue;
+			testEdge(poly, e, b, width2, testEdge);
 		}
 	}
 	poly->traversalCalculated = true;
-
 }
 
 /** Change a link target */
