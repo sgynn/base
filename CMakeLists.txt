@@ -168,6 +168,7 @@ set(headers
 	include/base/framebuffer.h
 	include/base/game.h
 	include/base/gamestate.h
+	include/base/generator.h
 	include/base/hardwarebuffer.h
 	include/base/hashmap.h
 	include/base/image.h
