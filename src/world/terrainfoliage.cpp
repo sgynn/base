@@ -5,6 +5,7 @@
 using namespace base;
 
 TerrainFoliage::TerrainFoliage(TerrainDrawable* z, int threads) : FoliageSystem(threads), m_terrain(z) {
+	setName("Foliage");
 }
 
 void TerrainFoliage::resolvePosition(const vec3& point, vec3& pos, float& height) const {
