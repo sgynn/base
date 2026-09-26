@@ -176,7 +176,7 @@ class AutoComponent {
 	public:
 	AutoComponent(const char* key) { SceneEditor::addClass<T>(key); }
 };
-#define REGISTER_EDITOR_COMPONENT(Type) static AutoComponent<Type> autoTypeRegister_##Type(#Type);
+#define REGISTER_EDITOR_COMPONENT(Type) static editor::AutoComponent<Type> autoTypeRegister_##Type(#Type);
 
 }
 
