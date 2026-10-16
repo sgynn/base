@@ -601,6 +601,7 @@ void CompositorGraph::eraseVariable(const char* group, const char* name) {
 // ================================================================================ //
 
 Workspace::Workspace(const CompositorGraph* c) : m_graph(c), m_compiled(false) {
+	setCamera(nullptr); // Makes sure camera 'default' is index 0
 }
 Workspace::~Workspace() {
 	destroy();
@@ -631,6 +632,7 @@ void Workspace::execute(const FrameBuffer* output, Scene* scene, Renderer* rende
 	execute(output, Rect(0,0,output->width(), output->height()), scene, renderer);
 }
 void Workspace::execute(const FrameBuffer* output, const Rect& view, Scene* scene, Renderer* renderer) {
+	if(onExecute) onExecute(this);
 	applyVariables();
 	CompositorTextures* tex = CompositorTextures::getInstance();
 	for(const Pass& pass: m_passes) {
@@ -741,6 +743,10 @@ bool Workspace::compile(int w, int h) {
 		// Compositor order tie breaker from defined link order
 		if(compositors[link.a].order==0) compositors[link.a].order = ++orderIndex;
 		if(compositors[link.b].order==0) compositors[link.b].order = ++orderIndex;
+
+		// Validation
+		if(compositors[link.a].compositor->getOutputs().empty()) printf("Error: Compositor %s has no outputs\n", compositors[link.a].compositor->getName());
+		if(compositors[link.b].compositor->getInputs().empty()) printf("Error: Compositor %s has no inputs\n", compositors[link.a].compositor->getName());
 
 		// Link named
 		if(link.out>=0 && link.in>=0) {

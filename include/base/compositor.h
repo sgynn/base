@@ -294,6 +294,8 @@ namespace base {
 
 		const base::FrameBuffer* getBuffer(const char* compositor, const char* name);	// get framebuffer
 
+		void(*onExecute)(const Workspace*) = 0; // execure callback
+
 		protected:
 		size_t getCameraIndex(const char* name);
 		static base::FrameBuffer* createBuffer(Compositor::Buffer*, int sw, int sh);
