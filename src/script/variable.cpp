@@ -586,6 +586,10 @@ int Variable::size() const {
 	case VEC4: return 4;
 	case STRING: return strlen(type&LINK? *sp: s);
 	case NAME: return name->size();
+	case INT:
+	case UINT:
+	case FLOAT:
+	case DOUBLE: return 1;
 	default: return 0;
 	}
 }
