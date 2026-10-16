@@ -52,6 +52,29 @@ void Camera::setPerspective(float left, float right, float bottom, float top, fl
 	setProjection(2,left,right,top,bottom,near,far,0,0);
 }
 
+void Camera::setMirrored(const Camera* source, const vec3& normal, float d, bool flipped) {
+	vec3 n = normal.normalised();
+	m_position = source->m_position - n * 2 * (n.dot(source->m_position) - d);
+	vec3 dir = source->getDirection();
+	vec3 up = source->getUp();
+	dir -= n * n.dot(dir) * 2;
+	up -= n * n.dot(up) * 2;
+	lookat(m_position, m_position - dir, up);
+
+	// Flip projection
+	float flip = flipped? -1: 1;
+	m_mode = source->m_mode;
+	m_fov = source->m_fov;
+	m_aspect = source->m_aspect * flip;
+	m_left = source->m_left * flip;
+	m_right = source->m_right * flip;
+	m_bottom = source->m_bottom;
+	m_top = source->m_top;
+	m_near = source->m_near;
+	m_far = source->m_far;
+	updateProjectionMatrix();
+}
+
 void Camera::adjustDepth(float near, float far) {
 	m_near=near;
 	m_far=far;

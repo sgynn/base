@@ -27,6 +27,7 @@ namespace base {
 		void setOrthographic(float width, float height, float near, float far);
 		void setPerspective(float fov, float aspect, float near, float far);
 		void setPerspective(float left, float right, float bottom, float top, float near, float far);
+		void setMirrored(const Camera* source, const vec3& n, float d, bool flipped=true); // Flipped inverts winding. Use non-flipped if flipping using a framebuffer
 
 		void setTransform(const vec3& position, const Quaternion& orientation);
 		void setTransform(const Matrix& m);
