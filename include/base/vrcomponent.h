@@ -56,7 +56,7 @@ class VRComponent : public base::GameStateComponent {
 	bool hasTrackedObject(vr::Role) const;
 	const vr::Transform& getTransform(vr::Role c = vr::HEAD) const { return m_controllerPose[c]; }
 	const base::Joystick& getController(vr::Side c) const;
-	const base::Workspace* getWorkspace() { return m_workspace; }
+	base::Workspace* getWorkspace() { return m_workspace; }
 
 	vr::Transform& getRootTransform() { return m_rootTransform; }
 	const vr::Transform& getRootTransform() const { return m_rootTransform; }
