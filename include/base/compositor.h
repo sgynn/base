@@ -86,6 +86,8 @@ namespace base {
 		void setMaterial(Material*, const char* tech=0, bool isInstance=false);	// Set material. isInstance specifies it is a material instance owned by this pass
 		void setTexture(const char* name, const base::Texture*, bool compile=true);	// Set texture
 		void setTexture(const char* name, const char* source);		// Set texture by name to be resolved later
+		void setCamera(const char* camera);
+		const char* getCamera() const override { return mCameraName; }
 		protected:
 		void setupInstancedMaterial();
 		Pass* getMaterialPass();
@@ -93,6 +95,7 @@ namespace base {
 		char*     mMaterialName;
 		size_t    mTechnique;
 		Material* mMaterial;
+		char*     mCameraName;        // Optional camera name to auto-transforms from
 		uint      mGeometry; // vaobj
 		bool      mInstancedMaterial;
 		struct TextureOverride { char* source; const base::Texture* texture; };

@@ -109,19 +109,26 @@ void CompositorPassClear::execute(const FrameBuffer* target, const Rect& view, R
 
 // ================================================================================ //
 
-CompositorPassQuad::CompositorPassQuad(const char* mat, const char* tech) : mMaterial(0), mInstancedMaterial(false) {
+CompositorPassQuad::CompositorPassQuad(const char* mat, const char* tech) : mMaterial(0), mCameraName(0), mInstancedMaterial(false) {
 	mMaterialName = strdup(mat);
 	mTechnique = Material::getPassID(tech);
 }
-CompositorPassQuad::CompositorPassQuad(Material* mat, const char* tech) : mMaterialName(0), mInstancedMaterial(false) {
+CompositorPassQuad::CompositorPassQuad(Material* mat, const char* tech) : mMaterialName(0), mCameraName(0), mInstancedMaterial(false) {
 	mMaterial = mat;
 	mTechnique = Material::getPassID(tech);
 }
 CompositorPassQuad::~CompositorPassQuad() {
 	free(mMaterialName);
+	free(mCameraName);
 	for(auto& i: mTextures) free(i.value.source);
 	if(mInstancedMaterial) delete mMaterial;
 }
+
+void CompositorPassQuad::setCamera(const char* camera) {
+	free(mCameraName);
+	mCameraName = camera? strdup(camera): nullptr;
+}
+
 void CompositorPassQuad::setMaterial(Material* m, const char* tech, bool isInstance) {
 	if(tech) mTechnique = Material::getPassID(tech);
 	else mTechnique = 0;
@@ -174,10 +181,11 @@ void CompositorPassQuad::resolveExternals(MaterialResolver* r) {
 	}
 }
 
-void CompositorPassQuad::execute(const FrameBuffer* target, const Rect& view, Renderer* r, Camera*, Scene*) const {
+void CompositorPassQuad::execute(const FrameBuffer* target, const Rect& view, Renderer* r, Camera* camera, Scene*) const {
 	createGeometry();
 
 	RenderState& state = r->getState();
+	if(mCameraName) state.setCamera(camera);
 	state.setMaterialTechnique(mTechnique);
 	state.setMaterial(mMaterial);
 	if(!Shader::current().isCompiled() || !sGeometry) 
@@ -272,8 +280,8 @@ void CompositorPassScene::resolveExternals(MaterialResolver* r) {
 void CompositorPassScene::execute(const FrameBuffer* target, const Rect& view, Renderer* renderer, Camera* camera, Scene* scene) const {
 	RenderState& state = renderer->getState();
 	state.setTarget(target, view);
-	state.setMaterialTechnique(mTechnique);
 	state.setCamera(camera);
+	state.setMaterialTechnique(mTechnique);
 
 	if(mMaterial) state.setMaterialOverride(mMaterial);
 	if(mOverrideFlags & 1) state.setMaterialBlendOverride(mBlend);
@@ -1024,7 +1032,7 @@ bool Workspace::compile(int w, int h) {
 				}
 				target = internal[index];
 			}
-			size_t camera = src.pass->getCamera()? getCameraIndex(src.pass->getCamera()): 0;
+			size_t camera = src.pass->getCamera()? getCameraIndex(src.pass->getCamera()): m_passes.empty()? 0: m_passes.back().camera;
 			m_passes.push_back( Pass{src.pass,target,camera} );
 		}
 

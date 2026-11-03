@@ -993,6 +993,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				const char* material = i.attribute("material");
 				const char* technique = i.attribute("technique", nullString);
 				CompositorPassQuad* pass = new CompositorPassQuad(material, technique);
+				pass->setCamera(i.attribute("camera", nullptr));
 				c->addPass(target, pass);
 				
 				Material* mat = 0;
