@@ -143,10 +143,10 @@ namespace base {
 		void setInverted(bool invertX, bool invertY);
 
 		protected:
-		float m_moveSpeed	= 10;		// Movement speed
+		float m_moveSpeed	= 10;		// Target movement speed - units per second
 		vec2 m_rotateSpeed	= 0.004;	// Rotation speed from mouse delta
-		float m_moveAcc		= 1.0;		// Movement acceleration for smoothing
-		float m_rotateAcc	= 1.0;		// Rotational acceleration for smoothing
+		float m_moveAcc		= 0.0;		// Movement acceleration for smoothing. Time to hit max speed from 0
+		float m_rotateAcc	= 0.0;		// Rotational acceleration for smoothing
 
 		bool m_active;		// Does the camera update
 		bool m_grabMouse;	// Does this camera lock the mouse position

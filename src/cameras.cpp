@@ -76,35 +76,40 @@ FPSCamera::FPSCamera(float f, float a, float near, float far) : CameraBase(f,a,n
 void FPSCamera::update(int mask) {
 	if(!m_active) return;
 	Input& in = *Game::input();
+	const float time = fmin(Game::frameTime(), 0.25);
 
 	// Key Movement
+	vec3 move;
 	if(mask & CU_KEYS) {
-		vec3 move;
 		if(in.check(m_binding.forward)) move.z = -1;
 		if(in.check(m_binding.back))    move.z =  1;
 		if(in.check(m_binding.left))    move.x = -1;
 		if(in.check(m_binding.right))   move.x =  1;
 		if(in.check(m_binding.up))      move.y =  1;
 		if(in.check(m_binding.down))    move.y = -1;
-		m_velocity += move * (m_moveSpeed * m_moveAcc);
-		m_position += m_rotation * m_velocity;
-		if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
-		else m_velocity = vec3();
+	}
+
+	// Movement update
+	if(m_moveAcc > 0) {
+		m_velocity = step(m_velocity, move * m_moveSpeed, m_moveSpeed * time / m_moveAcc);
+		m_position += m_rotation * m_velocity * time;
+	}
+	else {
+		m_position += m_rotation * (move * m_moveSpeed * time);
 	}
 	
 	//Rotation
 	{
 		vec2 delta;
-		if(m_binding.yaw) delta.x = in.value(m_binding.yaw);
-		if(m_binding.pitch) delta.y = in.value(m_binding.pitch);
+		if(m_binding.yaw) delta.x = in.value(m_binding.yaw) * time;
+		if(m_binding.pitch) delta.y = in.value(m_binding.pitch) * time;
 		if((mask&CU_MOUSE) && (m_binding.rotate==unbound || in.check(m_binding.rotate))) delta -= vec2(in.mouse.delta.x, in.mouse.delta.y) * m_rotateSpeed;
-		m_rVelocity += delta * m_rotateAcc;
-
-		if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
-		if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
-
-		if(m_rotateAcc<1) m_rVelocity -= m_rVelocity * m_rotateAcc;
-		else m_rVelocity = vec2();
+		if(m_rotateAcc > 0) {
+			m_rVelocity = step(m_rVelocity, delta / time, time / m_rotateAcc);
+			delta = m_rVelocity * time;
+		}
+		if(delta.x) rotateLocal(1, delta.x);
+		if(delta.y) rotateLocal(0, delta.y);
 
 		// Limits
 		if(m_useUpVector) {
@@ -136,7 +141,7 @@ OrbitCamera::OrbitCamera(float f, float a, float near, float far)
 {
 	setUpVector( vec3(0,1,0) );
 	setZoomLimits(near, far);
-	setSpeed(0.04);
+	setSpeed(4);
 }
 
 void OrbitCamera::setTarget(const vec3& t) {
@@ -172,6 +177,9 @@ void OrbitCamera::disableMousePan() {
 void OrbitCamera::update(int mask) {
 	Input& in = *Game::input();
 	float distance = m_position.distance(m_target);
+	float time = fmin(Game::frameTime(), 0.25);
+	vec3 move;
+	vec2 rotate;
 
 	// Zoom input
 	int wheel = (mask&CU_WHEEL)? in.mouse.wheel: 0;
@@ -195,7 +203,6 @@ void OrbitCamera::update(int mask) {
 
 	// Movement input
 	if(mask & CU_KEYS) {
-		vec3 move;
 		if(in.check(m_binding.forward)) move.z = -1;
 		if(in.check(m_binding.back))    move.z =  1;
 		if(in.check(m_binding.left))    move.x = -1;
@@ -207,14 +214,21 @@ void OrbitCamera::update(int mask) {
 		vec3 x = m_upVector.cross(z).normalise();
 		z = x.cross(m_upVector);
 		move = x*move.x + m_upVector*move.y + z*move.z;
-		m_velocity += move * (m_moveSpeed * m_moveAcc) * distance;
 	}
 	// Movement update
-	m_target += m_velocity;
-	m_position += m_velocity;
-	if(m_moveAcc<1) m_velocity -= m_velocity * m_moveAcc;
-	else m_velocity.set(0,0,0);
+	if(m_moveAcc > 0) {
+		m_velocity = step(m_velocity, move * m_moveSpeed * distance, m_moveSpeed * distance * time / m_moveAcc);
+		m_position += m_velocity * time;
+		m_target += m_velocity * time;
+	}
+	else {
+		m_position += move * m_moveSpeed * distance * time;
+		m_target += move * m_moveSpeed * distance * time;
+	}
 
+	// Joystick rotation input
+	if(m_binding.yaw!=unbound) rotate = in.value(m_binding.yaw);
+	if(m_binding.pitch!=unbound) rotate = in.value(m_binding.pitch);
 
 	// Mouse grab panning
 	static const vec3 zero(0,0,0);
@@ -256,7 +270,7 @@ void OrbitCamera::update(int mask) {
 	if(m_active && (mask&CU_MOUSE) && (m_binding.rotate==unbound || in.check(m_binding.rotate))) {
 		float dx = in.mouse.delta.x;
 		float dy = in.mouse.delta.y;
-		m_rVelocity += vec2(dx,dy) * (m_rotateSpeed * m_rotateAcc);
+		rotate += vec2(dx,dy) * m_rotateSpeed / time;
 
 		// Warp mouse
 		if(m_grabMouse && (in.mouse.delta.x || in.mouse.delta.y)) {
@@ -264,17 +278,16 @@ void OrbitCamera::update(int mask) {
 		}
 	}
 
-	// Joystick rotation input
-	if(m_binding.yaw!=unbound) m_rVelocity.x += in.value(m_binding.yaw);
-	if(m_binding.pitch!=unbound) m_rVelocity.y += in.value(m_binding.pitch);
+	if(m_rotateAcc == 0) m_rVelocity = rotate;
+	else m_rVelocity = step(m_rVelocity, rotate, time / m_rotateAcc);
 
 	// Rotation update
 	if(m_rVelocity.x || m_rVelocity.y) {
 		if(m_useUpVector) {
-			float yaw = atan2( getDirection().x, getDirection().z ) + m_rVelocity.x;
+			float yaw = atan2( getDirection().x, getDirection().z ) + m_rVelocity.x * time;
 			float pitch = asin( getDirection().y );
 			if(getUp().y < 0) pitch = PI - pitch, yaw += PI;
-			pitch = m_constraint.clamp(pitch + m_rVelocity.y);
+			pitch = m_constraint.clamp(pitch + m_rVelocity.y * time);
 			if(pitch > PI) pitch -= TWOPI;
 			float inv = pitch > -HALFPI && pitch < HALFPI? 1: -1;
 			vec3 dir( cos(pitch) * sin(yaw), sin(pitch), cos(pitch) * cos(yaw) );
@@ -282,17 +295,10 @@ void OrbitCamera::update(int mask) {
 		}
 		else {
 			// Rotate local axes and normalise
-			if(fabs(m_rVelocity.x)>0.00001) rotateLocal(1, m_rVelocity.x);
-			if(fabs(m_rVelocity.y)>0.00001) rotateLocal(0, m_rVelocity.y);
+			if(m_rVelocity.x) rotateLocal(1, m_rVelocity.x * time);
+			if(m_rVelocity.y) rotateLocal(0, m_rVelocity.y * time);
 			m_position = m_target + getDirection() * distance;
 		}
-
-		if(m_rotateAcc < 1) {
-			m_rVelocity -= m_rVelocity * m_rotateAcc;
-			if(fabs(m_rVelocity.x) < 1e-6) m_rVelocity.x = 0;
-			if(fabs(m_rVelocity.y) < 1e-6) m_rVelocity.y = 0;
-		}
-		else m_rVelocity.x = m_rVelocity.y = 0.f;
 	}
 }
 
