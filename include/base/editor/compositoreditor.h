@@ -41,6 +41,7 @@ class CompositorEditor : public EditorComponent {
 	gui::Widget* addConnectorWidget(gui::Widget* parent, const char*);
 	gui::Widget* addBufferWidget(gui::Widget* parent);
 	gui::Widget* addPassWidget(gui::Widget* parent, const char* type);
+	gui::Widget* addVariableWidget(gui::Widget* parent, const char* group, const char* name, const vec4& value);
 
 	CompositorNode* createGraphNode(base::Compositor*, int alias);
 	CompositorNode* getGraphNode(base::Compositor*, int index=0);
@@ -57,6 +58,10 @@ class CompositorEditor : public EditorComponent {
 	void selectGraph(gui::Listbox*, gui::ListItem&);
 	void newCompositor(gui::Button*);
 	void newGraph(gui::Button*);
+
+	void addVariable(gui::Button*);
+	void refreshVariables();
+	
 
 	void addPass(gui::Button*);
 	void addScenePass(gui::Button*);

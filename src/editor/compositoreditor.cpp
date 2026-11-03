@@ -112,6 +112,7 @@ void CompositorEditor::initialise() {
 	CONNECT(Button, "newgraph", eventPressed, newGraph);
 	CONNECT(Button, "newnode", eventPressed, newCompositor);
 	CONNECT(Button, "addbuffer", eventPressed, addBuffer);
+	CONNECT(Button, "addvariable", eventPressed, addVariable);
 
 	m_passTypePopup = m_panel->getWidget<Popup>("passtypes");
 	CONNECT(Button, "addpass", eventPressed,  addPass);
@@ -244,6 +245,108 @@ void CompositorEditor::dragCompositor(Widget* w, const Point& pos, int b) {
 
 // ------------------------------------------------ //
 
+Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, const char* name, const vec4& value) {
+	CollapsePane* w = list->createChild<CollapsePane>("variableproperty");
+	w->setAnchor("tlr");
+	w->expand(false);
+	Combobox* groupBox = w->getTemplateWidget<Combobox>("group");
+	Combobox* nameBox = w->getTemplateWidget<Combobox>("name");
+	w->getTemplateWidget("value")->setColour(Colour(value.x, value.y, value.z).toRGB());
+	w->getTemplateWidget<SpinboxFloat>("r")->setValue(value.x);
+	w->getTemplateWidget<SpinboxFloat>("g")->setValue(value.y);
+	w->getTemplateWidget<SpinboxFloat>("b")->setValue(value.z);
+	w->getTemplateWidget<SpinboxFloat>("a")->setValue(value.w);
+	groupBox->setText(group);
+	groupBox->data = String(group);
+	nameBox->setText(name);
+	nameBox->data = String(name);
+
+	for(auto i: Resources::getInstance()->shaderVars) groupBox->addItem(i.key);
+	ShaderVars* vars = Resources::getInstance()->shaderVars.getIfExists(group);
+	if(vars) for(const char* name: vars->getNames()) nameBox->addItem(name);
+
+	// events
+	static auto setVariable = [](CompositorGraph* graph, Widget* w) {
+		while(w && !cast<CollapsePane>(w)) w = w->getParent();
+		const char* group = w->getTemplateWidget<Combobox>("group")->getText();
+		const char* name = w->getTemplateWidget<Combobox>("name")->getText();
+		float r = w->getTemplateWidget<SpinboxFloat>("r")->getValue();
+		float g = w->getTemplateWidget<SpinboxFloat>("g")->getValue();
+		float b = w->getTemplateWidget<SpinboxFloat>("b")->getValue();
+		float a = w->getTemplateWidget<SpinboxFloat>("a")->getValue();
+		if(group[0] && name[0]) graph->setVariable(group, name, vec4(r,g,b,a));
+		w->getTemplateWidget("value")->setColour(Colour(fclamp(r,0,1), fclamp(g,0,1),fclamp(b,0,1)).toRGB());
+	};
+	static const String empty;
+	groupBox->eventSelected.bind([this](Combobox* b, ListItem& i) {
+		Combobox* nameList = b->getParent()->getTemplateWidget<Combobox>("name");
+		const char* oldGroup = b->data.getValue(empty).str();
+		const char* oldName = nameList->getText();
+		m_graph->eraseVariable(oldGroup, oldName);
+		b->data = String(i.getText());
+		// refresh name list
+		nameList->clearItems();
+		ShaderVars* vars = Resources::getInstance()->shaderVars.getIfExists(i.getText());
+		if(vars) for(const char* name: vars->getNames()) nameList->addItem(name);
+	});
+	nameBox->eventSelected.bind([this](Combobox* b, ListItem& i) {
+		const char* oldGroup = b->getParent()->getTemplateWidget<Combobox>("group")->getText();
+		const char* oldName = b->data.getValue(empty).str();
+		m_graph->eraseVariable(oldGroup, oldName);
+		setVariable(m_graph, b);
+		b->data = String(i.getText());
+	});
+	w->getTemplateWidget<Button>("remove")->eventPressed.bind([this](Button* b) {
+		const char* group = b->getParent()->getTemplateWidget<Combobox>("group")->getText();
+		const char* name = b->getParent()->getTemplateWidget<Combobox>("name")->getText();
+		m_graph->eraseVariable(group, name);
+		delete b->getParent();
+	});
+	w->getTemplateWidget<SpinboxFloat>("r")->eventChanged.bind([this](SpinboxFloat* s, float) { setVariable(m_graph, s); });
+	w->getTemplateWidget<SpinboxFloat>("g")->eventChanged.bind([this](SpinboxFloat* s, float) { setVariable(m_graph, s); });
+	w->getTemplateWidget<SpinboxFloat>("b")->eventChanged.bind([this](SpinboxFloat* s, float) { setVariable(m_graph, s); });
+	w->getTemplateWidget<SpinboxFloat>("a")->eventChanged.bind([this](SpinboxFloat* s, float) { setVariable(m_graph, s); });
+
+	// Colour picker
+	w->getTemplateWidget("value")->eventMouseDown.bind([this](Widget* w, const Point&, int) {
+		float r = w->getParent()->getTemplateWidget<SpinboxFloat>("r")->getValue();
+		float g = w->getParent()->getTemplateWidget<SpinboxFloat>("g")->getValue();
+		float b = w->getParent()->getTemplateWidget<SpinboxFloat>("b")->getValue();
+		float a = w->getParent()->getTemplateWidget<SpinboxFloat>("a")->getValue();
+		ColourPicker* picker = new ColourPicker();
+		picker->setSize(100, 80);
+		picker->initialise(w->getRoot(), PropertyMap());
+		picker->setHasAlpha(true);
+		picker->setColour(Colour(fclamp(r,0,1), fclamp(g,0,1), fclamp(b,0,1), fclamp(a,0,1)));
+		picker->eventChanged.bind([this, w](const Colour& c) {
+			w->setColour(c.toRGB());
+			w->getParent()->getTemplateWidget<SpinboxFloat>("r")->setValue(c.r);
+			w->getParent()->getTemplateWidget<SpinboxFloat>("g")->setValue(c.g);
+			w->getParent()->getTemplateWidget<SpinboxFloat>("b")->setValue(c.b);
+			w->getParent()->getTemplateWidget<SpinboxFloat>("a")->setValue(c.a);
+			setVariable(m_graph, w);
+		});
+		(new Popup(picker, true))->popup(w);
+	});
+	return w;
+}
+
+void CompositorEditor::refreshVariables() {
+	Widget* list = m_panel->getWidget("variablelist");
+	list->deleteChildWidgets();
+	if(!m_graph) return;
+	for(const CompositorGraph::GlobalVariable& var: m_graph->getVariables()) {
+		addVariableWidget(list, var.group, var.name, var.value);
+	}
+}
+
+void CompositorEditor::addVariable(Button*) {
+	Widget* list = m_panel->getWidget("variablelist");
+	addVariableWidget(list, "constants", "", vec4(1,1,1,1));
+}
+
+// ------------------------------------------------ //
+
 const char* CompositorEditor::getCompositorName(Compositor* c, const char* outputName) const {
 	if(c == Compositor::Output) return outputName;
 	const ListItem* item = m_nodeList->findItem(1, c);
@@ -262,7 +365,7 @@ void CompositorEditor::setCompositor(Compositor* c) {
 	}
 
 	m_panel->getWidget("details")->setVisible(c && c!=Compositor::Output);
-	if(!c) return;
+	if(!c || c==Compositor::Output) return;
 
 	// Inputs
 	Widget* inputs = m_panel->getWidget("inputs");
@@ -550,6 +653,7 @@ void CompositorEditor::setGraph(const GraphInfo& g) {
 	if(m_graph == g.graph) return;
 	if(m_graph) m_graphEditor->deleteChildWidgets();
 	m_graph = g.graph;
+	refreshVariables();
 	if(!m_graph) return;
 	CompositorGraph* graph = m_graph;
 
@@ -655,7 +759,6 @@ CompositorNode* CompositorEditor::getGraphNode(int alias) {
 
 void CompositorEditor::selectNode(Button* b) {
 	Compositor* c = cast<CompositorNode>(b)->getCompositor();
-	if(c == Compositor::Output) return;
 	setCompositor(c);
 }
 
@@ -677,6 +780,10 @@ void CompositorEditor::graphChanged(nodegraph::NodeEditor* source) {
 
 CompositorGraph* CompositorEditor::buildGraph() const {
 	CompositorGraph* graph = new CompositorGraph();
+
+	for(const CompositorGraph::GlobalVariable& var: m_graph->getVariables()) {
+		graph->setVariable(var.group, var.name, var.value);
+	}
 	
 	std::vector<CompositorNode*> nodes;
 	for(Widget* w: *m_graphEditor) {
@@ -743,6 +850,14 @@ void CompositorEditor::exportGraph(CompositorGraph* graph) const {
 	XMLElement g("graph");
 	g.setAttribute("name", name);
 	g.setAttribute("output", output);
+
+	// Variables
+	for(const CompositorGraph::GlobalVariable& var : graph->getVariables()) {
+		XMLElement& e = g.add("variable");
+		if(strcmp(var.group, "constants")!=0) e.setAttribute("group", var.group);
+		e.setAttribute("name", var.name);
+		e.setAttribute("value", String::format("%g %g %g %g", var.value.x, var.value.y, var.value.z, var.value.w));
+	}
 
 	// Aliases
 	char nameBuffer[64];
@@ -958,7 +1073,7 @@ void CompositorEditor::removePreview(bool rebuild) {
 	if(!m_preview) return;
 	// If replacement compositor failed to compile these may still be in use
 	const CompositorGraph* graph = getEditor()->getWorkspace()->getGraph();
-	if(graph->find(m_preview) < 0) { 
+	if(graph->find(m_preview) == -1ull) { 
 		delete m_preview;
 		delete m_previewOutputFix;
 		m_preview = nullptr;

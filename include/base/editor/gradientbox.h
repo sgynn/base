@@ -151,7 +151,7 @@ class GradientBox : public gui::Widget {
 	particle::Gradient gradient;
 	bool editable = false;
 	int selected = 0;
-	int held = 0;
+	int held = -1;
 	float min = 0;
 	float max = 1;
 
