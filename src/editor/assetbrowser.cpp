@@ -99,10 +99,8 @@ void AssetBrowser::initialise() {
 				return;
 			}
 		}
-		if(changed) {
-			m_modifiedFiles.push_back(asset.file);
-			refreshItems();
-		}
+		if(changed) m_modifiedFiles.push_back(asset.file);
+		refreshItems();
 	});
 
 

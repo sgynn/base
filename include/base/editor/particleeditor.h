@@ -18,7 +18,7 @@ class ParticleEditorComponent : public EditorComponent {
 	~ParticleEditorComponent();
 	void initialise() override;
 	void setParticleManager(particle::Manager*);
-	ParticleEditor* showParticleSystem(particle::System*, const char* name=0);
+	ParticleEditor* showParticleSystem(particle::System*, const char* name=0, bool modified=false);
 	particle::Manager* getParticleManager() { return m_manager; }
 	const std::vector<ParticleEditor*>& getEditorWindows() const { return m_editors; }
 	void closeEditorWindows();

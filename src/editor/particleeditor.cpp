@@ -84,6 +84,7 @@ void ParticleEditorComponent::assetCreationActions(AssetCreationBuilder& data) {
 		while(res.particles.exists(asset.resource) || getFileSystem().getFile(asset.resource)) {
 			asset.resource = String::format("particles_%d.pt", ++uniqueIndex);
 		}
+
 		particle::System* sys = new particle::System();
 		particle::Emitter* emitter = particle::create<particle::Emitter>("PointEmitter");
 		particle::RenderData* r = particle::create<particle::RenderData>("SpriteRenderer");
@@ -102,14 +103,16 @@ void ParticleEditorComponent::setParticleManager(particle::Manager* manager) {
 }
 
 bool ParticleEditorComponent::assetActions(MenuBuilder& menu, const Asset& asset) {
-	if(!asset.file.name.endsWith(".pt")) return false;
+	if(!asset.file.name.endsWith(".pt") && asset.type != ResourceType::Particle) return false;
 
 	menu.addAction("Save", [this, &asset]() {
 		particle::System* system = base::Resources::getInstance()->particles.get(asset.resource? asset.resource: asset.file.name);
 		if(system) {
-			ParticleEditor::save(system, asset.file.getFullPath());
+			const base::VirtualFileSystem::File& file = asset.file? asset.file: getFileSystem().createTransientFile(asset.resource);
+			printf("Saving %s\n", file.getFullPath().str());
+			ParticleEditor::save(system, file.getFullPath());
 			for(ParticleEditor* e: m_editors) if(e->m_system==system) e->m_modified = false;
-			getEditor()->assetChanged(asset, false);
+			getEditor()->assetChanged(Asset{asset.type, asset.resource, file}, false);
 		}
 	});
 
@@ -125,11 +128,11 @@ Widget* ParticleEditorComponent::openAsset(const Asset& asset) {
 	auto& res = base::Resources::getInstance()->particles;
 	String name = asset.resource? asset.resource: asset.file.getLocalPath();
 	particle::System* system = res.get(name);
-	ParticleEditor* editor = showParticleSystem(system, name);
+	ParticleEditor* editor = showParticleSystem(system, name, !asset.file);
 	return editor? editor->getPanel(): nullptr;
 }
 
-ParticleEditor* ParticleEditorComponent::showParticleSystem(particle::System* system, const char* name) {
+ParticleEditor* ParticleEditorComponent::showParticleSystem(particle::System* system, const char* name, bool modified) {
 	if(!system) return nullptr;
 
 	// Already open
@@ -147,6 +150,7 @@ ParticleEditor* ParticleEditorComponent::showParticleSystem(particle::System* sy
 	panel->setVisible(true);
 	getEditor()->getGUI()->getRootWidget()->add(panel);
 	ParticleEditor* editor = new ParticleEditor(this, system, panel, name);
+	if(modified) editor->notifyChange();
 	m_editors.push_back(editor);
 
 	// Cascade window
@@ -170,12 +174,13 @@ void ParticleEditorComponent::saveAll() {
 		if(e->isModified()) {
 			const char* name = res.particles.getName(e->getParticleSystem());
 			if(name) {
-				if(const base::VirtualFileSystem::File& file = res.getFileSystem().getFile(name)) {
-					e->save(e->getParticleSystem(), file.getFullPath());
-					printf("Saved %s\n", file.getFullPath().str());
-					e->m_modified = false;
-					getEditor()->assetChanged(Asset{ResourceType::Particle, name, file}, false);
-				}
+				const base::VirtualFileSystem::File* file;
+				if(const base::VirtualFileSystem::File& f = getFileSystem().getFile(name)) file = &f;
+				else file = &getFileSystem().createTransientFile(name);
+				e->save(e->getParticleSystem(), file->getFullPath());
+				printf("Saved %s\n", file->getFullPath().str());
+				e->m_modified = false;
+				getEditor()->assetChanged(Asset{ResourceType::Particle, name, *file}, false);
 			}
 			else printf("Error: Particle system not in resource manager\n");
 		}

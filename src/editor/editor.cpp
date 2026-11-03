@@ -2,8 +2,6 @@
 #include <base/editor/layout.h>
 #include <base/editor/assetbrowser.h>
 #include <base/editor/compositoreditor.h>
-#include <base/editor/particleeditor.h>
-#include <base/editor/renderdoc.h>
 
 #include <base/gui/gui.h>
 #include <base/gui/renderer.h>
