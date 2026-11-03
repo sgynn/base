@@ -54,6 +54,7 @@ set(src
 	src/model/primitives.cpp
 	src/model/skeleton.cpp
 	src/model/wavefront.cpp
+	src/model/collision.cpp
 
 	src/navmesh/navdrawable.cpp
 	src/navmesh/navedit.cpp

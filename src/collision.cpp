@@ -146,6 +146,7 @@ int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const ve
 }
 int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const vec3& h, float& t) {
 	float tmin=0, tmax=1e30f;
+	int result = 1;
 	for(int i=0; i<3; ++i) {
 		if(fabs(d[i]) < EPSILON) {
 			// Parallel
@@ -157,13 +158,13 @@ int base::intersectRayAABB(const vec3& p, const vec3& d, const vec3& c, const ve
 			float t1 = (c[i] - h[i] - p[i]) * ood;
 			float t2 = (c[i] + h[i] - p[i]) * ood;
 			if(t1 > t2) ood=t1, t1=t2, t2=ood;	// Swap
-			if(t1>tmin) tmin=t1;
+			if(t1>tmin) { tmin=t1; result=i+2; }
 			if(t2<tmax) tmax=t2;
 			if(tmin > tmax) return 0;
 		}
 	}
 	t = tmin;
-	return 1;
+	return result;
 }
 
 
@@ -308,9 +309,9 @@ int base::intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, cons
 }
 
 int base::intersectRayOBB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, const Matrix& transform, float& t) {
-	vec3 lp = transform.untransform(p - centre);
+	vec3 lp = transform.untransform(p);
 	vec3 ld = transform.unrotate(d);
-	return intersectRayAABB(lp, ld, vec3(), halfSize, t);
+	return intersectRayAABB(lp, ld, centre, halfSize, t);
 }
 
 int base::intersectBoxes(const vec3& ac, const vec3& ae, const Quaternion& aq, const vec3& bc, const vec3& be, const Quaternion bq) {

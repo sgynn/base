@@ -78,6 +78,7 @@ namespace base {
 	 * @param centre Bounding box centre
 	 * @param halfsize Bounding box half size
 	 * @param t Intersection point
+	 * @return 0=miss, 1=start inside, 2,3,4 = hit x,y,z axis
 	 */
 	BASEAPI int intersectRayAABB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, vec3& out);
 	BASEAPI int intersectRayAABB(const vec3& p, const vec3& d, const vec3& centre, const vec3& halfSize, float& t);
@@ -127,6 +128,12 @@ namespace base {
 	 * @return if boxes intersect
 	 */
 	BASEAPI int intersectBoxes(const vec3& ac, const vec3& ae, const Quaternion& aq, const vec3& bc, const vec3& be, const Quaternion bq);
+
+
+	class Mesh;
+	BASEAPI int intersectRayMesh(const vec3& p, const vec3& d, const Mesh*, float& t);
+	BASEAPI int intersectRayMesh(const vec3& p, const vec3& d, const Mesh*, float& t, vec3& normal);
+	BASEAPI int intersectRayMesh(const vec3& p, const vec3& d, float radius, const Mesh*, float& t, vec3& normal);
 
 };
 #endif
