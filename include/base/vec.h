@@ -50,6 +50,13 @@ class vec2 {
 
 	vec3  xzy(float z=0) const;	// convert to vec3
 	vec3  xyz(float z=0) const;
+
+	#if __cplusplus >= 2021703L
+	inline static vec2 ZERO = vec2(0,0);
+	inline static vec2 ONE = vec2(1,1);
+	inline static vec2 UNIT_X = vec2(1,0);
+	inline static vec2 UNIT_Y = vec2(0,1);
+	#endif
 }; 
 
 /// 3d vector
@@ -103,6 +110,14 @@ class vec3 {
 	vec3  cross(const vec3& v) const;
 	float distance(const vec3& v) const;
 	float distance2(const vec3& v) const;
+
+	#if __cplusplus >= 2021703L
+	inline static vec3 ZERO = vec3(0,0,0);
+	inline static vec3 ONE = vec3(1,1,1);
+	inline static vec3 UNIT_X = vec3(1,0,0);
+	inline static vec3 UNIT_Y = vec3(0,1,0);
+	inline static vec3 UNIT_Z = vec3(0,0,1);
+	#endif
 }; 
 
 /// 4d vector - Yes we do need one
