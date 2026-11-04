@@ -16,6 +16,7 @@ class TerrainDrawable : public base::Drawable {
 	void draw(RenderState&) override;
 	Landscape* getLandscape() { return m_land; }
 	void setAutoUpdate(bool enable) { m_autoUpdate = enable; } 
+	void update(const base::Camera*, bool lod=true, bool cull=true); // for manual updating lod/culling
 	private:
 	void patchCreated(PatchGeometry*);
 	void patchUpdated(PatchGeometry*);

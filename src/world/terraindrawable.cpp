@@ -21,15 +21,17 @@ TerrainDrawable::TerrainDrawable(Landscape* land, Material* mat, bool update) : 
 							   ::bind(this, &TerrainDrawable::patchUpdated));
 }
 
+void TerrainDrawable::update(const base::Camera* camera, bool lod, bool cull) {
+	Camera cam = *camera;
+	cam.setPosition(cam.getPosition() - vec3(&getTransform()[12]));
+	cam.updateFrustum();
+	if(lod) m_land->update( &cam );
+	if(cull) m_land->cull( &cam );
+}
+
 void TerrainDrawable::draw(base::RenderState& r) {
 	// This block ideally should be elsewhere
-	if(m_autoUpdate) {
-		Camera cam = *r.getCamera();
-		cam.setPosition( cam.getPosition() - vec3(&getTransform()[12]));
-		cam.updateFrustum();
-		m_land->update( &cam );
-		m_land->cull( &cam );
-	}
+	if(m_autoUpdate) update(r.getCamera());
 
 	r.setMaterial( m_material );
 	for(const PatchGeometry* g: m_land->getGeometry()) {
