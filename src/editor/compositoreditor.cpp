@@ -257,11 +257,6 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 	w->expand(false);
 	Combobox* groupBox = w->getTemplateWidget<Combobox>("group");
 	Combobox* nameBox = w->getTemplateWidget<Combobox>("name");
-	w->getTemplateWidget("value")->setColour(Colour(value.x, value.y, value.z).toRGB());
-	w->getTemplateWidget<SpinboxFloat>("r")->setValue(value.x);
-	w->getTemplateWidget<SpinboxFloat>("g")->setValue(value.y);
-	w->getTemplateWidget<SpinboxFloat>("b")->setValue(value.z);
-	w->getTemplateWidget<SpinboxFloat>("a")->setValue(value.w);
 	groupBox->setText(group);
 	groupBox->data = String(group);
 	nameBox->setText(name);
@@ -271,18 +266,36 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 	ShaderVars* vars = Resources::getInstance()->shaderVars.getIfExists(group);
 	if(vars) for(const char* name: vars->getNames()) nameBox->addItem(name);
 
+	static auto getValue = [](const Widget* w) {
+		float r = w->getTemplateWidget<SpinboxFloat>("r")->getValue();
+		float g = w->getTemplateWidget<SpinboxFloat>("g")->getValue();
+		float b = w->getTemplateWidget<SpinboxFloat>("b")->getValue();
+		float a = w->getTemplateWidget<SpinboxFloat>("a")->getValue();
+		return vec4(r,g,b,a);
+	};
+	static auto setPreview = [](const Widget* w, const vec4& c) {
+		w->getTemplateWidget("value")->setColour(Colour(fclamp(c.x,0,1), fclamp(c.y,0,1), fclamp(c.z,0,1)).toRGB());
+	};
+	static auto setValues = [](const Widget* w, const vec4& c) {
+		w->getTemplateWidget<SpinboxFloat>("r")->setValue(c.x);
+		w->getTemplateWidget<SpinboxFloat>("g")->setValue(c.y);
+		w->getTemplateWidget<SpinboxFloat>("b")->setValue(c.z);
+		w->getTemplateWidget<SpinboxFloat>("a")->setValue(c.w);
+	};
+
+	setValues(w, value);
+	setPreview(w, value);
+
 	// events
 	static auto setVariable = [](CompositorGraph* graph, Widget* w) {
 		while(w && !cast<CollapsePane>(w)) w = w->getParent();
 		const char* group = w->getTemplateWidget<Combobox>("group")->getText();
 		const char* name = w->getTemplateWidget<Combobox>("name")->getText();
-		float r = w->getTemplateWidget<SpinboxFloat>("r")->getValue();
-		float g = w->getTemplateWidget<SpinboxFloat>("g")->getValue();
-		float b = w->getTemplateWidget<SpinboxFloat>("b")->getValue();
-		float a = w->getTemplateWidget<SpinboxFloat>("a")->getValue();
-		if(group[0] && name[0]) graph->setVariable(group, name, vec4(r,g,b,a));
-		w->getTemplateWidget("value")->setColour(Colour(fclamp(r,0,1), fclamp(g,0,1),fclamp(b,0,1)).toRGB());
+		vec4 value = getValue(w);
+		setPreview(w, value);
+		if(group[0] && name[0]) graph->setVariable(group, name, value);
 	};
+
 	static const String empty;
 	groupBox->eventSelected.bind([this](Combobox* b, ListItem& i) {
 		Combobox* nameList = b->getParent()->getTemplateWidget<Combobox>("name");
@@ -301,6 +314,14 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 		const char* oldGroup = b->getParent()->getTemplateWidget<Combobox>("group")->getText();
 		const char* oldName = b->data.getValue(empty).str();
 		m_graph->eraseVariable(oldGroup, oldName);
+		// Initial value from current state
+		if(ShaderVars* vars = Resources::getInstance()->shaderVars.getIfExists(oldGroup)) {
+			int n = vars->getElements(i.getText());
+			float* p = vars->getFloatPointer(i.getText());
+			vec4 value(0.f);
+			memcpy(value, p, n * sizeof(float));
+			setValues(b->getParent(), value);
+		}
 		setVariable(m_graph, b);
 		b->data = String(i.getText());
 		CompositorResourceResolver resolver;
@@ -319,21 +340,14 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 
 	// Colour picker
 	w->getTemplateWidget("value")->eventMouseDown.bind([this](Widget* w, const Point&, int) {
-		float r = w->getParent()->getTemplateWidget<SpinboxFloat>("r")->getValue();
-		float g = w->getParent()->getTemplateWidget<SpinboxFloat>("g")->getValue();
-		float b = w->getParent()->getTemplateWidget<SpinboxFloat>("b")->getValue();
-		float a = w->getParent()->getTemplateWidget<SpinboxFloat>("a")->getValue();
+		vec4 value = getValue(w->getParent());
 		ColourPicker* picker = new ColourPicker();
 		picker->setSize(100, 80);
 		picker->initialise(w->getRoot(), PropertyMap());
 		picker->setHasAlpha(true);
-		picker->setColour(Colour(fclamp(r,0,1), fclamp(g,0,1), fclamp(b,0,1), fclamp(a,0,1)));
+		picker->setColour(Colour(fclamp(value.x,0,1), fclamp(value.y,0,1), fclamp(value.z,0,1), fclamp(value.w,0,1)));
 		picker->eventChanged.bind([this, w](const Colour& c) {
-			w->setColour(c.toRGB());
-			w->getParent()->getTemplateWidget<SpinboxFloat>("r")->setValue(c.r);
-			w->getParent()->getTemplateWidget<SpinboxFloat>("g")->setValue(c.g);
-			w->getParent()->getTemplateWidget<SpinboxFloat>("b")->setValue(c.b);
-			w->getParent()->getTemplateWidget<SpinboxFloat>("a")->setValue(c.a);
+			setValues(w->getParent(), (const float*)c);
 			setVariable(m_graph, w);
 		});
 		(new Popup(picker, true))->popup(w);
