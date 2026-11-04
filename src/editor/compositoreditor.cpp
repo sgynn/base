@@ -32,6 +32,12 @@ class CompositorNode : public nodegraph::Node {
 	Compositor* m_compositor;
 	int m_alias; // index in chain
 };
+class CompositorResourceResolver : public MaterialResolver {
+	public:
+	ShaderVars* resolveVariables(const char* name) { return Resources::getInstance()->shaderVars.getIfExists(name); }
+	Material* resolveMaterial(const char* name) { return Resources::getInstance()->materials.get(name); }
+	Texture* resolveTexture(const char* name) { return Resources::getInstance()->textures.get(name); }
+};
 }
 
 void updateExpandProperyInfo(Widget* p) {
@@ -288,6 +294,8 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 		nameList->clearItems();
 		ShaderVars* vars = Resources::getInstance()->shaderVars.getIfExists(i.getText());
 		if(vars) for(const char* name: vars->getNames()) nameList->addItem(name);
+		CompositorResourceResolver resolver;
+		m_graph->resolveExternals(&resolver);
 	});
 	nameBox->eventSelected.bind([this](Combobox* b, ListItem& i) {
 		const char* oldGroup = b->getParent()->getTemplateWidget<Combobox>("group")->getText();
@@ -295,6 +303,8 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 		m_graph->eraseVariable(oldGroup, oldName);
 		setVariable(m_graph, b);
 		b->data = String(i.getText());
+		CompositorResourceResolver resolver;
+		m_graph->resolveExternals(&resolver);
 	});
 	w->getTemplateWidget<Button>("remove")->eventPressed.bind([this](Button* b) {
 		const char* group = b->getParent()->getTemplateWidget<Combobox>("group")->getText();
@@ -784,6 +794,8 @@ CompositorGraph* CompositorEditor::buildGraph() const {
 	for(const CompositorGraph::GlobalVariable& var: m_graph->getVariables()) {
 		graph->setVariable(var.group, var.name, var.value);
 	}
+	CompositorResourceResolver resolver;
+	graph->resolveExternals(&resolver);
 	
 	std::vector<CompositorNode*> nodes;
 	for(Widget* w: *m_graphEditor) {
