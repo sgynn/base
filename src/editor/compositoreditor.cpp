@@ -306,7 +306,10 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 		// refresh name list
 		nameList->clearItems();
 		ShaderVars* vars = Resources::getInstance()->shaderVars.getIfExists(i.getText());
-		if(vars) for(const char* name: vars->getNames()) nameList->addItem(name);
+		if(vars) for(const char* name: vars->getNames()) {
+			if(vars->getElements(name) > 4) continue;
+			nameList->addItem(name);
+		}
 		CompositorResourceResolver resolver;
 		m_graph->resolveExternals(&resolver);
 	});
@@ -319,7 +322,7 @@ Widget* CompositorEditor::addVariableWidget(Widget* list, const char* group, con
 			int n = vars->getElements(i.getText());
 			float* p = vars->getFloatPointer(i.getText());
 			vec4 value(0.f);
-			memcpy(value, p, n * sizeof(float));
+			memcpy(value, p, (n<4? n: 4) * sizeof(float));
 			setValues(b->getParent(), value);
 		}
 		setVariable(m_graph, b);
