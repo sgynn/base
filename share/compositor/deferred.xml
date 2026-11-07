@@ -110,7 +110,7 @@
 		<buffer name="lum4" size="4" format="R32F"/>
 		<buffer name="lum1" size="1" format="R32F"/>
 		<buffer name="adapt" size="1" format="R32F"/>
-		<buffer name="last" size="1" format="R32F"/>
+		<buffer name="last" size="1" format="R32F" usage="global"/>
 
 		<pass target="lum128" type="quad" shader="luminance2.frag">
 			<texture name="source" buffer="input"/>
@@ -192,5 +192,12 @@
 		<input buffer="gbuffer"/>
 		<output buffer="main"/>
 	</compositor>
+
+	<graph output="out" name="DeferredNormal">
+        <link a="deferred" b="split" key="gbuffer"/>
+        <link a="split" b="copy" sa="normal" sb="in"/>
+        <link a="copy" b="out" sa="out"/>
+	</graph>
+
 
 </compositors>

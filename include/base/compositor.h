@@ -167,13 +167,18 @@ namespace base {
 		};
 
 		// Frame buffer definition
+		enum BufferUsage : char {
+			SHARED,	// Framebuffer is reused is possible
+			UNIQUE,	// Framebuffer is unique per workspace
+			GLOBAL	// Framebuffer is shared across all instances
+		};
 		struct Buffer {
 			char  name[64];
+			BufferUsage usage = SHARED;
 			int   width, height;
 			float relativeWidth, relativeHeight; // use these if nonzero
 			BufferAttachment colour[4];
 			BufferAttachment depth;
-			bool  unique; // Non-unique buffers are re-used where possible
 			base::Texture* texture; // use this instead - read only
 		};
 
@@ -188,15 +193,15 @@ namespace base {
 		/// Add pass to this compositor
 		void addPass(const char* target, CompositorPass*);
 
-		Buffer* addBuffer(const char* name, int w, int h, Format format, Format depth=Format::NONE, bool unique=false);
-		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format depth, bool unique=false);
-		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format depth, bool unique=false);
-		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format f4, Format depth, bool unique=false);
+		Buffer* addBuffer(const char* name, int w, int h, Format format, Format depth=Format::NONE, BufferUsage unique=SHARED);
+		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format depth, BufferUsage usage=SHARED);
+		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format depth, BufferUsage usage=SHARED);
+		Buffer* addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format f4, Format depth, BufferUsage usage=SHARED);
 
-		Buffer* addBuffer(const char* name, float w, float h, Format format, Format depth=Format::NONE, bool unique=false);
-		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format depth, bool unique=false);
-		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format depth, bool unique=false);
-		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format f4, Format depth, bool unique=false);
+		Buffer* addBuffer(const char* name, float w, float h, Format format, Format depth=Format::NONE, BufferUsage usage=SHARED);
+		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format depth, BufferUsage usage=SHARED);
+		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format depth, BufferUsage usage=SHARED);
+		Buffer* addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format f4, Format depth, BufferUsage usage=SHARED);
 
 		Buffer* addTexture(const char* name, base::Texture*);
 
@@ -306,7 +311,6 @@ namespace base {
 
 		protected:
 		size_t getCameraIndex(const char* name);
-		static base::FrameBuffer* createBuffer(Compositor::Buffer*, int sw, int sh);
 
 		protected:
 		struct Expose { size_t id=0; base::FrameBuffer* buffer=0; const base::Texture* texture=0; };
@@ -325,6 +329,9 @@ namespace base {
 		bool                            m_compiled;		// Compiled successfully
 		int                             m_width=0, m_height=0;	// Size passed to compile function
 		int 							m_frame = 0;	// Current frame for skipped passes
+
+		struct GlobalBuffer { const Compositor::Buffer* source; base::FrameBuffer* buffer; int references; };
+		static std::vector<GlobalBuffer> s_globalBuffers;
 	};
 
 	// Create basic compositor instance

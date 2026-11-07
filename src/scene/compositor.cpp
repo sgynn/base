@@ -15,6 +15,7 @@
 using namespace base;
 
 Compositor* Compositor::Output = new Compositor();
+std::vector<Workspace::GlobalBuffer> Workspace::s_globalBuffers;
 
 CompositorPassClear::CompositorPassClear(ClearBits bits, uint c, float d) : mDepth(d), mBits(0) {
 	mColour.resize(4, 0.f);
@@ -409,12 +410,13 @@ void Compositor::addPass(const char* target, CompositorPass* pass) {
 	m_passes.push_back(cp);
 }
 
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format f4, Format dfmt, bool unique) {
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format f4, Format dfmt, BufferUsage usage) {
 	for(Buffer* b: m_buffers) {
 		if(strcmp(name, b->name)==0) printf("Error: Compositor %s already has a buffer named %s\n", m_name, name);
 	}
 	Buffer* b = new Buffer;
 	strncpy(b->name, name, 63);
+	b->usage = usage;
 	b->width = w;
 	b->height = h;
 	b->relativeWidth = 0;
@@ -424,19 +426,18 @@ Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format
 	b->colour[2].format = f3;
 	b->colour[3].format = f4;
 	b->depth.format = dfmt;
-	b->unique = unique;
 	b->texture = nullptr;
 	m_buffers.push_back(b);
 	return b;
 }
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format dfmt, bool unique)                 { return addBuffer(name,w,h,f1,Format::NONE,Format::NONE,Format::NONE,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format dfmt, bool unique)         { return addBuffer(name,w,h,f1,f2,Format::NONE,Format::NONE,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format dfmt, bool unique) { return addBuffer(name,w,h,f1,f2,f3,Format::NONE,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format dfmt, bool unique)                 { return addBuffer(name,w,h,f1,Format::NONE,Format::NONE,Format::NONE,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format dfmt, bool unique)         { return addBuffer(name,w,h,f1,f2,Format::NONE,Format::NONE,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format dfmt, bool unique) { return addBuffer(name,w,h,f1,f2,f3,Format::NONE,dfmt,unique); }
-Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format f4, Format dfmt, bool unique) {
-	Buffer* b = addBuffer(name, 0,0,f1,f2,f3,f4,dfmt,unique);
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format dfmt, BufferUsage usage)                 { return addBuffer(name,w,h,f1,Format::NONE,Format::NONE,Format::NONE,dfmt,usage); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format dfmt, BufferUsage usage)         { return addBuffer(name,w,h,f1,f2,Format::NONE,Format::NONE,dfmt,usage); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, int w, int h, Format f1, Format f2, Format f3, Format dfmt, BufferUsage usage) { return addBuffer(name,w,h,f1,f2,f3,Format::NONE,dfmt,usage); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format dfmt, BufferUsage usage)                 { return addBuffer(name,w,h,f1,Format::NONE,Format::NONE,Format::NONE,dfmt,usage); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format dfmt, BufferUsage usage)         { return addBuffer(name,w,h,f1,f2,Format::NONE,Format::NONE,dfmt,usage); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format dfmt, BufferUsage usage) { return addBuffer(name,w,h,f1,f2,f3,Format::NONE,dfmt,usage); }
+Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Format f1, Format f2, Format f3, Format f4, Format dfmt, BufferUsage usage) {
+	Buffer* b = addBuffer(name, 0,0,f1,f2,f3,f4,dfmt,usage);
 	b->relativeHeight = h;
 	b->relativeWidth = w;
 	return b;
@@ -444,7 +445,7 @@ Compositor::Buffer* Compositor::addBuffer(const char* name, float w, float h, Fo
 
 Compositor::Buffer* Compositor::addTexture(const char* name, Texture* texture) {
 	Format O = Format::NONE;
-	Buffer* buf = addBuffer(name, texture->width(), texture->height(), O,O,O,O,O,true);
+	Buffer* buf = addBuffer(name, texture->width(), texture->height(), O,O,O,O,O, UNIQUE);
 	buf->texture = texture;
 	return buf;
 }
@@ -615,7 +616,20 @@ Workspace::~Workspace() {
 	destroy();
 }
 void Workspace::destroy() {
-	for(FrameBuffer* b : m_buffers) delete b;
+	for(FrameBuffer* b : m_buffers) {
+		bool keep = false;
+		for(GlobalBuffer& g: s_globalBuffers) {
+			if(g.buffer==b) {
+				if(--g.references) keep = true;
+				else {
+					s_globalBuffers[&g-s_globalBuffers.data()] = s_globalBuffers.back();
+					s_globalBuffers.pop_back();
+				}
+				break;
+			}
+		}
+		if(!keep) delete b;
+	}
 	m_buffers.clear();
 	m_passes.clear();
 	m_compiled = false;
@@ -813,7 +827,7 @@ bool Workspace::compile(int w, int h) {
 	CLink& link = links[ outputInfo.inputs[0] ];
 	Compositor::Buffer outputBuffer;
 	outputBuffer.width = outputBuffer.height = 0;
-	outputBuffer.unique = true;
+	outputBuffer.usage = Compositor::UNIQUE;
 	outputBuffer.texture = nullptr;
 	strcpy(outputBuffer.name, "OUTPUT");
 	link.processed = true;
@@ -849,6 +863,16 @@ bool Workspace::compile(int w, int h) {
 	auto createFrameBuffer = [w, h, &links](const Compositor::Buffer* buffer, const CInfo& info) {
 		int bw = buffer->relativeWidth>0? buffer->relativeWidth * w: buffer->width;
 		int bh = buffer->relativeHeight>0? buffer->relativeHeight * h: buffer->height;
+		// Global one?
+		if(buffer->usage == Compositor::GLOBAL) {
+			for(GlobalBuffer& global: s_globalBuffers) {
+				if(global.source == buffer && global.buffer->width()==bw && global.buffer->height()==bh) {
+					++global.references;
+					return global.buffer;
+				}
+			}
+		}
+
 		FrameBuffer* buf = new FrameBuffer(bw, bh);
 		buf->bind();
 		auto getInputTexture = [&](const Compositor::BufferAttachment& data) -> const Texture* {
@@ -879,6 +903,7 @@ bool Workspace::compile(int w, int h) {
 			else break;
 			++attachment;
 		}
+		if(buffer->usage == Compositor::GLOBAL) s_globalBuffers.push_back({buffer, buf, 1});
 		return buf;
 	};
 
@@ -1029,7 +1054,6 @@ bool Workspace::compile(int w, int h) {
 					continue;
 				}
 				if(!internal[index]) {
-					//internal[index] = createBuffer(bufferData, w, h);
 					internal[index] = createFrameBuffer(bufferData, info);
 					m_buffers.push_back(internal[index]);
 				}
@@ -1107,26 +1131,6 @@ bool Workspace::compile(int w, int h) {
 	m_compiled = true;
 	return true;
 }
-
-/*
-FrameBuffer* Workspace::createBuffer(Compositor::Buffer* b, int sw, int sh) {
-	int w = b->relativeWidth>0? b->relativeWidth * sw: b->width;
-	int h = b->relativeHeight>0? b->relativeHeight * sh: b->height;
-	FrameBuffer* buf = new FrameBuffer(w, h);
-	buf->bind();
-	if(b->depth.format) {
-		buf->attachDepth((Texture::Format) b->depth.format);
-		buf->depthTexture().setFilter(GL_NEAREST, GL_NEAREST);
-	}
-	for(const auto& colour: b->colour) {
-		if(colour.format == Texture::NONE) break;
-		buf->attachColour((Texture::Format) colour.format);
-	}
-	if(!buf->isValid()) printf("Error: Invalid framebuffer %s, [%d]\n", b->name, (int)b->colour[0].format);
-	FrameBuffer::Screen.bind();
-	return buf;
-}
-*/
 
 // ============================================================ //
 

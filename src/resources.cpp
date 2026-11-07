@@ -922,13 +922,14 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 									"R32F", "RG32F", "RGB32F", "RGBA32F", "R16F", "RG16F", "RGB16F", "RGBA16F",
 									"R11G11B10F", "R5G6B5", "D16", "D24", "D32", "D24S8" };
 
+	static const char* bufferUsage[] = { "shared", "unique", "global" };
 	
 	Compositor* c = new Compositor(e.attribute("name"));
 	for(const XMLElement& i: e) {
 		if(i=="buffer") {
 			const char* name = i.attribute("name");
 			const char* size = i.attribute("size", "1.0");
-			bool unique = i.attribute("unique", 0);
+			Compositor::BufferUsage usage = enumValue(i.attribute("usage"), bufferUsage, Compositor::SHARED);
 			// size can be "2" "2 2", "2.0", "2.0 2.0"
 			bool rel = strchr(size, '.');
 			int n = rel? sscanf(size, "%g %g", &fw, &fh): sscanf(size, "%d %d", &iw, &ih);
@@ -954,7 +955,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 			Compositor::Buffer* buffer;
 			if(rel) buffer = c->addBuffer(name, fw, fh, Texture::NONE);
 			else buffer = c->addBuffer(name, iw, ih, Texture::NONE);
-			buffer->unique = unique;
+			buffer->usage = usage;
 			readSlot(buffer->depth, "depth");
 			readSlot(buffer->colour[0], "slot0", "format");
 			readSlot(buffer->colour[1], "slot1");
