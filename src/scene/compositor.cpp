@@ -360,6 +360,7 @@ void CompositorTextures::expose(size_t id, const Texture* texture) {
 	if(id < m_textures.size()) {
 		for(CTexture* t = m_textures[id]; t; t=t->next) {
 			if(t->part == Part::Default || t->part == Part::Colour0) *t->texture = *texture;
+			if(t->part == Part::Depth) *t->texture = *texture; // allow using textures as depth inputs
 		}
 	}
 }
