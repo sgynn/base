@@ -43,8 +43,9 @@ class Game {
 
 	/** Time since the game started (seconds) */
 	static float gameTime() { return s_inst->m_totalTime; }
-	/** Time since tha last frame - use for framerate independance */
+	/** Time since the last frame - use for framerate independance */
 	static float frameTime() { return s_inst->m_frameTime; }
+	static uint frameCount() { return s_inst->m_totalFrames; }
 	/** Get detailed timings */
 	static void debugTime(uint& game, uint& system, uint& update, uint& render);
 	static void setFrameTime(float t) { s_inst->m_frameTime=t; }
@@ -90,6 +91,7 @@ class Game {
 	uint m_updateTime=0;	// Time spent in update loop
 	float m_totalTime=0;	// Total time since game started (seconds)
 	float m_frameTime=0;	// Time since last frame (seconds);
+	uint m_totalFrames=0;	// Frame counter
 };
 };
 

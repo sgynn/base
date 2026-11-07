@@ -53,6 +53,10 @@ namespace base {
 		virtual void execute(const base::FrameBuffer*, const Rect& view, Renderer*, base::Camera*, Scene*) const = 0;
 		virtual void resolveExternals(MaterialResolver*) {}
 		virtual const char* getCamera() const { return 0; }
+		int getFrameSkip() const { return m_frameSkip; } // Only execute every N frames
+		void setFrameSkip(int skip) { m_frameSkip = skip; }
+		protected:
+		int m_frameSkip = 0;
 	};
 	/// Clear target buffer
 	class CompositorPassClear final : public CompositorPass {
@@ -285,6 +289,7 @@ namespace base {
 		void execute(const base::FrameBuffer* target, Scene*, Renderer*);	// Execute compositor
 		void execute(const base::FrameBuffer* target, const Rect& view, Scene*, Renderer*);	// Execute compositor
 		void applyVariables();
+		void setFrame(uint frame) { m_frame=frame; }
 		const CompositorGraph* getGraph() const { return m_graph; }
 		bool isCompiled() const;
 		int getWidth() const { return m_width; }
@@ -319,6 +324,7 @@ namespace base {
 		const CompositorGraph*          m_graph;		// Parent graph we are an instance of
 		bool                            m_compiled;		// Compiled successfully
 		int                             m_width=0, m_height=0;	// Size passed to compile function
+		int 							m_frame = 0;	// Current frame for skipped passes
 	};
 
 	// Create basic compositor instance

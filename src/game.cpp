@@ -199,6 +199,7 @@ void Game::run() {
 			time = getTicks();
 			m_renderTime = time - renderTime;
 			systemTime = time;
+			++m_totalFrames;
 		}
 	} else {
 
@@ -255,6 +256,7 @@ void Game::run() {
 				time = systemTime = getTicks();
 				m_renderTime = time - renderTime;
 				m_gameTime = time - gameTime;
+				++m_totalFrames;
 			} else {
 				Sleep(1);
 			}

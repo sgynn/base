@@ -982,6 +982,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				const char* material = i.attribute("material", nullString);
 				const char* technique = i.attribute("technique", nullString);
 				CompositorPassScene* pass = new CompositorPassScene(iw, ih, material, technique);
+				pass->setFrameSkip(i.attribute("frame", 0));
 				pass->setCamera(i.attribute("camera", nullptr));
 				c->addPass(target, pass);
 				// Additional material override properties
@@ -994,6 +995,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				const char* technique = i.attribute("technique", nullString);
 				CompositorPassQuad* pass = new CompositorPassQuad(material, technique);
 				pass->setCamera(i.attribute("camera", nullptr));
+				pass->setFrameSkip(i.attribute("frame", 0));
 				c->addPass(target, pass);
 				
 				Material* mat = 0;
@@ -1052,6 +1054,7 @@ Compositor* XMLResourceLoader::loadCompositor(const XMLElement& e) {
 				clear->setColour(1, i.attribute("buffer1", colour));
 				clear->setColour(2, i.attribute("buffer2", colour));
 				clear->setColour(3, i.attribute("buffer3", colour));
+				clear->setFrameSkip(i.attribute("frame", 0));
 				c->addPass(target, clear);
 			}
 			else {

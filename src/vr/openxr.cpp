@@ -852,6 +852,7 @@ void VRComponent::draw() {
 		xrLocateViews(xr::session, &locateInfo, &viewState, xr::views.size(), &viewCount, xr::views.data());
 		views.resize(viewCount, {XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW});
 		depth.resize(viewCount, {XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR});
+		m_workspace->setFrame(Game::frameCount());
 
 		// And now we'll iterate through each viewpoint, and render it!
 		for(uint i=0; i<viewCount; ++i) {
