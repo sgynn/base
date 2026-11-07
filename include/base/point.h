@@ -143,8 +143,8 @@ class PointRangeIterator {
 	PointRangeIterator(Point start, Point end, Point value) : m_start(start), m_end(end), m_value(value) {
 		if(start.x>=end.x || start.y>=end.y) m_end = start;
 	}
-	PointRangeIterator operator++() { PointRangeIterator tmp=*this; operator++(0); return tmp; }
-	PointRangeIterator operator++(int) { ++m_value.x; if(m_value.x>=m_end.x) m_value.set(m_start.x, m_value.y+1); return *this; }
+	PointRangeIterator operator++(int) { PointRangeIterator tmp=*this; operator++(); return tmp; }
+	PointRangeIterator operator++() { ++m_value.x; if(m_value.x>=m_end.x) m_value.set(m_start.x, m_value.y+1); return *this; }
 	bool operator!=(const PointRangeIterator& o) const { return m_value != o.m_value; }
 	const Point& operator*() const { return m_value; }
 	private:
