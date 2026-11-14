@@ -227,8 +227,8 @@ void OrbitCamera::update(int mask) {
 	}
 
 	// Joystick rotation input
-	if(m_binding.yaw!=unbound) rotate = in.value(m_binding.yaw);
-	if(m_binding.pitch!=unbound) rotate = in.value(m_binding.pitch);
+	if(m_binding.yaw!=unbound) rotate.x = in.value(m_binding.yaw);
+	if(m_binding.pitch!=unbound) rotate.y = in.value(m_binding.pitch);
 
 	// Mouse grab panning
 	static const vec3 zero(0,0,0);
